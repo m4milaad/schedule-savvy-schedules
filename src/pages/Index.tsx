@@ -6,8 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Calendar, Plus, AlertTriangle, BookOpen, Users, Clock, FileText, Download } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Calendar, Plus, AlertTriangle, BookOpen, Users, Clock, FileText, Download, GripVertical } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface CourseInput {
   semester: number;
@@ -206,18 +208,68 @@ const Index = () => {
     });
   };
 
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
+    }
+
+    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
+    if (!draggedExam) return;
+
+    // Parse destination date from droppableId
+    const targetDateString = destination.droppableId.replace('date-', '');
+    const targetDate = new Date(targetDateString);
+
+    // Check if target date already has an exam for this semester
+    const existingExamForSemester = generatedSchedule.find(exam => 
+      exam.date.toDateString() === targetDate.toDateString() && 
+      exam.semester === draggedExam.semester &&
+      exam.id !== draggedExam.id
+    );
+
+    if (existingExamForSemester) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update the exam's date
+    const updatedSchedule = generatedSchedule.map(exam => {
+      if (exam.id === draggableId) {
+        return {
+          ...exam,
+          date: targetDate,
+          dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          timeSlot: getExamTimeSlot(targetDate)
+        };
+      }
+      return exam;
+    });
+
+    // Sort by date
+    updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+    setGeneratedSchedule(updatedSchedule);
+
+    toast({
+      title: "Exam Moved Successfully",
+      description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()}`,
+    });
+  };
+
   const addHoliday = (dateString: string) => {
     const holidayDate = new Date(dateString);
     setCustomHolidays(prev => [...prev, holidayDate]);
     
-    // Regenerate schedule if it exists
-    if (isScheduleGenerated) {
-      setTimeout(generateSchedule, 100);
-    }
-    
     toast({
       title: "Holiday Added",
-      description: `${holidayDate.toLocaleDateString()} marked as holiday. Schedule updated.`,
+      description: `${holidayDate.toLocaleDateString()} marked as holiday. You may need to regenerate the schedule.`,
     });
   };
 
@@ -267,6 +319,20 @@ ${pdfRules}
   };
 
   const activeSemesters = isEvenSemesters ? [2, 4, 6, 8] : [1, 3, 5, 7];
+
+  // Group schedule by dates for table display
+  const scheduleByDate = generatedSchedule.reduce((acc, exam) => {
+    const dateKey = exam.date.toDateString();
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(exam);
+    return acc;
+  }, {} as { [key: string]: GeneratedExam[] });
+
+  const sortedDates = Object.keys(scheduleByDate).sort((a, b) => 
+    new Date(a).getTime() - new Date(b).getTime()
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -362,41 +428,47 @@ ${pdfRules}
             </CardContent>
           </Card>
 
-          {/* Timeline Display */}
+          {/* Holiday Management */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Generated Schedule
+                Holiday Management
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!isScheduleGenerated ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Enter course codes and generate schedule to see timeline</p>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    className="flex-1 p-2 border border-gray-300 rounded-md"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        addHoliday(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4" />
+                    Add Holiday
+                  </Button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Holiday Input */}
-                  <div className="flex gap-2 p-3 bg-yellow-50 rounded-lg">
-                    <input
-                      type="date"
-                      className="flex-1 p-2 border border-gray-300 rounded-md"
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          addHoliday(e.target.value);
-                          e.target.value = '';
-                        }
-                      }}
-                    />
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4" />
-                      Add Holiday
-                    </Button>
-                  </div>
 
-                  {/* PDF Export Button */}
+                {customHolidays.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Custom Holidays:</h4>
+                    <div className="space-y-1">
+                      {customHolidays.map((holiday, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {holiday.toLocaleDateString()}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isScheduleGenerated && (
                   <Button 
                     onClick={generatePDF}
                     className="w-full bg-green-600 hover:bg-green-700"
@@ -405,59 +477,101 @@ ${pdfRules}
                     <Download className="h-4 w-4 mr-2" />
                     Download PDF Schedule
                   </Button>
-
-                  {/* Timeline */}
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {Array.from(new Set(generatedSchedule.map(exam => exam.date.toDateString())))
-                      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-                      .map(dateString => {
-                        const date = new Date(dateString);
-                        const examsOnDate = generatedSchedule.filter(
-                          exam => exam.date.toDateString() === dateString
-                        );
-
-                        return (
-                          <div key={dateString} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h3 className="font-semibold text-gray-900">
-                                  {formatDate(date)}
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                  {examsOnDate[0]?.timeSlot}
-                                </p>
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {examsOnDate.length} exam{examsOnDate.length > 1 ? 's' : ''}
-                              </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-2">
-                              {examsOnDate.map(exam => (
-                                <div key={exam.id} className="flex items-center gap-2">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${
-                                      exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700' :
-                                      exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700' :
-                                      exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700' :
-                                      'bg-purple-50 text-purple-700'
-                                    }`}
-                                  >
-                                    S{exam.semester}: {exam.courseCode}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Tabular Schedule Display with Drag & Drop */}
+        {isScheduleGenerated && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Exam Schedule (Drag & Drop to Reschedule)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[200px]">Date</TableHead>
+                        <TableHead>Day</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Exams</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedDates.map(dateString => {
+                        const date = new Date(dateString);
+                        const examsOnDate = scheduleByDate[dateString];
+                        
+                        return (
+                          <TableRow key={dateString}>
+                            <TableCell className="font-medium">
+                              {date.toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+                            </TableCell>
+                            <TableCell>
+                              {getExamTimeSlot(date)}
+                            </TableCell>
+                            <TableCell>
+                              <Droppable droppableId={`date-${dateString}`} direction="horizontal">
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
+                                      snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                                    }`}
+                                  >
+                                    {examsOnDate.map((exam, index) => (
+                                      <Draggable key={exam.id} draggableId={exam.id} index={index}>
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={`${
+                                              snapshot.isDragging ? 'shadow-lg' : ''
+                                            }`}
+                                          >
+                                            <Badge
+                                              variant="outline"
+                                              className={`cursor-move flex items-center gap-1 ${
+                                                exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                'bg-purple-50 text-purple-700 border-purple-200'
+                                              } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                            >
+                                              <GripVertical className="h-3 w-3" />
+                                              S{exam.semester}: {exam.courseCode}
+                                            </Badge>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                  </div>
+                                )}
+                              </Droppable>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </DragDropContext>
+            </CardContent>
+          </Card>
+        )}
 
         {/* PDF Rules Section */}
         <Card>
@@ -519,6 +633,7 @@ ${pdfRules}
                   <li>✅ Friday timing: 11 AM - 2 PM, Other days: 12 PM - 3 PM</li>
                   <li>✅ Custom holidays respected</li>
                   <li>✅ {isEvenSemesters ? 'Even' : 'Odd'} semesters only</li>
+                  <li>✅ Drag & drop to reschedule with validation</li>
                 </ul>
               </div>
             </CardContent>
