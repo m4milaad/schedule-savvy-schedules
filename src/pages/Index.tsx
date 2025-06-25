@@ -2,106 +2,171 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, Plus, AlertTriangle, BookOpen, Users } from 'lucide-react';
+import { Calendar, Plus, AlertTriangle, BookOpen, Users, Clock } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-interface Course {
-  code: string;
-  name: string;
+interface CourseInput {
   semester: number;
+  codes: string[];
 }
 
-interface ScheduleEntry {
+interface GeneratedExam {
   id: string;
   courseCode: string;
-  courseName: string;
   semester: number;
-  date: string;
-  time: string;
+  date: Date;
+  dayOfWeek: string;
+  isHoliday?: boolean;
 }
 
 const Index = () => {
-  const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
-  const [newCourse, setNewCourse] = useState({ code: '', name: '', semester: 1 });
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [activeSemester, setActiveSemester] = useState(1);
+  const [courseInputs, setCourseInputs] = useState<CourseInput[]>([
+    { semester: 1, codes: [] },
+    { semester: 2, codes: [] },
+    { semester: 3, codes: [] },
+    { semester: 4, codes: [] },
+  ]);
+  
+  const [generatedSchedule, setGeneratedSchedule] = useState<GeneratedExam[]>([]);
+  const [customHolidays, setCustomHolidays] = useState<Date[]>([]);
+  const [isScheduleGenerated, setIsScheduleGenerated] = useState(false);
 
-  // Sample courses for demonstration
-  const sampleCourses: Course[] = [
-    { code: 'CS101', name: 'Introduction to Programming', semester: 1 },
-    { code: 'CS201', name: 'Data Structures', semester: 2 },
-    { code: 'CS301', name: 'Database Systems', semester: 3 },
-    { code: 'CS401', name: 'Software Engineering', semester: 4 },
-    { code: 'MATH101', name: 'Calculus I', semester: 1 },
-    { code: 'MATH201', name: 'Linear Algebra', semester: 2 },
-  ];
-
-  const checkForConflicts = (courseCode: string, date: string, semester: number): boolean => {
-    // Find the base subject name (remove semester-specific suffixes)
-    const baseSubject = courseCode.replace(/\d+$/, '');
+  const updateCourseInput = (semester: number, codesText: string) => {
+    const codes = codesText
+      .split('\n')
+      .map(code => code.trim().toUpperCase())
+      .filter(code => code.length > 0);
     
-    return scheduleEntries.some(entry => {
-      const entryBaseSubject = entry.courseCode.replace(/\d+$/, '');
-      return entryBaseSubject === baseSubject && 
-             entry.date === date && 
-             entry.semester !== semester;
-    });
+    setCourseInputs(prev => 
+      prev.map(input => 
+        input.semester === semester ? { ...input, codes } : input
+      )
+    );
   };
 
-  const addScheduleEntry = () => {
-    if (!newCourse.code || !selectedDate || !selectedTime) {
+  const isWeekend = (date: Date): boolean => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+  };
+
+  const isCustomHoliday = (date: Date): boolean => {
+    return customHolidays.some(holiday => 
+      holiday.toDateString() === date.toDateString()
+    );
+  };
+
+  const getNextWorkingDay = (startDate: Date, usedDates: Set<string>): Date => {
+    let currentDate = new Date(startDate);
+    
+    while (true) {
+      const dateString = currentDate.toDateString();
+      
+      if (!isWeekend(currentDate) && 
+          !isCustomHoliday(currentDate) && 
+          !usedDates.has(dateString)) {
+        return new Date(currentDate);
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+  };
+
+  const generateSchedule = () => {
+    const allCourses: Array<{code: string, semester: number}> = [];
+    
+    // Collect all courses
+    courseInputs.forEach(input => {
+      input.codes.forEach(code => {
+        allCourses.push({ code, semester: input.semester });
+      });
+    });
+
+    if (allCourses.length === 0) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all fields",
+        title: "No Courses Found",
+        description: "Please enter course codes for at least one semester",
         variant: "destructive"
       });
       return;
     }
 
-    if (checkForConflicts(newCourse.code, selectedDate, newCourse.semester)) {
-      toast({
-        title: "Scheduling Conflict Detected!",
-        description: "This subject is already scheduled on the same day for another semester",
-        variant: "destructive"
+    // Group courses by subject (remove semester-specific suffixes)
+    const subjectGroups: { [key: string]: Array<{code: string, semester: number}> } = {};
+    
+    allCourses.forEach(course => {
+      const baseSubject = course.code.replace(/\d+$/, '');
+      if (!subjectGroups[baseSubject]) {
+        subjectGroups[baseSubject] = [];
+      }
+      subjectGroups[baseSubject].push(course);
+    });
+
+    // Generate schedule
+    const schedule: GeneratedExam[] = [];
+    const usedDates = new Set<string>();
+    let currentDate = new Date();
+    currentDate.setDate(currentDate.getDate() + 7); // Start from next week
+
+    // Process each subject group (ensure same subjects are on same day)
+    Object.entries(subjectGroups).forEach(([baseSubject, courses]) => {
+      const examDate = getNextWorkingDay(currentDate, usedDates);
+      const dateString = examDate.toDateString();
+      usedDates.add(dateString);
+
+      courses.forEach(course => {
+        schedule.push({
+          id: `${course.code}-${course.semester}-${examDate.getTime()}`,
+          courseCode: course.code,
+          semester: course.semester,
+          date: new Date(examDate),
+          dayOfWeek: examDate.toLocaleDateString('en-US', { weekday: 'long' })
+        });
       });
-      return;
-    }
 
-    const newEntry: ScheduleEntry = {
-      id: Date.now().toString(),
-      courseCode: newCourse.code,
-      courseName: newCourse.name,
-      semester: newCourse.semester,
-      date: selectedDate,
-      time: selectedTime
-    };
+      currentDate = new Date(examDate);
+      currentDate.setDate(currentDate.getDate() + 1);
+    });
 
-    setScheduleEntries([...scheduleEntries, newEntry]);
-    setNewCourse({ code: '', name: '', semester: 1 });
-    setSelectedDate('');
-    setSelectedTime('');
+    // Sort by date
+    schedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    setGeneratedSchedule(schedule);
+    setIsScheduleGenerated(true);
     
     toast({
-      title: "Exam Scheduled Successfully!",
-      description: `${newCourse.code} scheduled for ${selectedDate}`,
+      title: "Schedule Generated Successfully!",
+      description: `Generated exam schedule for ${schedule.length} courses across 4 semesters`,
     });
   };
 
-  const getEntriesForSemester = (semester: number) => {
-    return scheduleEntries.filter(entry => entry.semester === semester);
+  const addHoliday = (dateString: string) => {
+    const holidayDate = new Date(dateString);
+    setCustomHolidays(prev => [...prev, holidayDate]);
+    
+    // Regenerate schedule if it exists
+    if (isScheduleGenerated) {
+      setTimeout(generateSchedule, 100);
+    }
+    
+    toast({
+      title: "Holiday Added",
+      description: `${holidayDate.toLocaleDateString()} marked as holiday. Schedule updated.`,
+    });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const getScheduleForSemester = (semester: number) => {
+    return generatedSchedule.filter(exam => exam.semester === semester);
   };
 
   return (
@@ -111,9 +176,11 @@ const Index = () => {
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
             <Calendar className="h-10 w-10 text-blue-600" />
-            University Exam Schedule Manager
+            Smart Exam Schedule Generator
           </h1>
-          <p className="text-lg text-gray-600">Manage exam dates across all 4 semesters with conflict detection</p>
+          <p className="text-lg text-gray-600">
+            Input course codes → Get automatic timeline → Add holidays as needed
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -124,8 +191,10 @@ const Index = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Semester {sem}</p>
-                    <p className="text-2xl font-bold text-blue-600">{getEntriesForSemester(sem).length}</p>
-                    <p className="text-sm text-gray-500">Exams Scheduled</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {courseInputs.find(input => input.semester === sem)?.codes.length || 0}
+                    </p>
+                    <p className="text-sm text-gray-500">Courses Entered</p>
                   </div>
                   <Users className="h-8 w-8 text-blue-500" />
                 </div>
@@ -134,182 +203,154 @@ const Index = () => {
           ))}
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Schedule Form */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Schedule New Exam
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Course Code</label>
-                <Input
-                  placeholder="e.g., CS101"
-                  value={newCourse.code}
-                  onChange={(e) => setNewCourse({...newCourse, code: e.target.value.toUpperCase()})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Course Name</label>
-                <Input
-                  placeholder="e.g., Introduction to Programming"
-                  value={newCourse.name}
-                  onChange={(e) => setNewCourse({...newCourse, name: e.target.value})}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Semester</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  value={newCourse.semester}
-                  onChange={(e) => setNewCourse({...newCourse, semester: parseInt(e.target.value)})}
-                >
-                  {[1, 2, 3, 4].map(sem => (
-                    <option key={sem} value={sem}>Semester {sem}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Exam Date</label>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Exam Time</label>
-                <Input
-                  type="time"
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                />
-              </div>
-
-              <Button onClick={addScheduleEntry} className="w-full bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Exam
-              </Button>
-
-              {/* Quick Add Sample Courses */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Quick Add Sample Courses:</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {sampleCourses.slice(0, 4).map(course => (
-                    <Button
-                      key={course.code}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setNewCourse(course)}
-                      className="text-xs"
-                    >
-                      {course.code}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Schedule Display */}
-          <Card className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Course Input Section */}
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Exam Schedule
+                Enter Course Codes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {courseInputs.map(input => (
+                <div key={input.semester} className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Semester {input.semester} Courses
+                  </label>
+                  <Textarea
+                    placeholder={`Enter course codes for Semester ${input.semester}\nOne per line (e.g., CS101, MATH201, etc.)`}
+                    className="min-h-[100px]"
+                    onChange={(e) => updateCourseInput(input.semester, e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500">
+                    {input.codes.length} courses entered
+                  </p>
+                </div>
+              ))}
+              
+              <Button 
+                onClick={generateSchedule} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                size="lg"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Generate Exam Timeline
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Timeline Display */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Generated Timeline
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeSemester.toString()} onValueChange={(value) => setActiveSemester(parseInt(value))}>
-                <TabsList className="grid w-full grid-cols-4">
-                  {[1, 2, 3, 4].map(sem => (
-                    <TabsTrigger key={sem} value={sem.toString()}>
-                      Semester {sem}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                
-                {[1, 2, 3, 4].map(sem => (
-                  <TabsContent key={sem} value={sem.toString()} className="space-y-4">
-                    {getEntriesForSemester(sem).length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>No exams scheduled for Semester {sem} yet</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {getEntriesForSemester(sem)
-                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                          .map(entry => (
-                          <div key={entry.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                    {entry.courseCode}
+              {!isScheduleGenerated ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>Enter course codes and generate timeline to see schedule</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Holiday Input */}
+                  <div className="flex gap-2 p-3 bg-yellow-50 rounded-lg">
+                    <input
+                      type="date"
+                      className="flex-1 p-2 border border-gray-300 rounded-md"
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addHoliday(e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4" />
+                      Add Holiday
+                    </Button>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {Array.from(new Set(generatedSchedule.map(exam => exam.date.toDateString())))
+                      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+                      .map(dateString => {
+                        const date = new Date(dateString);
+                        const examsOnDate = generatedSchedule.filter(
+                          exam => exam.date.toDateString() === dateString
+                        );
+
+                        return (
+                          <div key={dateString} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-semibold text-gray-900">
+                                {formatDate(date)}
+                              </h3>
+                              <Badge variant="outline" className="text-xs">
+                                {examsOnDate.length} exam{examsOnDate.length > 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2">
+                              {examsOnDate.map(exam => (
+                                <div key={exam.id} className="flex items-center gap-2">
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs ${
+                                      exam.semester === 1 ? 'bg-red-50 text-red-700' :
+                                      exam.semester === 2 ? 'bg-blue-50 text-blue-700' :
+                                      exam.semester === 3 ? 'bg-green-50 text-green-700' :
+                                      'bg-purple-50 text-purple-700'
+                                    }`}
+                                  >
+                                    S{exam.semester}: {exam.courseCode}
                                   </Badge>
-                                  {checkForConflicts(entry.courseCode, entry.date, entry.semester) && (
-                                    <AlertTriangle className="h-4 w-4 text-orange-500" />
-                                  )}
                                 </div>
-                                <h3 className="font-semibold text-gray-900">{entry.courseName}</h3>
-                                <p className="text-sm text-gray-600">{formatDate(entry.date)}</p>
-                                <p className="text-sm text-gray-500">Time: {entry.time}</p>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setScheduleEntries(scheduleEntries.filter(e => e.id !== entry.id));
-                                  toast({
-                                    title: "Exam Removed",
-                                    description: `${entry.courseCode} exam has been removed from schedule`,
-                                  });
-                                }}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                Remove
-                              </Button>
+                              ))}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                ))}
-              </Tabs>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Conflict Detection Summary */}
-        {scheduleEntries.length > 0 && (
+        {/* Summary Statistics */}
+        {isScheduleGenerated && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
-                Conflict Detection Summary
+                Schedule Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-600">
-                <p className="mb-2">
-                  <strong>Active Monitoring:</strong> The system automatically prevents scheduling the same subject 
-                  on the same day across different semesters.
-                </p>
-                <p>
-                  <strong>Current Status:</strong> {scheduleEntries.length} exams scheduled across 4 semesters with 
-                  conflict prevention active.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <p className="font-semibold text-blue-700">Total Exams</p>
+                  <p className="text-2xl font-bold text-blue-600">{generatedSchedule.length}</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <p className="font-semibold text-green-700">Exam Days</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {new Set(generatedSchedule.map(exam => exam.date.toDateString())).size}
+                  </p>
+                </div>
+                <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                  <p className="font-semibold text-yellow-700">Custom Holidays</p>
+                  <p className="text-2xl font-bold text-yellow-600">{customHolidays.length}</p>
+                </div>
               </div>
+              <p className="text-gray-600 mt-4 text-center">
+                ✅ Weekends automatically avoided • ✅ Same subjects grouped on same days • ✅ Custom holidays respected
+              </p>
             </CardContent>
           </Card>
         )}
