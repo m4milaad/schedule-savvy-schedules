@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -126,85 +125,102 @@ const Index = () => {
       return;
     }
 
-    // Group courses by subject (remove semester-specific suffixes)
-    const subjectGroups: { [key: string]: Array<{code: string, semester: number}> } = {};
-    
-    allCourses.forEach(course => {
-      const baseSubject = course.code.replace(/\d+$/, '');
-      if (!subjectGroups[baseSubject]) {
-        subjectGroups[baseSubject] = [];
-      }
-      subjectGroups[baseSubject].push(course);
-    });
+    console.log('All courses to schedule:', allCourses);
 
-    // Generate schedule with constraint: max 1 exam per semester per day
+    // Create a proper schedule with constraints
     const schedule: GeneratedExam[] = [];
-    const usedDates = new Set<string>();
-    const semesterDateUsage: { [key: string]: Set<number> } = {}; // dateString -> Set of semesters
+    const dateSchedule: { [dateString: string]: { 
+      exams: GeneratedExam[], 
+      semesters: Set<number>,
+      subjects: Set<string>
+    } } = {};
     
     let currentDate = new Date();
     currentDate.setDate(currentDate.getDate() + 7); // Start from next week
 
-    // Process each subject group
-    Object.entries(subjectGroups).forEach(([baseSubject, courses]) => {
-      let examDate = getNextWorkingDay(currentDate, usedDates);
-      
-      // Check if any semester in this subject group already has an exam on this date
-      let dateString = examDate.toDateString();
-      let conflictFound = true;
-      
-      while (conflictFound) {
-        conflictFound = false;
-        if (semesterDateUsage[dateString]) {
-          for (const course of courses) {
-            if (semesterDateUsage[dateString].has(course.semester)) {
-              conflictFound = true;
-              break;
-            }
-          }
-        }
+    // Process each course individually
+    for (const course of allCourses) {
+      let examDate = new Date(currentDate);
+      let scheduled = false;
+      let attempts = 0;
+      const maxAttempts = 365; // Prevent infinite loop
+
+      while (!scheduled && attempts < maxAttempts) {
+        attempts++;
         
-        if (conflictFound) {
-          currentDate = new Date(examDate);
-          currentDate.setDate(currentDate.getDate() + 1);
-          examDate = getNextWorkingDay(currentDate, usedDates);
-          dateString = examDate.toDateString();
+        // Skip weekends and holidays
+        if (isWeekend(examDate) || isCustomHoliday(examDate)) {
+          examDate.setDate(examDate.getDate() + 1);
+          continue;
+        }
+
+        const dateString = examDate.toDateString();
+        const baseSubject = course.code.replace(/\d+$/, ''); // Remove numbers from end
+        
+        // Initialize date schedule if not exists
+        if (!dateSchedule[dateString]) {
+          dateSchedule[dateString] = {
+            exams: [],
+            semesters: new Set(),
+            subjects: new Set()
+          };
+        }
+
+        const daySchedule = dateSchedule[dateString];
+        
+        // Check constraints:
+        // 1. Maximum 4 exams per day
+        // 2. No more than 1 exam per semester per day
+        // 3. No same subject base on same day
+        const canSchedule = daySchedule.exams.length < 4 && 
+                           !daySchedule.semesters.has(course.semester) &&
+                           !daySchedule.subjects.has(baseSubject);
+
+        if (canSchedule) {
+          const exam: GeneratedExam = {
+            id: `${course.code}-${course.semester}-${examDate.getTime()}`,
+            courseCode: course.code,
+            semester: course.semester,
+            date: new Date(examDate),
+            dayOfWeek: examDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            timeSlot: getExamTimeSlot(examDate)
+          };
+
+          daySchedule.exams.push(exam);
+          daySchedule.semesters.add(course.semester);
+          daySchedule.subjects.add(baseSubject);
+          schedule.push(exam);
+          scheduled = true;
+
+          console.log(`Scheduled ${course.code} (S${course.semester}) on ${dateString}. Day total: ${daySchedule.exams.length}`);
+        } else {
+          // Move to next day
+          examDate.setDate(examDate.getDate() + 1);
         }
       }
 
-      // Mark this date as used for these semesters
-      if (!semesterDateUsage[dateString]) {
-        semesterDateUsage[dateString] = new Set();
-      }
-      
-      const timeSlot = getExamTimeSlot(examDate);
-      
-      courses.forEach(course => {
-        semesterDateUsage[dateString].add(course.semester);
-        schedule.push({
-          id: `${course.code}-${course.semester}-${examDate.getTime()}`,
-          courseCode: course.code,
-          semester: course.semester,
-          date: new Date(examDate),
-          dayOfWeek: examDate.toLocaleDateString('en-US', { weekday: 'long' }),
-          timeSlot
+      if (!scheduled) {
+        console.error(`Failed to schedule ${course.code} after ${maxAttempts} attempts`);
+        toast({
+          title: "Scheduling Error",
+          description: `Unable to schedule ${course.code}. Please check your constraints.`,
+          variant: "destructive"
         });
-      });
-
-      usedDates.add(dateString);
-      currentDate = new Date(examDate);
-      currentDate.setDate(currentDate.getDate() + 1);
-    });
+      }
+    }
 
     // Sort by date
     schedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    console.log('Final schedule:', schedule);
+    console.log('Schedule by date:', dateSchedule);
 
     setGeneratedSchedule(schedule);
     setIsScheduleGenerated(true);
     
     toast({
       title: "Schedule Generated Successfully!",
-      description: `Generated exam schedule for ${schedule.length} courses across ${isEvenSemesters ? 'even' : 'odd'} semesters`,
+      description: `Generated exam schedule for ${schedule.length} courses with proper constraints`,
     });
   };
 
@@ -224,17 +240,45 @@ const Index = () => {
     const targetDateString = destination.droppableId.replace('date-', '');
     const targetDate = new Date(targetDateString);
 
+    // Check constraints for target date
+    const examsOnTargetDate = generatedSchedule.filter(exam => 
+      exam.date.toDateString() === targetDate.toDateString() && exam.id !== draggedExam.id
+    );
+
     // Check if target date already has an exam for this semester
-    const existingExamForSemester = generatedSchedule.find(exam => 
-      exam.date.toDateString() === targetDate.toDateString() && 
-      exam.semester === draggedExam.semester &&
-      exam.id !== draggedExam.id
+    const existingExamForSemester = examsOnTargetDate.find(exam => 
+      exam.semester === draggedExam.semester
     );
 
     if (existingExamForSemester) {
       toast({
         title: "Cannot Move Exam",
         description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if target date would exceed 4 exams limit
+    if (examsOnTargetDate.length >= 4) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for same subject constraint
+    const draggedSubject = draggedExam.courseCode.replace(/\d+$/, '');
+    const subjectConflict = examsOnTargetDate.find(exam => 
+      exam.courseCode.replace(/\d+$/, '') === draggedSubject
+    );
+
+    if (subjectConflict) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Subject ${draggedSubject} already has an exam on ${targetDate.toLocaleDateString()}`,
         variant: "destructive"
       });
       return;
@@ -501,7 +545,7 @@ ${pdfRules}
                         <TableHead className="w-[200px]">Date</TableHead>
                         <TableHead>Day</TableHead>
                         <TableHead>Time</TableHead>
-                        <TableHead>Exams</TableHead>
+                        <TableHead>Exams (Max 4)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -628,8 +672,9 @@ ${pdfRules}
                 <h4 className="font-semibold text-gray-700 mb-2">Schedule Rules Applied:</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>✅ Maximum 1 exam per semester per day</li>
+                  <li>✅ Maximum 4 exams per day total</li>
                   <li>✅ Weekends automatically avoided</li>
-                  <li>✅ Same subjects grouped but not on same days</li>
+                  <li>✅ Same subjects not scheduled on same days</li>
                   <li>✅ Friday timing: 11 AM - 2 PM, Other days: 12 PM - 3 PM</li>
                   <li>✅ Custom holidays respected</li>
                   <li>✅ {isEvenSemesters ? 'Even' : 'Odd'} semesters only</li>
