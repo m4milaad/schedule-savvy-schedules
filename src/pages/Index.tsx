@@ -257,7 +257,7 @@ const Index = () => {
                                     {entry.courseCode}
                                   </Badge>
                                   {checkForConflicts(entry.courseCode, entry.date, entry.semester) && (
-                                    <AlertTriangle className="h-4 w-4 text-orange-500" title="Potential conflict detected" />
+                                    <AlertTriangle className="h-4 w-4 text-orange-500" />
                                   )}
                                 </div>
                                 <h3 className="font-semibold text-gray-900">{entry.courseName}</h3>
