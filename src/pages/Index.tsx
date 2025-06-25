@@ -385,10 +385,10 @@ ${pdfRules}
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
             <Calendar className="h-10 w-10 text-blue-600" />
-            University Exam Schedule Generator
+            Central University of Kashmir
           </h1>
           <p className="text-lg text-gray-600">
-            Generate conflict-free exam schedules with automatic timing and holiday management
+            Mange timetables smartly ~developed by Milad
           </p>
         </div>
 
