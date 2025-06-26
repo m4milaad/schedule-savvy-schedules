@@ -9,7 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      exam_schedules: {
+        Row: {
+          course_code: string
+          created_at: string
+          day_of_week: string
+          exam_date: string
+          id: string
+          semester: number
+          teacher_code: string
+          time_slot: string
+          updated_at: string
+        }
+        Insert: {
+          course_code: string
+          created_at?: string
+          day_of_week: string
+          exam_date: string
+          id?: string
+          semester: number
+          teacher_code: string
+          time_slot: string
+          updated_at?: string
+        }
+        Update: {
+          course_code?: string
+          created_at?: string
+          day_of_week?: string
+          exam_date?: string
+          id?: string
+          semester?: number
+          teacher_code?: string
+          time_slot?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
