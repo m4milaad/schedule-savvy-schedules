@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Plus, AlertTriangle, BookOpen, Users, Clock, FileText, Download, GripVertical } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface CourseInput {
   semester: number;
@@ -18,11 +21,18 @@ interface CourseInput {
 interface GeneratedExam {
   id: string;
   courseCode: string;
+  teacherCode: string;
   semester: number;
   date: Date;
   dayOfWeek: string;
   timeSlot: string;
   isHoliday?: boolean;
+}
+
+interface ClashWarning {
+  type: 'teacher' | 'semester' | 'subject' | 'capacity';
+  message: string;
+  conflictingExam?: GeneratedExam;
 }
 
 const Index = () => {
@@ -43,16 +53,107 @@ const Index = () => {
    - Friday: 11:00 AM - 2:00 PM
 7. Results will be published within 2 weeks of completion`);
 
+  const [showClashDialog, setShowClashDialog] = useState(false);
+  const [clashDetails, setClashDetails] = useState<{
+    exam: GeneratedExam;
+    targetDate: Date;
+    warnings: ClashWarning[];
+  } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{
+    examId: string;
+    targetDate: Date;
+  } | null>(null);
+
   // Initialize course inputs based on semester type
   const initializeCourseInputs = (evenSems: boolean) => {
     const semesters = evenSems ? [2, 4, 6, 8] : [1, 3, 5, 7];
     setCourseInputs(semesters.map(sem => ({ semester: sem, codes: [] })));
   };
 
+  // Load saved schedule from database
+  useEffect(() => {
+    loadScheduleFromDatabase();
+  }, []);
+
   // Initialize on component mount
-  useState(() => {
+  useEffect(() => {
     initializeCourseInputs(isEvenSemesters);
-  });
+  }, [isEvenSemesters]);
+
+  const loadScheduleFromDatabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exam_schedules')
+        .select('*')
+        .order('exam_date', { ascending: true });
+
+      if (error) {
+        console.error('Error loading schedule:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const loadedSchedule = data.map(exam => ({
+          id: exam.id,
+          courseCode: exam.course_code,
+          teacherCode: exam.teacher_code,
+          semester: exam.semester,
+          date: new Date(exam.exam_date),
+          dayOfWeek: exam.day_of_week,
+          timeSlot: exam.time_slot
+        }));
+        
+        setGeneratedSchedule(loadedSchedule);
+        setIsScheduleGenerated(true);
+        
+        toast({
+          title: "Schedule Loaded",
+          description: `Loaded ${loadedSchedule.length} exams from database`,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+      toast({
+        title: "Error Loading Schedule",
+        description: "Failed to load schedule from database",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const saveScheduleToDatabase = async (schedule: GeneratedExam[]) => {
+    try {
+      // Clear existing schedule
+      await supabase.from('exam_schedules').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // Insert new schedule
+      const examData = schedule.map(exam => ({
+        course_code: exam.courseCode,
+        teacher_code: exam.teacherCode,
+        semester: exam.semester,
+        exam_date: exam.date.toISOString().split('T')[0],
+        day_of_week: exam.dayOfWeek,
+        time_slot: exam.timeSlot
+      }));
+
+      const { error } = await supabase.from('exam_schedules').insert(examData);
+
+      if (error) {
+        console.error('Error saving schedule:', error);
+        toast({
+          title: "Error Saving Schedule",
+          description: "Failed to save schedule to database",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      return false;
+    }
+  };
 
   const handleSemesterToggle = (checked: boolean) => {
     setIsEvenSemesters(checked);
@@ -61,11 +162,28 @@ const Index = () => {
     setIsScheduleGenerated(false);
   };
 
+  const parseCourseInput = (input: string): { courseCode: string; teacherCode: string } | null => {
+    // Parse format like "(BT-102, AH)" or "BT-102, AH"
+    const match = input.match(/\(?([^,]+),\s*([^)]+)\)?/);
+    if (match) {
+      return {
+        courseCode: match[1].trim().toUpperCase(),
+        teacherCode: match[2].trim().toUpperCase()
+      };
+    }
+    return null;
+  };
+
   const updateCourseInput = (semester: number, codesText: string) => {
-    const codes = codesText
-      .split('\n')
-      .map(code => code.trim().toUpperCase())
-      .filter(code => code.length > 0);
+    const lines = codesText.split('\n').filter(line => line.trim().length > 0);
+    const codes: string[] = [];
+    
+    lines.forEach(line => {
+      const parsed = parseCourseInput(line.trim());
+      if (parsed) {
+        codes.push(`${parsed.courseCode}, ${parsed.teacherCode}`);
+      }
+    });
     
     setCourseInputs(prev => 
       prev.map(input => 
@@ -76,7 +194,7 @@ const Index = () => {
 
   const isWeekend = (date: Date): boolean => {
     const day = date.getDay();
-    return day === 0 || day === 6; // Sunday = 0, Saturday = 6
+    return day === 0 || day === 6;
   };
 
   const isCustomHoliday = (date: Date): boolean => {
@@ -87,39 +205,80 @@ const Index = () => {
 
   const getExamTimeSlot = (date: Date): string => {
     const day = date.getDay();
-    return day === 5 ? '11:00 AM - 2:00 PM' : '12:00 PM - 3:00 PM'; // Friday = 5
+    return day === 5 ? '11:00 AM - 2:00 PM' : '12:00 PM - 3:00 PM';
   };
 
-  const getNextWorkingDay = (startDate: Date, usedDates: Set<string>): Date => {
-    let currentDate = new Date(startDate);
-    
-    while (true) {
-      const dateString = currentDate.toDateString();
-      
-      if (!isWeekend(currentDate) && 
-          !isCustomHoliday(currentDate) && 
-          !usedDates.has(dateString)) {
-        return new Date(currentDate);
-      }
-      
-      currentDate.setDate(currentDate.getDate() + 1);
+  const checkClashes = (exam: GeneratedExam, targetDate: Date, currentSchedule: GeneratedExam[]): ClashWarning[] => {
+    const warnings: ClashWarning[] = [];
+    const examsOnTargetDate = currentSchedule.filter(e => 
+      e.date.toDateString() === targetDate.toDateString() && e.id !== exam.id
+    );
+
+    // Check teacher clash
+    const teacherConflict = examsOnTargetDate.find(e => e.teacherCode === exam.teacherCode);
+    if (teacherConflict) {
+      warnings.push({
+        type: 'teacher',
+        message: `Teacher ${exam.teacherCode} already has an exam (${teacherConflict.courseCode}) on this date`,
+        conflictingExam: teacherConflict
+      });
     }
+
+    // Check semester clash
+    const semesterConflict = examsOnTargetDate.find(e => e.semester === exam.semester);
+    if (semesterConflict) {
+      warnings.push({
+        type: 'semester',
+        message: `Semester ${exam.semester} already has an exam (${semesterConflict.courseCode}) on this date`,
+        conflictingExam: semesterConflict
+      });
+    }
+
+    // Check subject clash (same base subject)
+    const examSubject = exam.courseCode.replace(/\d+$/, '');
+    const subjectConflict = examsOnTargetDate.find(e => 
+      e.courseCode.replace(/\d+$/, '') === examSubject
+    );
+    if (subjectConflict) {
+      warnings.push({
+        type: 'subject',
+        message: `Subject ${examSubject} already has an exam (${subjectConflict.courseCode}) on this date`,
+        conflictingExam: subjectConflict
+      });
+    }
+
+    // Check capacity (max 4 exams per day)
+    if (examsOnTargetDate.length >= 4) {
+      warnings.push({
+        type: 'capacity',
+        message: `Maximum 4 exams allowed per day. This date already has ${examsOnTargetDate.length} exams.`,
+      });
+    }
+
+    return warnings;
   };
 
-  const generateSchedule = () => {
-    const allCourses: Array<{code: string, semester: number}> = [];
+  const generateSchedule = async () => {
+    const allCourses: Array<{courseCode: string, teacherCode: string, semester: number}> = [];
     
     // Collect all courses
     courseInputs.forEach(input => {
-      input.codes.forEach(code => {
-        allCourses.push({ code, semester: input.semester });
+      input.codes.forEach(codeString => {
+        const parsed = parseCourseInput(codeString);
+        if (parsed) {
+          allCourses.push({ 
+            courseCode: parsed.courseCode, 
+            teacherCode: parsed.teacherCode, 
+            semester: input.semester 
+          });
+        }
       });
     });
 
     if (allCourses.length === 0) {
       toast({
         title: "No Courses Found",
-        description: "Please enter course codes for at least one semester",
+        description: "Please enter course codes with teacher codes in format (COURSE, TEACHER)",
         variant: "destructive"
       });
       return;
@@ -127,59 +286,55 @@ const Index = () => {
 
     console.log('All courses to schedule:', allCourses);
 
-    // Create a proper schedule with constraints
     const schedule: GeneratedExam[] = [];
     const dateSchedule: { [dateString: string]: { 
       exams: GeneratedExam[], 
       semesters: Set<number>,
-      subjects: Set<string>
+      subjects: Set<string>,
+      teachers: Set<string>
     } } = {};
     
     let currentDate = new Date();
-    currentDate.setDate(currentDate.getDate() + 7); // Start from next week
+    currentDate.setDate(currentDate.getDate() + 7);
 
-    // Process each course individually
     for (const course of allCourses) {
       let examDate = new Date(currentDate);
       let scheduled = false;
       let attempts = 0;
-      const maxAttempts = 365; // Prevent infinite loop
+      const maxAttempts = 365;
 
       while (!scheduled && attempts < maxAttempts) {
         attempts++;
         
-        // Skip weekends and holidays
         if (isWeekend(examDate) || isCustomHoliday(examDate)) {
           examDate.setDate(examDate.getDate() + 1);
           continue;
         }
 
         const dateString = examDate.toDateString();
-        const baseSubject = course.code.replace(/\d+$/, ''); // Remove numbers from end
+        const baseSubject = course.courseCode.replace(/\d+$/, '');
         
-        // Initialize date schedule if not exists
         if (!dateSchedule[dateString]) {
           dateSchedule[dateString] = {
             exams: [],
             semesters: new Set(),
-            subjects: new Set()
+            subjects: new Set(),
+            teachers: new Set()
           };
         }
 
         const daySchedule = dateSchedule[dateString];
         
-        // Check constraints:
-        // 1. Maximum 4 exams per day
-        // 2. No more than 1 exam per semester per day
-        // 3. No same subject base on same day
         const canSchedule = daySchedule.exams.length < 4 && 
                            !daySchedule.semesters.has(course.semester) &&
-                           !daySchedule.subjects.has(baseSubject);
+                           !daySchedule.subjects.has(baseSubject) &&
+                           !daySchedule.teachers.has(course.teacherCode);
 
         if (canSchedule) {
           const exam: GeneratedExam = {
-            id: `${course.code}-${course.semester}-${examDate.getTime()}`,
-            courseCode: course.code,
+            id: `${course.courseCode}-${course.teacherCode}-${examDate.getTime()}`,
+            courseCode: course.courseCode,
+            teacherCode: course.teacherCode,
             semester: course.semester,
             date: new Date(examDate),
             dayOfWeek: examDate.toLocaleDateString('en-US', { weekday: 'long' }),
@@ -189,102 +344,101 @@ const Index = () => {
           daySchedule.exams.push(exam);
           daySchedule.semesters.add(course.semester);
           daySchedule.subjects.add(baseSubject);
+          daySchedule.teachers.add(course.teacherCode);
           schedule.push(exam);
           scheduled = true;
 
-          console.log(`Scheduled ${course.code} (S${course.semester}) on ${dateString}. Day total: ${daySchedule.exams.length}`);
+          console.log(`Scheduled ${course.courseCode} (${course.teacherCode}) on ${dateString}`);
         } else {
-          // Move to next day
           examDate.setDate(examDate.getDate() + 1);
         }
       }
 
       if (!scheduled) {
-        console.error(`Failed to schedule ${course.code} after ${maxAttempts} attempts`);
+        console.error(`Failed to schedule ${course.courseCode}`);
         toast({
           title: "Scheduling Error",
-          description: `Unable to schedule ${course.code}. Please check your constraints.`,
+          description: `Unable to schedule ${course.courseCode}. Please check constraints.`,
           variant: "destructive"
         });
       }
     }
 
-    // Sort by date
     schedule.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    console.log('Final schedule:', schedule);
-    console.log('Schedule by date:', dateSchedule);
+    const saved = await saveScheduleToDatabase(schedule);
+    if (saved) {
+      setGeneratedSchedule(schedule);
+      setIsScheduleGenerated(true);
+      
+      toast({
+        title: "Schedule Generated Successfully!",
+        description: `Generated and saved exam schedule for ${schedule.length} courses`,
+      });
+    }
+  };
 
-    setGeneratedSchedule(schedule);
-    setIsScheduleGenerated(true);
-    
-    toast({
-      title: "Schedule Generated Successfully!",
-      description: `Generated exam schedule for ${schedule.length} courses with proper constraints`,
+  const handleOverrideMove = async () => {
+    if (!pendingMove || !clashDetails) return;
+
+    const updatedSchedule = generatedSchedule.map(exam => {
+      if (exam.id === pendingMove.examId) {
+        return {
+          ...exam,
+          date: pendingMove.targetDate,
+          dayOfWeek: pendingMove.targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          timeSlot: getExamTimeSlot(pendingMove.targetDate)
+        };
+      }
+      return exam;
     });
+
+    updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    const saved = await saveScheduleToDatabase(updatedSchedule);
+    if (saved) {
+      setGeneratedSchedule(updatedSchedule);
+      toast({
+        title: "Exam Moved with Override",
+        description: `${clashDetails.exam.courseCode} moved to ${pendingMove.targetDate.toLocaleDateString()} despite conflicts`,
+        variant: "destructive"
+      });
+    }
+
+    setShowClashDialog(false);
+    setClashDetails(null);
+    setPendingMove(null);
   };
 
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
-
-    if (destination.droppableId === source.droppableId && destination.index === source.index) {
-      return;
-    }
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
     const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
     if (!draggedExam) return;
 
-    // Parse destination date from droppableId
     const targetDateString = destination.droppableId.replace('date-', '');
     const targetDate = new Date(targetDateString);
 
-    // Check constraints for target date
-    const examsOnTargetDate = generatedSchedule.filter(exam => 
-      exam.date.toDateString() === targetDate.toDateString() && exam.id !== draggedExam.id
-    );
+    const warnings = checkClashes(draggedExam, targetDate, generatedSchedule);
 
-    // Check if target date already has an exam for this semester
-    const existingExamForSemester = examsOnTargetDate.find(exam => 
-      exam.semester === draggedExam.semester
-    );
-
-    if (existingExamForSemester) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
-        variant: "destructive"
+    if (warnings.length > 0) {
+      setClashDetails({
+        exam: draggedExam,
+        targetDate,
+        warnings
       });
+      setPendingMove({
+        examId: draggableId,
+        targetDate
+      });
+      setShowClashDialog(true);
       return;
     }
 
-    // Check if target date would exceed 4 exams limit
-    if (examsOnTargetDate.length >= 4) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Check for same subject constraint
-    const draggedSubject = draggedExam.courseCode.replace(/\d+$/, '');
-    const subjectConflict = examsOnTargetDate.find(exam => 
-      exam.courseCode.replace(/\d+$/, '') === draggedSubject
-    );
-
-    if (subjectConflict) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Subject ${draggedSubject} already has an exam on ${targetDate.toLocaleDateString()}`,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Update the exam's date
+    // No conflicts, proceed with move
     const updatedSchedule = generatedSchedule.map(exam => {
       if (exam.id === draggableId) {
         return {
@@ -297,8 +451,8 @@ const Index = () => {
       return exam;
     });
 
-    // Sort by date
     updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+    saveScheduleToDatabase(updatedSchedule);
     setGeneratedSchedule(updatedSchedule);
 
     toast({
@@ -318,7 +472,6 @@ const Index = () => {
   };
 
   const generatePDF = () => {
-    // Create a simple text-based PDF content
     const pdfContent = `
 EXAM SCHEDULE - ${isEvenSemesters ? 'EVEN' : 'ODD'} SEMESTERS
 
@@ -327,7 +480,7 @@ Generated on: ${new Date().toLocaleDateString()}
 SCHEDULE:
 ${generatedSchedule.map(exam => 
   `${exam.date.toLocaleDateString()} (${exam.dayOfWeek}) - ${exam.timeSlot}
-  Semester ${exam.semester}: ${exam.courseCode}`
+  Semester ${exam.semester}: ${exam.courseCode} (Teacher: ${exam.teacherCode})`
 ).join('\n\n')}
 
 CUSTOM HOLIDAYS:
@@ -336,7 +489,6 @@ ${customHolidays.map(holiday => holiday.toLocaleDateString()).join(', ') || 'Non
 ${pdfRules}
 `;
 
-    // Create and download the PDF as text file (placeholder for actual PDF generation)
     const blob = new Blob([pdfContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -353,18 +505,8 @@ ${pdfRules}
     });
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   const activeSemesters = isEvenSemesters ? [2, 4, 6, 8] : [1, 3, 5, 7];
 
-  // Group schedule by dates for table display
   const scheduleByDate = generatedSchedule.reduce((acc, exam) => {
     const dateKey = exam.date.toDateString();
     if (!acc[dateKey]) {
@@ -441,7 +583,7 @@ ${pdfRules}
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Enter Course Codes
+                Enter Course Codes with Teacher Codes
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -451,7 +593,7 @@ ${pdfRules}
                     Semester {input.semester} Courses
                   </label>
                   <Textarea
-                    placeholder={`Enter course codes for Semester ${input.semester}\nOne per line (e.g., CS101, MATH201, etc.)`}
+                    placeholder={`Enter in format: (COURSE_CODE, TEACHER_CODE)\nExample:\n(BT-102, AH)\n(CS-201, MK)\n(MATH-301, RJ)`}
                     className="min-h-[100px]"
                     onChange={(e) => updateCourseInput(input.semester, e.target.value)}
                   />
@@ -467,7 +609,7 @@ ${pdfRules}
                 size="lg"
               >
                 <Clock className="h-4 w-4 mr-2" />
-                Generate Exam Schedule
+                Generate & Save Exam Schedule
               </Button>
             </CardContent>
           </Card>
@@ -595,7 +737,7 @@ ${pdfRules}
                                               } ${snapshot.isDragging ? 'rotate-3' : ''}`}
                                             >
                                               <GripVertical className="h-3 w-3" />
-                                              S{exam.semester}: {exam.courseCode}
+                                              S{exam.semester}: {exam.courseCode} ({exam.teacherCode})
                                             </Badge>
                                           </div>
                                         )}
@@ -672,19 +814,84 @@ ${pdfRules}
                 <h4 className="font-semibold text-gray-700 mb-2">Schedule Rules Applied:</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>✅ Maximum 1 exam per semester per day</li>
+                  <li>✅ Maximum 1 exam per teacher per day</li>
                   <li>✅ Maximum 4 exams per day total</li>
                   <li>✅ Weekends automatically avoided</li>
                   <li>✅ Same subjects not scheduled on same days</li>
                   <li>✅ Friday timing: 11 AM - 2 PM, Other days: 12 PM - 3 PM</li>
                   <li>✅ Custom holidays respected</li>
                   <li>✅ {isEvenSemesters ? 'Even' : 'Odd'} semesters only</li>
-                  <li>✅ Drag & drop to reschedule with validation</li>
+                  <li>✅ Drag & drop with clash detection and override option</li>
+                  <li>✅ Database persistence for schedule data</li>
                 </ul>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Clash Warning Dialog */}
+      <Dialog open={showClashDialog} onOpenChange={setShowClashDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              Schedule Conflicts Detected
+            </DialogTitle>
+            <DialogDescription>
+              Moving {clashDetails?.exam.courseCode} ({clashDetails?.exam.teacherCode}) to{' '}
+              {clashDetails?.targetDate.toLocaleDateString()} will cause the following conflicts:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            {clashDetails?.warnings.map((warning, index) => (
+              <div key={index} className={`p-3 rounded-lg border-l-4 ${
+                warning.type === 'teacher' ? 'bg-red-50 border-red-400' :
+                warning.type === 'semester' ? 'bg-orange-50 border-orange-400' :
+                warning.type === 'subject' ? 'bg-yellow-50 border-yellow-400' :
+                'bg-purple-50 border-purple-400'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className={`h-4 w-4 mt-0.5 ${
+                    warning.type === 'teacher' ? 'text-red-600' :
+                    warning.type === 'semester' ? 'text-orange-600' :
+                    warning.type === 'subject' ? 'text-yellow-600' :
+                    'text-purple-600'
+                  }`} />
+                  <div>
+                    <p className={`font-medium ${
+                      warning.type === 'teacher' ? 'text-red-800' :
+                      warning.type === 'semester' ? 'text-orange-800' :
+                      warning.type === 'subject' ? 'text-yellow-800' :
+                      'text-purple-800'
+                    }`}>
+                      {warning.type.charAt(0).toUpperCase() + warning.type.slice(1)} Conflict
+                    </p>
+                    <p className={`text-sm ${
+                      warning.type === 'teacher' ? 'text-red-700' :
+                      warning.type === 'semester' ? 'text-orange-700' :
+                      warning.type === 'subject' ? 'text-yellow-700' :
+                      'text-purple-700'
+                    }`}>
+                      {warning.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClashDialog(false)}>
+              Cancel Move
+            </Button>
+            <Button variant="destructive" onClick={handleOverrideMove}>
+              Override Conflicts & Move
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
