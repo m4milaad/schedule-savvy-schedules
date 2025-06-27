@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      course_teacher_codes: {
+        Row: {
+          course_code: string
+          course_name: string | null
+          created_at: string
+          id: string
+          teacher_code: string
+          teacher_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          course_code: string
+          course_name?: string | null
+          created_at?: string
+          id?: string
+          teacher_code: string
+          teacher_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          course_code?: string
+          course_name?: string | null
+          created_at?: string
+          id?: string
+          teacher_code?: string
+          teacher_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_schedules: {
         Row: {
           course_code: string
