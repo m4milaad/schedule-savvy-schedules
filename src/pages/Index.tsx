@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,13 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, Home } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateExamSchedulePDF } from "@/utils/pdfGenerator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CourseTeacher {
   id: string;
@@ -20,6 +22,7 @@ interface CourseTeacher {
   teacher_code: string;
   course_name: string | null;
   teacher_name: string | null;
+  semester?: number;
 }
 
 interface ExamScheduleItem {
@@ -31,16 +34,19 @@ interface ExamScheduleItem {
 }
 
 export default function Index() {
-  const [semester, setSemester] = useState("1");
+  const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [holidays, setHolidays] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [startDate, setStartDate] = useState<Date>();
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
-  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<string[]>([]);
+  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<Record<number, string[]>>({});
   const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Define semesters based on type
+  const semesters = semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
 
   // Load course-teacher combinations from database
   useEffect(() => {
@@ -56,11 +62,6 @@ export default function Index() {
 
       if (error) throw error;
       setCourseTeachers(data || []);
-      
-      // Auto-select all courses by default
-      if (data) {
-        setSelectedCourseTeachers(data.map(ct => ct.id));
-      }
     } catch (error) {
       console.error('Error loading course teachers:', error);
       toast({
@@ -69,6 +70,15 @@ export default function Index() {
         variant: "destructive",
       });
     }
+  };
+
+  const getCoursesBySemester = (semester: number) => {
+    // For now, we'll distribute courses across semesters
+    // In a real app, you'd have a semester field in the database
+    const coursesPerSemester = Math.ceil(courseTeachers.length / 8);
+    const startIndex = (semester - 1) * coursesPerSemester;
+    const endIndex = startIndex + coursesPerSemester;
+    return courseTeachers.slice(startIndex, endIndex);
   };
 
   const handleGenerateSchedule = async () => {
@@ -81,7 +91,8 @@ export default function Index() {
       return;
     }
 
-    if (selectedCourseTeachers.length === 0) {
+    const allSelectedCourses = Object.values(selectedCourseTeachers).flat();
+    if (allSelectedCourses.length === 0) {
       toast({
         title: "Error",
         description: "Please select at least one course-teacher combination",
@@ -113,14 +124,19 @@ export default function Index() {
   const generateExamSchedule = (): ExamScheduleItem[] => {
     const schedule: ExamScheduleItem[] = [];
     const timeSlots = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
-    const selectedCourses = courseTeachers.filter(ct => 
-      selectedCourseTeachers.includes(ct.id)
-    );
+    
+    const allSelectedCourses = [];
+    for (const semester of semesters) {
+      const semesterCourses = getCoursesBySemester(semester);
+      const selectedIds = selectedCourseTeachers[semester] || [];
+      const selectedSemesterCourses = semesterCourses.filter(ct => selectedIds.includes(ct.id));
+      allSelectedCourses.push(...selectedSemesterCourses);
+    }
 
     let currentDate = new Date(startDate!);
     let timeSlotIndex = 0;
 
-    for (const courseTeacher of selectedCourses) {
+    for (const courseTeacher of allSelectedCourses) {
       // Skip weekends and holidays
       while (currentDate.getDay() === 0 || currentDate.getDay() === 6 || 
              holidays.some(holiday => holiday.toDateString() === currentDate.toDateString())) {
@@ -159,17 +175,29 @@ export default function Index() {
     }
 
     try {
-      // Clear existing schedules for this semester
+      // Clear existing schedules for these semesters
       await supabase
         .from('exam_schedules')
         .delete()
-        .eq('semester', parseInt(semester));
+        .in('semester', semesters);
 
       // Insert new schedule
-      const scheduleData = generatedSchedule.map(item => ({
-        ...item,
-        semester: parseInt(semester)
-      }));
+      const scheduleData = generatedSchedule.map(item => {
+        // Find which semester this course belongs to
+        let semester = 1;
+        for (const sem of semesters) {
+          const semesterCourses = getCoursesBySemester(sem);
+          if (semesterCourses.some(ct => ct.course_code === item.course_code && ct.teacher_code === item.teacher_code)) {
+            semester = sem;
+            break;
+          }
+        }
+        
+        return {
+          ...item,
+          semester
+        };
+      });
 
       const { error } = await supabase
         .from('exam_schedules')
@@ -202,7 +230,7 @@ export default function Index() {
     }
 
     try {
-      generateExamSchedulePDF(generatedSchedule, semester);
+      generateExamSchedulePDF(generatedSchedule, `${semesterType.toUpperCase()} Semesters`);
       toast({
         title: "Success",
         description: "PDF downloaded successfully!",
@@ -228,17 +256,33 @@ export default function Index() {
     setHolidays(holidays.filter(date => date.getTime() !== dateToRemove.getTime()));
   };
 
-  const toggleCourseTeacher = (id: string) => {
-    setSelectedCourseTeachers(prev => 
-      prev.includes(id) 
-        ? prev.filter(ctId => ctId !== id)
-        : [...prev, id]
-    );
+  const toggleCourseTeacher = (semester: number, id: string) => {
+    setSelectedCourseTeachers(prev => ({
+      ...prev,
+      [semester]: prev[semester]?.includes(id) 
+        ? prev[semester].filter(ctId => ctId !== id)
+        : [...(prev[semester] || []), id]
+    }));
+  };
+
+  const selectAllForSemester = (semester: number) => {
+    const semesterCourses = getCoursesBySemester(semester);
+    setSelectedCourseTeachers(prev => ({
+      ...prev,
+      [semester]: semesterCourses.map(ct => ct.id)
+    }));
+  };
+
+  const deselectAllForSemester = (semester: number) => {
+    setSelectedCourseTeachers(prev => ({
+      ...prev,
+      [semester]: []
+    }));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -258,35 +302,34 @@ export default function Index() {
           </Button>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        {/* Semester Type Selector */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Semester Selection</CardTitle>
+            <CardDescription>Choose between odd or even semesters</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={semesterType} onValueChange={(value) => setSemesterType(value as "odd" | "even")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="odd" className="text-lg font-medium">
+                  Odd Semesters (1, 3, 5, 7)
+                </TabsTrigger>
+                <TabsTrigger value="even" className="text-lg font-medium">
+                  Even Semesters (2, 4, 6, 8)
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <div className="grid lg:grid-cols-4 gap-6">
           {/* Schedule Configuration */}
-          <Card>
+          <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle>Schedule Configuration</CardTitle>
-              <CardDescription>
-                Configure exam schedule settings
-              </CardDescription>
+              <CardTitle>Schedule Settings</CardTitle>
+              <CardDescription>Configure exam schedule</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Semester</Label>
-                <Select value={semester} onValueChange={setSemester}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Semester 1</SelectItem>
-                    <SelectItem value="2">Semester 2</SelectItem>
-                    <SelectItem value="3">Semester 3</SelectItem>
-                    <SelectItem value="4">Semester 4</SelectItem>
-                    <SelectItem value="5">Semester 5</SelectItem>
-                    <SelectItem value="6">Semester 6</SelectItem>
-                    <SelectItem value="7">Semester 7</SelectItem>
-                    <SelectItem value="8">Semester 8</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label>Exam Start Date</Label>
                 <Popover>
@@ -324,130 +367,160 @@ export default function Index() {
               </div>
 
               {generatedSchedule.length > 0 && (
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveSchedule} variant="outline" className="flex-1">
+                <div className="space-y-2">
+                  <Button onClick={handleSaveSchedule} variant="outline" className="w-full">
                     <Save className="w-4 h-4 mr-2" />
                     Save Schedule
                   </Button>
-                  <Button onClick={handleDownloadPDF} variant="outline" className="flex-1">
+                  <Button onClick={handleDownloadPDF} variant="outline" className="w-full">
                     <Download className="w-4 h-4 mr-2" />
                     Download PDF
                   </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Course Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Course & Teacher Selection</CardTitle>
-              <CardDescription>
-                Select courses and teachers for this semester
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="max-h-80 overflow-y-auto space-y-2">
-                {courseTeachers.map((ct) => (
-                  <div
-                    key={ct.id}
-                    className={cn(
-                      "p-3 border rounded-lg cursor-pointer transition-colors",
-                      selectedCourseTeachers.includes(ct.id)
-                        ? "bg-blue-50 border-blue-200"
-                        : "bg-white border-gray-200 hover:bg-gray-50"
-                    )}
-                    onClick={() => toggleCourseTeacher(ct.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium">
-                          {ct.course_code} - {ct.teacher_code}
-                        </div>
-                        {ct.course_name && (
-                          <div className="text-sm text-gray-600">{ct.course_name}</div>
-                        )}
-                        {ct.teacher_name && (
-                          <div className="text-sm text-gray-500">{ct.teacher_name}</div>
-                        )}
-                      </div>
-                      <div className={cn(
-                        "w-4 h-4 rounded border-2 mt-1",
-                        selectedCourseTeachers.includes(ct.id)
-                          ? "bg-blue-500 border-blue-500"
-                          : "border-gray-300"
-                      )}>
-                        {selectedCourseTeachers.includes(ct.id) && (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+              {/* Holidays Section */}
+              <div className="space-y-4 pt-4 border-t">
+                <Label>Add Holidays</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Pick a holiday
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
 
-          {/* Holidays */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Custom Holidays</CardTitle>
-              <CardDescription>
-                Select additional holidays to avoid scheduling exams
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <div className="space-y-2">
-                <Label>Selected Holidays:</Label>
-                <div className="max-h-40 overflow-y-auto space-y-1">
-                  {holidays.length === 0 ? (
-                    <p className="text-sm text-gray-500">No holidays selected</p>
-                  ) : (
-                    holidays.map((holiday, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center bg-blue-50 p-2 rounded text-sm"
-                      >
-                        <span>{format(holiday, "PPP")}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeHoliday(holiday)}
+                <div className="space-y-2">
+                  <Label>Selected Holidays:</Label>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {holidays.length === 0 ? (
+                      <p className="text-sm text-gray-500">No holidays selected</p>
+                    ) : (
+                      holidays.map((holiday, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-blue-50 p-2 rounded text-sm"
                         >
-                          ×
-                        </Button>
-                      </div>
-                    ))
-                  )}
+                          <span>{format(holiday, "PPP")}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeHoliday(holiday)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Semester Cards */}
+          <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
+            {semesters.map((semester) => {
+              const semesterCourses = getCoursesBySemester(semester);
+              const selectedCount = selectedCourseTeachers[semester]?.length || 0;
+              
+              return (
+                <Card key={semester}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Semester {semester}</CardTitle>
+                        <CardDescription>
+                          {semesterCourses.length} courses available, {selectedCount} selected
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => selectAllForSemester(semester)}
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => deselectAllForSemester(semester)}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {semesterCourses.length === 0 ? (
+                      <p className="text-gray-500 text-center py-4">
+                        No courses assigned to this semester.
+                        <br />
+                        Add courses in the Admin Panel.
+                      </p>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto space-y-2">
+                        {semesterCourses.map((ct) => (
+                          <div
+                            key={ct.id}
+                            className={cn(
+                              "p-3 border rounded-lg cursor-pointer transition-colors",
+                              selectedCourseTeachers[semester]?.includes(ct.id)
+                                ? "bg-blue-50 border-blue-200"
+                                : "bg-white border-gray-200 hover:bg-gray-50"
+                            )}
+                            onClick={() => toggleCourseTeacher(semester, ct.id)}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="font-medium">
+                                  {ct.course_code} - {ct.teacher_code}
+                                </div>
+                                {ct.course_name && (
+                                  <div className="text-sm text-gray-600">{ct.course_name}</div>
+                                )}
+                                {ct.teacher_name && (
+                                  <div className="text-sm text-gray-500">{ct.teacher_name}</div>
+                                )}
+                              </div>
+                              <div className={cn(
+                                "w-4 h-4 rounded border-2 mt-1",
+                                selectedCourseTeachers[semester]?.includes(ct.id)
+                                  ? "bg-blue-500 border-blue-500"
+                                  : "border-gray-300"
+                              )}>
+                                {selectedCourseTeachers[semester]?.includes(ct.id) && (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
 
         {/* Generated Schedule Display */}
@@ -456,7 +529,7 @@ export default function Index() {
             <CardHeader>
               <CardTitle>Generated Exam Schedule</CardTitle>
               <CardDescription>
-                Preview of the generated exam schedule for Semester {semester}
+                Preview of the generated exam schedule for {semesterType.toUpperCase()} semesters
               </CardDescription>
             </CardHeader>
             <CardContent>
