@@ -1,10 +1,19 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { CalendarIcon, Settings, Download, Save } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -38,8 +47,12 @@ export default function Index() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [startDate, setStartDate] = useState<Date>();
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
-  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<Record<number, string[]>>({});
-  const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
+  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
+    Record<number, string[]>
+  >({});
+  const [generatedSchedule, setGeneratedSchedule] = useState<
+    ExamScheduleItem[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -56,9 +69,11 @@ export default function Index() {
   useEffect(() => {
     if (courseTeachers.length > 0) {
       const autoSelected: Record<number, string[]> = {};
-      semesters.forEach(semester => {
-        const semesterCourses = courseTeachers.filter(ct => ct.semester === semester);
-        autoSelected[semester] = semesterCourses.map(ct => ct.id);
+      semesters.forEach((semester) => {
+        const semesterCourses = courseTeachers.filter(
+          (ct) => ct.semester === semester
+        );
+        autoSelected[semester] = semesterCourses.map((ct) => ct.id);
       });
       setSelectedCourseTeachers(autoSelected);
     }
@@ -67,15 +82,15 @@ export default function Index() {
   const loadCourseTeachers = async () => {
     try {
       const { data, error } = await supabase
-        .from('course_teacher_codes')
-        .select('*')
-        .order('semester', { ascending: true })
-        .order('course_code', { ascending: true });
+        .from("course_teacher_codes")
+        .select("*")
+        .order("semester", { ascending: true })
+        .order("course_code", { ascending: true });
 
       if (error) throw error;
       setCourseTeachers(data || []);
     } catch (error) {
-      console.error('Error loading course teachers:', error);
+      console.error("Error loading course teachers:", error);
       toast({
         title: "Error",
         description: "Failed to load course and teacher data",
@@ -85,7 +100,7 @@ export default function Index() {
   };
 
   const getCoursesBySemester = (semester: number) => {
-    return courseTeachers.filter(ct => ct.semester === semester);
+    return courseTeachers.filter((ct) => ct.semester === semester);
   };
 
   const handleGenerateSchedule = async () => {
@@ -117,7 +132,7 @@ export default function Index() {
         description: "Exam schedule generated successfully!",
       });
     } catch (error) {
-      console.error('Error generating schedule:', error);
+      console.error("Error generating schedule:", error);
       toast({
         title: "Error",
         description: "Failed to generate exam schedule",
@@ -131,12 +146,14 @@ export default function Index() {
   const generateExamSchedule = (): ExamScheduleItem[] => {
     const schedule: ExamScheduleItem[] = [];
     const timeSlots = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
-    
+
     const allSelectedCourses = [];
     for (const semester of semesters) {
       const semesterCourses = getCoursesBySemester(semester);
       const selectedIds = selectedCourseTeachers[semester] || [];
-      const selectedSemesterCourses = semesterCourses.filter(ct => selectedIds.includes(ct.id));
+      const selectedSemesterCourses = semesterCourses.filter((ct) =>
+        selectedIds.includes(ct.id)
+      );
       allSelectedCourses.push(...selectedSemesterCourses);
     }
 
@@ -145,24 +162,31 @@ export default function Index() {
 
     for (const courseTeacher of allSelectedCourses) {
       // Skip weekends and holidays
-      while (currentDate.getDay() === 0 || currentDate.getDay() === 6 || 
-             holidays.some(holiday => holiday.toDateString() === currentDate.toDateString())) {
+      while (
+        currentDate.getDay() === 0 ||
+        currentDate.getDay() === 6 ||
+        holidays.some(
+          (holiday) => holiday.toDateString() === currentDate.toDateString()
+        )
+      ) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
-      
+      const dayOfWeek = currentDate.toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+
       schedule.push({
         course_code: courseTeacher.course_code,
         teacher_code: courseTeacher.teacher_code,
-        exam_date: currentDate.toISOString().split('T')[0],
+        exam_date: currentDate.toISOString().split("T")[0],
         day_of_week: dayOfWeek,
         time_slot: timeSlots[timeSlotIndex % timeSlots.length],
-        semester: courseTeacher.semester
+        semester: courseTeacher.semester,
       });
 
       timeSlotIndex++;
-      
+
       // Move to next day after 4 time slots
       if (timeSlotIndex % timeSlots.length === 0) {
         currentDate.setDate(currentDate.getDate() + 1);
@@ -184,14 +208,11 @@ export default function Index() {
 
     try {
       // Clear existing schedules for these semesters
-      await supabase
-        .from('exam_schedules')
-        .delete()
-        .in('semester', semesters);
+      await supabase.from("exam_schedules").delete().in("semester", semesters);
 
       // Insert new schedule
       const { error } = await supabase
-        .from('exam_schedules')
+        .from("exam_schedules")
         .insert(generatedSchedule);
 
       if (error) throw error;
@@ -201,7 +222,7 @@ export default function Index() {
         description: "Exam schedule saved successfully!",
       });
     } catch (error) {
-      console.error('Error saving schedule:', error);
+      console.error("Error saving schedule:", error);
       toast({
         title: "Error",
         description: "Failed to save exam schedule",
@@ -221,13 +242,16 @@ export default function Index() {
     }
 
     try {
-      generateExamSchedulePDF(generatedSchedule, `${semesterType.toUpperCase()} Semesters`);
+      generateExamSchedulePDF(
+        generatedSchedule,
+        `${semesterType.toUpperCase()} Semesters`
+      );
       toast({
         title: "Success",
         description: "PDF downloaded successfully!",
       });
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error("Error generating PDF:", error);
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -238,36 +262,38 @@ export default function Index() {
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      setHolidays(prev => [...prev, date]);
+      setHolidays((prev) => [...prev, date]);
       setSelectedDate(undefined);
     }
   };
 
   const removeHoliday = (dateToRemove: Date) => {
-    setHolidays(holidays.filter(date => date.getTime() !== dateToRemove.getTime()));
+    setHolidays(
+      holidays.filter((date) => date.getTime() !== dateToRemove.getTime())
+    );
   };
 
   const toggleCourseTeacher = (semester: number, id: string) => {
-    setSelectedCourseTeachers(prev => ({
+    setSelectedCourseTeachers((prev) => ({
       ...prev,
-      [semester]: prev[semester]?.includes(id) 
-        ? prev[semester].filter(ctId => ctId !== id)
-        : [...(prev[semester] || []), id]
+      [semester]: prev[semester]?.includes(id)
+        ? prev[semester].filter((ctId) => ctId !== id)
+        : [...(prev[semester] || []), id],
     }));
   };
 
   const selectAllForSemester = (semester: number) => {
     const semesterCourses = getCoursesBySemester(semester);
-    setSelectedCourseTeachers(prev => ({
+    setSelectedCourseTeachers((prev) => ({
       ...prev,
-      [semester]: semesterCourses.map(ct => ct.id)
+      [semester]: semesterCourses.map((ct) => ct.id),
     }));
   };
 
   const deselectAllForSemester = (semester: number) => {
-    setSelectedCourseTeachers(prev => ({
+    setSelectedCourseTeachers((prev) => ({
       ...prev,
-      [semester]: []
+      [semester]: [],
     }));
   };
 
@@ -281,10 +307,19 @@ export default function Index() {
             </h1>
             <p className="text-gray-600">
               Generate optimized exam schedules with conflict detection
+              developed by{" "}
+              <a
+                href="https://m4milaad.github.io/Resume/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold underline text-blue-600 hover:text-blue-800"
+              >
+                Milad Ajaz Bhat
+              </a>
             </p>
           </div>
-          <Button 
-            onClick={() => navigate('/admin-login')}
+          <Button
+            onClick={() => navigate("/admin-login")}
             variant="outline"
             className="flex items-center gap-2"
           >
@@ -297,10 +332,17 @@ export default function Index() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Semester Selection</CardTitle>
-            <CardDescription>Choose between odd or even semesters</CardDescription>
+            <CardDescription>
+              Choose between odd or even semesters
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={semesterType} onValueChange={(value) => setSemesterType(value as "odd" | "even")}>
+            <Tabs
+              value={semesterType}
+              onValueChange={(value) =>
+                setSemesterType(value as "odd" | "even")
+              }
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="odd" className="text-lg font-medium">
                   Odd Semesters (1, 3, 5, 7)
@@ -348,8 +390,8 @@ export default function Index() {
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleGenerateSchedule} 
+                <Button
+                  onClick={handleGenerateSchedule}
                   className="flex-1"
                   disabled={loading}
                 >
@@ -359,11 +401,19 @@ export default function Index() {
 
               {generatedSchedule.length > 0 && (
                 <div className="space-y-2">
-                  <Button onClick={handleSaveSchedule} variant="outline" className="w-full">
+                  <Button
+                    onClick={handleSaveSchedule}
+                    variant="outline"
+                    className="w-full"
+                  >
                     <Save className="w-4 h-4 mr-2" />
                     Save Schedule
                   </Button>
-                  <Button onClick={handleDownloadPDF} variant="outline" className="w-full">
+                  <Button
+                    onClick={handleDownloadPDF}
+                    variant="outline"
+                    className="w-full"
+                  >
                     <Download className="w-4 h-4 mr-2" />
                     Download PDF
                   </Button>
@@ -400,7 +450,9 @@ export default function Index() {
                   <Label>Selected Holidays:</Label>
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {holidays.length === 0 ? (
-                      <p className="text-sm text-gray-500">No holidays selected</p>
+                      <p className="text-sm text-gray-500">
+                        No holidays selected
+                      </p>
                     ) : (
                       holidays.map((holiday, index) => (
                         <div
@@ -428,8 +480,9 @@ export default function Index() {
           <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
             {semesters.map((semester) => {
               const semesterCourses = getCoursesBySemester(semester);
-              const selectedCount = selectedCourseTeachers[semester]?.length || 0;
-              
+              const selectedCount =
+                selectedCourseTeachers[semester]?.length || 0;
+
               return (
                 <Card key={semester}>
                   <CardHeader>
@@ -437,20 +490,21 @@ export default function Index() {
                       <div>
                         <CardTitle>Semester {semester}</CardTitle>
                         <CardDescription>
-                          {semesterCourses.length} courses available, {selectedCount} selected
+                          {semesterCourses.length} courses available,{" "}
+                          {selectedCount} selected
                         </CardDescription>
                       </div>
                       {semesterCourses.length > 0 && (
                         <div className="flex gap-2">
                           <Button
-                            size="sm" 
+                            size="sm"
                             variant="outline"
                             onClick={() => selectAllForSemester(semester)}
                           >
                             Select All
                           </Button>
                           <Button
-                            size="sm" 
+                            size="sm"
                             variant="outline"
                             onClick={() => deselectAllForSemester(semester)}
                           >
@@ -489,19 +543,29 @@ export default function Index() {
                                   {ct.course_code} - {ct.teacher_code}
                                 </div>
                                 {ct.course_name && (
-                                  <div className="text-sm text-gray-600">{ct.course_name}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {ct.course_name}
+                                  </div>
                                 )}
                                 {ct.teacher_name && (
-                                  <div className="text-sm text-gray-500">{ct.teacher_name}</div>
+                                  <div className="text-sm text-gray-500">
+                                    {ct.teacher_name}
+                                  </div>
                                 )}
                               </div>
-                              <div className={cn(
-                                "w-4 h-4 rounded border-2 mt-1",
-                                selectedCourseTeachers[semester]?.includes(ct.id)
-                                  ? "bg-blue-500 border-blue-500"
-                                  : "border-gray-300"
-                              )}>
-                                {selectedCourseTeachers[semester]?.includes(ct.id) && (
+                              <div
+                                className={cn(
+                                  "w-4 h-4 rounded border-2 mt-1",
+                                  selectedCourseTeachers[semester]?.includes(
+                                    ct.id
+                                  )
+                                    ? "bg-blue-500 border-blue-500"
+                                    : "border-gray-300"
+                                )}
+                              >
+                                {selectedCourseTeachers[semester]?.includes(
+                                  ct.id
+                                ) && (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <div className="w-2 h-2 bg-white rounded-full"></div>
                                   </div>
@@ -525,7 +589,8 @@ export default function Index() {
             <CardHeader>
               <CardTitle>Generated Exam Schedule</CardTitle>
               <CardDescription>
-                Preview of the generated exam schedule for {semesterType.toUpperCase()} semesters
+                Preview of the generated exam schedule for{" "}
+                {semesterType.toUpperCase()} semesters
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -533,25 +598,50 @@ export default function Index() {
                 <table className="w-full border-collapse border border-gray-300">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="border border-gray-300 p-3 text-left">Course Code</th>
-                      <th className="border border-gray-300 p-3 text-left">Teacher Code</th>
-                      <th className="border border-gray-300 p-3 text-left">Semester</th>
-                      <th className="border border-gray-300 p-3 text-left">Exam Date</th>
-                      <th className="border border-gray-300 p-3 text-left">Day</th>
-                      <th className="border border-gray-300 p-3 text-left">Time Slot</th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Course Code
+                      </th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Teacher Code
+                      </th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Semester
+                      </th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Exam Date
+                      </th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Day
+                      </th>
+                      <th className="border border-gray-300 p-3 text-left">
+                        Time Slot
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {generatedSchedule.map((item, index) => (
-                      <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                        <td className="border border-gray-300 p-3">{item.course_code}</td>
-                        <td className="border border-gray-300 p-3">{item.teacher_code}</td>
-                        <td className="border border-gray-300 p-3">{item.semester}</td>
+                      <tr
+                        key={index}
+                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        <td className="border border-gray-300 p-3">
+                          {item.course_code}
+                        </td>
+                        <td className="border border-gray-300 p-3">
+                          {item.teacher_code}
+                        </td>
+                        <td className="border border-gray-300 p-3">
+                          {item.semester}
+                        </td>
                         <td className="border border-gray-300 p-3">
                           {new Date(item.exam_date).toLocaleDateString()}
                         </td>
-                        <td className="border border-gray-300 p-3">{item.day_of_week}</td>
-                        <td className="border border-gray-300 p-3">{item.time_slot}</td>
+                        <td className="border border-gray-300 p-3">
+                          {item.day_of_week}
+                        </td>
+                        <td className="border border-gray-300 p-3">
+                          {item.time_slot}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
