@@ -39,6 +39,7 @@ export type Database = {
           course_name: string | null
           created_at: string
           id: string
+          semester: number
           teacher_code: string
           teacher_name: string | null
           updated_at: string
@@ -48,6 +49,7 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           id?: string
+          semester: number
           teacher_code: string
           teacher_name?: string | null
           updated_at?: string
@@ -57,6 +59,7 @@ export type Database = {
           course_name?: string | null
           created_at?: string
           id?: string
+          semester?: number
           teacher_code?: string
           teacher_name?: string | null
           updated_at?: string

@@ -1,13 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, Home } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +20,7 @@ interface CourseTeacher {
   teacher_code: string;
   course_name: string | null;
   teacher_name: string | null;
-  semester?: number;
+  semester: number;
 }
 
 interface ExamScheduleItem {
@@ -31,6 +29,7 @@ interface ExamScheduleItem {
   exam_date: string;
   day_of_week: string;
   time_slot: string;
+  semester: number;
 }
 
 export default function Index() {
@@ -53,12 +52,25 @@ export default function Index() {
     loadCourseTeachers();
   }, []);
 
+  // Auto-select all courses when semester type changes or data loads
+  useEffect(() => {
+    if (courseTeachers.length > 0) {
+      const autoSelected: Record<number, string[]> = {};
+      semesters.forEach(semester => {
+        const semesterCourses = courseTeachers.filter(ct => ct.semester === semester);
+        autoSelected[semester] = semesterCourses.map(ct => ct.id);
+      });
+      setSelectedCourseTeachers(autoSelected);
+    }
+  }, [courseTeachers, semesterType]);
+
   const loadCourseTeachers = async () => {
     try {
       const { data, error } = await supabase
         .from('course_teacher_codes')
         .select('*')
-        .order('course_code');
+        .order('semester', { ascending: true })
+        .order('course_code', { ascending: true });
 
       if (error) throw error;
       setCourseTeachers(data || []);
@@ -73,12 +85,7 @@ export default function Index() {
   };
 
   const getCoursesBySemester = (semester: number) => {
-    // For now, we'll distribute courses across semesters
-    // In a real app, you'd have a semester field in the database
-    const coursesPerSemester = Math.ceil(courseTeachers.length / 8);
-    const startIndex = (semester - 1) * coursesPerSemester;
-    const endIndex = startIndex + coursesPerSemester;
-    return courseTeachers.slice(startIndex, endIndex);
+    return courseTeachers.filter(ct => ct.semester === semester);
   };
 
   const handleGenerateSchedule = async () => {
@@ -150,7 +157,8 @@ export default function Index() {
         teacher_code: courseTeacher.teacher_code,
         exam_date: currentDate.toISOString().split('T')[0],
         day_of_week: dayOfWeek,
-        time_slot: timeSlots[timeSlotIndex % timeSlots.length]
+        time_slot: timeSlots[timeSlotIndex % timeSlots.length],
+        semester: courseTeacher.semester
       });
 
       timeSlotIndex++;
@@ -182,26 +190,9 @@ export default function Index() {
         .in('semester', semesters);
 
       // Insert new schedule
-      const scheduleData = generatedSchedule.map(item => {
-        // Find which semester this course belongs to
-        let semester = 1;
-        for (const sem of semesters) {
-          const semesterCourses = getCoursesBySemester(sem);
-          if (semesterCourses.some(ct => ct.course_code === item.course_code && ct.teacher_code === item.teacher_code)) {
-            semester = sem;
-            break;
-          }
-        }
-        
-        return {
-          ...item,
-          semester
-        };
-      });
-
       const { error } = await supabase
         .from('exam_schedules')
-        .insert(scheduleData);
+        .insert(generatedSchedule);
 
       if (error) throw error;
 
@@ -449,31 +440,36 @@ export default function Index() {
                           {semesterCourses.length} courses available, {selectedCount} selected
                         </CardDescription>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => selectAllForSemester(semester)}
-                        >
-                          Select All
-                        </Button>
-                        <Button
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => deselectAllForSemester(semester)}
-                        >
-                          Clear
-                        </Button>
-                      </div>
+                      {semesterCourses.length > 0 && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => selectAllForSemester(semester)}
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => deselectAllForSemester(semester)}
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
                     {semesterCourses.length === 0 ? (
-                      <p className="text-gray-500 text-center py-4">
-                        No courses assigned to this semester.
-                        <br />
-                        Add courses in the Admin Panel.
-                      </p>
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 mb-2">
+                          No courses assigned to Semester {semester}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          Add courses in the Admin Panel
+                        </p>
+                      </div>
                     ) : (
                       <div className="max-h-60 overflow-y-auto space-y-2">
                         {semesterCourses.map((ct) => (
@@ -539,6 +535,7 @@ export default function Index() {
                     <tr className="bg-gray-50">
                       <th className="border border-gray-300 p-3 text-left">Course Code</th>
                       <th className="border border-gray-300 p-3 text-left">Teacher Code</th>
+                      <th className="border border-gray-300 p-3 text-left">Semester</th>
                       <th className="border border-gray-300 p-3 text-left">Exam Date</th>
                       <th className="border border-gray-300 p-3 text-left">Day</th>
                       <th className="border border-gray-300 p-3 text-left">Time Slot</th>
@@ -549,6 +546,7 @@ export default function Index() {
                       <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                         <td className="border border-gray-300 p-3">{item.course_code}</td>
                         <td className="border border-gray-300 p-3">{item.teacher_code}</td>
+                        <td className="border border-gray-300 p-3">{item.semester}</td>
                         <td className="border border-gray-300 p-3">
                           {new Date(item.exam_date).toLocaleDateString()}
                         </td>
