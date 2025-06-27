@@ -35,8 +35,6 @@ const AdminLogin = () => {
         toast.error('Invalid username or password');
         return;
       }
-
-      // For demo purposes, we'll do a simple password check
       // In production, you should use proper password hashing
       const adminUser = adminUsers[0];
       
@@ -108,9 +106,7 @@ const AdminLogin = () => {
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
-            <div className="mt-4 text-sm text-gray-600 text-center">
-              Demo credentials: admin / admin123
-            </div>
+            
           </CardContent>
         </Card>
       </div>
