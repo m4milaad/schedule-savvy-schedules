@@ -277,7 +277,7 @@ export default function Index() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Exam Schedule Generator
+              Central University of Kashmir
             </h1>
             <p className="text-gray-600">
               Generate optimized exam schedules with conflict detection
