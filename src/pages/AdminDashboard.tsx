@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ interface CourseTeacherCode {
   teacher_code: string;
   course_name: string | null;
   teacher_name: string | null;
+  semester: number;
 }
 
 const AdminDashboard = () => {
@@ -28,7 +30,8 @@ const AdminDashboard = () => {
     course_code: '',
     teacher_code: '',
     course_name: '',
-    teacher_name: ''
+    teacher_name: '',
+    semester: 1
   });
   const navigate = useNavigate();
 
@@ -48,7 +51,8 @@ const AdminDashboard = () => {
       const { data, error } = await supabase
         .from('course_teacher_codes')
         .select('*')
-        .order('course_code');
+        .order('semester', { ascending: true })
+        .order('course_code', { ascending: true });
 
       if (error) {
         toast.error('Failed to fetch codes: ' + error.message);
@@ -83,7 +87,7 @@ const AdminDashboard = () => {
 
       toast.success('Code added successfully');
       setIsAddDialogOpen(false);
-      setFormData({ course_code: '', teacher_code: '', course_name: '', teacher_name: '' });
+      setFormData({ course_code: '', teacher_code: '', course_name: '', teacher_name: '', semester: 1 });
       fetchCodes();
     } catch (error) {
       console.error('Error adding code:', error);
@@ -110,7 +114,7 @@ const AdminDashboard = () => {
       toast.success('Code updated successfully');
       setIsEditDialogOpen(false);
       setEditingCode(null);
-      setFormData({ course_code: '', teacher_code: '', course_name: '', teacher_name: '' });
+      setFormData({ course_code: '', teacher_code: '', course_name: '', teacher_name: '', semester: 1 });
       fetchCodes();
     } catch (error) {
       console.error('Error updating code:', error);
@@ -146,7 +150,8 @@ const AdminDashboard = () => {
       course_code: code.course_code,
       teacher_code: code.teacher_code,
       course_name: code.course_name || '',
-      teacher_name: code.teacher_name || ''
+      teacher_name: code.teacher_name || '',
+      semester: code.semester
     });
     setIsEditDialogOpen(true);
   };
@@ -174,7 +179,7 @@ const AdminDashboard = () => {
               <div>
                 <CardTitle>Course & Teacher Codes Management</CardTitle>
                 <CardDescription>
-                  Manage course codes and teacher codes for the exam scheduling system
+                  Manage course codes, teacher codes, and semester assignments for the exam scheduling system
                 </CardDescription>
               </div>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -215,6 +220,24 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="semester">Semester</Label>
+                      <Select 
+                        value={formData.semester.toString()} 
+                        onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select semester" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                            <SelectItem key={sem} value={sem.toString()}>
+                              Semester {sem}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="course_name">Course Name (Optional)</Label>
                       <Input
                         id="course_name"
@@ -244,6 +267,7 @@ const AdminDashboard = () => {
                 <TableRow>
                   <TableHead>Course Code</TableHead>
                   <TableHead>Teacher Code</TableHead>
+                  <TableHead>Semester</TableHead>
                   <TableHead>Course Name</TableHead>
                   <TableHead>Teacher Name</TableHead>
                   <TableHead>Actions</TableHead>
@@ -254,6 +278,11 @@ const AdminDashboard = () => {
                   <TableRow key={code.id}>
                     <TableCell className="font-medium">{code.course_code}</TableCell>
                     <TableCell>{code.teacher_code}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Semester {code.semester}
+                      </span>
+                    </TableCell>
                     <TableCell>{code.course_name || '-'}</TableCell>
                     <TableCell>{code.teacher_name || '-'}</TableCell>
                     <TableCell>
@@ -310,6 +339,24 @@ const AdminDashboard = () => {
                     required
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_semester">Semester</Label>
+                <Select 
+                  value={formData.semester.toString()} 
+                  onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                      <SelectItem key={sem} value={sem.toString()}>
+                        Semester {sem}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_course_name">Course Name (Optional)</Label>
