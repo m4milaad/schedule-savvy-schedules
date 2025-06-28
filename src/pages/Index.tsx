@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -22,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { generateExamSchedulePDF } from "@/utils/pdfGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CourseTeacher {
   id: string;
@@ -30,6 +33,8 @@ interface CourseTeacher {
   course_name: string | null;
   teacher_name: string | null;
   semester: number;
+  program_type: string;
+  gap_days: number;
 }
 
 interface ExamScheduleItem {
@@ -39,9 +44,11 @@ interface ExamScheduleItem {
   day_of_week: string;
   time_slot: string;
   semester: number;
+  program_type: string;
 }
 
 export default function Index() {
+  const [programType, setProgramType] = useState<"B.Tech" | "M.Tech">("B.Tech");
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [holidays, setHolidays] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -50,6 +57,7 @@ export default function Index() {
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
     Record<number, string[]>
   >({});
+  const [gapDaysOverride, setGapDaysOverride] = useState<Record<string, number>>({});
   const [generatedSchedule, setGeneratedSchedule] = useState<
     ExamScheduleItem[]
   >([]);
@@ -57,13 +65,21 @@ export default function Index() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Define semesters based on type
-  const semesters = semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
+  // Define semesters based on type and program
+  const getSemesters = () => {
+    if (programType === "B.Tech") {
+      return semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
+    } else {
+      return semesterType === "odd" ? [9, 11] : [10, 12];
+    }
+  };
+
+  const semesters = getSemesters();
 
   // Load course-teacher combinations from database
   useEffect(() => {
     loadCourseTeachers();
-  }, []);
+  }, [programType]);
 
   // Auto-select all courses when semester type changes or data loads
   useEffect(() => {
@@ -71,19 +87,20 @@ export default function Index() {
       const autoSelected: Record<number, string[]> = {};
       semesters.forEach((semester) => {
         const semesterCourses = courseTeachers.filter(
-          (ct) => ct.semester === semester
+          (ct) => ct.semester === semester && ct.program_type === programType
         );
         autoSelected[semester] = semesterCourses.map((ct) => ct.id);
       });
       setSelectedCourseTeachers(autoSelected);
     }
-  }, [courseTeachers, semesterType]);
+  }, [courseTeachers, semesterType, programType]);
 
   const loadCourseTeachers = async () => {
     try {
       const { data, error } = await supabase
         .from("course_teacher_codes")
         .select("*")
+        .eq("program_type", programType)
         .order("semester", { ascending: true })
         .order("course_code", { ascending: true });
 
@@ -100,7 +117,7 @@ export default function Index() {
   };
 
   const getCoursesBySemester = (semester: number) => {
-    return courseTeachers.filter((ct) => ct.semester === semester);
+    return courseTeachers.filter((ct) => ct.semester === semester && ct.program_type === programType);
   };
 
   const handleGenerateSchedule = async () => {
@@ -145,7 +162,7 @@ export default function Index() {
 
   const generateExamSchedule = (): ExamScheduleItem[] => {
     const schedule: ExamScheduleItem[] = [];
-    const timeSlots = ["09:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
+    const timeSlot = "12:00 PM - 2:30 PM"; // Single time slot as per requirements
 
     const allSelectedCourses = [];
     for (const semester of semesters) {
@@ -157,38 +174,89 @@ export default function Index() {
       allSelectedCourses.push(...selectedSemesterCourses);
     }
 
-    let currentDate = new Date(startDate!);
-    let timeSlotIndex = 0;
-
-    for (const courseTeacher of allSelectedCourses) {
-      // Skip weekends and holidays
-      while (
-        currentDate.getDay() === 0 ||
-        currentDate.getDay() === 6 ||
-        holidays.some(
-          (holiday) => holiday.toDateString() === currentDate.toDateString()
-        )
-      ) {
-        currentDate.setDate(currentDate.getDate() + 1);
+    // Group courses by semester for gap handling
+    const coursesBySemester = new Map<number, CourseTeacher[]>();
+    allSelectedCourses.forEach(course => {
+      if (!coursesBySemester.has(course.semester)) {
+        coursesBySemester.set(course.semester, []);
       }
+      coursesBySemester.get(course.semester)!.push(course);
+    });
 
-      const dayOfWeek = currentDate.toLocaleDateString("en-US", {
-        weekday: "long",
-      });
+    let currentDate = new Date(startDate!);
+    const semesterLastExamDate = new Map<number, Date>();
 
-      schedule.push({
-        course_code: courseTeacher.course_code,
-        teacher_code: courseTeacher.teacher_code,
-        exam_date: currentDate.toISOString().split("T")[0],
-        day_of_week: dayOfWeek,
-        time_slot: timeSlots[timeSlotIndex % timeSlots.length],
-        semester: courseTeacher.semester,
-      });
+    // Process each semester's courses
+    for (const [semester, courses] of coursesBySemester) {
+      for (let i = 0; i < courses.length; i++) {
+        const courseTeacher = courses[i];
+        
+        // Skip weekends and holidays
+        while (
+          currentDate.getDay() === 0 ||
+          currentDate.getDay() === 6 ||
+          holidays.some(
+            (holiday) => holiday.toDateString() === currentDate.toDateString()
+          )
+        ) {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
 
-      timeSlotIndex++;
+        // Check if this date already has 4 exams (Monday-Thursday) or 1 exam (Friday)
+        const dayOfWeek = currentDate.getDay();
+        const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
+        
+        const existingExamsOnDate = schedule.filter(
+          exam => exam.exam_date === currentDate.toISOString().split("T")[0]
+        ).length;
 
-      // Move to next day after 4 time slots
-      if (timeSlotIndex % timeSlots.length === 0) {
+        if (existingExamsOnDate >= maxExamsPerDay) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          continue;
+        }
+
+        // Check semester constraint - no more than 1 exam per semester per day
+        const semesterExamsOnDate = schedule.filter(
+          exam => exam.exam_date === currentDate.toISOString().split("T")[0] && 
+                   exam.semester === semester
+        ).length;
+
+        if (semesterExamsOnDate > 0) {
+          currentDate.setDate(currentDate.getDate() + 1);
+          continue;
+        }
+
+        // Apply gap days between exams of same semester
+        const lastExamDate = semesterLastExamDate.get(semester);
+        if (lastExamDate && i > 0) {
+          const gapDays = gapDaysOverride[courseTeacher.id] ?? courseTeacher.gap_days;
+          const minNextDate = new Date(lastExamDate);
+          minNextDate.setDate(minNextDate.getDate() + gapDays + 1);
+          
+          if (currentDate < minNextDate) {
+            currentDate = new Date(minNextDate);
+            continue;
+          }
+        }
+
+        const dayOfWeekName = currentDate.toLocaleDateString("en-US", {
+          weekday: "long",
+        });
+
+        // Adjust time slot for Friday
+        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : timeSlot;
+
+        schedule.push({
+          course_code: courseTeacher.course_code,
+          teacher_code: courseTeacher.teacher_code,
+          exam_date: currentDate.toISOString().split("T")[0],
+          day_of_week: dayOfWeekName,
+          time_slot: finalTimeSlot,
+          semester: courseTeacher.semester,
+          program_type: courseTeacher.program_type,
+        });
+
+        semesterLastExamDate.set(semester, new Date(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
       }
     }
@@ -207,8 +275,8 @@ export default function Index() {
     }
 
     try {
-      // Clear existing schedules for these semesters
-      await supabase.from("exam_schedules").delete().in("semester", semesters);
+      // Clear existing schedules for these semesters and program type
+      await supabase.from("exam_schedules").delete().in("semester", semesters).eq("program_type", programType);
 
       // Insert new schedule
       const { error } = await supabase
@@ -244,7 +312,7 @@ export default function Index() {
     try {
       generateExamSchedulePDF(
         generatedSchedule,
-        `${semesterType.toUpperCase()} Semesters`
+        `${programType} ${semesterType.toUpperCase()} Semesters`
       );
       toast({
         title: "Success",
@@ -297,6 +365,22 @@ export default function Index() {
     }));
   };
 
+  const getSemesterDisplay = (semester: number) => {
+    if (programType === "B.Tech") {
+      return `B.Tech Semester ${semester}`;
+    } else {
+      const mtechSem = semester - 8;
+      return `M.Tech Semester ${mtechSem}`;
+    }
+  };
+
+  const updateGapDays = (courseId: string, days: number) => {
+    setGapDaysOverride(prev => ({
+      ...prev,
+      [courseId]: days
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -328,12 +412,37 @@ export default function Index() {
           </Button>
         </div>
 
+        {/* Program Type Selector */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Program Selection</CardTitle>
+            <CardDescription>
+              Choose between B.Tech and M.Tech programs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs
+              value={programType}
+              onValueChange={(value) => setProgramType(value as "B.Tech" | "M.Tech")}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="B.Tech" className="text-lg font-medium">
+                  B.Tech (Semesters 1-8)
+                </TabsTrigger>
+                <TabsTrigger value="M.Tech" className="text-lg font-medium">
+                  M.Tech (Semesters 1-4)
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardContent>
+        </Card>
+
         {/* Semester Type Selector */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Semester Selection</CardTitle>
             <CardDescription>
-              Choose between odd or even semesters
+              Choose between odd or even semesters for {programType}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -345,10 +454,10 @@ export default function Index() {
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="odd" className="text-lg font-medium">
-                  Odd Semesters (1, 3, 5, 7)
+                  Odd Semesters ({programType === "B.Tech" ? "1, 3, 5, 7" : "1, 3"})
                 </TabsTrigger>
                 <TabsTrigger value="even" className="text-lg font-medium">
-                  Even Semesters (2, 4, 6, 8)
+                  Even Semesters ({programType === "B.Tech" ? "2, 4, 6, 8" : "2, 4"})
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -488,7 +597,7 @@ export default function Index() {
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <div>
-                        <CardTitle>Semester {semester}</CardTitle>
+                        <CardTitle>{getSemesterDisplay(semester)}</CardTitle>
                         <CardDescription>
                           {semesterCourses.length} courses available,{" "}
                           {selectedCount} selected
@@ -518,7 +627,7 @@ export default function Index() {
                     {semesterCourses.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-500 mb-2">
-                          No courses assigned to Semester {semester}
+                          No courses assigned to {getSemesterDisplay(semester)}
                         </p>
                         <p className="text-sm text-gray-400">
                           Add courses in the Admin Panel
@@ -538,7 +647,7 @@ export default function Index() {
                             onClick={() => toggleCourseTeacher(semester, ct.id)}
                           >
                             <div className="flex justify-between items-start">
-                              <div>
+                              <div className="flex-1">
                                 <div className="font-medium">
                                   {ct.course_code} - {ct.teacher_code}
                                 </div>
@@ -552,6 +661,21 @@ export default function Index() {
                                     {ct.teacher_name}
                                   </div>
                                 )}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Label className="text-xs">Gap Days:</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    value={gapDaysOverride[ct.id] ?? ct.gap_days}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateGapDays(ct.id, parseInt(e.target.value) || 0);
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-16 h-6 text-xs"
+                                  />
+                                </div>
                               </div>
                               <div
                                 className={cn(
@@ -590,7 +714,7 @@ export default function Index() {
               <CardTitle>Generated Exam Schedule</CardTitle>
               <CardDescription>
                 Preview of the generated exam schedule for{" "}
-                {semesterType.toUpperCase()} semesters
+                {programType} {semesterType.toUpperCase()} semesters
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -631,7 +755,7 @@ export default function Index() {
                           {item.teacher_code}
                         </td>
                         <td className="border border-gray-300 p-3">
-                          {item.semester}
+                          {getSemesterDisplay(item.semester)}
                         </td>
                         <td className="border border-gray-300 p-3">
                           {new Date(item.exam_date).toLocaleDateString()}

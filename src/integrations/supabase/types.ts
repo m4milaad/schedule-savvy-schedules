@@ -38,7 +38,9 @@ export type Database = {
           course_code: string
           course_name: string | null
           created_at: string
+          gap_days: number | null
           id: string
+          program_type: string | null
           semester: number
           teacher_code: string
           teacher_name: string | null
@@ -48,7 +50,9 @@ export type Database = {
           course_code: string
           course_name?: string | null
           created_at?: string
+          gap_days?: number | null
           id?: string
+          program_type?: string | null
           semester: number
           teacher_code: string
           teacher_name?: string | null
@@ -58,7 +62,9 @@ export type Database = {
           course_code?: string
           course_name?: string | null
           created_at?: string
+          gap_days?: number | null
           id?: string
+          program_type?: string | null
           semester?: number
           teacher_code?: string
           teacher_name?: string | null
@@ -73,6 +79,7 @@ export type Database = {
           day_of_week: string
           exam_date: string
           id: string
+          program_type: string | null
           semester: number
           teacher_code: string
           time_slot: string
@@ -84,6 +91,7 @@ export type Database = {
           day_of_week: string
           exam_date: string
           id?: string
+          program_type?: string | null
           semester: number
           teacher_code: string
           time_slot: string
@@ -95,6 +103,7 @@ export type Database = {
           day_of_week?: string
           exam_date?: string
           id?: string
+          program_type?: string | null
           semester?: number
           teacher_code?: string
           time_slot?: string
