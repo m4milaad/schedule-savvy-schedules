@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { generateExamSchedulePDF } from "@/utils/pdfGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CourseTeacher {
   id: string;
@@ -38,6 +40,7 @@ interface CourseTeacher {
 }
 
 interface ExamScheduleItem {
+  id?: string;
   course_code: string;
   teacher_code: string;
   exam_date: string;
@@ -45,6 +48,12 @@ interface ExamScheduleItem {
   time_slot: string;
   semester: number;
   program_type: string;
+}
+
+interface ClashWarning {
+  type: 'teacher' | 'date_limit' | 'semester_repeat';
+  message: string;
+  itemId: string;
 }
 
 export default function Index() {
@@ -61,6 +70,8 @@ export default function Index() {
   const [generatedSchedule, setGeneratedSchedule] = useState<
     ExamScheduleItem[]
   >([]);
+  const [clashWarnings, setClashWarnings] = useState<ClashWarning[]>([]);
+  const [showWarnings, setShowWarnings] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -120,6 +131,81 @@ export default function Index() {
     return courseTeachers.filter((ct) => ct.semester === semester && ct.program_type === programType);
   };
 
+  const detectClashes = (schedule: ExamScheduleItem[]): ClashWarning[] => {
+    const warnings: ClashWarning[] = [];
+    const dateGroups = new Map<string, ExamScheduleItem[]>();
+
+    // Group by date
+    schedule.forEach((item, index) => {
+      const key = item.exam_date;
+      if (!dateGroups.has(key)) {
+        dateGroups.set(key, []);
+      }
+      dateGroups.get(key)!.push({ ...item, id: index.toString() });
+    });
+
+    // Check each date group
+    dateGroups.forEach((items, date) => {
+      const dayOfWeek = new Date(date).getDay();
+      const maxExams = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
+
+      // Check date limits
+      if (items.length > maxExams) {
+        items.forEach(item => {
+          warnings.push({
+            type: 'date_limit',
+            message: `Too many exams on ${date} (${items.length}/${maxExams} max)`,
+            itemId: item.id!
+          });
+        });
+      }
+
+      // Check teacher conflicts
+      const teacherDates = new Map<string, string[]>();
+      items.forEach(item => {
+        if (!teacherDates.has(item.teacher_code)) {
+          teacherDates.set(item.teacher_code, []);
+        }
+        teacherDates.get(item.teacher_code)!.push(item.id!);
+      });
+
+      teacherDates.forEach((itemIds, teacher) => {
+        if (itemIds.length > 1) {
+          itemIds.forEach(itemId => {
+            warnings.push({
+              type: 'teacher',
+              message: `Teacher ${teacher} has multiple exams on ${date}`,
+              itemId
+            });
+          });
+        }
+      });
+
+      // Check semester repetition
+      const semesterCounts = new Map<number, string[]>();
+      items.forEach(item => {
+        if (!semesterCounts.has(item.semester)) {
+          semesterCounts.set(item.semester, []);
+        }
+        semesterCounts.get(item.semester)!.push(item.id!);
+      });
+
+      semesterCounts.forEach((itemIds, semester) => {
+        if (itemIds.length > 1) {
+          itemIds.forEach(itemId => {
+            warnings.push({
+              type: 'semester_repeat',
+              message: `Multiple exams for semester ${semester} on ${date}`,
+              itemId
+            });
+          });
+        }
+      });
+    });
+
+    return warnings;
+  };
+
   const handleGenerateSchedule = async () => {
     if (!startDate) {
       toast({
@@ -144,6 +230,9 @@ export default function Index() {
     try {
       const schedule = generateExamSchedule();
       setGeneratedSchedule(schedule);
+      const warnings = detectClashes(schedule);
+      setClashWarnings(warnings);
+      setShowWarnings(warnings.length > 0);
       toast({
         title: "Success",
         description: "Exam schedule generated successfully!",
@@ -162,7 +251,7 @@ export default function Index() {
 
   const generateExamSchedule = (): ExamScheduleItem[] => {
     const schedule: ExamScheduleItem[] = [];
-    const timeSlot = "12:00 PM - 2:30 PM"; // Single time slot as per requirements
+    const timeSlot = "12:00 PM - 2:30 PM";
 
     const allSelectedCourses = [];
     for (const semester of semesters) {
@@ -185,65 +274,57 @@ export default function Index() {
 
     let currentDate = new Date(startDate!);
     const semesterLastExamDate = new Map<number, Date>();
+    const pendingCourses = [...allSelectedCourses];
 
-    // Process each semester's courses
-    for (const [semester, courses] of coursesBySemester) {
-      for (let i = 0; i < courses.length; i++) {
-        const courseTeacher = courses[i];
+    while (pendingCourses.length > 0) {
+      // Skip weekends and holidays
+      while (
+        currentDate.getDay() === 0 ||
+        currentDate.getDay() === 6 ||
+        holidays.some(
+          (holiday) => holiday.toDateString() === currentDate.toDateString()
+        )
+      ) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      const dayOfWeek = currentDate.getDay();
+      const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4;
+      const usedSemesters = new Set<number>();
+      const usedTeachers = new Set<string>();
+      let examsScheduledToday = 0;
+
+      // Try to schedule up to maxExamsPerDay exams from different semesters
+      for (let i = pendingCourses.length - 1; i >= 0 && examsScheduledToday < maxExamsPerDay; i--) {
+        const courseTeacher = pendingCourses[i];
         
-        // Skip weekends and holidays
-        while (
-          currentDate.getDay() === 0 ||
-          currentDate.getDay() === 6 ||
-          holidays.some(
-            (holiday) => holiday.toDateString() === currentDate.toDateString()
-          )
-        ) {
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        // Check if this date already has 4 exams (Monday-Thursday) or 1 exam (Friday)
-        const dayOfWeek = currentDate.getDay();
-        const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
-        
-        const existingExamsOnDate = schedule.filter(
-          exam => exam.exam_date === currentDate.toISOString().split("T")[0]
-        ).length;
-
-        if (existingExamsOnDate >= maxExamsPerDay) {
-          currentDate.setDate(currentDate.getDate() + 1);
+        // Skip if semester already has exam today
+        if (usedSemesters.has(courseTeacher.semester)) {
           continue;
         }
 
-        // Check semester constraint - no more than 1 exam per semester per day
-        const semesterExamsOnDate = schedule.filter(
-          exam => exam.exam_date === currentDate.toISOString().split("T")[0] && 
-                   exam.semester === semester
-        ).length;
-
-        if (semesterExamsOnDate > 0) {
-          currentDate.setDate(currentDate.getDate() + 1);
+        // Skip if teacher already has exam today
+        if (usedTeachers.has(courseTeacher.teacher_code)) {
           continue;
         }
 
-        // Apply gap days between exams of same semester
-        const lastExamDate = semesterLastExamDate.get(semester);
-        if (lastExamDate && i > 0) {
+        // Check gap days constraint
+        const lastExamDate = semesterLastExamDate.get(courseTeacher.semester);
+        if (lastExamDate) {
           const gapDays = gapDaysOverride[courseTeacher.id] ?? courseTeacher.gap_days;
           const minNextDate = new Date(lastExamDate);
           minNextDate.setDate(minNextDate.getDate() + gapDays + 1);
           
           if (currentDate < minNextDate) {
-            currentDate = new Date(minNextDate);
             continue;
           }
         }
 
+        // Schedule this exam
         const dayOfWeekName = currentDate.toLocaleDateString("en-US", {
           weekday: "long",
         });
 
-        // Adjust time slot for Friday
         const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : timeSlot;
 
         schedule.push({
@@ -256,12 +337,60 @@ export default function Index() {
           program_type: courseTeacher.program_type,
         });
 
-        semesterLastExamDate.set(semester, new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
+        // Mark as used
+        usedSemesters.add(courseTeacher.semester);
+        usedTeachers.add(courseTeacher.teacher_code);
+        semesterLastExamDate.set(courseTeacher.semester, new Date(currentDate));
+        examsScheduledToday++;
+
+        // Remove from pending
+        pendingCourses.splice(i, 1);
       }
+
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
     }
 
     return schedule;
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(generatedSchedule);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setGeneratedSchedule(items);
+    
+    // Re-detect clashes after reordering
+    const warnings = detectClashes(items);
+    setClashWarnings(warnings);
+    setShowWarnings(warnings.length > 0);
+  };
+
+  const handleDateChange = (index: number, newDate: string) => {
+    const updatedSchedule = [...generatedSchedule];
+    const newDateObj = new Date(newDate);
+    const dayOfWeekName = newDateObj.toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+    const dayOfWeek = newDateObj.getDay();
+    const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
+
+    updatedSchedule[index] = {
+      ...updatedSchedule[index],
+      exam_date: newDate,
+      day_of_week: dayOfWeekName,
+      time_slot: finalTimeSlot
+    };
+
+    setGeneratedSchedule(updatedSchedule);
+    
+    // Re-detect clashes
+    const warnings = detectClashes(updatedSchedule);
+    setClashWarnings(warnings);
+    setShowWarnings(warnings.length > 0);
   };
 
   const handleSaveSchedule = async () => {
@@ -707,70 +836,129 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Generated Schedule Display */}
+        {/* Clash Warnings */}
+        {showWarnings && clashWarnings.length > 0 && (
+          <Alert className="mt-6 border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              <div className="font-medium mb-2">Schedule Conflicts Detected:</div>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                {clashWarnings.slice(0, 5).map((warning, index) => (
+                  <li key={index}>{warning.message}</li>
+                ))}
+                {clashWarnings.length > 5 && (
+                  <li>... and {clashWarnings.length - 5} more conflicts</li>
+                )}
+              </ul>
+              <div className="mt-2 text-sm">
+                You can drag and drop to rearrange the schedule or manually edit dates below.
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Generated Schedule Display with Drag & Drop */}
         {generatedSchedule.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>Generated Exam Schedule</CardTitle>
               <CardDescription>
-                Preview of the generated exam schedule for{" "}
-                {programType} {semesterType.toUpperCase()} semesters
+                Drag and drop to rearrange schedule. Click on dates to edit them manually.
+                Preview for {programType} {semesterType.toUpperCase()} semesters
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 p-3 text-left">
-                        Course Code
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Teacher Code
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Semester
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Exam Date
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Day
-                      </th>
-                      <th className="border border-gray-300 p-3 text-left">
-                        Time Slot
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generatedSchedule.map((item, index) => (
-                      <tr
-                        key={index}
-                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                      >
-                        <td className="border border-gray-300 p-3">
-                          {item.course_code}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {item.teacher_code}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {getSemesterDisplay(item.semester)}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {new Date(item.exam_date).toLocaleDateString()}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {item.day_of_week}
-                        </td>
-                        <td className="border border-gray-300 p-3">
-                          {item.time_slot}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="exam-schedule">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="overflow-x-auto"
+                    >
+                      <table className="w-full border-collapse border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="border border-gray-300 p-3 text-left">
+                              Course Code
+                            </th>
+                            <th className="border border-gray-300 p-3 text-left">
+                              Teacher Code
+                            </th>
+                            <th className="border border-gray-300 p-3 text-left">
+                              Semester
+                            </th>
+                            <th className="border border-gray-300 p-3 text-left">
+                              Exam Date
+                            </th>
+                            <th className="border border-gray-300 p-3 text-left">
+                              Day
+                            </th>
+                            <th className="border border-gray-300 p-3 text-left">
+                              Time Slot
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {generatedSchedule.map((item, index) => {
+                            const hasClash = clashWarnings.some(w => w.itemId === index.toString());
+                            return (
+                              <Draggable
+                                key={`${item.course_code}-${item.teacher_code}-${index}`}
+                                draggableId={`${item.course_code}-${item.teacher_code}-${index}`}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <tr
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className={cn(
+                                      "transition-colors",
+                                      snapshot.isDragging
+                                        ? "bg-blue-100 shadow-lg"
+                                        : index % 2 === 0
+                                        ? "bg-white"
+                                        : "bg-gray-50",
+                                      hasClash && "bg-red-50 border-red-200"
+                                    )}
+                                  >
+                                    <td className="border border-gray-300 p-3">
+                                      {item.course_code}
+                                    </td>
+                                    <td className="border border-gray-300 p-3">
+                                      {item.teacher_code}
+                                    </td>
+                                    <td className="border border-gray-300 p-3">
+                                      {getSemesterDisplay(item.semester)}
+                                    </td>
+                                    <td className="border border-gray-300 p-3">
+                                      <Input
+                                        type="date"
+                                        value={item.exam_date}
+                                        onChange={(e) => handleDateChange(index, e.target.value)}
+                                        className="w-full min-w-[140px]"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    </td>
+                                    <td className="border border-gray-300 p-3">
+                                      {item.day_of_week}
+                                    </td>
+                                    <td className="border border-gray-300 p-3">
+                                      {item.time_slot}
+                                    </td>
+                                  </tr>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </CardContent>
           </Card>
         )}
