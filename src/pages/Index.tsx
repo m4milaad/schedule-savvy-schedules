@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock, Info, Edit3 } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Edit2, Check, X, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -33,20 +33,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import HolidaysManager from "@/components/HolidaysManager";
 import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
@@ -74,16 +62,14 @@ interface ExamScheduleItem {
   dayOfWeek: string;
   timeSlot: string;
   gap_days: number;
-  is_first_paper: boolean;
+  is_first_paper?: boolean;
 }
 
 export default function Index() {
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [holidays, setHolidays] = useState<Date[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [defaultGapDays, setDefaultGapDays] = useState<number>(2);
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
     Record<number, string[]>
@@ -91,8 +77,8 @@ export default function Index() {
   const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [isScheduleGenerated, setIsScheduleGenerated] = useState(false);
-  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
-  const [tempGapDays, setTempGapDays] = useState<number>(2);
+  const [editingGap, setEditingGap] = useState<string | null>(null);
+  const [tempGapValue, setTempGapValue] = useState<number>(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -140,36 +126,6 @@ export default function Index() {
     }
   };
 
-  const updateCourseGapDays = async (courseId: string, newGapDays: number) => {
-    try {
-      const { error } = await supabase
-        .from("course_teacher_codes")
-        .update({ gap_days: newGapDays })
-        .eq("id", courseId);
-
-      if (error) throw error;
-
-      // Update local state
-      setCourseTeachers(prev => 
-        prev.map(ct => 
-          ct.id === courseId ? { ...ct, gap_days: newGapDays } : ct
-        )
-      );
-
-      toast({
-        title: "Success",
-        description: "Gap days updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating gap days:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update gap days",
-        variant: "destructive",
-      });
-    }
-  };
-
   const getCoursesBySemester = (semester: number) => {
     return courseTeachers.filter((ct) => ct.semester === semester);
   };
@@ -179,32 +135,56 @@ export default function Index() {
     return dayOfWeek === 5 ? "11:00 AM - 2:00 PM" : "12:00 PM - 3:00 PM"; // Friday vs other days
   };
 
-  const addDays = (date: Date, days: number): Date => {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-  };
+  const updateCourseGap = async (courseId: string, newGap: number) => {
+    try {
+      const { error } = await supabase
+        .from("course_teacher_codes")
+        .update({ gap_days: newGap, updated_at: new Date().toISOString() })
+        .eq("id", courseId);
 
-  const isValidExamDate = (date: Date, holidays: Date[]): boolean => {
-    const dayOfWeek = date.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const isHoliday = holidays.some(
-      (holiday) => holiday.toDateString() === date.toDateString()
-    );
-    return !isWeekend && !isHoliday;
-  };
+      if (error) throw error;
 
-  const findNextValidDate = (startDate: Date, holidays: Date[], endDate: Date): Date | null => {
-    let currentDate = new Date(startDate);
-    const endDateTime = new Date(endDate);
+      // Update local state
+      setCourseTeachers(prev => 
+        prev.map(ct => ct.id === courseId ? { ...ct, gap_days: newGap } : ct)
+      );
 
-    while (currentDate <= endDateTime) {
-      if (isValidExamDate(currentDate, holidays)) {
-        return new Date(currentDate);
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
+      toast({
+        title: "Success",
+        description: "Gap days updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating gap:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update gap days",
+        variant: "destructive",
+      });
     }
-    return null;
+  };
+
+  const handleEditGap = (courseId: string, currentGap: number) => {
+    setEditingGap(courseId);
+    setTempGapValue(currentGap);
+  };
+
+  const handleSaveGap = async (courseId: string) => {
+    if (tempGapValue < 0 || tempGapValue > 10) {
+      toast({
+        title: "Invalid Value",
+        description: "Gap days must be between 0 and 10",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await updateCourseGap(courseId, tempGapValue);
+    setEditingGap(null);
+  };
+
+  const handleCancelGap = () => {
+    setEditingGap(null);
+    setTempGapValue(0);
   };
 
   const generateSchedule = async () => {
@@ -249,6 +229,34 @@ export default function Index() {
     try {
       setLoading(true);
 
+      // Generate exam dates within the range
+      const examDates: Date[] = [];
+      let currentDate = new Date(startDate);
+      const endDateTime = new Date(endDate);
+
+      while (currentDate <= endDateTime) {
+        const dayOfWeek = currentDate.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHoliday = holidays.some(
+          (holiday) => holiday.toDateString() === currentDate.toDateString()
+        );
+
+        if (!isWeekend && !isHoliday) {
+          examDates.push(new Date(currentDate));
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      if (examDates.length === 0) {
+        toast({
+          title: "Error",
+          description: "No valid exam dates found in the selected range",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Group courses by semester for scheduling
       const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
         if (!acc[course.semester]) {
@@ -258,70 +266,64 @@ export default function Index() {
         return acc;
       }, {} as Record<number, CourseTeacher[]>);
 
-      // Schedule with gap-based constraints
+      // Schedule with constraints: max 4 exams per day, 1 per semester per day, individual gap requirements
       const schedule: ExamScheduleItem[] = [];
-      const semesterLastScheduledDate: Record<number, Date> = {}; // Track last scheduled date for each semester
       const dateScheduleCount: Record<string, number> = {}; // Track exams per date
-      const maxExamsPerDay = 4;
+      const semesterLastScheduledDate: Record<number, string> = {}; // Track last date for each semester
 
-      let currentSchedulingDate = new Date(startDate);
-      const endDateTime = new Date(endDate);
+      let currentDateIndex = 0;
+      let allCoursesScheduled = false;
 
-      // Continue scheduling until all courses are scheduled or we run out of dates
-      while (schedule.length < allSelectedCourses.length && currentSchedulingDate <= endDateTime) {
-        const dateKey = currentSchedulingDate.toDateString();
+      while (!allCoursesScheduled && currentDateIndex < examDates.length) {
+        const currentExamDate = examDates[currentDateIndex];
+        const dateKey = currentExamDate.toDateString();
 
         // Initialize date count if not exists
         if (!dateScheduleCount[dateKey]) {
           dateScheduleCount[dateKey] = 0;
         }
 
-        // Skip if this date is not valid for exams
-        if (!isValidExamDate(currentSchedulingDate, holidays)) {
-          currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
-          continue;
-        }
+        // Try to schedule exams for this date (max 4 per day)
+        let scheduledToday = 0;
+        const maxExamsPerDay = 4;
 
-        // Skip if this date already has maximum exams
-        if (dateScheduleCount[dateKey] >= maxExamsPerDay) {
-          currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
-          continue;
-        }
-
-        // Find semesters that can schedule an exam on this date
+        // Get available semesters for this date (not scheduled today and gap requirements met)
         const availableSemesters = Object.keys(coursesBySemester)
           .map(Number)
           .filter(semester => {
-            // Check if semester has unscheduled courses
             const hasUnscheduledCourses = coursesBySemester[semester].some(course => 
               !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
             );
-
-            if (!hasUnscheduledCourses) return false;
-
-            // Check if enough gap has passed since last exam for this semester
-            const lastScheduledDate = semesterLastScheduledDate[semester];
-            if (!lastScheduledDate) {
-              // First exam for this semester - no gap needed
-              return true;
+            const notScheduledToday = semesterLastScheduledDate[semester] !== dateKey;
+            
+            // Check gap requirement for this semester
+            const lastScheduledExam = schedule
+              .filter(exam => exam.semester === semester)
+              .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0];
+            
+            if (!lastScheduledExam) {
+              // First exam for this semester - no gap required
+              return hasUnscheduledCourses && notScheduledToday;
             }
-
-            // Get the gap requirement for the next course to be scheduled
+            
+            // Find the next course to be scheduled for this semester
             const nextCourse = coursesBySemester[semester].find(course => 
               !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
             );
-
-            if (!nextCourse) return false;
-
-            const requiredGapDays = nextCourse.gap_days || defaultGapDays;
-            const daysSinceLastExam = Math.floor((currentSchedulingDate.getTime() - lastScheduledDate.getTime()) / (1000 * 60 * 60 * 24));
             
-            return daysSinceLastExam >= requiredGapDays;
+            if (!nextCourse) return false;
+            
+            // Calculate days between last exam and current date
+            const lastExamDate = new Date(lastScheduledExam.exam_date);
+            const daysDiff = Math.floor((currentExamDate.getTime() - lastExamDate.getTime()) / (1000 * 60 * 60 * 24));
+            const requiredGap = nextCourse.gap_days || 2;
+            
+            const gapMet = daysDiff >= requiredGap;
+            
+            return hasUnscheduledCourses && notScheduledToday && gapMet;
           });
 
-        // Schedule exams for available semesters (up to max per day)
-        let scheduledToday = dateScheduleCount[dateKey];
-        
+        // Schedule up to 4 exams from different semesters
         for (const semester of availableSemesters) {
           if (scheduledToday >= maxExamsPerDay) break;
 
@@ -331,44 +333,55 @@ export default function Index() {
           );
 
           if (unscheduledCourse) {
-            const isFirstPaper = !semesterLastScheduledDate[semester];
-            
+            // Check if this is the first paper for the semester
+            const isFirstPaper = !schedule.some(exam => exam.semester === semester);
+
             const exam: ExamScheduleItem = {
               id: `exam-${schedule.length}`,
               course_code: unscheduledCourse.course_code,
               teacher_code: unscheduledCourse.teacher_code,
-              exam_date: currentSchedulingDate.toISOString().split("T")[0],
-              day_of_week: currentSchedulingDate.toLocaleDateString("en-US", { weekday: "long" }),
-              time_slot: getExamTimeSlot(currentSchedulingDate),
+              exam_date: currentExamDate.toISOString().split("T")[0],
+              day_of_week: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              time_slot: getExamTimeSlot(currentExamDate),
               semester: unscheduledCourse.semester,
               program_type: unscheduledCourse.program_type,
-              date: new Date(currentSchedulingDate),
+              date: currentExamDate,
               courseCode: unscheduledCourse.course_code,
-              dayOfWeek: currentSchedulingDate.toLocaleDateString("en-US", { weekday: "long" }),
-              timeSlot: getExamTimeSlot(currentSchedulingDate),
-              gap_days: unscheduledCourse.gap_days || defaultGapDays,
+              dayOfWeek: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              timeSlot: getExamTimeSlot(currentExamDate),
+              gap_days: unscheduledCourse.gap_days || 2,
               is_first_paper: isFirstPaper,
             };
 
             schedule.push(exam);
             scheduledToday++;
             dateScheduleCount[dateKey]++;
-            semesterLastScheduledDate[semester] = new Date(currentSchedulingDate);
+            semesterLastScheduledDate[semester] = dateKey;
           }
         }
 
-        // Move to next day
-        currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
-      }
+        // Check if all courses are scheduled
+        const totalScheduled = schedule.length;
+        const totalCourses = allSelectedCourses.length;
+        allCoursesScheduled = totalScheduled >= totalCourses;
 
-      // Check if all courses were scheduled
-      const unscheduledCount = allSelectedCourses.length - schedule.length;
-      if (unscheduledCount > 0) {
-        toast({
-          title: "Warning",
-          description: `${unscheduledCount} courses could not be scheduled within the date range due to gap constraints. Consider extending the end date or reducing gap requirements.`,
-          variant: "destructive",
-        });
+        currentDateIndex++;
+
+        // If we've gone through all dates and still have unscheduled courses
+        if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
+          // Reset to start of dates for next round
+          currentDateIndex = 0;
+          
+          // Safety check to prevent infinite loop
+          if (examDates.length < Math.ceil(totalCourses / maxExamsPerDay)) {
+            toast({
+              title: "Warning",
+              description: `Need more exam dates to schedule all ${totalCourses} exams with the gap constraints. Only ${totalScheduled} exams scheduled.`,
+              variant: "destructive",
+            });
+            break;
+          }
+        }
       }
 
       setGeneratedSchedule(schedule);
@@ -376,7 +389,7 @@ export default function Index() {
 
       toast({
         title: "Success",
-        description: `Generated schedule for ${schedule.length} exams with gap-based constraints (${unscheduledCount > 0 ? `${unscheduledCount} unscheduled` : 'all scheduled'})`,
+        description: `Generated schedule for ${schedule.length} exams with individual gap requirements`,
       });
     } catch (error) {
       console.error("Error generating schedule:", error);
@@ -388,53 +401,6 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const validateGapConstraint = (draggedExam: ExamScheduleItem, targetDate: Date): { valid: boolean; message?: string } => {
-    // Get all exams for the same semester, excluding the dragged exam
-    const semesterExams = generatedSchedule
-      .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-    // Find the position where this exam would be inserted
-    let insertIndex = 0;
-    for (let i = 0; i < semesterExams.length; i++) {
-      if (semesterExams[i].date.getTime() < targetDate.getTime()) {
-        insertIndex = i + 1;
-      } else {
-        break;
-      }
-    }
-
-    // Check gap with previous exam
-    if (insertIndex > 0) {
-      const prevExam = semesterExams[insertIndex - 1];
-      const daysSincePrev = Math.floor((targetDate.getTime() - prevExam.date.getTime()) / (1000 * 60 * 60 * 24));
-      const requiredGap = draggedExam.gap_days;
-      
-      if (daysSincePrev < requiredGap) {
-        return {
-          valid: false,
-          message: `Need ${requiredGap} days gap from previous exam (${prevExam.courseCode} on ${prevExam.date.toLocaleDateString()}). Current gap: ${daysSincePrev} days.`
-        };
-      }
-    }
-
-    // Check gap with next exam
-    if (insertIndex < semesterExams.length) {
-      const nextExam = semesterExams[insertIndex];
-      const daysToNext = Math.floor((nextExam.date.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
-      const nextExamRequiredGap = nextExam.gap_days;
-      
-      if (daysToNext < nextExamRequiredGap) {
-        return {
-          valid: false,
-          message: `Next exam (${nextExam.courseCode} on ${nextExam.date.toLocaleDateString()}) needs ${nextExamRequiredGap} days gap. Current gap: ${daysToNext} days.`
-        };
-      }
-    }
-
-    return { valid: true };
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -483,15 +449,24 @@ export default function Index() {
       return;
     }
 
-    // Check gap constraints
-    const gapValidation = validateGapConstraint(draggedExam, targetDate);
-    if (!gapValidation.valid) {
-      toast({
-        title: "Gap Constraint Violation",
-        description: gapValidation.message,
-        variant: "destructive"
-      });
-      return;
+    // Check gap requirement if not first paper
+    if (!draggedExam.is_first_paper) {
+      const semesterExams = generatedSchedule
+        .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
+        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+
+      const previousExam = semesterExams[semesterExams.length - 1];
+      if (previousExam) {
+        const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < draggedExam.gap_days) {
+          toast({
+            title: "Gap Requirement Not Met",
+            description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
     }
 
     // Update the exam's date
@@ -634,19 +609,6 @@ export default function Index() {
     }
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setHolidays((prev) => [...prev, date]);
-      setSelectedDate(undefined);
-    }
-  };
-
-  const removeHoliday = (dateToRemove: Date) => {
-    setHolidays(
-      holidays.filter((date) => date.getTime() !== dateToRemove.getTime())
-    );
-  };
-
   const toggleCourseTeacher = (semester: number, id: string) => {
     setSelectedCourseTeachers((prev) => ({
       ...prev,
@@ -680,23 +642,6 @@ export default function Index() {
     }
   };
 
-  const openGapEditor = (course: CourseTeacher) => {
-    setEditingCourseId(course.id);
-    setTempGapDays(course.gap_days || defaultGapDays);
-  };
-
-  const saveGapDays = async () => {
-    if (editingCourseId) {
-      await updateCourseGapDays(editingCourseId, tempGapDays);
-      setEditingCourseId(null);
-    }
-  };
-
-  const cancelGapEdit = () => {
-    setEditingCourseId(null);
-    setTempGapDays(defaultGapDays);
-  };
-
   // Group schedule by dates for table display
   const scheduleByDate = generatedSchedule.reduce((acc, exam) => {
     const dateKey = exam.date.toDateString();
@@ -721,7 +666,7 @@ export default function Index() {
                 Central University of Kashmir
               </h1>
               <p className="text-gray-600">
-                Generate optimized exam schedules with custom gap configuration and drag & drop interface
+                Generate optimized exam schedules with custom gap settings and drag & drop interface
                 developed by{" "}
                 <a
                   href="https://m4milaad.github.io/Resume/"
@@ -775,7 +720,7 @@ export default function Index() {
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Schedule Settings</CardTitle>
-                <CardDescription>Configure exam dates, holidays, and gap constraints</CardDescription>
+                <CardDescription>Configure exam dates and holidays</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -830,54 +775,6 @@ export default function Index() {
                   </Popover>
                 </div>
 
-                {/* Enhanced Gap Days Configuration */}
-                <div className="space-y-3 pt-4 border-t bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    <Label htmlFor="defaultGapDays" className="text-base font-semibold text-blue-900">
-                      Gap Configuration
-                    </Label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="w-4 h-4 text-blue-500" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p>Sets the minimum number of preparation days between consecutive exams for the same semester. First paper of each semester requires no gap. Individual courses can override this default.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="defaultGapDays" className="text-sm font-medium">
-                      Default Gap Days (0-10)
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="defaultGapDays"
-                        type="number"
-                        min="0"
-                        max="10"
-                        value={defaultGapDays}
-                        onChange={(e) => setDefaultGapDays(parseInt(e.target.value) || 0)}
-                        className="flex-1"
-                      />
-                      <Badge variant="outline" className="text-xs">
-                        {defaultGapDays} {defaultGapDays === 1 ? 'day' : 'days'}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
-                    <strong>How it works:</strong>
-                    <ul className="mt-1 space-y-1 list-disc list-inside">
-                      <li>First exam per semester: No gap required ★</li>
-                      <li>Subsequent exams: Must have {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''} gap</li>
-                      <li>Individual courses can override this default</li>
-                      <li>Click the edit icon on course cards to customize</li>
-                    </ul>
-                  </div>
-                </div>
-
                 <Button
                   onClick={generateSchedule}
                   className="w-full"
@@ -907,60 +804,6 @@ export default function Index() {
                     </Button>
                   </div>
                 )}
-
-                {/* Holidays Section */}
-                <div className="space-y-4 pt-4 border-t">
-                  <Label>Add Holidays</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !selectedDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        Pick a holiday
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={handleDateSelect}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-
-                  <div className="space-y-2">
-                    <Label>Selected Holidays:</Label>
-                    <div className="max-h-32 overflow-y-auto space-y-1">
-                      {holidays.length === 0 ? (
-                        <p className="text-sm text-gray-500">
-                          No holidays selected
-                        </p>
-                      ) : (
-                        holidays.map((holiday, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center bg-blue-50 p-2 rounded text-sm"
-                          >
-                            <span>{format(holiday, "PPP")}</span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeHoliday(holiday)}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -1018,17 +861,15 @@ export default function Index() {
                             <div
                               key={ct.id}
                               className={cn(
-                                "p-3 border rounded-lg transition-colors",
+                                "p-3 border rounded-lg cursor-pointer transition-colors",
                                 selectedCourseTeachers[semester]?.includes(ct.id)
                                   ? "bg-blue-50 border-blue-200"
                                   : "bg-white border-gray-200 hover:bg-gray-50"
                               )}
+                              onClick={() => toggleCourseTeacher(semester, ct.id)}
                             >
                               <div className="flex justify-between items-start">
-                                <div 
-                                  className="flex-1 cursor-pointer"
-                                  onClick={() => toggleCourseTeacher(semester, ct.id)}
-                                >
+                                <div className="flex-1">
                                   <div className="font-medium">
                                     {ct.course_code} - {ct.teacher_code}
                                   </div>
@@ -1042,94 +883,74 @@ export default function Index() {
                                       {ct.teacher_name}
                                     </div>
                                   )}
-                                  
-                                  {/* Enhanced Gap Display */}
-                                  <div className="flex items-center justify-between mt-2">
-                                    <div className="flex items-center gap-2">
-                                      {editingCourseId === ct.id ? (
-                                        <div className="flex items-center gap-2">
-                                          <Clock className="w-3 h-3 text-blue-600" />
-                                          <span className="text-xs text-blue-600">Gap:</span>
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            max="10"
-                                            value={tempGapDays}
-                                            onChange={(e) => setTempGapDays(parseInt(e.target.value) || 0)}
-                                            className="w-16 h-6 text-xs"
-                                            onClick={(e) => e.stopPropagation()}
-                                          />
-                                          <span className="text-xs text-blue-600">days</span>
-                                          <div className="flex gap-1">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                saveGapDays();
-                                              }}
-                                            >
-                                              ✓
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                cancelGapEdit();
-                                              }}
-                                            >
-                                              ✕
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center gap-2">
-                                          <Clock className="w-3 h-3 text-blue-600" />
-                                          <span className="text-xs text-blue-600">
-                                            Gap: {ct.gap_days || defaultGapDays} days
-                                          </span>
-                                          {(ct.gap_days || defaultGapDays) !== defaultGapDays && (
-                                            <Badge variant="outline" className="text-xs h-4">
-                                              Custom
-                                            </Badge>
-                                          )}
-                                          <Tooltip>
-                                            <TooltipTrigger asChild>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-5 w-5 p-0 text-gray-500 hover:text-blue-600"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  openGapEditor(ct);
-                                                }}
-                                              >
-                                                <Edit3 className="w-3 h-3" />
-                                              </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                              <p>Edit gap days for this course</p>
-                                            </TooltipContent>
-                                          </Tooltip>
-                                        </div>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                                      <Clock className="w-3 h-3" />
+                                      <span>Gap: {ct.gap_days || 2} days</span>
+                                      {(ct.gap_days !== 2) && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          Custom
+                                        </Badge>
                                       )}
                                     </div>
+                                    {editingGap === ct.id ? (
+                                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="10"
+                                          value={tempGapValue}
+                                          onChange={(e) => setTempGapValue(parseInt(e.target.value) || 0)}
+                                          className="w-16 h-6 text-xs"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0"
+                                          onClick={() => handleSaveGap(ct.id)}
+                                        >
+                                          <Check className="w-3 h-3" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-6 w-6 p-0"
+                                          onClick={handleCancelGap}
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-6 w-6 p-0"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditGap(ct.id, ct.gap_days || 2);
+                                            }}
+                                          >
+                                            <Edit2 className="w-3 h-3" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Edit gap days (0-10)</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
                                   </div>
                                 </div>
-                                
                                 <div
                                   className={cn(
-                                    "w-4 h-4 rounded border-2 mt-1 cursor-pointer",
+                                    "w-4 h-4 rounded border-2 mt-1",
                                     selectedCourseTeachers[semester]?.includes(
                                       ct.id
                                     )
                                       ? "bg-blue-500 border-blue-500"
                                       : "border-gray-300"
                                   )}
-                                  onClick={() => toggleCourseTeacher(semester, ct.id)}
                                 >
                                   {selectedCourseTeachers[semester]?.includes(
                                     ct.id
@@ -1151,6 +972,11 @@ export default function Index() {
             </div>
           </div>
 
+          {/* Holidays Management */}
+          <div className="mt-6">
+            <HolidaysManager onHolidaysChange={setHolidays} />
+          </div>
+
           {/* Tabular Schedule Display with Drag & Drop */}
           {isScheduleGenerated && (
             <Card className="mt-6">
@@ -1160,7 +986,19 @@ export default function Index() {
                   Exam Schedule (Drag & Drop to Reschedule)
                 </CardTitle>
                 <CardDescription>
-                  Constraints: Max 4 exams per day, 1 exam per semester per day, custom gap-based scheduling with semester-wise separation
+                  <div className="space-y-1">
+                    <div>Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements</div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
+                        <span>First Paper (No gap required)</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-blue-100 border border-blue-300 rounded"></div>
+                        <span>Custom gap setting</span>
+                      </div>
+                    </div>
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1218,6 +1056,8 @@ export default function Index() {
                                                   <Badge
                                                     variant="outline"
                                                     className={`cursor-move flex items-center gap-1 ${
+                                                      exam.is_first_paper ? 'bg-green-50 text-green-700 border-green-200' :
+                                                      exam.gap_days !== 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                       exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
                                                       exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
                                                       exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
@@ -1227,14 +1067,15 @@ export default function Index() {
                                                   >
                                                     <GripVertical className="h-3 w-3" />
                                                     S{exam.semester}: {exam.courseCode}
-                                                    {exam.is_first_paper && <span className="text-xs">★</span>}
                                                   </Badge>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                  <div className="text-sm">
-                                                    <div><strong>{exam.courseCode}</strong></div>
+                                                  <div className="text-xs">
+                                                    <div><strong>{exam.courseCode}</strong> - {exam.teacher_code}</div>
+                                                    <div>Semester {exam.semester} ({exam.program_type})</div>
                                                     <div>Gap: {exam.gap_days} days</div>
-                                                    <div>{exam.is_first_paper ? 'First paper (no gap required)' : 'Subsequent paper'}</div>
+                                                    {exam.is_first_paper && <div className="text-green-600">First Paper</div>}
+                                                    {exam.gap_days !== 2 && <div className="text-blue-600">Custom Gap</div>}
                                                   </div>
                                                 </TooltipContent>
                                               </Tooltip>
@@ -1258,44 +1099,6 @@ export default function Index() {
                     </Table>
                   </div>
                 </DragDropContext>
-                
-                {/* Enhanced Legend */}
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium mb-3">Legend & Gap Information:</h4>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <h5 className="text-sm font-medium mb-2">Symbols:</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs">★</span>
-                          <span>First paper (no gap required)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-3 h-3" />
-                          <span>Custom gap days per course</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit gap on course cards</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <GripVertical className="w-3 h-3" />
-                          <span>Drag to reschedule</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-medium mb-2">Gap Rules:</h5>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div>• Default gap: {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''}</div>
-                        <div>• First papers: No gap needed</div>
-                        <div>• Custom gaps: Click edit icon on course cards</div>
-                        <div>• Validation: Prevents invalid moves</div>
-                        <div>• Hover exams for gap details</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           )}
