@@ -16,17 +16,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { generateExamSchedulePDF } from "@/utils/pdfGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -49,7 +48,7 @@ interface CourseTeacher {
 }
 
 interface ExamScheduleItem {
-  id?: string;
+  id: string;
   course_code: string;
   teacher_code: string;
   exam_date: string;
@@ -57,13 +56,10 @@ interface ExamScheduleItem {
   time_slot: string;
   semester: number;
   program_type: string;
-}
-
-interface DateSlot {
-  date: string;
+  date: Date;
+  courseCode: string;
   dayOfWeek: string;
-  exams: ExamScheduleItem[];
-  maxExams: number;
+  timeSlot: string;
 }
 
 export default function Index() {
@@ -76,11 +72,9 @@ export default function Index() {
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
     Record<number, string[]>
   >({});
-  const [gapDaysOverride, setGapDaysOverride] = useState<Record<string, number>>({});
   const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<DateSlot[]>([]);
-  const [unscheduledExams, setUnscheduledExams] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isScheduleGenerated, setIsScheduleGenerated] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -132,38 +126,12 @@ export default function Index() {
     return courseTeachers.filter((ct) => ct.semester === semester);
   };
 
-  const generateDateSlots = (): DateSlot[] => {
-    if (!startDate || !endDate) return [];
-
-    const slots: DateSlot[] = [];
-    let currentDate = new Date(startDate);
-    const endDateTime = new Date(endDate);
-
-    while (currentDate <= endDateTime) {
-      // Skip weekends and holidays
-      const dayOfWeek = currentDate.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      const isHoliday = holidays.some(
-        (holiday) => holiday.toDateString() === currentDate.toDateString()
-      );
-
-      if (!isWeekend && !isHoliday) {
-        const maxExams = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
-        slots.push({
-          date: currentDate.toISOString().split("T")[0],
-          dayOfWeek: currentDate.toLocaleDateString("en-US", { weekday: "long" }),
-          exams: [],
-          maxExams
-        });
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return slots;
+  const getExamTimeSlot = (date: Date) => {
+    const dayOfWeek = date.getDay();
+    return dayOfWeek === 5 ? "11:00 AM - 2:00 PM" : "12:00 PM - 3:00 PM"; // Friday vs other days
   };
 
-  const handleGenerateSlots = () => {
+  const generateSchedule = async () => {
     if (!startDate || !endDate) {
       toast({
         title: "Error",
@@ -182,10 +150,7 @@ export default function Index() {
       return;
     }
 
-    const slots = generateDateSlots();
-    setAvailableSlots(slots);
-
-    // Generate unscheduled exams list
+    // Get selected courses
     const allSelectedCourses = [];
     for (const semester of allSemesters) {
       const semesterCourses = getCoursesBySemester(semester);
@@ -196,187 +161,163 @@ export default function Index() {
       allSelectedCourses.push(...selectedSemesterCourses);
     }
 
-    const unscheduled: ExamScheduleItem[] = allSelectedCourses.map((ct, index) => ({
-      id: `unscheduled-${index}`,
-      course_code: ct.course_code,
-      teacher_code: ct.teacher_code,
-      exam_date: "",
-      day_of_week: "",
-      time_slot: "12:00 PM - 2:30 PM",
-      semester: ct.semester,
-      program_type: ct.program_type,
-    }));
+    if (allSelectedCourses.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one course",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setUnscheduledExams(unscheduled);
-    setGeneratedSchedule([]);
+    try {
+      setLoading(true);
 
-    toast({
-      title: "Slots Generated",
-      description: `${slots.length} exam slots created. Start dragging exams to schedule them.`,
-    });
+      // Generate exam dates within the range
+      const examDates: Date[] = [];
+      let currentDate = new Date(startDate);
+      const endDateTime = new Date(endDate);
+
+      while (currentDate <= endDateTime) {
+        const dayOfWeek = currentDate.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHoliday = holidays.some(
+          (holiday) => holiday.toDateString() === currentDate.toDateString()
+        );
+
+        if (!isWeekend && !isHoliday) {
+          examDates.push(new Date(currentDate));
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      if (examDates.length === 0) {
+        toast({
+          title: "Error",
+          description: "No valid exam dates found in the selected range",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate schedule
+      const schedule: ExamScheduleItem[] = [];
+      let dateIndex = 0;
+
+      for (const course of allSelectedCourses) {
+        if (dateIndex >= examDates.length) {
+          toast({
+            title: "Warning",
+            description: "Not enough dates to schedule all exams",
+            variant: "destructive",
+          });
+          break;
+        }
+
+        const examDate = examDates[dateIndex];
+        const exam: ExamScheduleItem = {
+          id: `exam-${schedule.length}`,
+          course_code: course.course_code,
+          teacher_code: course.teacher_code,
+          exam_date: examDate.toISOString().split("T")[0],
+          day_of_week: examDate.toLocaleDateString("en-US", { weekday: "long" }),
+          time_slot: getExamTimeSlot(examDate),
+          semester: course.semester,
+          program_type: course.program_type,
+          date: examDate,
+          courseCode: course.course_code,
+          dayOfWeek: examDate.toLocaleDateString("en-US", { weekday: "long" }),
+          timeSlot: getExamTimeSlot(examDate),
+        };
+
+        schedule.push(exam);
+        dateIndex++;
+      }
+
+      setGeneratedSchedule(schedule);
+      setIsScheduleGenerated(true);
+
+      toast({
+        title: "Success",
+        description: `Generated schedule for ${schedule.length} exams`,
+      });
+    } catch (error) {
+      console.error("Error generating schedule:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate exam schedule",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDragEnd = (result: DropResult) => {
+  const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
 
-    // Handle moving from unscheduled to date slot
-    if (source.droppableId === "unscheduled" && destination.droppableId.startsWith("date-")) {
-      const targetDate = destination.droppableId.replace("date-", "");
-      const exam = unscheduledExams.find(e => e.id === draggableId);
-      if (!exam) return;
-
-      // Check if target slot has space
-      const targetSlot = availableSlots.find(slot => slot.date === targetDate);
-      if (!targetSlot || targetSlot.exams.length >= targetSlot.maxExams) {
-        toast({
-          title: "Slot Full",
-          description: `This date can only accommodate ${targetSlot?.maxExams} exams`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check for conflicts
-      const hasTeacherConflict = targetSlot.exams.some(e => e.teacher_code === exam.teacher_code);
-      const hasSemesterConflict = targetSlot.exams.some(e => e.semester === exam.semester);
-
-      if (hasTeacherConflict || hasSemesterConflict) {
-        toast({
-          title: "Conflict Detected",
-          description: hasTeacherConflict 
-            ? `Teacher ${exam.teacher_code} already has an exam on this date`
-            : `Semester ${exam.semester} already has an exam on this date`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Move exam to scheduled
-      const scheduledExam: ExamScheduleItem = {
-        ...exam,
-        exam_date: targetDate,
-        day_of_week: targetSlot.dayOfWeek,
-        time_slot: targetSlot.dayOfWeek === "Friday" ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM",
-      };
-
-      setUnscheduledExams(prev => prev.filter(e => e.id !== draggableId));
-      setGeneratedSchedule(prev => [...prev, scheduledExam]);
-      
-      // Update available slots
-      setAvailableSlots(prev => prev.map(slot => 
-        slot.date === targetDate 
-          ? { ...slot, exams: [...slot.exams, scheduledExam] }
-          : slot
-      ));
-
-      toast({
-        title: "Exam Scheduled",
-        description: `${exam.course_code} scheduled for ${new Date(targetDate).toLocaleDateString()}`,
-      });
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
     }
 
-    // Handle moving from date slot back to unscheduled
-    if (source.droppableId.startsWith("date-") && destination.droppableId === "unscheduled") {
-      const sourceDate = source.droppableId.replace("date-", "");
-      const exam = generatedSchedule.find(e => e.id === draggableId);
-      if (!exam) return;
+    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
+    if (!draggedExam) return;
 
-      // Remove from scheduled
-      setGeneratedSchedule(prev => prev.filter(e => e.id !== draggableId));
-      
-      // Add back to unscheduled
-      const unscheduledExam: ExamScheduleItem = {
-        ...exam,
-        id: `unscheduled-${Date.now()}`,
-        exam_date: "",
-        day_of_week: "",
-      };
-      setUnscheduledExams(prev => [...prev, unscheduledExam]);
+    // Parse destination date from droppableId
+    const targetDateString = destination.droppableId.replace('date-', '');
+    const targetDate = new Date(targetDateString);
 
-      // Update available slots
-      setAvailableSlots(prev => prev.map(slot => 
-        slot.date === sourceDate 
-          ? { ...slot, exams: slot.exams.filter(e => e.id !== draggableId) }
-          : slot
-      ));
+    // Check if target date already has an exam for this semester
+    const existingExamForSemester = generatedSchedule.find(exam =>
+      exam.date.toDateString() === targetDate.toDateString() &&
+      exam.semester === draggedExam.semester &&
+      exam.id !== draggedExam.id
+    );
 
+    if (existingExamForSemester) {
       toast({
-        title: "Exam Unscheduled",
-        description: `${exam.course_code} moved back to unscheduled list`,
+        title: "Cannot Move Exam",
+        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
+        variant: "destructive"
       });
+      return;
     }
 
-    // Handle moving between date slots
-    if (source.droppableId.startsWith("date-") && destination.droppableId.startsWith("date-")) {
-      const sourceDate = source.droppableId.replace("date-", "");
-      const targetDate = destination.droppableId.replace("date-", "");
-      
-      if (sourceDate === targetDate) return;
-
-      const exam = generatedSchedule.find(e => e.id === draggableId);
-      if (!exam) return;
-
-      const targetSlot = availableSlots.find(slot => slot.date === targetDate);
-      if (!targetSlot || targetSlot.exams.length >= targetSlot.maxExams) {
-        toast({
-          title: "Slot Full",
-          description: `This date can only accommodate ${targetSlot?.maxExams} exams`,
-          variant: "destructive",
-        });
-        return;
+    // Update the exam's date
+    const updatedSchedule = generatedSchedule.map(exam => {
+      if (exam.id === draggableId) {
+        return {
+          ...exam,
+          date: targetDate,
+          exam_date: targetDate.toISOString().split("T")[0],
+          dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          timeSlot: getExamTimeSlot(targetDate),
+          time_slot: getExamTimeSlot(targetDate)
+        };
       }
+      return exam;
+    });
 
-      // Check for conflicts (excluding the exam being moved)
-      const otherExamsOnTarget = targetSlot.exams.filter(e => e.id !== draggableId);
-      const hasTeacherConflict = otherExamsOnTarget.some(e => e.teacher_code === exam.teacher_code);
-      const hasSemesterConflict = otherExamsOnTarget.some(e => e.semester === exam.semester);
+    // Sort by date
+    updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
 
-      if (hasTeacherConflict || hasSemesterConflict) {
-        toast({
-          title: "Conflict Detected",
-          description: hasTeacherConflict 
-            ? `Teacher ${exam.teacher_code} already has an exam on this date`
-            : `Semester ${exam.semester} already has an exam on this date`,
-          variant: "destructive",
-        });
-        return;
-      }
+    setGeneratedSchedule(updatedSchedule);
 
-      // Update exam date
-      const updatedExam = {
-        ...exam,
-        exam_date: targetDate,
-        day_of_week: targetSlot.dayOfWeek,
-        time_slot: targetSlot.dayOfWeek === "Friday" ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM",
-      };
-
-      setGeneratedSchedule(prev => prev.map(e => e.id === draggableId ? updatedExam : e));
-
-      // Update available slots
-      setAvailableSlots(prev => prev.map(slot => {
-        if (slot.date === sourceDate) {
-          return { ...slot, exams: slot.exams.filter(e => e.id !== draggableId) };
-        }
-        if (slot.date === targetDate) {
-          return { ...slot, exams: [...slot.exams.filter(e => e.id !== draggableId), updatedExam] };
-        }
-        return slot;
-      }));
-
-      toast({
-        title: "Exam Moved",
-        description: `${exam.course_code} moved to ${new Date(targetDate).toLocaleDateString()}`,
-      });
-    }
+    toast({
+      title: "Exam Moved Successfully",
+      description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()}`,
+    });
   };
 
   const handleSaveSchedule = async () => {
     if (generatedSchedule.length === 0) {
       toast({
         title: "Error",
-        description: "Please schedule some exams first",
+        description: "Please generate a schedule first",
         variant: "destructive",
       });
       return;
@@ -422,7 +363,7 @@ export default function Index() {
     if (generatedSchedule.length === 0) {
       toast({
         title: "Error",
-        description: "Please schedule some exams first",
+        description: "Please generate a schedule first",
         variant: "destructive",
       });
       return;
@@ -527,12 +468,19 @@ export default function Index() {
     }
   };
 
-  const updateGapDays = (courseId: string, days: number) => {
-    setGapDaysOverride(prev => ({
-      ...prev,
-      [courseId]: days
-    }));
-  };
+  // Group schedule by dates for table display
+  const scheduleByDate = generatedSchedule.reduce((acc, exam) => {
+    const dateKey = exam.date.toDateString();
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(exam);
+    return acc;
+  }, {} as { [key: string]: ExamScheduleItem[] });
+
+  const sortedDates = Object.keys(scheduleByDate).sort((a, b) =>
+    new Date(a).getTime() - new Date(b).getTime()
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -653,14 +601,14 @@ export default function Index() {
               </div>
 
               <Button
-                onClick={handleGenerateSlots}
+                onClick={generateSchedule}
                 className="w-full"
                 disabled={loading}
               >
-                Generate Date Slots
+                Generate Schedule
               </Button>
 
-              {availableSlots.length > 0 && (
+              {isScheduleGenerated && (
                 <div className="space-y-2">
                   <Button
                     onClick={handleSaveSchedule}
@@ -814,21 +762,6 @@ export default function Index() {
                                     {ct.teacher_name}
                                   </div>
                                 )}
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Label className="text-xs">Gap Days:</Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="10"
-                                    value={gapDaysOverride[ct.id] ?? ct.gap_days}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      updateGapDays(ct.id, parseInt(e.target.value) || 0);
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-16 h-6 text-xs"
-                                  />
-                                </div>
                               </div>
                               <div
                                 className={cn(
@@ -860,167 +793,91 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Drag & Drop Schedule Table */}
-        {availableSlots.length > 0 && (
+        {/* Tabular Schedule Display with Drag & Drop */}
+        {isScheduleGenerated && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Exam Schedule Table</CardTitle>
-              <CardDescription>
-                Drag and drop exams from the unscheduled list to date slots. 
-                {unscheduledExams.length > 0 && ` ${unscheduledExams.length} exams remaining to schedule.`}
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Exam Schedule (Drag & Drop to Reschedule)
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <div className="grid lg:grid-cols-4 gap-6">
-                  {/* Unscheduled Exams */}
-                  <Card className="lg:col-span-1">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Unscheduled Exams</CardTitle>
-                      <CardDescription>
-                        {unscheduledExams.length} exams to schedule
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Droppable droppableId="unscheduled">
-                        {(provided, snapshot) => (
-                          <div
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className={cn(
-                              "min-h-[200px] p-2 border-2 border-dashed rounded-lg",
-                              snapshot.isDraggingOver
-                                ? "border-blue-400 bg-blue-50"
-                                : "border-gray-300"
-                            )}
-                          >
-                            {unscheduledExams.map((exam, index) => (
-                              <Draggable
-                                key={exam.id}
-                                draggableId={exam.id!}
-                                index={index}
-                              >
+              <DragDropContext onDragEnd={onDragEnd}>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[200px]">Date</TableHead>
+                        <TableHead>Day</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Exams</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedDates.map(dateString => {
+                        const date = new Date(dateString);
+                        const examsOnDate = scheduleByDate[dateString];
+
+                        return (
+                          <TableRow key={dateString}>
+                            <TableCell className="font-medium">
+                              {date.toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {date.toLocaleDateString('en-US', { weekday: 'long' })}
+                            </TableCell>
+                            <TableCell>
+                              {getExamTimeSlot(date)}
+                            </TableCell>
+                            <TableCell>
+                              <Droppable droppableId={`date-${dateString}`} direction="horizontal">
                                 {(provided, snapshot) => (
                                   <div
                                     ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={cn(
-                                      "p-2 mb-2 bg-white border rounded shadow-sm cursor-move",
-                                      snapshot.isDragging
-                                        ? "shadow-lg bg-blue-50"
-                                        : "hover:shadow-md"
-                                    )}
+                                    {...provided.droppableProps}
+                                    className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
+                                      snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                                    }`}
                                   >
-                                    <div className="font-medium text-sm">
-                                      {exam.course_code}
-                                    </div>
-                                    <div className="text-xs text-gray-600">
-                                      {exam.teacher_code} | Sem {exam.semester}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {exam.program_type}
-                                    </div>
+                                    {examsOnDate.map((exam, index) => (
+                                      <Draggable key={exam.id} draggableId={exam.id} index={index}>
+                                        {(provided, snapshot) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={`${
+                                              snapshot.isDragging ? 'shadow-lg' : ''
+                                            }`}
+                                          >
+                                            <Badge
+                                              variant="outline"
+                                              className={`cursor-move flex items-center gap-1 ${
+                                                exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                'bg-orange-50 text-orange-700 border-orange-200'
+                                              } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                            >
+                                              <GripVertical className="h-3 w-3" />
+                                              S{exam.semester}: {exam.courseCode}
+                                            </Badge>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    ))}
+                                    {provided.placeholder}
                                   </div>
                                 )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </CardContent>
-                  </Card>
-
-                  {/* Schedule Table */}
-                  <div className="lg:col-span-3">
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-32">Date</TableHead>
-                            <TableHead className="w-24">Day</TableHead>
-                            <TableHead>Scheduled Exams</TableHead>
-                            <TableHead className="w-20">Slots</TableHead>
+                              </Droppable>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {availableSlots.map((slot) => (
-                            <TableRow key={slot.date}>
-                              <TableCell className="font-medium">
-                                {new Date(slot.date).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>{slot.dayOfWeek}</TableCell>
-                              <TableCell>
-                                <Droppable droppableId={`date-${slot.date}`}>
-                                  {(provided, snapshot) => (
-                                    <div
-                                      {...provided.droppableProps}
-                                      ref={provided.innerRef}
-                                      className={cn(
-                                        "min-h-[60px] p-2 border-2 border-dashed rounded",
-                                        snapshot.isDraggingOver
-                                          ? "border-blue-400 bg-blue-50"
-                                          : "border-gray-200",
-                                        slot.exams.length >= slot.maxExams
-                                          ? "bg-red-50 border-red-200"
-                                          : ""
-                                      )}
-                                    >
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {slot.exams.map((exam, index) => (
-                                          <Draggable
-                                            key={exam.id}
-                                            draggableId={exam.id!}
-                                            index={index}
-                                          >
-                                            {(provided, snapshot) => (
-                                              <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                {...provided.dragHandleProps}
-                                                className={cn(
-                                                  "p-2 bg-green-100 border border-green-300 rounded text-xs cursor-move",
-                                                  snapshot.isDragging
-                                                    ? "shadow-lg bg-green-200"
-                                                    : "hover:bg-green-200"
-                                                )}
-                                              >
-                                                <div className="font-medium">
-                                                  {exam.course_code}
-                                                </div>
-                                                <div className="text-gray-600">
-                                                  {exam.teacher_code}
-                                                </div>
-                                                <div className="text-gray-500">
-                                                  Sem {exam.semester}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </Draggable>
-                                        ))}
-                                      </div>
-                                      {provided.placeholder}
-                                    </div>
-                                  )}
-                                </Droppable>
-                              </TableCell>
-                              <TableCell>
-                                <span className={cn(
-                                  "text-sm",
-                                  slot.exams.length >= slot.maxExams
-                                    ? "text-red-600 font-medium"
-                                    : "text-gray-600"
-                                )}>
-                                  {slot.exams.length}/{slot.maxExams}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               </DragDropContext>
             </CardContent>
