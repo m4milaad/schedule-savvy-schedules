@@ -606,10 +606,10 @@ export default function Index() {
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="odd" className="text-lg font-medium">
-                  Odd Semesters (B.Tech: 1,3,5,7 | M.Tech: 1,3)
+                  Odd Semesters
                 </TabsTrigger>
                 <TabsTrigger value="even" className="text-lg font-medium">
-                  Even Semesters (B.Tech: 2,4,6,8 | M.Tech: 2,4)
+                  Even Semesters
                 </TabsTrigger>
               </TabsList>
             </Tabs>
