@@ -134,7 +134,7 @@ export default function Index() {
         .order("holiday_date", { ascending: true });
 
       if (error) throw error;
-      
+
       // Convert holiday dates to Date objects
       const holidayDates = (data || []).map(holiday => new Date(holiday.holiday_date));
       setHolidays(holidayDates);
@@ -167,7 +167,7 @@ export default function Index() {
       if (error) throw error;
 
       // Update local state
-      setCourseTeachers(prev => 
+      setCourseTeachers(prev =>
         prev.map(ct => ct.id === courseId ? { ...ct, gap_days: newGap } : ct)
       );
 
@@ -313,35 +313,35 @@ export default function Index() {
         const availableSemesters = Object.keys(coursesBySemester)
           .map(Number)
           .filter(semester => {
-            const hasUnscheduledCourses = coursesBySemester[semester].some(course => 
+            const hasUnscheduledCourses = coursesBySemester[semester].some(course =>
               !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
             );
             const notScheduledToday = semesterLastScheduledDate[semester] !== dateKey;
-            
+
             // Check gap requirement for this semester
             const lastScheduledExam = schedule
               .filter(exam => exam.semester === semester)
               .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0];
-            
+
             if (!lastScheduledExam) {
               // First exam for this semester - no gap required
               return hasUnscheduledCourses && notScheduledToday;
             }
-            
+
             // Find the next course to be scheduled for this semester
-            const nextCourse = coursesBySemester[semester].find(course => 
+            const nextCourse = coursesBySemester[semester].find(course =>
               !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
             );
-            
+
             if (!nextCourse) return false;
-            
+
             // Calculate days between last exam and current date
             const lastExamDate = new Date(lastScheduledExam.exam_date);
             const daysDiff = Math.floor((currentExamDate.getTime() - lastExamDate.getTime()) / (1000 * 60 * 60 * 24));
             const requiredGap = nextCourse.gap_days || 2;
-            
+
             const gapMet = daysDiff >= requiredGap;
-            
+
             return hasUnscheduledCourses && notScheduledToday && gapMet;
           });
 
@@ -350,7 +350,7 @@ export default function Index() {
           if (scheduledToday >= maxExamsPerDay) break;
 
           // Find first unscheduled course for this semester
-          const unscheduledCourse = coursesBySemester[semester].find(course => 
+          const unscheduledCourse = coursesBySemester[semester].find(course =>
             !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
           );
 
@@ -393,7 +393,7 @@ export default function Index() {
         if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
           // Reset to start of dates for next round
           currentDateIndex = 0;
-          
+
           // Safety check to prevent infinite loop
           if (examDates.length < Math.ceil(totalCourses / maxExamsPerDay)) {
             toast({
@@ -448,7 +448,7 @@ export default function Index() {
     );
 
     // Check if semester already has exam on target date
-    const semesterExamOnDate = examsOnTargetDate.find(exam => 
+    const semesterExamOnDate = examsOnTargetDate.find(exam =>
       exam.semester === draggedExam.semester
     );
 
@@ -683,23 +683,34 @@ export default function Index() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Central University of Kashmir
-              </h1>
-              <p className="text-gray-600">
-                Generate optimized exam schedules with custom gap settings and drag & drop interface
-                developed by{" "}
-                <a
-                  href="https://m4milaad.github.io/Resume/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold underline text-blue-600 hover:text-blue-800"
-                >
-                  Milad Ajaz Bhat
-                </a>
-              </p>
+            <div className="flex items-start space-x-3">
+              {/* Logo */}
+              <img
+                src="/CUKLogo.ico"
+                alt="CUK Logo"
+                className="w-20 h-20 mt-1"
+              />
+
+              {/* Text Section */}
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">
+                  Central University of Kashmir
+                </h1>
+                <p className="text-gray-600">
+                  Generate optimized exam schedules with custom gap settings and drag & drop interface<br />
+                  developed by{" "}
+                  <a
+                    href="https://m4milaad.github.io/Resume/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold underline text-blue-600 hover:text-blue-800"
+                  >
+                    Milad Ajaz Bhat
+                  </a>
+                </p>
+              </div>
             </div>
+
             <Button
               onClick={() => navigate("/admin-login")}
               variant="outline"
@@ -1009,10 +1020,10 @@ export default function Index() {
                                   {selectedCourseTeachers[semester]?.includes(
                                     ct.id
                                   ) && (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                                    </div>
-                                  )}
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                                      </div>
+                                    )}
                                 </div>
                               </div>
                             </div>
@@ -1085,9 +1096,8 @@ export default function Index() {
                                     <div
                                       ref={provided.innerRef}
                                       {...provided.droppableProps}
-                                      className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
-                                        snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
-                                      } ${examCount >= 4 ? 'bg-red-50' : ''}`}
+                                      className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                                        } ${examCount >= 4 ? 'bg-red-50' : ''}`}
                                     >
                                       {examsOnDate.map((exam, index) => (
                                         <Draggable key={exam.id} draggableId={exam.id} index={index}>
@@ -1096,23 +1106,21 @@ export default function Index() {
                                               ref={provided.innerRef}
                                               {...provided.draggableProps}
                                               {...provided.dragHandleProps}
-                                              className={`${
-                                                snapshot.isDragging ? 'shadow-lg' : ''
-                                              }`}
+                                              className={`${snapshot.isDragging ? 'shadow-lg' : ''
+                                                }`}
                                             >
                                               <Tooltip>
                                                 <TooltipTrigger asChild>
                                                   <Badge
                                                     variant="outline"
-                                                    className={`cursor-move flex items-center gap-1 ${
-                                                      exam.is_first_paper ? 'bg-green-50 text-green-700 border-green-200' :
-                                                      exam.gap_days !== 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                      exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
-                                                      exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                      exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
-                                                      exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                      'bg-orange-50 text-orange-700 border-orange-200'
-                                                    } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                                    className={`cursor-move flex items-center gap-1 ${exam.is_first_paper ? 'bg-green-50 text-green-700 border-green-200' :
+                                                        exam.gap_days !== 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                          exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                            exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                              exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                                exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                                  'bg-orange-50 text-orange-700 border-orange-200'
+                                                      } ${snapshot.isDragging ? 'rotate-3' : ''}`}
                                                   >
                                                     <GripVertical className="h-3 w-3" />
                                                     S{exam.semester}: {exam.courseCode}
