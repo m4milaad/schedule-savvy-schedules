@@ -38,8 +38,8 @@ A comprehensive exam scheduling system designed for Central University of Kashmi
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd cuk-exam-scheduler
+   git clone https://github.com/m4milaad/schedule-savvy-schedules.git
+   cd schedule-savvy-schedules
    ```
 
 2. **Install dependencies**
@@ -69,7 +69,6 @@ A comprehensive exam scheduling system designed for Central University of Kashmi
 1. **Access Admin Panel**
    - Click "Admin Panel" button on the homepage
    - Login with administrator credentials
-   - Default credentials: `admin` / `admin123`
 
 2. **Manage Course Data**
    - Add individual courses or bulk import via Excel
