@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -201,38 +200,101 @@ export default function Index() {
         return;
       }
 
-      // Generate schedule
-      const schedule: ExamScheduleItem[] = [];
-      let dateIndex = 0;
+      // Group courses by semester for scheduling
+      const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
+        if (!acc[course.semester]) {
+          acc[course.semester] = [];
+        }
+        acc[course.semester].push(course);
+        return acc;
+      }, {} as Record<number, CourseTeacher[]>);
 
-      for (const course of allSelectedCourses) {
-        if (dateIndex >= examDates.length) {
-          toast({
-            title: "Warning",
-            description: "Not enough dates to schedule all exams",
-            variant: "destructive",
-          });
-          break;
+      // Schedule with constraints: max 4 exams per day, 1 per semester per day
+      const schedule: ExamScheduleItem[] = [];
+      const dateScheduleCount: Record<string, number> = {}; // Track exams per date
+      const semesterLastScheduledDate: Record<number, string> = {}; // Track last date for each semester
+
+      let currentDateIndex = 0;
+      let allCoursesScheduled = false;
+
+      while (!allCoursesScheduled && currentDateIndex < examDates.length) {
+        const currentExamDate = examDates[currentDateIndex];
+        const dateKey = currentExamDate.toDateString();
+
+        // Initialize date count if not exists
+        if (!dateScheduleCount[dateKey]) {
+          dateScheduleCount[dateKey] = 0;
         }
 
-        const examDate = examDates[dateIndex];
-        const exam: ExamScheduleItem = {
-          id: `exam-${schedule.length}`,
-          course_code: course.course_code,
-          teacher_code: course.teacher_code,
-          exam_date: examDate.toISOString().split("T")[0],
-          day_of_week: examDate.toLocaleDateString("en-US", { weekday: "long" }),
-          time_slot: getExamTimeSlot(examDate),
-          semester: course.semester,
-          program_type: course.program_type,
-          date: examDate,
-          courseCode: course.course_code,
-          dayOfWeek: examDate.toLocaleDateString("en-US", { weekday: "long" }),
-          timeSlot: getExamTimeSlot(examDate),
-        };
+        // Try to schedule exams for this date (max 4 per day)
+        let scheduledToday = 0;
+        const maxExamsPerDay = 4;
 
-        schedule.push(exam);
-        dateIndex++;
+        // Get available semesters for this date (not scheduled today)
+        const availableSemesters = Object.keys(coursesBySemester)
+          .map(Number)
+          .filter(semester => {
+            const hasUnscheduledCourses = coursesBySemester[semester].some(course => 
+              !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+            );
+            const notScheduledToday = semesterLastScheduledDate[semester] !== dateKey;
+            return hasUnscheduledCourses && notScheduledToday;
+          });
+
+        // Schedule up to 4 exams from different semesters
+        for (const semester of availableSemesters) {
+          if (scheduledToday >= maxExamsPerDay) break;
+
+          // Find first unscheduled course for this semester
+          const unscheduledCourse = coursesBySemester[semester].find(course => 
+            !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+          );
+
+          if (unscheduledCourse) {
+            const exam: ExamScheduleItem = {
+              id: `exam-${schedule.length}`,
+              course_code: unscheduledCourse.course_code,
+              teacher_code: unscheduledCourse.teacher_code,
+              exam_date: currentExamDate.toISOString().split("T")[0],
+              day_of_week: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              time_slot: getExamTimeSlot(currentExamDate),
+              semester: unscheduledCourse.semester,
+              program_type: unscheduledCourse.program_type,
+              date: currentExamDate,
+              courseCode: unscheduledCourse.course_code,
+              dayOfWeek: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              timeSlot: getExamTimeSlot(currentExamDate),
+            };
+
+            schedule.push(exam);
+            scheduledToday++;
+            dateScheduleCount[dateKey]++;
+            semesterLastScheduledDate[semester] = dateKey;
+          }
+        }
+
+        // Check if all courses are scheduled
+        const totalScheduled = schedule.length;
+        const totalCourses = allSelectedCourses.length;
+        allCoursesScheduled = totalScheduled >= totalCourses;
+
+        currentDateIndex++;
+
+        // If we've gone through all dates and still have unscheduled courses
+        if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
+          // Reset to start of dates for next round
+          currentDateIndex = 0;
+          
+          // Safety check to prevent infinite loop
+          if (examDates.length < Math.ceil(totalCourses / maxExamsPerDay)) {
+            toast({
+              title: "Warning",
+              description: `Need more exam dates to schedule all ${totalCourses} exams with the constraints. Only ${totalScheduled} exams scheduled.`,
+              variant: "destructive",
+            });
+            break;
+          }
+        }
       }
 
       setGeneratedSchedule(schedule);
@@ -240,7 +302,7 @@ export default function Index() {
 
       toast({
         title: "Success",
-        description: `Generated schedule for ${schedule.length} exams`,
+        description: `Generated schedule for ${schedule.length} exams with constraints: max 4 per day, 1 per semester per day`,
       });
     } catch (error) {
       console.error("Error generating schedule:", error);
@@ -270,17 +332,31 @@ export default function Index() {
     const targetDateString = destination.droppableId.replace('date-', '');
     const targetDate = new Date(targetDateString);
 
-    // Check if target date already has an exam for this semester
-    const existingExamForSemester = generatedSchedule.find(exam =>
+    // Check constraints for the target date
+    const examsOnTargetDate = generatedSchedule.filter(exam =>
       exam.date.toDateString() === targetDate.toDateString() &&
-      exam.semester === draggedExam.semester &&
       exam.id !== draggedExam.id
     );
 
-    if (existingExamForSemester) {
+    // Check if semester already has exam on target date
+    const semesterExamOnDate = examsOnTargetDate.find(exam => 
+      exam.semester === draggedExam.semester
+    );
+
+    if (semesterExamOnDate) {
       toast({
         title: "Cannot Move Exam",
         description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if target date already has 4 exams
+    if (examsOnTargetDate.length >= 4) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
         variant: "destructive"
       });
       return;
@@ -801,6 +877,9 @@ export default function Index() {
                 <CalendarIcon className="h-5 w-5" />
                 Exam Schedule (Drag & Drop to Reschedule)
               </CardTitle>
+              <CardDescription>
+                Constraints: Max 4 exams per day, 1 exam per semester per day
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <DragDropContext onDragEnd={onDragEnd}>
@@ -811,13 +890,14 @@ export default function Index() {
                         <TableHead className="w-[200px]">Date</TableHead>
                         <TableHead>Day</TableHead>
                         <TableHead>Time</TableHead>
-                        <TableHead>Exams</TableHead>
+                        <TableHead>Exams (Max 4)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedDates.map(dateString => {
                         const date = new Date(dateString);
                         const examsOnDate = scheduleByDate[dateString];
+                        const examCount = examsOnDate.length;
 
                         return (
                           <TableRow key={dateString}>
@@ -838,7 +918,7 @@ export default function Index() {
                                     {...provided.droppableProps}
                                     className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
                                       snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
-                                    }`}
+                                    } ${examCount >= 4 ? 'bg-red-50' : ''}`}
                                   >
                                     {examsOnDate.map((exam, index) => (
                                       <Draggable key={exam.id} draggableId={exam.id} index={index}>
@@ -869,6 +949,10 @@ export default function Index() {
                                       </Draggable>
                                     ))}
                                     {provided.placeholder}
+                                    {/* Show capacity indicator */}
+                                    <div className="flex items-center text-xs text-gray-500 ml-2">
+                                      {examCount}/4 slots used
+                                    </div>
                                   </div>
                                 )}
                               </Droppable>
