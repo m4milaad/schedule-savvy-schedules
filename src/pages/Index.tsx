@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock, Info } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock, Info, Edit3 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
@@ -83,6 +91,8 @@ export default function Index() {
   const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [isScheduleGenerated, setIsScheduleGenerated] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [tempGapDays, setTempGapDays] = useState<number>(2);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -125,6 +135,36 @@ export default function Index() {
       toast({
         title: "Error",
         description: "Failed to load course and teacher data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateCourseGapDays = async (courseId: string, newGapDays: number) => {
+    try {
+      const { error } = await supabase
+        .from("course_teacher_codes")
+        .update({ gap_days: newGapDays })
+        .eq("id", courseId);
+
+      if (error) throw error;
+
+      // Update local state
+      setCourseTeachers(prev => 
+        prev.map(ct => 
+          ct.id === courseId ? { ...ct, gap_days: newGapDays } : ct
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Gap days updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating gap days:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update gap days",
         variant: "destructive",
       });
     }
@@ -640,6 +680,23 @@ export default function Index() {
     }
   };
 
+  const openGapEditor = (course: CourseTeacher) => {
+    setEditingCourseId(course.id);
+    setTempGapDays(course.gap_days || defaultGapDays);
+  };
+
+  const saveGapDays = async () => {
+    if (editingCourseId) {
+      await updateCourseGapDays(editingCourseId, tempGapDays);
+      setEditingCourseId(null);
+    }
+  };
+
+  const cancelGapEdit = () => {
+    setEditingCourseId(null);
+    setTempGapDays(defaultGapDays);
+  };
+
   // Group schedule by dates for table display
   const scheduleByDate = generatedSchedule.reduce((acc, exam) => {
     const dateKey = exam.date.toDateString();
@@ -664,7 +721,7 @@ export default function Index() {
                 Central University of Kashmir
               </h1>
               <p className="text-gray-600">
-                Generate optimized exam schedules with gap-based constraints and drag & drop interface
+                Generate optimized exam schedules with custom gap configuration and drag & drop interface
                 developed by{" "}
                 <a
                   href="https://m4milaad.github.io/Resume/"
@@ -785,7 +842,7 @@ export default function Index() {
                         <Info className="w-4 h-4 text-blue-500" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        <p>Sets the minimum number of preparation days between consecutive exams for the same semester. First paper of each semester requires no gap.</p>
+                        <p>Sets the minimum number of preparation days between consecutive exams for the same semester. First paper of each semester requires no gap. Individual courses can override this default.</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -816,6 +873,7 @@ export default function Index() {
                       <li>First exam per semester: No gap required ★</li>
                       <li>Subsequent exams: Must have {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''} gap</li>
                       <li>Individual courses can override this default</li>
+                      <li>Click the edit icon on course cards to customize</li>
                     </ul>
                   </div>
                 </div>
@@ -960,15 +1018,17 @@ export default function Index() {
                             <div
                               key={ct.id}
                               className={cn(
-                                "p-3 border rounded-lg cursor-pointer transition-colors",
+                                "p-3 border rounded-lg transition-colors",
                                 selectedCourseTeachers[semester]?.includes(ct.id)
                                   ? "bg-blue-50 border-blue-200"
                                   : "bg-white border-gray-200 hover:bg-gray-50"
                               )}
-                              onClick={() => toggleCourseTeacher(semester, ct.id)}
                             >
                               <div className="flex justify-between items-start">
-                                <div className="flex-1">
+                                <div 
+                                  className="flex-1 cursor-pointer"
+                                  onClick={() => toggleCourseTeacher(semester, ct.id)}
+                                >
                                   <div className="font-medium">
                                     {ct.course_code} - {ct.teacher_code}
                                   </div>
@@ -982,25 +1042,94 @@ export default function Index() {
                                       {ct.teacher_name}
                                     </div>
                                   )}
-                                  <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    Gap: {ct.gap_days || defaultGapDays} days
-                                    {ct.gap_days !== defaultGapDays && (
-                                      <Badge variant="outline" className="text-xs">
-                                        Custom
-                                      </Badge>
-                                    )}
+                                  
+                                  {/* Enhanced Gap Display */}
+                                  <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center gap-2">
+                                      {editingCourseId === ct.id ? (
+                                        <div className="flex items-center gap-2">
+                                          <Clock className="w-3 h-3 text-blue-600" />
+                                          <span className="text-xs text-blue-600">Gap:</span>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="10"
+                                            value={tempGapDays}
+                                            onChange={(e) => setTempGapDays(parseInt(e.target.value) || 0)}
+                                            className="w-16 h-6 text-xs"
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                          <span className="text-xs text-blue-600">days</span>
+                                          <div className="flex gap-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                saveGapDays();
+                                              }}
+                                            >
+                                              ✓
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                cancelGapEdit();
+                                              }}
+                                            >
+                                              ✕
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <Clock className="w-3 h-3 text-blue-600" />
+                                          <span className="text-xs text-blue-600">
+                                            Gap: {ct.gap_days || defaultGapDays} days
+                                          </span>
+                                          {(ct.gap_days || defaultGapDays) !== defaultGapDays && (
+                                            <Badge variant="outline" className="text-xs h-4">
+                                              Custom
+                                            </Badge>
+                                          )}
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-5 w-5 p-0 text-gray-500 hover:text-blue-600"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  openGapEditor(ct);
+                                                }}
+                                              >
+                                                <Edit3 className="w-3 h-3" />
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>Edit gap days for this course</p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
+                                
                                 <div
                                   className={cn(
-                                    "w-4 h-4 rounded border-2 mt-1",
+                                    "w-4 h-4 rounded border-2 mt-1 cursor-pointer",
                                     selectedCourseTeachers[semester]?.includes(
                                       ct.id
                                     )
                                       ? "bg-blue-500 border-blue-500"
                                       : "border-gray-300"
                                   )}
+                                  onClick={() => toggleCourseTeacher(semester, ct.id)}
                                 >
                                   {selectedCourseTeachers[semester]?.includes(
                                     ct.id
@@ -1031,7 +1160,7 @@ export default function Index() {
                   Exam Schedule (Drag & Drop to Reschedule)
                 </CardTitle>
                 <CardDescription>
-                  Constraints: Max 4 exams per day, 1 exam per semester per day, gap-based scheduling with semester-wise separation
+                  Constraints: Max 4 exams per day, 1 exam per semester per day, custom gap-based scheduling with semester-wise separation
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1084,21 +1213,31 @@ export default function Index() {
                                                 snapshot.isDragging ? 'shadow-lg' : ''
                                               }`}
                                             >
-                                              <Badge
-                                                variant="outline"
-                                                className={`cursor-move flex items-center gap-1 ${
-                                                  exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
-                                                  exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                  exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
-                                                  exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                  'bg-orange-50 text-orange-700 border-orange-200'
-                                                } ${snapshot.isDragging ? 'rotate-3' : ''}`}
-                                                title={`Gap: ${exam.gap_days} days${exam.is_first_paper ? ' (First paper)' : ''}`}
-                                              >
-                                                <GripVertical className="h-3 w-3" />
-                                                S{exam.semester}: {exam.courseCode}
-                                                {exam.is_first_paper && <span className="text-xs">★</span>}
-                                              </Badge>
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <Badge
+                                                    variant="outline"
+                                                    className={`cursor-move flex items-center gap-1 ${
+                                                      exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                      exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                      exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                      exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                      'bg-orange-50 text-orange-700 border-orange-200'
+                                                    } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                                  >
+                                                    <GripVertical className="h-3 w-3" />
+                                                    S{exam.semester}: {exam.courseCode}
+                                                    {exam.is_first_paper && <span className="text-xs">★</span>}
+                                                  </Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                  <div className="text-sm">
+                                                    <div><strong>{exam.courseCode}</strong></div>
+                                                    <div>Gap: {exam.gap_days} days</div>
+                                                    <div>{exam.is_first_paper ? 'First paper (no gap required)' : 'Subsequent paper'}</div>
+                                                  </div>
+                                                </TooltipContent>
+                                              </Tooltip>
                                             </div>
                                           )}
                                         </Draggable>
@@ -1133,7 +1272,11 @@ export default function Index() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Clock className="w-3 h-3" />
-                          <span>Gap days shown in tooltip</span>
+                          <span>Custom gap days per course</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit gap on course cards</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <GripVertical className="w-3 h-3" />
@@ -1146,8 +1289,9 @@ export default function Index() {
                       <div className="space-y-1 text-sm text-gray-600">
                         <div>• Default gap: {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''}</div>
                         <div>• First papers: No gap needed</div>
-                        <div>• Custom gaps: Set per course in Admin</div>
+                        <div>• Custom gaps: Click edit icon on course cards</div>
                         <div>• Validation: Prevents invalid moves</div>
+                        <div>• Hover exams for gap details</div>
                       </div>
                     </div>
                   </div>
