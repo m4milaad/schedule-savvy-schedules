@@ -155,7 +155,7 @@ export default function Index() {
   };
 
   const detectClashes = (schedule: ExamScheduleItem[]): ClashWarning[] => {
-    const warnings: ClashWarning[] = [];
+    const clashWarnings: ClashWarning[] = [];
     const dateGroups = new Map<string, ExamScheduleItem[]>();
 
     // Group by date
@@ -175,7 +175,7 @@ export default function Index() {
       // Check date limits
       if (items.length > maxExams) {
         items.forEach(item => {
-          warnings.push({
+          clashWarnings.push({
             type: 'date_limit',
             message: `Too many exams on ${date} (${items.length}/${maxExams} max)`,
             itemId: item.id!
@@ -195,7 +195,7 @@ export default function Index() {
       teacherDates.forEach((itemIds, teacher) => {
         if (itemIds.length > 1) {
           itemIds.forEach(itemId => {
-            warnings.push({
+            clashWarnings.push({
               type: 'teacher',
               message: `Teacher ${teacher} has multiple exams on ${date}`,
               itemId
@@ -216,7 +216,7 @@ export default function Index() {
       semesterCounts.forEach((itemIds, semester) => {
         if (itemIds.length > 1) {
           itemIds.forEach(itemId => {
-            warnings.push({
+            clashWarnings.push({
               type: 'semester_repeat',
               message: `Multiple exams for semester ${semester} on ${date}`,
               itemId
@@ -226,7 +226,7 @@ export default function Index() {
       });
     });
 
-    return warnings;
+    return clashWarnings;
   };
 
   const handleGenerateSchedule = async () => {
@@ -253,9 +253,9 @@ export default function Index() {
     try {
       const schedule = generateExamSchedule();
       setGeneratedSchedule(schedule);
-      const warnings = detectClashes(schedule);
-      setClashWarnings(warnings);
-      setShowWarnings(warnings.length > 0);
+      const detectedWarnings = detectClashes(schedule);
+      setClashWarnings(detectedWarnings);
+      setShowWarnings(detectedWarnings.length > 0);
       toast({
         title: "Success",
         description: "Exam schedule generated successfully!",
@@ -378,7 +378,7 @@ export default function Index() {
   };
 
   const checkClashes = (exam: ExamScheduleItem, targetDate: string, currentSchedule: ExamScheduleItem[]): string[] => {
-    const warnings: string[] = [];
+    const clashMessages: string[] = [];
     const targetDateObj = new Date(targetDate);
     const dayOfWeek = targetDateObj.getDay();
     const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
@@ -390,22 +390,22 @@ export default function Index() {
 
     // Check date limits
     if (examsOnDate.length >= maxExamsPerDay) {
-      warnings.push(`Maximum ${maxExamsPerDay} exams allowed on ${dayOfWeek === 5 ? 'Friday' : 'this day'}`);
+      clashMessages.push(`Maximum ${maxExamsPerDay} exams allowed on ${dayOfWeek === 5 ? 'Friday' : 'this day'}`);
     }
 
     // Check teacher conflicts
     const teacherConflict = examsOnDate.find(item => item.teacher_code === exam.teacher_code);
     if (teacherConflict) {
-      warnings.push(`Teacher ${exam.teacher_code} already has an exam on this date`);
+      clashMessages.push(`Teacher ${exam.teacher_code} already has an exam on this date`);
     }
 
     // Check semester repetition
     const semesterConflict = examsOnDate.find(item => item.semester === exam.semester);
     if (semesterConflict) {
-      warnings.push(`Semester ${exam.semester} already has an exam on this date`);
+      clashMessages.push(`Semester ${exam.semester} already has an exam on this date`);
     }
 
-    return warnings;
+    return clashMessages;
   };
 
   const handleOverrideMove = async () => {
@@ -434,9 +434,9 @@ export default function Index() {
     setGeneratedSchedule(updatedSchedule);
     
     // Re-detect clashes
-    const warnings = detectClashes(updatedSchedule);
-    setClashWarnings(warnings);
-    setShowWarnings(warnings.length > 0);
+    const updatedWarnings = detectClashes(updatedSchedule);
+    setClashWarnings(updatedWarnings);
+    setShowWarnings(updatedWarnings.length > 0);
 
     toast({
       title: "Exam Moved with Override",
@@ -465,13 +465,13 @@ export default function Index() {
     const targetDate = destination.droppableId.replace('date-', '');
     
     // Check for clashes
-    const warnings = checkClashes(draggedExam, targetDate, generatedSchedule);
+    const clashMessages = checkClashes(draggedExam, targetDate, generatedSchedule);
 
-    if (warnings.length > 0) {
+    if (clashMessages.length > 0) {
       setClashDetails({
         exam: draggedExam,
         targetDate,
-        warnings
+        warnings: clashMessages
       });
       setPendingMove({
         examId: draggableId,
@@ -505,9 +505,9 @@ export default function Index() {
     setGeneratedSchedule(updatedSchedule);
     
     // Re-detect clashes
-    const warnings = detectClashes(updatedSchedule);
-    setClashWarnings(warnings);
-    setShowWarnings(warnings.length > 0);
+    const updatedWarnings = detectClashes(updatedSchedule);
+    setClashWarnings(updatedWarnings);
+    setShowWarnings(updatedWarnings.length > 0);
 
     toast({
       title: "Exam Moved Successfully",
