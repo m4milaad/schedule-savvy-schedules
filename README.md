@@ -1,73 +1,229 @@
-# Welcome to your Lovable project
+# Central University of Kashmir - Exam Scheduling System
 
-## Project info
+A comprehensive exam scheduling system designed for Central University of Kashmir to efficiently manage and generate optimized exam timetables with advanced constraint handling and drag-and-drop functionality.
 
-**URL**: https://lovable.dev/projects/c26871e1-6683-4556-bc27-845d5db5696e
+## 🎯 Features
 
-## How can I edit this code?
+### **Smart Scheduling Engine**
+- **Gap-based Constraints**: Configurable preparation days between consecutive exams for each semester
+- **Multi-Program Support**: Handles both B.Tech (Semesters 1-8) and M.Tech (Semesters 9-12) programs
+- **Conflict Detection**: Prevents scheduling conflicts across multiple semesters
+- **Holiday Management**: Excludes weekends and custom holidays from exam dates
+- **Capacity Management**: Maximum 4 exams per day with semester-wise distribution
 
-There are several ways of editing your application.
+### **Interactive Interface**
+- **Drag & Drop Rescheduling**: Visual interface to reschedule exams with real-time validation
+- **Semester-wise Organization**: Separate management for odd/even semesters
+- **Real-time Feedback**: Instant validation of scheduling constraints
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-**Use Lovable**
+### **Administrative Tools**
+- **Course Management**: Add, edit, and delete course-teacher combinations
+- **Bulk Import/Export**: Excel-based data import and export functionality
+- **Custom Gap Settings**: Configure preparation days per course or use system defaults
+- **Schedule Persistence**: Save and retrieve generated schedules
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c26871e1-6683-4556-bc27-845d5db5696e) and start prompting.
+### **Export Capabilities**
+- **Excel Export**: Download complete schedules in Excel format
+- **Detailed Reports**: Include gap information, first paper indicators, and program details
+- **Print-friendly Layouts**: Optimized for printing and sharing
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn package manager
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd cuk-exam-scheduler
+   ```
 
-Follow these steps:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Set up environment variables**
+   ```bash
+   # Database configuration is pre-configured for the CUK system
+   # No additional setup required for basic usage
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. **Access the application**
+   - Open your browser and navigate to `http://localhost:8080`
+   - The application will be running with hot-reload enabled
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 📋 Usage Guide
+
+### **For Administrators**
+
+1. **Access Admin Panel**
+   - Click "Admin Panel" button on the homepage
+   - Login with administrator credentials
+   - Default credentials: `admin` / `admin123`
+
+2. **Manage Course Data**
+   - Add individual courses or bulk import via Excel
+   - Set custom gap days for specific courses
+   - Configure semester assignments and program types
+
+3. **Bulk Data Management**
+   - Download Excel template for bulk uploads
+   - Import course data with validation
+   - Export current data for backup or sharing
+
+### **For Schedule Generation**
+
+1. **Configure Settings**
+   - Select semester type (Odd/Even)
+   - Set exam date range
+   - Configure default gap days (preparation time)
+   - Add holidays to exclude from scheduling
+
+2. **Select Courses**
+   - Choose courses for each semester
+   - Review gap settings for each course
+   - Use "Select All" for quick selection
+
+3. **Generate Schedule**
+   - Click "Generate Schedule" to create optimized timetable
+   - Review generated schedule with visual indicators
+   - Use drag-and-drop to make manual adjustments
+
+4. **Export Results**
+   - Save schedule to database
+   - Download Excel report
+   - Share with stakeholders
+
+## 🏗️ System Architecture
+
+### **Technology Stack**
+- **Frontend**: React 18 with TypeScript
+- **UI Framework**: Tailwind CSS with shadcn/ui components
+- **Database**: Supabase (PostgreSQL)
+- **Build Tool**: Vite
+- **State Management**: React Hooks
+- **Drag & Drop**: react-beautiful-dnd
+- **Excel Processing**: xlsx library
+
+### **Database Schema**
+- **course_teacher_codes**: Course and teacher information with gap settings
+- **exam_schedules**: Generated exam schedules with constraints
+- **admin_users**: Administrative access control
+
+### **Key Components**
+- **Schedule Generator**: Core algorithm for constraint-based scheduling
+- **Drag & Drop Interface**: Interactive schedule modification
+- **Admin Dashboard**: Course and data management
+- **Export System**: Excel and report generation
+
+## 🔧 Configuration
+
+### **Gap Configuration**
+```typescript
+// Default gap days between exams (configurable)
+defaultGapDays: 2
+
+// Per-course gap override
+course.gap_days: 1-10 days
+
+// First paper rule: No gap required for first exam of each semester
 ```
 
-**Edit a file directly in GitHub**
+### **Scheduling Constraints**
+- Maximum 4 exams per day
+- One exam per semester per day
+- Configurable gap days between consecutive exams
+- Weekend and holiday exclusions
+- Program-specific semester handling
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### **Time Slots**
+- **Regular Days**: 12:00 PM - 3:00 PM
+- **Fridays**: 11:00 AM - 2:00 PM
 
-**Use GitHub Codespaces**
+## 📊 Data Management
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### **Excel Import Format**
+| Course Code | Teacher Code | Semester | Course Name | Teacher Name |
+|-------------|--------------|----------|-------------|--------------|
+| BT-101      | AH          | 1        | Business Tech | Ahmad Hassan |
 
-## What technologies are used for this project?
+### **Supported Operations**
+- Bulk course import/export
+- Schedule backup and restore
+- Data validation and error reporting
+- Template generation for easy data entry
 
-This project is built with:
+## 🛡️ Security Features
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Admin Authentication**: Secure login system for administrative access
+- **Data Validation**: Input validation and constraint checking
+- **Session Management**: Secure session handling
+- **Access Control**: Role-based access to administrative functions
 
-## How can I deploy this project?
+## 🎨 User Interface
 
-Simply open [Lovable](https://lovable.dev/projects/c26871e1-6683-4556-bc27-845d5db5696e) and click on Share -> Publish.
+### **Design Principles**
+- **Intuitive Navigation**: Clear, logical flow for all user types
+- **Visual Feedback**: Real-time validation and status indicators
+- **Responsive Layout**: Optimized for all screen sizes
+- **Accessibility**: WCAG-compliant design patterns
 
-## Can I connect a custom domain to my Lovable project?
+### **Color Coding**
+- **B.Tech Semesters**: Red (1-2), Blue (3-4), Green (5-6), Purple (7-8)
+- **M.Tech Semesters**: Orange (9-12)
+- **Status Indicators**: Success (green), Warning (yellow), Error (red)
 
-Yes, you can!
+## 🔄 Development Workflow
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### **Available Scripts**
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### **Development Guidelines**
+- Follow TypeScript best practices
+- Use component-based architecture
+- Implement proper error handling
+- Write descriptive commit messages
+- Test thoroughly before deployment
+
+## 📈 Performance Optimization
+
+- **Code Splitting**: Lazy loading for optimal performance
+- **Caching**: Efficient data caching strategies
+- **Bundle Optimization**: Minimized production builds
+- **Database Indexing**: Optimized queries for large datasets
+
+## 🤝 Contributing
+
+This system is specifically designed for Central University of Kashmir. For modifications or enhancements:
+
+1. Follow the existing code structure and patterns
+2. Ensure all changes maintain backward compatibility
+3. Test thoroughly with realistic data sets
+4. Document any new features or configuration options
+
+## 📞 Support
+
+For technical support or feature requests related to the Central University of Kashmir Exam Scheduling System, please contact the development team.
+
+## 👨‍💻 Developer
+
+**Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)
+
+---
+
+*This system is specifically designed for Central University of Kashmir's academic scheduling needs, incorporating institutional requirements and constraints for optimal exam timetable generation.*
