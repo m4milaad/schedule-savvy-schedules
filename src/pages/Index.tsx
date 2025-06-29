@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -59,6 +59,8 @@ interface ExamScheduleItem {
   courseCode: string;
   dayOfWeek: string;
   timeSlot: string;
+  gap_days: number;
+  is_first_paper: boolean;
 }
 
 export default function Index() {
@@ -67,6 +69,7 @@ export default function Index() {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [defaultGapDays, setDefaultGapDays] = useState<number>(2);
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
     Record<number, string[]>
@@ -130,6 +133,34 @@ export default function Index() {
     return dayOfWeek === 5 ? "11:00 AM - 2:00 PM" : "12:00 PM - 3:00 PM"; // Friday vs other days
   };
 
+  const addDays = (date: Date, days: number): Date => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+  };
+
+  const isValidExamDate = (date: Date, holidays: Date[]): boolean => {
+    const dayOfWeek = date.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isHoliday = holidays.some(
+      (holiday) => holiday.toDateString() === date.toDateString()
+    );
+    return !isWeekend && !isHoliday;
+  };
+
+  const findNextValidDate = (startDate: Date, holidays: Date[], endDate: Date): Date | null => {
+    let currentDate = new Date(startDate);
+    const endDateTime = new Date(endDate);
+
+    while (currentDate <= endDateTime) {
+      if (isValidExamDate(currentDate, holidays)) {
+        return new Date(currentDate);
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    return null;
+  };
+
   const generateSchedule = async () => {
     if (!startDate || !endDate) {
       toast({
@@ -172,34 +203,6 @@ export default function Index() {
     try {
       setLoading(true);
 
-      // Generate exam dates within the range
-      const examDates: Date[] = [];
-      let currentDate = new Date(startDate);
-      const endDateTime = new Date(endDate);
-
-      while (currentDate <= endDateTime) {
-        const dayOfWeek = currentDate.getDay();
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-        const isHoliday = holidays.some(
-          (holiday) => holiday.toDateString() === currentDate.toDateString()
-        );
-
-        if (!isWeekend && !isHoliday) {
-          examDates.push(new Date(currentDate));
-        }
-
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      if (examDates.length === 0) {
-        toast({
-          title: "Error",
-          description: "No valid exam dates found in the selected range",
-          variant: "destructive",
-        });
-        return;
-      }
-
       // Group courses by semester for scheduling
       const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
         if (!acc[course.semester]) {
@@ -209,39 +212,70 @@ export default function Index() {
         return acc;
       }, {} as Record<number, CourseTeacher[]>);
 
-      // Schedule with constraints: max 4 exams per day, 1 per semester per day
+      // Schedule with gap-based constraints
       const schedule: ExamScheduleItem[] = [];
+      const semesterLastScheduledDate: Record<number, Date> = {}; // Track last scheduled date for each semester
       const dateScheduleCount: Record<string, number> = {}; // Track exams per date
-      const semesterLastScheduledDate: Record<number, string> = {}; // Track last date for each semester
+      const maxExamsPerDay = 4;
 
-      let currentDateIndex = 0;
-      let allCoursesScheduled = false;
+      let currentSchedulingDate = new Date(startDate);
+      const endDateTime = new Date(endDate);
 
-      while (!allCoursesScheduled && currentDateIndex < examDates.length) {
-        const currentExamDate = examDates[currentDateIndex];
-        const dateKey = currentExamDate.toDateString();
+      // Continue scheduling until all courses are scheduled or we run out of dates
+      while (schedule.length < allSelectedCourses.length && currentSchedulingDate <= endDateTime) {
+        const dateKey = currentSchedulingDate.toDateString();
 
         // Initialize date count if not exists
         if (!dateScheduleCount[dateKey]) {
           dateScheduleCount[dateKey] = 0;
         }
 
-        // Try to schedule exams for this date (max 4 per day)
-        let scheduledToday = 0;
-        const maxExamsPerDay = 4;
+        // Skip if this date is not valid for exams
+        if (!isValidExamDate(currentSchedulingDate, holidays)) {
+          currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
+          continue;
+        }
 
-        // Get available semesters for this date (not scheduled today)
+        // Skip if this date already has maximum exams
+        if (dateScheduleCount[dateKey] >= maxExamsPerDay) {
+          currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
+          continue;
+        }
+
+        // Find semesters that can schedule an exam on this date
         const availableSemesters = Object.keys(coursesBySemester)
           .map(Number)
           .filter(semester => {
+            // Check if semester has unscheduled courses
             const hasUnscheduledCourses = coursesBySemester[semester].some(course => 
               !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
             );
-            const notScheduledToday = semesterLastScheduledDate[semester] !== dateKey;
-            return hasUnscheduledCourses && notScheduledToday;
+
+            if (!hasUnscheduledCourses) return false;
+
+            // Check if enough gap has passed since last exam for this semester
+            const lastScheduledDate = semesterLastScheduledDate[semester];
+            if (!lastScheduledDate) {
+              // First exam for this semester - no gap needed
+              return true;
+            }
+
+            // Get the gap requirement for the next course to be scheduled
+            const nextCourse = coursesBySemester[semester].find(course => 
+              !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+            );
+
+            if (!nextCourse) return false;
+
+            const requiredGapDays = nextCourse.gap_days || defaultGapDays;
+            const daysSinceLastExam = Math.floor((currentSchedulingDate.getTime() - lastScheduledDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            return daysSinceLastExam >= requiredGapDays;
           });
 
-        // Schedule up to 4 exams from different semesters
+        // Schedule exams for available semesters (up to max per day)
+        let scheduledToday = dateScheduleCount[dateKey];
+        
         for (const semester of availableSemesters) {
           if (scheduledToday >= maxExamsPerDay) break;
 
@@ -251,50 +285,44 @@ export default function Index() {
           );
 
           if (unscheduledCourse) {
+            const isFirstPaper = !semesterLastScheduledDate[semester];
+            
             const exam: ExamScheduleItem = {
               id: `exam-${schedule.length}`,
               course_code: unscheduledCourse.course_code,
               teacher_code: unscheduledCourse.teacher_code,
-              exam_date: currentExamDate.toISOString().split("T")[0],
-              day_of_week: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
-              time_slot: getExamTimeSlot(currentExamDate),
+              exam_date: currentSchedulingDate.toISOString().split("T")[0],
+              day_of_week: currentSchedulingDate.toLocaleDateString("en-US", { weekday: "long" }),
+              time_slot: getExamTimeSlot(currentSchedulingDate),
               semester: unscheduledCourse.semester,
               program_type: unscheduledCourse.program_type,
-              date: currentExamDate,
+              date: new Date(currentSchedulingDate),
               courseCode: unscheduledCourse.course_code,
-              dayOfWeek: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
-              timeSlot: getExamTimeSlot(currentExamDate),
+              dayOfWeek: currentSchedulingDate.toLocaleDateString("en-US", { weekday: "long" }),
+              timeSlot: getExamTimeSlot(currentSchedulingDate),
+              gap_days: unscheduledCourse.gap_days || defaultGapDays,
+              is_first_paper: isFirstPaper,
             };
 
             schedule.push(exam);
             scheduledToday++;
             dateScheduleCount[dateKey]++;
-            semesterLastScheduledDate[semester] = dateKey;
+            semesterLastScheduledDate[semester] = new Date(currentSchedulingDate);
           }
         }
 
-        // Check if all courses are scheduled
-        const totalScheduled = schedule.length;
-        const totalCourses = allSelectedCourses.length;
-        allCoursesScheduled = totalScheduled >= totalCourses;
+        // Move to next day
+        currentSchedulingDate.setDate(currentSchedulingDate.getDate() + 1);
+      }
 
-        currentDateIndex++;
-
-        // If we've gone through all dates and still have unscheduled courses
-        if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
-          // Reset to start of dates for next round
-          currentDateIndex = 0;
-          
-          // Safety check to prevent infinite loop
-          if (examDates.length < Math.ceil(totalCourses / maxExamsPerDay)) {
-            toast({
-              title: "Warning",
-              description: `Need more exam dates to schedule all ${totalCourses} exams with the constraints. Only ${totalScheduled} exams scheduled.`,
-              variant: "destructive",
-            });
-            break;
-          }
-        }
+      // Check if all courses were scheduled
+      const unscheduledCount = allSelectedCourses.length - schedule.length;
+      if (unscheduledCount > 0) {
+        toast({
+          title: "Warning",
+          description: `${unscheduledCount} courses could not be scheduled within the date range due to gap constraints. Consider extending the end date or reducing gap requirements.`,
+          variant: "destructive",
+        });
       }
 
       setGeneratedSchedule(schedule);
@@ -302,7 +330,7 @@ export default function Index() {
 
       toast({
         title: "Success",
-        description: `Generated schedule for ${schedule.length} exams with constraints: max 4 per day, 1 per semester per day`,
+        description: `Generated schedule for ${schedule.length} exams with gap-based constraints (${unscheduledCount > 0 ? `${unscheduledCount} unscheduled` : 'all scheduled'})`,
       });
     } catch (error) {
       console.error("Error generating schedule:", error);
@@ -314,6 +342,53 @@ export default function Index() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const validateGapConstraint = (draggedExam: ExamScheduleItem, targetDate: Date): { valid: boolean; message?: string } => {
+    // Get all exams for the same semester, excluding the dragged exam
+    const semesterExams = generatedSchedule
+      .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Find the position where this exam would be inserted
+    let insertIndex = 0;
+    for (let i = 0; i < semesterExams.length; i++) {
+      if (semesterExams[i].date.getTime() < targetDate.getTime()) {
+        insertIndex = i + 1;
+      } else {
+        break;
+      }
+    }
+
+    // Check gap with previous exam
+    if (insertIndex > 0) {
+      const prevExam = semesterExams[insertIndex - 1];
+      const daysSincePrev = Math.floor((targetDate.getTime() - prevExam.date.getTime()) / (1000 * 60 * 60 * 24));
+      const requiredGap = draggedExam.gap_days;
+      
+      if (daysSincePrev < requiredGap) {
+        return {
+          valid: false,
+          message: `Need ${requiredGap} days gap from previous exam (${prevExam.courseCode} on ${prevExam.date.toLocaleDateString()}). Current gap: ${daysSincePrev} days.`
+        };
+      }
+    }
+
+    // Check gap with next exam
+    if (insertIndex < semesterExams.length) {
+      const nextExam = semesterExams[insertIndex];
+      const daysToNext = Math.floor((nextExam.date.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24));
+      const nextExamRequiredGap = nextExam.gap_days;
+      
+      if (daysToNext < nextExamRequiredGap) {
+        return {
+          valid: false,
+          message: `Next exam (${nextExam.courseCode} on ${nextExam.date.toLocaleDateString()}) needs ${nextExamRequiredGap} days gap. Current gap: ${daysToNext} days.`
+        };
+      }
+    }
+
+    return { valid: true };
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -357,6 +432,17 @@ export default function Index() {
       toast({
         title: "Cannot Move Exam",
         description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check gap constraints
+    const gapValidation = validateGapConstraint(draggedExam, targetDate);
+    if (!gapValidation.valid) {
+      toast({
+        title: "Gap Constraint Violation",
+        description: gapValidation.message,
         variant: "destructive"
       });
       return;
@@ -456,7 +542,9 @@ export default function Index() {
           'Course Code': exam.course_code,
           'Teacher Code': exam.teacher_code,
           'Semester': exam.semester,
-          'Program': exam.program_type
+          'Program': exam.program_type,
+          'Gap Days': exam.gap_days,
+          'First Paper': exam.is_first_paper ? 'Yes' : 'No'
         }));
 
       // Create workbook and worksheet
@@ -472,6 +560,8 @@ export default function Index() {
         { wch: 12 }, // Teacher Code
         { wch: 10 }, // Semester
         { wch: 10 }, // Program
+        { wch: 10 }, // Gap Days
+        { wch: 12 }, // First Paper
       ];
       ws['!cols'] = colWidths;
 
@@ -567,7 +657,7 @@ export default function Index() {
               Central University of Kashmir
             </h1>
             <p className="text-gray-600">
-              Generate optimized exam schedules with drag & drop interface
+              Generate optimized exam schedules with gap-based constraints and drag & drop interface
               developed by{" "}
               <a
                 href="https://m4milaad.github.io/Resume/"
@@ -621,7 +711,7 @@ export default function Index() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Schedule Settings</CardTitle>
-              <CardDescription>Configure exam dates and holidays</CardDescription>
+              <CardDescription>Configure exam dates, holidays, and gap constraints</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -674,6 +764,26 @@ export default function Index() {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+
+              {/* Gap Days Configuration */}
+              <div className="space-y-2 pt-4 border-t">
+                <Label htmlFor="defaultGapDays" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Default Gap Days
+                </Label>
+                <Input
+                  id="defaultGapDays"
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={defaultGapDays}
+                  onChange={(e) => setDefaultGapDays(parseInt(e.target.value) || 0)}
+                  placeholder="Days between exams"
+                />
+                <p className="text-xs text-gray-500">
+                  Minimum days between consecutive exams for the same semester. First paper of each semester has no gap requirement.
+                </p>
               </div>
 
               <Button
@@ -838,6 +948,10 @@ export default function Index() {
                                     {ct.teacher_name}
                                   </div>
                                 )}
+                                <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  Gap: {ct.gap_days || defaultGapDays} days
+                                </div>
                               </div>
                               <div
                                 className={cn(
@@ -878,7 +992,7 @@ export default function Index() {
                 Exam Schedule (Drag & Drop to Reschedule)
               </CardTitle>
               <CardDescription>
-                Constraints: Max 4 exams per day, 1 exam per semester per day
+                Constraints: Max 4 exams per day, 1 exam per semester per day, gap-based scheduling with semester-wise separation
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -940,9 +1054,11 @@ export default function Index() {
                                                 exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                                 'bg-orange-50 text-orange-700 border-orange-200'
                                               } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                              title={`Gap: ${exam.gap_days} days${exam.is_first_paper ? ' (First paper)' : ''}`}
                                             >
                                               <GripVertical className="h-3 w-3" />
                                               S{exam.semester}: {exam.courseCode}
+                                              {exam.is_first_paper && <span className="text-xs">★</span>}
                                             </Badge>
                                           </div>
                                         )}
@@ -964,6 +1080,25 @@ export default function Index() {
                   </Table>
                 </div>
               </DragDropContext>
+              
+              {/* Legend */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium mb-2">Legend:</h4>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs">★</span>
+                    <span>First paper (no gap required)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Gap days shown in tooltip</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <GripVertical className="w-3 h-3" />
+                    <span>Drag to reschedule</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
