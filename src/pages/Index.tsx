@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,15 +28,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
   id: string;
@@ -59,82 +59,60 @@ interface ExamScheduleItem {
   program_type: string;
 }
 
-interface ClashWarning {
-  type: 'teacher' | 'date_limit' | 'semester_repeat';
-  message: string;
-  itemId: string;
-}
-
-interface ClashDetails {
-  exam: ExamScheduleItem;
-  targetDate: string;
-  warnings: string[];
-}
-
-interface PendingMove {
-  examId: string;
-  targetDate: string;
+interface DateSlot {
+  date: string;
+  dayOfWeek: string;
+  exams: ExamScheduleItem[];
+  maxExams: number;
 }
 
 export default function Index() {
-  const [programType, setProgramType] = useState<"B.Tech" | "M.Tech">("B.Tech");
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [holidays, setHolidays] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
     Record<number, string[]>
   >({});
   const [gapDaysOverride, setGapDaysOverride] = useState<Record<string, number>>({});
-  const [generatedSchedule, setGeneratedSchedule] = useState<
-    ExamScheduleItem[]
-  >([]);
-  const [clashWarnings, setClashWarnings] = useState<ClashWarning[]>([]);
-  const [showWarnings, setShowWarnings] = useState(false);
+  const [generatedSchedule, setGeneratedSchedule] = useState<ExamScheduleItem[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<DateSlot[]>([]);
+  const [unscheduledExams, setUnscheduledExams] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showClashDialog, setShowClashDialog] = useState(false);
-  const [clashDetails, setClashDetails] = useState<ClashDetails | null>(null);
-  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Define semesters based on type and program
-  const getSemesters = () => {
-    if (programType === "B.Tech") {
-      return semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
-    } else {
-      return semesterType === "odd" ? [9, 11] : [10, 12];
-    }
-  };
-
-  const semesters = getSemesters();
+  // Define semesters for both B.Tech and M.Tech
+  const getBTechSemesters = () => semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
+  const getMTechSemesters = () => semesterType === "odd" ? [9, 11] : [10, 12];
+  const allSemesters = [...getBTechSemesters(), ...getMTechSemesters()];
 
   // Load course-teacher combinations from database
   useEffect(() => {
     loadCourseTeachers();
-  }, [programType]);
+  }, []);
 
   // Auto-select all courses when semester type changes or data loads
   useEffect(() => {
     if (courseTeachers.length > 0) {
       const autoSelected: Record<number, string[]> = {};
-      semesters.forEach((semester) => {
+      allSemesters.forEach((semester) => {
         const semesterCourses = courseTeachers.filter(
-          (ct) => ct.semester === semester && ct.program_type === programType
+          (ct) => ct.semester === semester
         );
         autoSelected[semester] = semesterCourses.map((ct) => ct.id);
       });
       setSelectedCourseTeachers(autoSelected);
     }
-  }, [courseTeachers, semesterType, programType]);
+  }, [courseTeachers, semesterType]);
 
   const loadCourseTeachers = async () => {
     try {
       const { data, error } = await supabase
         .from("course_teacher_codes")
         .select("*")
-        .eq("program_type", programType)
         .order("semester", { ascending: true })
         .order("course_code", { ascending: true });
 
@@ -151,133 +129,65 @@ export default function Index() {
   };
 
   const getCoursesBySemester = (semester: number) => {
-    return courseTeachers.filter((ct) => ct.semester === semester && ct.program_type === programType);
+    return courseTeachers.filter((ct) => ct.semester === semester);
   };
 
-  const detectClashes = (schedule: ExamScheduleItem[]): ClashWarning[] => {
-    const clashWarnings: ClashWarning[] = [];
-    const dateGroups = new Map<string, ExamScheduleItem[]>();
+  const generateDateSlots = (): DateSlot[] => {
+    if (!startDate || !endDate) return [];
 
-    // Group by date
-    schedule.forEach((item, index) => {
-      const key = item.exam_date;
-      if (!dateGroups.has(key)) {
-        dateGroups.set(key, []);
-      }
-      dateGroups.get(key)!.push({ ...item, id: index.toString() });
-    });
+    const slots: DateSlot[] = [];
+    let currentDate = new Date(startDate);
+    const endDateTime = new Date(endDate);
 
-    // Check each date group
-    dateGroups.forEach((items, date) => {
-      const dayOfWeek = new Date(date).getDay();
-      const maxExams = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
+    while (currentDate <= endDateTime) {
+      // Skip weekends and holidays
+      const dayOfWeek = currentDate.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isHoliday = holidays.some(
+        (holiday) => holiday.toDateString() === currentDate.toDateString()
+      );
 
-      // Check date limits
-      if (items.length > maxExams) {
-        items.forEach(item => {
-          clashWarnings.push({
-            type: 'date_limit',
-            message: `Too many exams on ${date} (${items.length}/${maxExams} max)`,
-            itemId: item.id!
-          });
+      if (!isWeekend && !isHoliday) {
+        const maxExams = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
+        slots.push({
+          date: currentDate.toISOString().split("T")[0],
+          dayOfWeek: currentDate.toLocaleDateString("en-US", { weekday: "long" }),
+          exams: [],
+          maxExams
         });
       }
 
-      // Check teacher conflicts
-      const teacherDates = new Map<string, string[]>();
-      items.forEach(item => {
-        if (!teacherDates.has(item.teacher_code)) {
-          teacherDates.set(item.teacher_code, []);
-        }
-        teacherDates.get(item.teacher_code)!.push(item.id!);
-      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
-      teacherDates.forEach((itemIds, teacher) => {
-        if (itemIds.length > 1) {
-          itemIds.forEach(itemId => {
-            clashWarnings.push({
-              type: 'teacher',
-              message: `Teacher ${teacher} has multiple exams on ${date}`,
-              itemId
-            });
-          });
-        }
-      });
-
-      // Check semester repetition
-      const semesterCounts = new Map<number, string[]>();
-      items.forEach(item => {
-        if (!semesterCounts.has(item.semester)) {
-          semesterCounts.set(item.semester, []);
-        }
-        semesterCounts.get(item.semester)!.push(item.id!);
-      });
-
-      semesterCounts.forEach((itemIds, semester) => {
-        if (itemIds.length > 1) {
-          itemIds.forEach(itemId => {
-            clashWarnings.push({
-              type: 'semester_repeat',
-              message: `Multiple exams for semester ${semester} on ${date}`,
-              itemId
-            });
-          });
-        }
-      });
-    });
-
-    return clashWarnings;
+    return slots;
   };
 
-  const handleGenerateSchedule = async () => {
-    if (!startDate) {
+  const handleGenerateSlots = () => {
+    if (!startDate || !endDate) {
       toast({
         title: "Error",
-        description: "Please select a starting date for exams",
+        description: "Please select both start and end dates",
         variant: "destructive",
       });
       return;
     }
 
-    const allSelectedCourses = Object.values(selectedCourseTeachers).flat();
-    if (allSelectedCourses.length === 0) {
+    if (endDate < startDate) {
       toast({
         title: "Error",
-        description: "Please select at least one course-teacher combination",
+        description: "End date must be after start date",
         variant: "destructive",
       });
       return;
     }
 
-    setLoading(true);
-    try {
-      const schedule = generateExamSchedule();
-      setGeneratedSchedule(schedule);
-      const detectedWarnings = detectClashes(schedule);
-      setClashWarnings(detectedWarnings);
-      setShowWarnings(detectedWarnings.length > 0);
-      toast({
-        title: "Success",
-        description: "Exam schedule generated successfully!",
-      });
-    } catch (error) {
-      console.error("Error generating schedule:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate exam schedule",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const slots = generateDateSlots();
+    setAvailableSlots(slots);
 
-  const generateExamSchedule = (): ExamScheduleItem[] => {
-    const schedule: ExamScheduleItem[] = [];
-    const timeSlot = "12:00 PM - 2:30 PM";
-
+    // Generate unscheduled exams list
     const allSelectedCourses = [];
-    for (const semester of semesters) {
+    for (const semester of allSemesters) {
       const semesterCourses = getCoursesBySemester(semester);
       const selectedIds = selectedCourseTeachers[semester] || [];
       const selectedSemesterCourses = semesterCourses.filter((ct) =>
@@ -286,253 +196,209 @@ export default function Index() {
       allSelectedCourses.push(...selectedSemesterCourses);
     }
 
-    // Group courses by semester for gap handling
-    const coursesBySemester = new Map<number, CourseTeacher[]>();
-    allSelectedCourses.forEach(course => {
-      if (!coursesBySemester.has(course.semester)) {
-        coursesBySemester.set(course.semester, []);
-      }
-      coursesBySemester.get(course.semester)!.push(course);
-    });
+    const unscheduled: ExamScheduleItem[] = allSelectedCourses.map((ct, index) => ({
+      id: `unscheduled-${index}`,
+      course_code: ct.course_code,
+      teacher_code: ct.teacher_code,
+      exam_date: "",
+      day_of_week: "",
+      time_slot: "12:00 PM - 2:30 PM",
+      semester: ct.semester,
+      program_type: ct.program_type,
+    }));
 
-    let currentDate = new Date(startDate!);
-    const semesterLastExamDate = new Map<number, Date>();
-    const pendingCourses = [...allSelectedCourses];
-
-    while (pendingCourses.length > 0) {
-      // Skip weekends and holidays
-      while (
-        currentDate.getDay() === 0 ||
-        currentDate.getDay() === 6 ||
-        holidays.some(
-          (holiday) => holiday.toDateString() === currentDate.toDateString()
-        )
-      ) {
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      const dayOfWeek = currentDate.getDay();
-      const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4;
-      const usedSemesters = new Set<number>();
-      const usedTeachers = new Set<string>();
-      let examsScheduledToday = 0;
-
-      // Try to schedule up to maxExamsPerDay exams from different semesters
-      for (let i = pendingCourses.length - 1; i >= 0 && examsScheduledToday < maxExamsPerDay; i--) {
-        const courseTeacher = pendingCourses[i];
-        
-        // Skip if semester already has exam today
-        if (usedSemesters.has(courseTeacher.semester)) {
-          continue;
-        }
-
-        // Skip if teacher already has exam today
-        if (usedTeachers.has(courseTeacher.teacher_code)) {
-          continue;
-        }
-
-        // Check gap days constraint
-        const lastExamDate = semesterLastExamDate.get(courseTeacher.semester);
-        if (lastExamDate) {
-          const gapDays = gapDaysOverride[courseTeacher.id] ?? courseTeacher.gap_days;
-          const minNextDate = new Date(lastExamDate);
-          minNextDate.setDate(minNextDate.getDate() + gapDays + 1);
-          
-          if (currentDate < minNextDate) {
-            continue;
-          }
-        }
-
-        // Schedule this exam
-        const dayOfWeekName = currentDate.toLocaleDateString("en-US", {
-          weekday: "long",
-        });
-
-        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : timeSlot;
-
-        schedule.push({
-          course_code: courseTeacher.course_code,
-          teacher_code: courseTeacher.teacher_code,
-          exam_date: currentDate.toISOString().split("T")[0],
-          day_of_week: dayOfWeekName,
-          time_slot: finalTimeSlot,
-          semester: courseTeacher.semester,
-          program_type: courseTeacher.program_type,
-        });
-
-        // Mark as used
-        usedSemesters.add(courseTeacher.semester);
-        usedTeachers.add(courseTeacher.teacher_code);
-        semesterLastExamDate.set(courseTeacher.semester, new Date(currentDate));
-        examsScheduledToday++;
-
-        // Remove from pending
-        pendingCourses.splice(i, 1);
-      }
-
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return schedule;
-  };
-
-  const checkClashes = (exam: ExamScheduleItem, targetDate: string, currentSchedule: ExamScheduleItem[]): string[] => {
-    const clashMessages: string[] = [];
-    const targetDateObj = new Date(targetDate);
-    const dayOfWeek = targetDateObj.getDay();
-    const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
-
-    // Get exams already scheduled for this date (excluding the one being moved)
-    const examsOnDate = currentSchedule.filter(
-      item => item.exam_date === targetDate && item.course_code !== exam.course_code
-    );
-
-    // Check date limits
-    if (examsOnDate.length >= maxExamsPerDay) {
-      clashMessages.push(`Maximum ${maxExamsPerDay} exams allowed on ${dayOfWeek === 5 ? 'Friday' : 'this day'}`);
-    }
-
-    // Check teacher conflicts
-    const teacherConflict = examsOnDate.find(item => item.teacher_code === exam.teacher_code);
-    if (teacherConflict) {
-      clashMessages.push(`Teacher ${exam.teacher_code} already has an exam on this date`);
-    }
-
-    // Check semester repetition
-    const semesterConflict = examsOnDate.find(item => item.semester === exam.semester);
-    if (semesterConflict) {
-      clashMessages.push(`Semester ${exam.semester} already has an exam on this date`);
-    }
-
-    return clashMessages;
-  };
-
-  const handleOverrideMove = async () => {
-    if (!pendingMove || !clashDetails) return;
-
-    const updatedSchedule = generatedSchedule.map(item => {
-      if (item.course_code === clashDetails.exam.course_code && item.teacher_code === clashDetails.exam.teacher_code) {
-        const newDateObj = new Date(pendingMove.targetDate);
-        const dayOfWeekName = newDateObj.toLocaleDateString("en-US", { weekday: "long" });
-        const dayOfWeek = newDateObj.getDay();
-        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
-        
-        return {
-          ...item,
-          exam_date: pendingMove.targetDate,
-          day_of_week: dayOfWeekName,
-          time_slot: finalTimeSlot
-        };
-      }
-      return item;
-    });
-
-    // Sort by date
-    updatedSchedule.sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
-    
-    setGeneratedSchedule(updatedSchedule);
-    
-    // Re-detect clashes
-    const updatedWarnings = detectClashes(updatedSchedule);
-    setClashWarnings(updatedWarnings);
-    setShowWarnings(updatedWarnings.length > 0);
+    setUnscheduledExams(unscheduled);
+    setGeneratedSchedule([]);
 
     toast({
-      title: "Exam Moved with Override",
-      description: `${clashDetails.exam.course_code} moved to ${new Date(pendingMove.targetDate).toLocaleDateString()} despite conflicts`,
-      variant: "destructive"
+      title: "Slots Generated",
+      description: `${slots.length} exam slots created. Start dragging exams to schedule them.`,
     });
-
-    setShowClashDialog(false);
-    setClashDetails(null);
-    setPendingMove(null);
   };
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
-    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    // Find the dragged exam
-    const draggedExam = generatedSchedule.find((item, index) => 
-      `${item.course_code}-${item.teacher_code}-${index}` === draggableId
-    );
-    
-    if (!draggedExam) return;
+    // Handle moving from unscheduled to date slot
+    if (source.droppableId === "unscheduled" && destination.droppableId.startsWith("date-")) {
+      const targetDate = destination.droppableId.replace("date-", "");
+      const exam = unscheduledExams.find(e => e.id === draggableId);
+      if (!exam) return;
 
-    const targetDate = destination.droppableId.replace('date-', '');
-    
-    // Check for clashes
-    const clashMessages = checkClashes(draggedExam, targetDate, generatedSchedule);
+      // Check if target slot has space
+      const targetSlot = availableSlots.find(slot => slot.date === targetDate);
+      if (!targetSlot || targetSlot.exams.length >= targetSlot.maxExams) {
+        toast({
+          title: "Slot Full",
+          description: `This date can only accommodate ${targetSlot?.maxExams} exams`,
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (clashMessages.length > 0) {
-      setClashDetails({
-        exam: draggedExam,
-        targetDate,
-        warnings: clashMessages
+      // Check for conflicts
+      const hasTeacherConflict = targetSlot.exams.some(e => e.teacher_code === exam.teacher_code);
+      const hasSemesterConflict = targetSlot.exams.some(e => e.semester === exam.semester);
+
+      if (hasTeacherConflict || hasSemesterConflict) {
+        toast({
+          title: "Conflict Detected",
+          description: hasTeacherConflict 
+            ? `Teacher ${exam.teacher_code} already has an exam on this date`
+            : `Semester ${exam.semester} already has an exam on this date`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Move exam to scheduled
+      const scheduledExam: ExamScheduleItem = {
+        ...exam,
+        exam_date: targetDate,
+        day_of_week: targetSlot.dayOfWeek,
+        time_slot: targetSlot.dayOfWeek === "Friday" ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM",
+      };
+
+      setUnscheduledExams(prev => prev.filter(e => e.id !== draggableId));
+      setGeneratedSchedule(prev => [...prev, scheduledExam]);
+      
+      // Update available slots
+      setAvailableSlots(prev => prev.map(slot => 
+        slot.date === targetDate 
+          ? { ...slot, exams: [...slot.exams, scheduledExam] }
+          : slot
+      ));
+
+      toast({
+        title: "Exam Scheduled",
+        description: `${exam.course_code} scheduled for ${new Date(targetDate).toLocaleDateString()}`,
       });
-      setPendingMove({
-        examId: draggableId,
-        targetDate
-      });
-      setShowClashDialog(true);
-      return;
     }
 
-    // No conflicts, proceed with move
-    const updatedSchedule = generatedSchedule.map(item => {
-      if (item.course_code === draggedExam.course_code && item.teacher_code === draggedExam.teacher_code) {
-        const newDateObj = new Date(targetDate);
-        const dayOfWeekName = newDateObj.toLocaleDateString("en-US", { weekday: "long" });
-        const dayOfWeek = newDateObj.getDay();
-        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
-        
-        return {
-          ...item,
-          exam_date: targetDate,
-          day_of_week: dayOfWeekName,
-          time_slot: finalTimeSlot
-        };
+    // Handle moving from date slot back to unscheduled
+    if (source.droppableId.startsWith("date-") && destination.droppableId === "unscheduled") {
+      const sourceDate = source.droppableId.replace("date-", "");
+      const exam = generatedSchedule.find(e => e.id === draggableId);
+      if (!exam) return;
+
+      // Remove from scheduled
+      setGeneratedSchedule(prev => prev.filter(e => e.id !== draggableId));
+      
+      // Add back to unscheduled
+      const unscheduledExam: ExamScheduleItem = {
+        ...exam,
+        id: `unscheduled-${Date.now()}`,
+        exam_date: "",
+        day_of_week: "",
+      };
+      setUnscheduledExams(prev => [...prev, unscheduledExam]);
+
+      // Update available slots
+      setAvailableSlots(prev => prev.map(slot => 
+        slot.date === sourceDate 
+          ? { ...slot, exams: slot.exams.filter(e => e.id !== draggableId) }
+          : slot
+      ));
+
+      toast({
+        title: "Exam Unscheduled",
+        description: `${exam.course_code} moved back to unscheduled list`,
+      });
+    }
+
+    // Handle moving between date slots
+    if (source.droppableId.startsWith("date-") && destination.droppableId.startsWith("date-")) {
+      const sourceDate = source.droppableId.replace("date-", "");
+      const targetDate = destination.droppableId.replace("date-", "");
+      
+      if (sourceDate === targetDate) return;
+
+      const exam = generatedSchedule.find(e => e.id === draggableId);
+      if (!exam) return;
+
+      const targetSlot = availableSlots.find(slot => slot.date === targetDate);
+      if (!targetSlot || targetSlot.exams.length >= targetSlot.maxExams) {
+        toast({
+          title: "Slot Full",
+          description: `This date can only accommodate ${targetSlot?.maxExams} exams`,
+          variant: "destructive",
+        });
+        return;
       }
-      return item;
-    });
 
-    // Sort by date
-    updatedSchedule.sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
-    
-    setGeneratedSchedule(updatedSchedule);
-    
-    // Re-detect clashes
-    const updatedWarnings = detectClashes(updatedSchedule);
-    setClashWarnings(updatedWarnings);
-    setShowWarnings(updatedWarnings.length > 0);
+      // Check for conflicts (excluding the exam being moved)
+      const otherExamsOnTarget = targetSlot.exams.filter(e => e.id !== draggableId);
+      const hasTeacherConflict = otherExamsOnTarget.some(e => e.teacher_code === exam.teacher_code);
+      const hasSemesterConflict = otherExamsOnTarget.some(e => e.semester === exam.semester);
 
-    toast({
-      title: "Exam Moved Successfully",
-      description: `${draggedExam.course_code} moved to ${new Date(targetDate).toLocaleDateString()}`,
-    });
+      if (hasTeacherConflict || hasSemesterConflict) {
+        toast({
+          title: "Conflict Detected",
+          description: hasTeacherConflict 
+            ? `Teacher ${exam.teacher_code} already has an exam on this date`
+            : `Semester ${exam.semester} already has an exam on this date`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update exam date
+      const updatedExam = {
+        ...exam,
+        exam_date: targetDate,
+        day_of_week: targetSlot.dayOfWeek,
+        time_slot: targetSlot.dayOfWeek === "Friday" ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM",
+      };
+
+      setGeneratedSchedule(prev => prev.map(e => e.id === draggableId ? updatedExam : e));
+
+      // Update available slots
+      setAvailableSlots(prev => prev.map(slot => {
+        if (slot.date === sourceDate) {
+          return { ...slot, exams: slot.exams.filter(e => e.id !== draggableId) };
+        }
+        if (slot.date === targetDate) {
+          return { ...slot, exams: [...slot.exams.filter(e => e.id !== draggableId), updatedExam] };
+        }
+        return slot;
+      }));
+
+      toast({
+        title: "Exam Moved",
+        description: `${exam.course_code} moved to ${new Date(targetDate).toLocaleDateString()}`,
+      });
+    }
   };
 
   const handleSaveSchedule = async () => {
     if (generatedSchedule.length === 0) {
       toast({
         title: "Error",
-        description: "Please generate a schedule first",
+        description: "Please schedule some exams first",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Clear existing schedules for these semesters and program type
-      await supabase.from("exam_schedules").delete().in("semester", semesters).eq("program_type", programType);
+      setLoading(true);
+      // Clear existing schedules for these semesters
+      await supabase.from("exam_schedules").delete().in("semester", allSemesters);
 
       // Insert new schedule
       const { error } = await supabase
         .from("exam_schedules")
-        .insert(generatedSchedule);
+        .insert(generatedSchedule.map(exam => ({
+          course_code: exam.course_code,
+          teacher_code: exam.teacher_code,
+          exam_date: exam.exam_date,
+          day_of_week: exam.day_of_week,
+          time_slot: exam.time_slot,
+          semester: exam.semester,
+          program_type: exam.program_type,
+        })));
 
       if (error) throw error;
 
@@ -547,33 +413,69 @@ export default function Index() {
         description: "Failed to save exam schedule",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadExcel = () => {
     if (generatedSchedule.length === 0) {
       toast({
         title: "Error",
-        description: "Please generate a schedule first",
+        description: "Please schedule some exams first",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      generateExamSchedulePDF(
-        generatedSchedule,
-        `${programType} ${semesterType.toUpperCase()} Semesters`
-      );
+      // Prepare data for Excel
+      const excelData = generatedSchedule
+        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
+        .map(exam => ({
+          'Date': new Date(exam.exam_date).toLocaleDateString(),
+          'Day': exam.day_of_week,
+          'Time': exam.time_slot,
+          'Course Code': exam.course_code,
+          'Teacher Code': exam.teacher_code,
+          'Semester': exam.semester,
+          'Program': exam.program_type
+        }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Auto-size columns
+      const colWidths = [
+        { wch: 12 }, // Date
+        { wch: 10 }, // Day
+        { wch: 18 }, // Time
+        { wch: 12 }, // Course Code
+        { wch: 12 }, // Teacher Code
+        { wch: 10 }, // Semester
+        { wch: 10 }, // Program
+      ];
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Exam Schedule');
+
+      // Generate filename
+      const filename = `exam-schedule-${semesterType}-semesters-${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, filename);
+
       toast({
         title: "Success",
-        description: "PDF downloaded successfully!",
+        description: "Excel file downloaded successfully!",
       });
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error generating Excel:", error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF",
+        description: "Failed to generate Excel file",
         variant: "destructive",
       });
     }
@@ -617,7 +519,7 @@ export default function Index() {
   };
 
   const getSemesterDisplay = (semester: number) => {
-    if (programType === "B.Tech") {
+    if (semester <= 8) {
       return `B.Tech Semester ${semester}`;
     } else {
       const mtechSem = semester - 8;
@@ -632,20 +534,6 @@ export default function Index() {
     }));
   };
 
-  // Group schedule by date for the new drag-drop interface
-  const scheduleByDate = generatedSchedule.reduce((acc, exam, index) => {
-    const dateKey = exam.exam_date;
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    acc[dateKey].push({ ...exam, originalIndex: index });
-    return acc;
-  }, {} as { [key: string]: (ExamScheduleItem & { originalIndex: number })[] });
-
-  const sortedDates = Object.keys(scheduleByDate).sort((a, b) => 
-    new Date(a).getTime() - new Date(b).getTime()
-  );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -655,7 +543,7 @@ export default function Index() {
               Central University of Kashmir
             </h1>
             <p className="text-gray-600">
-              Generate optimized exam schedules with conflict detection
+              Generate optimized exam schedules with drag & drop interface
               developed by{" "}
               <a
                 href="https://m4milaad.github.io/Resume/"
@@ -677,37 +565,12 @@ export default function Index() {
           </Button>
         </div>
 
-        {/* Program Type Selector */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Program Selection</CardTitle>
-            <CardDescription>
-              Choose between B.Tech and M.Tech programs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs
-              value={programType}
-              onValueChange={(value) => setProgramType(value as "B.Tech" | "M.Tech")}
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="B.Tech" className="text-lg font-medium">
-                  B.Tech (Semesters 1-8)
-                </TabsTrigger>
-                <TabsTrigger value="M.Tech" className="text-lg font-medium">
-                  M.Tech (Semesters 1-4)
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-
         {/* Semester Type Selector */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Semester Selection</CardTitle>
             <CardDescription>
-              Choose between odd or even semesters for {programType}
+              Choose between odd or even semesters (includes both B.Tech and M.Tech)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -719,10 +582,10 @@ export default function Index() {
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="odd" className="text-lg font-medium">
-                  Odd Semesters ({programType === "B.Tech" ? "1, 3, 5, 7" : "1, 3"})
+                  Odd Semesters (B.Tech: 1,3,5,7 | M.Tech: 1,3)
                 </TabsTrigger>
                 <TabsTrigger value="even" className="text-lg font-medium">
-                  Even Semesters ({programType === "B.Tech" ? "2, 4, 6, 8" : "2, 4"})
+                  Even Semesters (B.Tech: 2,4,6,8 | M.Tech: 2,4)
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -734,7 +597,7 @@ export default function Index() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Schedule Settings</CardTitle>
-              <CardDescription>Configure exam schedule</CardDescription>
+              <CardDescription>Configure exam dates and holidays</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -763,33 +626,58 @@ export default function Index() {
                 </Popover>
               </div>
 
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleGenerateSchedule}
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  {loading ? "Generating..." : "Generate Schedule"}
-                </Button>
+              <div className="space-y-2">
+                <Label>Exam End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "PPP") : "Pick end date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
-              {generatedSchedule.length > 0 && (
+              <Button
+                onClick={handleGenerateSlots}
+                className="w-full"
+                disabled={loading}
+              >
+                Generate Date Slots
+              </Button>
+
+              {availableSlots.length > 0 && (
                 <div className="space-y-2">
                   <Button
                     onClick={handleSaveSchedule}
                     variant="outline"
                     className="w-full"
+                    disabled={loading}
                   >
                     <Save className="w-4 h-4 mr-2" />
                     Save Schedule
                   </Button>
                   <Button
-                    onClick={handleDownloadPDF}
+                    onClick={handleDownloadExcel}
                     variant="outline"
                     className="w-full"
                   >
                     <Download className="w-4 h-4 mr-2" />
-                    Download PDF
+                    Download Excel
                   </Button>
                 </div>
               )}
@@ -852,7 +740,7 @@ export default function Index() {
 
           {/* Semester Cards */}
           <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
-            {semesters.map((semester) => {
+            {allSemesters.map((semester) => {
               const semesterCourses = getCoursesBySemester(semester);
               const selectedCount =
                 selectedCourseTeachers[semester]?.length || 0;
@@ -972,172 +860,172 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Clash Warnings */}
-        {showWarnings && clashWarnings.length > 0 && (
-          <Alert className="mt-6 border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              <div className="font-medium mb-2">Schedule Conflicts Detected:</div>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                {clashWarnings.slice(0, 5).map((warning, index) => (
-                  <li key={index}>{warning.message}</li>
-                ))}
-                {clashWarnings.length > 5 && (
-                  <li>... and {clashWarnings.length - 5} more conflicts</li>
-                )}
-              </ul>
-              <div className="mt-2 text-sm">
-                You can drag and drop exams between dates to rearrange the schedule.
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Enhanced Schedule Display with Date-based Drag & Drop */}
-        {generatedSchedule.length > 0 && (
+        {/* Drag & Drop Schedule Table */}
+        {availableSlots.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Generated Exam Schedule</CardTitle>
+              <CardTitle>Exam Schedule Table</CardTitle>
               <CardDescription>
-                Drag and drop exams between dates to rearrange. Conflicts will be detected automatically.
-                Preview for {programType} {semesterType.toUpperCase()} semesters
+                Drag and drop exams from the unscheduled list to date slots. 
+                {unscheduledExams.length > 0 && ` ${unscheduledExams.length} exams remaining to schedule.`}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DragDropContext onDragEnd={handleDragEnd}>
-                <div className="space-y-6">
-                  {sortedDates.map((dateKey) => {
-                    const dateObj = new Date(dateKey);
-                    const dayOfWeek = dateObj.getDay();
-                    const maxExams = dayOfWeek === 5 ? 1 : 4;
-                    const hasExcess = scheduleByDate[dateKey].length > maxExams;
-
-                    return (
-                      <div key={dateKey} className={cn(
-                        "border rounded-lg p-4",
-                        hasExcess ? "border-red-300 bg-red-50" : "border-gray-200"
-                      )}>
-                        <div className="flex justify-between items-center mb-3">
-                          <div>
-                            <h3 className="text-lg font-semibold">
-                              {dateObj.toLocaleDateString("en-US", { 
-                                weekday: "long",
-                                year: "numeric", 
-                                month: "long", 
-                                day: "numeric" 
-                              })}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {scheduleByDate[dateKey].length} exam{scheduleByDate[dateKey].length !== 1 ? 's' : ''} scheduled 
-                              (Max: {maxExams})
-                            </p>
+                <div className="grid lg:grid-cols-4 gap-6">
+                  {/* Unscheduled Exams */}
+                  <Card className="lg:col-span-1">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Unscheduled Exams</CardTitle>
+                      <CardDescription>
+                        {unscheduledExams.length} exams to schedule
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Droppable droppableId="unscheduled">
+                        {(provided, snapshot) => (
+                          <div
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className={cn(
+                              "min-h-[200px] p-2 border-2 border-dashed rounded-lg",
+                              snapshot.isDraggingOver
+                                ? "border-blue-400 bg-blue-50"
+                                : "border-gray-300"
+                            )}
+                          >
+                            {unscheduledExams.map((exam, index) => (
+                              <Draggable
+                                key={exam.id}
+                                draggableId={exam.id!}
+                                index={index}
+                              >
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className={cn(
+                                      "p-2 mb-2 bg-white border rounded shadow-sm cursor-move",
+                                      snapshot.isDragging
+                                        ? "shadow-lg bg-blue-50"
+                                        : "hover:shadow-md"
+                                    )}
+                                  >
+                                    <div className="font-medium text-sm">
+                                      {exam.course_code}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {exam.teacher_code} | Sem {exam.semester}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {exam.program_type}
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
                           </div>
-                          {hasExcess && (
-                            <div className="text-red-600 text-sm font-medium">
-                              Too many exams!
-                            </div>
-                          )}
-                        </div>
+                        )}
+                      </Droppable>
+                    </CardContent>
+                  </Card>
 
-                        <Droppable droppableId={`date-${dateKey}`}>
-                          {(provided, snapshot) => (
-                            <div
-                              {...provided.droppableProps}
-                              ref={provided.innerRef}
-                              className={cn(
-                                "space-y-2 min-h-[60px] p-2 rounded border-2 border-dashed transition-colors",
-                                snapshot.isDraggingOver
-                                  ? "border-blue-400 bg-blue-50"
-                                  : "border-gray-300"
-                              )}
-                            >
-                              {scheduleByDate[dateKey].map((exam, index) => (
-                                <Draggable
-                                  key={`${exam.course_code}-${exam.teacher_code}-${exam.originalIndex}`}
-                                  draggableId={`${exam.course_code}-${exam.teacher_code}-${exam.originalIndex}`}
-                                  index={index}
-                                >
+                  {/* Schedule Table */}
+                  <div className="lg:col-span-3">
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-32">Date</TableHead>
+                            <TableHead className="w-24">Day</TableHead>
+                            <TableHead>Scheduled Exams</TableHead>
+                            <TableHead className="w-20">Slots</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {availableSlots.map((slot) => (
+                            <TableRow key={slot.date}>
+                              <TableCell className="font-medium">
+                                {new Date(slot.date).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>{slot.dayOfWeek}</TableCell>
+                              <TableCell>
+                                <Droppable droppableId={`date-${slot.date}`}>
                                   {(provided, snapshot) => (
                                     <div
+                                      {...provided.droppableProps}
                                       ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
                                       className={cn(
-                                        "p-3 bg-white border rounded-lg shadow-sm transition-all cursor-move",
-                                        snapshot.isDragging
-                                          ? "shadow-xl bg-blue-50 border-blue-300"
-                                          : "hover:shadow-md"
+                                        "min-h-[60px] p-2 border-2 border-dashed rounded",
+                                        snapshot.isDraggingOver
+                                          ? "border-blue-400 bg-blue-50"
+                                          : "border-gray-200",
+                                        slot.exams.length >= slot.maxExams
+                                          ? "bg-red-50 border-red-200"
+                                          : ""
                                       )}
                                     >
-                                      <div className="flex justify-between items-start">
-                                        <div>
-                                          <div className="font-semibold text-gray-900">
-                                            {exam.course_code}
-                                          </div>
-                                          <div className="text-sm text-gray-600">
-                                            Teacher: {exam.teacher_code}
-                                          </div>
-                                          <div className="text-sm text-gray-500">
-                                            {getSemesterDisplay(exam.semester)} • {exam.time_slot}
-                                          </div>
-                                        </div>
-                                        <div className="text-xs text-gray-400">
-                                          Drag to move
-                                        </div>
+                                      <div className="grid grid-cols-2 gap-2">
+                                        {slot.exams.map((exam, index) => (
+                                          <Draggable
+                                            key={exam.id}
+                                            draggableId={exam.id!}
+                                            index={index}
+                                          >
+                                            {(provided, snapshot) => (
+                                              <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                                className={cn(
+                                                  "p-2 bg-green-100 border border-green-300 rounded text-xs cursor-move",
+                                                  snapshot.isDragging
+                                                    ? "shadow-lg bg-green-200"
+                                                    : "hover:bg-green-200"
+                                                )}
+                                              >
+                                                <div className="font-medium">
+                                                  {exam.course_code}
+                                                </div>
+                                                <div className="text-gray-600">
+                                                  {exam.teacher_code}
+                                                </div>
+                                                <div className="text-gray-500">
+                                                  Sem {exam.semester}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </Draggable>
+                                        ))}
                                       </div>
+                                      {provided.placeholder}
                                     </div>
                                   )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </div>
-                          )}
-                        </Droppable>
-                      </div>
-                    );
-                  })}
+                                </Droppable>
+                              </TableCell>
+                              <TableCell>
+                                <span className={cn(
+                                  "text-sm",
+                                  slot.exams.length >= slot.maxExams
+                                    ? "text-red-600 font-medium"
+                                    : "text-gray-600"
+                                )}>
+                                  {slot.exams.length}/{slot.maxExams}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                 </div>
               </DragDropContext>
             </CardContent>
           </Card>
         )}
-
-        {/* Clash Detection Dialog */}
-        <AlertDialog open={showClashDialog} onOpenChange={setShowClashDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                Schedule Conflict Detected
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Moving <strong>{clashDetails?.exam.course_code}</strong> to{" "}
-                <strong>{clashDetails?.targetDate && new Date(clashDetails.targetDate).toLocaleDateString()}</strong>{" "}
-                will cause the following conflicts:
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  {clashDetails?.warnings.map((warning, index) => (
-                    <li key={index} className="text-red-600">{warning}</li>
-                  ))}
-                </ul>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => {
-                setShowClashDialog(false);
-                setClashDetails(null);
-                setPendingMove(null);
-              }}>
-                Cancel Move
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleOverrideMove}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Override & Move Anyway
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </div>
   );
