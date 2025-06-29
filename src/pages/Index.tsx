@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Edit2, Check, X, Clock } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Edit2, Check, X, Clock, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -34,7 +34,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import HolidaysManager from "@/components/HolidaysManager";
 import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
@@ -87,9 +86,10 @@ export default function Index() {
   const getMTechSemesters = () => semesterType === "odd" ? [9, 11] : [10, 12];
   const allSemesters = [...getBTechSemesters(), ...getMTechSemesters()];
 
-  // Load course-teacher combinations from database
+  // Load course-teacher combinations and holidays from database
   useEffect(() => {
     loadCourseTeachers();
+    loadHolidays();
   }, []);
 
   // Auto-select all courses when semester type changes or data loads
@@ -121,6 +121,28 @@ export default function Index() {
       toast({
         title: "Error",
         description: "Failed to load course and teacher data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadHolidays = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("holidays")
+        .select("*")
+        .order("holiday_date", { ascending: true });
+
+      if (error) throw error;
+      
+      // Convert holiday dates to Date objects
+      const holidayDates = (data || []).map(holiday => new Date(holiday.holiday_date));
+      setHolidays(holidayDates);
+    } catch (error) {
+      console.error("Error loading holidays:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load holidays data",
         variant: "destructive",
       });
     }
@@ -720,7 +742,7 @@ export default function Index() {
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Schedule Settings</CardTitle>
-                <CardDescription>Configure exam dates and holidays</CardDescription>
+                <CardDescription>Configure exam dates</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -804,6 +826,38 @@ export default function Index() {
                     </Button>
                   </div>
                 )}
+
+                {/* Holidays Information */}
+                <div className="space-y-2 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-gray-500" />
+                    <Label className="text-sm font-medium">Holidays</Label>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {holidays.length > 0 ? (
+                      <div>
+                        <p className="mb-2">{holidays.length} holidays configured</p>
+                        <div className="max-h-24 overflow-y-auto space-y-1">
+                          {holidays.slice(0, 3).map((holiday, index) => (
+                            <div key={index} className="text-xs bg-gray-50 p-1 rounded">
+                              {holiday.toLocaleDateString()}
+                            </div>
+                          ))}
+                          {holidays.length > 3 && (
+                            <div className="text-xs text-gray-500">
+                              ... and {holidays.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p>No holidays configured</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      Holidays are managed in the Admin Panel
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -970,11 +1024,6 @@ export default function Index() {
                 );
               })}
             </div>
-          </div>
-
-          {/* Holidays Management */}
-          <div className="mt-6">
-            <HolidaysManager onHolidaysChange={setHolidays} />
           </div>
 
           {/* Tabular Schedule Display with Drag & Drop */}
