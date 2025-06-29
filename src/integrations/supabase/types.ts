@@ -111,6 +111,36 @@ export type Database = {
         }
         Relationships: []
       }
+      holidays: {
+        Row: {
+          created_at: string
+          description: string | null
+          holiday_date: string
+          holiday_name: string
+          id: string
+          is_recurring: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          holiday_date: string
+          holiday_name: string
+          id?: string
+          is_recurring?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          holiday_date?: string
+          holiday_name?: string
+          id?: string
+          is_recurring?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
