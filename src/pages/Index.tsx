@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Clock, Info } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
@@ -649,460 +655,508 @@ export default function Index() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Central University of Kashmir
-            </h1>
-            <p className="text-gray-600">
-              Generate optimized exam schedules with gap-based constraints and drag & drop interface
-              developed by{" "}
-              <a
-                href="https://m4milaad.github.io/Resume/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold underline text-blue-600 hover:text-blue-800"
-              >
-                Milad Ajaz Bhat
-              </a>
-            </p>
-          </div>
-          <Button
-            onClick={() => navigate("/admin-login")}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            Admin Panel
-          </Button>
-        </div>
-
-        {/* Semester Type Selector */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Semester Selection</CardTitle>
-            <CardDescription>
-              Choose between odd or even semesters (includes both B.Tech and M.Tech)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs
-              value={semesterType}
-              onValueChange={(value) =>
-                setSemesterType(value as "odd" | "even")
-              }
+    <TooltipProvider>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Central University of Kashmir
+              </h1>
+              <p className="text-gray-600">
+                Generate optimized exam schedules with gap-based constraints and drag & drop interface
+                developed by{" "}
+                <a
+                  href="https://m4milaad.github.io/Resume/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold underline text-blue-600 hover:text-blue-800"
+                >
+                  Milad Ajaz Bhat
+                </a>
+              </p>
+            </div>
+            <Button
+              onClick={() => navigate("/admin-login")}
+              variant="outline"
+              className="flex items-center gap-2"
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="odd" className="text-lg font-medium">
-                  Odd Semesters
-                </TabsTrigger>
-                <TabsTrigger value="even" className="text-lg font-medium">
-                  Even Semesters
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Schedule Configuration */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Schedule Settings</CardTitle>
-              <CardDescription>Configure exam dates, holidays, and gap constraints</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Exam Start Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : "Pick start date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Exam End Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "PPP") : "Pick end date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* Gap Days Configuration */}
-              <div className="space-y-2 pt-4 border-t">
-                <Label htmlFor="defaultGapDays" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Default Gap Days
-                </Label>
-                <Input
-                  id="defaultGapDays"
-                  type="number"
-                  min="0"
-                  max="10"
-                  value={defaultGapDays}
-                  onChange={(e) => setDefaultGapDays(parseInt(e.target.value) || 0)}
-                  placeholder="Days between exams"
-                />
-                <p className="text-xs text-gray-500">
-                  Minimum days between consecutive exams for the same semester. First paper of each semester has no gap requirement.
-                </p>
-              </div>
-
-              <Button
-                onClick={generateSchedule}
-                className="w-full"
-                disabled={loading}
-              >
-                Generate Schedule
-              </Button>
-
-              {isScheduleGenerated && (
-                <div className="space-y-2">
-                  <Button
-                    onClick={handleSaveSchedule}
-                    variant="outline"
-                    className="w-full"
-                    disabled={loading}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Schedule
-                  </Button>
-                  <Button
-                    onClick={handleDownloadExcel}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Excel
-                  </Button>
-                </div>
-              )}
-
-              {/* Holidays Section */}
-              <div className="space-y-4 pt-4 border-t">
-                <Label>Add Holidays</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !selectedDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      Pick a holiday
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={handleDateSelect}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-
-                <div className="space-y-2">
-                  <Label>Selected Holidays:</Label>
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {holidays.length === 0 ? (
-                      <p className="text-sm text-gray-500">
-                        No holidays selected
-                      </p>
-                    ) : (
-                      holidays.map((holiday, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center bg-blue-50 p-2 rounded text-sm"
-                        >
-                          <span>{format(holiday, "PPP")}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => removeHoliday(holiday)}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Semester Cards */}
-          <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
-            {allSemesters.map((semester) => {
-              const semesterCourses = getCoursesBySemester(semester);
-              const selectedCount =
-                selectedCourseTeachers[semester]?.length || 0;
-
-              return (
-                <Card key={semester}>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle>{getSemesterDisplay(semester)}</CardTitle>
-                        <CardDescription>
-                          {semesterCourses.length} courses available,{" "}
-                          {selectedCount} selected
-                        </CardDescription>
-                      </div>
-                      {semesterCourses.length > 0 && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => selectAllForSemester(semester)}
-                          >
-                            Select All
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deselectAllForSemester(semester)}
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {semesterCourses.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500 mb-2">
-                          No courses assigned to {getSemesterDisplay(semester)}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          Add courses in the Admin Panel
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="max-h-60 overflow-y-auto space-y-2">
-                        {semesterCourses.map((ct) => (
-                          <div
-                            key={ct.id}
-                            className={cn(
-                              "p-3 border rounded-lg cursor-pointer transition-colors",
-                              selectedCourseTeachers[semester]?.includes(ct.id)
-                                ? "bg-blue-50 border-blue-200"
-                                : "bg-white border-gray-200 hover:bg-gray-50"
-                            )}
-                            onClick={() => toggleCourseTeacher(semester, ct.id)}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {ct.course_code} - {ct.teacher_code}
-                                </div>
-                                {ct.course_name && (
-                                  <div className="text-sm text-gray-600">
-                                    {ct.course_name}
-                                  </div>
-                                )}
-                                {ct.teacher_name && (
-                                  <div className="text-sm text-gray-500">
-                                    {ct.teacher_name}
-                                  </div>
-                                )}
-                                <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  Gap: {ct.gap_days || defaultGapDays} days
-                                </div>
-                              </div>
-                              <div
-                                className={cn(
-                                  "w-4 h-4 rounded border-2 mt-1",
-                                  selectedCourseTeachers[semester]?.includes(
-                                    ct.id
-                                  )
-                                    ? "bg-blue-500 border-blue-500"
-                                    : "border-gray-300"
-                                )}
-                              >
-                                {selectedCourseTeachers[semester]?.includes(
-                                  ct.id
-                                ) && (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+              <Settings className="w-4 h-4" />
+              Admin Panel
+            </Button>
           </div>
-        </div>
 
-        {/* Tabular Schedule Display with Drag & Drop */}
-        {isScheduleGenerated && (
-          <Card className="mt-6">
+          {/* Semester Type Selector */}
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Exam Schedule (Drag & Drop to Reschedule)
-              </CardTitle>
+              <CardTitle>Semester Selection</CardTitle>
               <CardDescription>
-                Constraints: Max 4 exams per day, 1 exam per semester per day, gap-based scheduling with semester-wise separation
+                Choose between odd or even semesters (includes both B.Tech and M.Tech)
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DragDropContext onDragEnd={onDragEnd}>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[200px]">Date</TableHead>
-                        <TableHead>Day</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Exams (Max 4)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sortedDates.map(dateString => {
-                        const date = new Date(dateString);
-                        const examsOnDate = scheduleByDate[dateString];
-                        const examCount = examsOnDate.length;
-
-                        return (
-                          <TableRow key={dateString}>
-                            <TableCell className="font-medium">
-                              {date.toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              {date.toLocaleDateString('en-US', { weekday: 'long' })}
-                            </TableCell>
-                            <TableCell>
-                              {getExamTimeSlot(date)}
-                            </TableCell>
-                            <TableCell>
-                              <Droppable droppableId={`date-${dateString}`} direction="horizontal">
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.droppableProps}
-                                    className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
-                                      snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
-                                    } ${examCount >= 4 ? 'bg-red-50' : ''}`}
-                                  >
-                                    {examsOnDate.map((exam, index) => (
-                                      <Draggable key={exam.id} draggableId={exam.id} index={index}>
-                                        {(provided, snapshot) => (
-                                          <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
-                                            className={`${
-                                              snapshot.isDragging ? 'shadow-lg' : ''
-                                            }`}
-                                          >
-                                            <Badge
-                                              variant="outline"
-                                              className={`cursor-move flex items-center gap-1 ${
-                                                exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
-                                                exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                                exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
-                                                exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                                'bg-orange-50 text-orange-700 border-orange-200'
-                                              } ${snapshot.isDragging ? 'rotate-3' : ''}`}
-                                              title={`Gap: ${exam.gap_days} days${exam.is_first_paper ? ' (First paper)' : ''}`}
-                                            >
-                                              <GripVertical className="h-3 w-3" />
-                                              S{exam.semester}: {exam.courseCode}
-                                              {exam.is_first_paper && <span className="text-xs">★</span>}
-                                            </Badge>
-                                          </div>
-                                        )}
-                                      </Draggable>
-                                    ))}
-                                    {provided.placeholder}
-                                    {/* Show capacity indicator */}
-                                    <div className="flex items-center text-xs text-gray-500 ml-2">
-                                      {examCount}/4 slots used
-                                    </div>
-                                  </div>
-                                )}
-                              </Droppable>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </DragDropContext>
-              
-              {/* Legend */}
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium mb-2">Legend:</h4>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs">★</span>
-                    <span>First paper (no gap required)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>Gap days shown in tooltip</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <GripVertical className="w-3 h-3" />
-                    <span>Drag to reschedule</span>
-                  </div>
-                </div>
-              </div>
+              <Tabs
+                value={semesterType}
+                onValueChange={(value) =>
+                  setSemesterType(value as "odd" | "even")
+                }
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="odd" className="text-lg font-medium">
+                    Odd Semesters
+                  </TabsTrigger>
+                  <TabsTrigger value="even" className="text-lg font-medium">
+                    Even Semesters
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardContent>
           </Card>
-        )}
+
+          <div className="grid lg:grid-cols-4 gap-6">
+            {/* Schedule Configuration */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle>Schedule Settings</CardTitle>
+                <CardDescription>Configure exam dates, holidays, and gap constraints</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Exam Start Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Pick start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Exam End Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "Pick end date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Enhanced Gap Days Configuration */}
+                <div className="space-y-3 pt-4 border-t bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                    <Label htmlFor="defaultGapDays" className="text-base font-semibold text-blue-900">
+                      Gap Configuration
+                    </Label>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-4 h-4 text-blue-500" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Sets the minimum number of preparation days between consecutive exams for the same semester. First paper of each semester requires no gap.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultGapDays" className="text-sm font-medium">
+                      Default Gap Days (0-10)
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="defaultGapDays"
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={defaultGapDays}
+                        onChange={(e) => setDefaultGapDays(parseInt(e.target.value) || 0)}
+                        className="flex-1"
+                      />
+                      <Badge variant="outline" className="text-xs">
+                        {defaultGapDays} {defaultGapDays === 1 ? 'day' : 'days'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                    <strong>How it works:</strong>
+                    <ul className="mt-1 space-y-1 list-disc list-inside">
+                      <li>First exam per semester: No gap required ★</li>
+                      <li>Subsequent exams: Must have {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''} gap</li>
+                      <li>Individual courses can override this default</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={generateSchedule}
+                  className="w-full"
+                  disabled={loading}
+                >
+                  Generate Schedule
+                </Button>
+
+                {isScheduleGenerated && (
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleSaveSchedule}
+                      variant="outline"
+                      className="w-full"
+                      disabled={loading}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Schedule
+                    </Button>
+                    <Button
+                      onClick={handleDownloadExcel}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Excel
+                    </Button>
+                  </div>
+                )}
+
+                {/* Holidays Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <Label>Add Holidays</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        Pick a holiday
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="space-y-2">
+                    <Label>Selected Holidays:</Label>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {holidays.length === 0 ? (
+                        <p className="text-sm text-gray-500">
+                          No holidays selected
+                        </p>
+                      ) : (
+                        holidays.map((holiday, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center bg-blue-50 p-2 rounded text-sm"
+                          >
+                            <span>{format(holiday, "PPP")}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeHoliday(holiday)}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Semester Cards */}
+            <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
+              {allSemesters.map((semester) => {
+                const semesterCourses = getCoursesBySemester(semester);
+                const selectedCount =
+                  selectedCourseTeachers[semester]?.length || 0;
+
+                return (
+                  <Card key={semester}>
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <CardTitle>{getSemesterDisplay(semester)}</CardTitle>
+                          <CardDescription>
+                            {semesterCourses.length} courses available,{" "}
+                            {selectedCount} selected
+                          </CardDescription>
+                        </div>
+                        {semesterCourses.length > 0 && (
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => selectAllForSemester(semester)}
+                            >
+                              Select All
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deselectAllForSemester(semester)}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {semesterCourses.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500 mb-2">
+                            No courses assigned to {getSemesterDisplay(semester)}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            Add courses in the Admin Panel
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto space-y-2">
+                          {semesterCourses.map((ct) => (
+                            <div
+                              key={ct.id}
+                              className={cn(
+                                "p-3 border rounded-lg cursor-pointer transition-colors",
+                                selectedCourseTeachers[semester]?.includes(ct.id)
+                                  ? "bg-blue-50 border-blue-200"
+                                  : "bg-white border-gray-200 hover:bg-gray-50"
+                              )}
+                              onClick={() => toggleCourseTeacher(semester, ct.id)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {ct.course_code} - {ct.teacher_code}
+                                  </div>
+                                  {ct.course_name && (
+                                    <div className="text-sm text-gray-600">
+                                      {ct.course_name}
+                                    </div>
+                                  )}
+                                  {ct.teacher_name && (
+                                    <div className="text-sm text-gray-500">
+                                      {ct.teacher_name}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    Gap: {ct.gap_days || defaultGapDays} days
+                                    {ct.gap_days !== defaultGapDays && (
+                                      <Badge variant="outline" className="text-xs">
+                                        Custom
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <div
+                                  className={cn(
+                                    "w-4 h-4 rounded border-2 mt-1",
+                                    selectedCourseTeachers[semester]?.includes(
+                                      ct.id
+                                    )
+                                      ? "bg-blue-500 border-blue-500"
+                                      : "border-gray-300"
+                                  )}
+                                >
+                                  {selectedCourseTeachers[semester]?.includes(
+                                    ct.id
+                                  ) && (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Tabular Schedule Display with Drag & Drop */}
+          {isScheduleGenerated && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5" />
+                  Exam Schedule (Drag & Drop to Reschedule)
+                </CardTitle>
+                <CardDescription>
+                  Constraints: Max 4 exams per day, 1 exam per semester per day, gap-based scheduling with semester-wise separation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">Date</TableHead>
+                          <TableHead>Day</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Exams (Max 4)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedDates.map(dateString => {
+                          const date = new Date(dateString);
+                          const examsOnDate = scheduleByDate[dateString];
+                          const examCount = examsOnDate.length;
+
+                          return (
+                            <TableRow key={dateString}>
+                              <TableCell className="font-medium">
+                                {date.toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                {date.toLocaleDateString('en-US', { weekday: 'long' })}
+                              </TableCell>
+                              <TableCell>
+                                {getExamTimeSlot(date)}
+                              </TableCell>
+                              <TableCell>
+                                <Droppable droppableId={`date-${dateString}`} direction="horizontal">
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.droppableProps}
+                                      className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
+                                        snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                                      } ${examCount >= 4 ? 'bg-red-50' : ''}`}
+                                    >
+                                      {examsOnDate.map((exam, index) => (
+                                        <Draggable key={exam.id} draggableId={exam.id} index={index}>
+                                          {(provided, snapshot) => (
+                                            <div
+                                              ref={provided.innerRef}
+                                              {...provided.draggableProps}
+                                              {...provided.dragHandleProps}
+                                              className={`${
+                                                snapshot.isDragging ? 'shadow-lg' : ''
+                                              }`}
+                                            >
+                                              <Badge
+                                                variant="outline"
+                                                className={`cursor-move flex items-center gap-1 ${
+                                                  exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                  exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                  exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                  exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                  'bg-orange-50 text-orange-700 border-orange-200'
+                                                } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                                title={`Gap: ${exam.gap_days} days${exam.is_first_paper ? ' (First paper)' : ''}`}
+                                              >
+                                                <GripVertical className="h-3 w-3" />
+                                                S{exam.semester}: {exam.courseCode}
+                                                {exam.is_first_paper && <span className="text-xs">★</span>}
+                                              </Badge>
+                                            </div>
+                                          )}
+                                        </Draggable>
+                                      ))}
+                                      {provided.placeholder}
+                                      {/* Show capacity indicator */}
+                                      <div className="flex items-center text-xs text-gray-500 ml-2">
+                                        {examCount}/4 slots used
+                                      </div>
+                                    </div>
+                                  )}
+                                </Droppable>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </DragDropContext>
+                
+                {/* Enhanced Legend */}
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-3">Legend & Gap Information:</h4>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Symbols:</h5>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">★</span>
+                          <span>First paper (no gap required)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3 h-3" />
+                          <span>Gap days shown in tooltip</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <GripVertical className="w-3 h-3" />
+                          <span>Drag to reschedule</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Gap Rules:</h5>
+                      <div className="space-y-1 text-sm text-gray-600">
+                        <div>• Default gap: {defaultGapDays} day{defaultGapDays !== 1 ? 's' : ''}</div>
+                        <div>• First papers: No gap needed</div>
+                        <div>• Custom gaps: Set per course in Admin</div>
+                        <div>• Validation: Prevents invalid moves</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
