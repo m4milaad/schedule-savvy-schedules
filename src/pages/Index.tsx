@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,8 +24,18 @@ import { useToast } from "@/hooks/use-toast";
 import { generateExamSchedulePDF } from "@/utils/pdfGenerator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CourseTeacher {
   id: string;
@@ -56,6 +65,17 @@ interface ClashWarning {
   itemId: string;
 }
 
+interface ClashDetails {
+  exam: ExamScheduleItem;
+  targetDate: string;
+  warnings: string[];
+}
+
+interface PendingMove {
+  examId: string;
+  targetDate: string;
+}
+
 export default function Index() {
   const [programType, setProgramType] = useState<"B.Tech" | "M.Tech">("B.Tech");
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
@@ -73,6 +93,9 @@ export default function Index() {
   const [clashWarnings, setClashWarnings] = useState<ClashWarning[]>([]);
   const [showWarnings, setShowWarnings] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showClashDialog, setShowClashDialog] = useState(false);
+  const [clashDetails, setClashDetails] = useState<ClashDetails | null>(null);
+  const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -354,43 +377,142 @@ export default function Index() {
     return schedule;
   };
 
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const checkClashes = (exam: ExamScheduleItem, targetDate: string, currentSchedule: ExamScheduleItem[]): string[] => {
+    const warnings: string[] = [];
+    const targetDateObj = new Date(targetDate);
+    const dayOfWeek = targetDateObj.getDay();
+    const maxExamsPerDay = dayOfWeek === 5 ? 1 : 4; // Friday = 1, others = 4
 
-    const items = Array.from(generatedSchedule);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    // Get exams already scheduled for this date (excluding the one being moved)
+    const examsOnDate = currentSchedule.filter(
+      item => item.exam_date === targetDate && item.course_code !== exam.course_code
+    );
 
-    setGeneratedSchedule(items);
-    
-    // Re-detect clashes after reordering
-    const warnings = detectClashes(items);
-    setClashWarnings(warnings);
-    setShowWarnings(warnings.length > 0);
+    // Check date limits
+    if (examsOnDate.length >= maxExamsPerDay) {
+      warnings.push(`Maximum ${maxExamsPerDay} exams allowed on ${dayOfWeek === 5 ? 'Friday' : 'this day'}`);
+    }
+
+    // Check teacher conflicts
+    const teacherConflict = examsOnDate.find(item => item.teacher_code === exam.teacher_code);
+    if (teacherConflict) {
+      warnings.push(`Teacher ${exam.teacher_code} already has an exam on this date`);
+    }
+
+    // Check semester repetition
+    const semesterConflict = examsOnDate.find(item => item.semester === exam.semester);
+    if (semesterConflict) {
+      warnings.push(`Semester ${exam.semester} already has an exam on this date`);
+    }
+
+    return warnings;
   };
 
-  const handleDateChange = (index: number, newDate: string) => {
-    const updatedSchedule = [...generatedSchedule];
-    const newDateObj = new Date(newDate);
-    const dayOfWeekName = newDateObj.toLocaleDateString("en-US", {
-      weekday: "long",
+  const handleOverrideMove = async () => {
+    if (!pendingMove || !clashDetails) return;
+
+    const updatedSchedule = generatedSchedule.map(item => {
+      if (item.course_code === clashDetails.exam.course_code && item.teacher_code === clashDetails.exam.teacher_code) {
+        const newDateObj = new Date(pendingMove.targetDate);
+        const dayOfWeekName = newDateObj.toLocaleDateString("en-US", { weekday: "long" });
+        const dayOfWeek = newDateObj.getDay();
+        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
+        
+        return {
+          ...item,
+          exam_date: pendingMove.targetDate,
+          day_of_week: dayOfWeekName,
+          time_slot: finalTimeSlot
+        };
+      }
+      return item;
     });
-    const dayOfWeek = newDateObj.getDay();
-    const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
 
-    updatedSchedule[index] = {
-      ...updatedSchedule[index],
-      exam_date: newDate,
-      day_of_week: dayOfWeekName,
-      time_slot: finalTimeSlot
-    };
-
+    // Sort by date
+    updatedSchedule.sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+    
     setGeneratedSchedule(updatedSchedule);
     
     // Re-detect clashes
     const warnings = detectClashes(updatedSchedule);
     setClashWarnings(warnings);
     setShowWarnings(warnings.length > 0);
+
+    toast({
+      title: "Exam Moved with Override",
+      description: `${clashDetails.exam.course_code} moved to ${new Date(pendingMove.targetDate).toLocaleDateString()} despite conflicts`,
+      variant: "destructive"
+    });
+
+    setShowClashDialog(false);
+    setClashDetails(null);
+    setPendingMove(null);
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    // Find the dragged exam
+    const draggedExam = generatedSchedule.find((item, index) => 
+      `${item.course_code}-${item.teacher_code}-${index}` === draggableId
+    );
+    
+    if (!draggedExam) return;
+
+    const targetDate = destination.droppableId.replace('date-', '');
+    
+    // Check for clashes
+    const warnings = checkClashes(draggedExam, targetDate, generatedSchedule);
+
+    if (warnings.length > 0) {
+      setClashDetails({
+        exam: draggedExam,
+        targetDate,
+        warnings
+      });
+      setPendingMove({
+        examId: draggableId,
+        targetDate
+      });
+      setShowClashDialog(true);
+      return;
+    }
+
+    // No conflicts, proceed with move
+    const updatedSchedule = generatedSchedule.map(item => {
+      if (item.course_code === draggedExam.course_code && item.teacher_code === draggedExam.teacher_code) {
+        const newDateObj = new Date(targetDate);
+        const dayOfWeekName = newDateObj.toLocaleDateString("en-US", { weekday: "long" });
+        const dayOfWeek = newDateObj.getDay();
+        const finalTimeSlot = dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
+        
+        return {
+          ...item,
+          exam_date: targetDate,
+          day_of_week: dayOfWeekName,
+          time_slot: finalTimeSlot
+        };
+      }
+      return item;
+    });
+
+    // Sort by date
+    updatedSchedule.sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+    
+    setGeneratedSchedule(updatedSchedule);
+    
+    // Re-detect clashes
+    const warnings = detectClashes(updatedSchedule);
+    setClashWarnings(warnings);
+    setShowWarnings(warnings.length > 0);
+
+    toast({
+      title: "Exam Moved Successfully",
+      description: `${draggedExam.course_code} moved to ${new Date(targetDate).toLocaleDateString()}`,
+    });
   };
 
   const handleSaveSchedule = async () => {
@@ -509,6 +631,20 @@ export default function Index() {
       [courseId]: days
     }));
   };
+
+  // Group schedule by date for the new drag-drop interface
+  const scheduleByDate = generatedSchedule.reduce((acc, exam, index) => {
+    const dateKey = exam.exam_date;
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push({ ...exam, originalIndex: index });
+    return acc;
+  }, {} as { [key: string]: (ExamScheduleItem & { originalIndex: number })[] });
+
+  const sortedDates = Object.keys(scheduleByDate).sort((a, b) => 
+    new Date(a).getTime() - new Date(b).getTime()
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -851,117 +987,157 @@ export default function Index() {
                 )}
               </ul>
               <div className="mt-2 text-sm">
-                You can drag and drop to rearrange the schedule or manually edit dates below.
+                You can drag and drop exams between dates to rearrange the schedule.
               </div>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Generated Schedule Display with Drag & Drop */}
+        {/* Enhanced Schedule Display with Date-based Drag & Drop */}
         {generatedSchedule.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle>Generated Exam Schedule</CardTitle>
               <CardDescription>
-                Drag and drop to rearrange schedule. Click on dates to edit them manually.
+                Drag and drop exams between dates to rearrange. Conflicts will be detected automatically.
                 Preview for {programType} {semesterType.toUpperCase()} semesters
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="exam-schedule">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="overflow-x-auto"
-                    >
-                      <table className="w-full border-collapse border border-gray-300">
-                        <thead>
-                          <tr className="bg-gray-50">
-                            <th className="border border-gray-300 p-3 text-left">
-                              Course Code
-                            </th>
-                            <th className="border border-gray-300 p-3 text-left">
-                              Teacher Code
-                            </th>
-                            <th className="border border-gray-300 p-3 text-left">
-                              Semester
-                            </th>
-                            <th className="border border-gray-300 p-3 text-left">
-                              Exam Date
-                            </th>
-                            <th className="border border-gray-300 p-3 text-left">
-                              Day
-                            </th>
-                            <th className="border border-gray-300 p-3 text-left">
-                              Time Slot
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {generatedSchedule.map((item, index) => {
-                            const hasClash = clashWarnings.some(w => w.itemId === index.toString());
-                            return (
-                              <Draggable
-                                key={`${item.course_code}-${item.teacher_code}-${index}`}
-                                draggableId={`${item.course_code}-${item.teacher_code}-${index}`}
-                                index={index}
-                              >
-                                {(provided, snapshot) => (
-                                  <tr
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={cn(
-                                      "transition-colors",
-                                      snapshot.isDragging
-                                        ? "bg-blue-100 shadow-lg"
-                                        : index % 2 === 0
-                                        ? "bg-white"
-                                        : "bg-gray-50",
-                                      hasClash && "bg-red-50 border-red-200"
-                                    )}
-                                  >
-                                    <td className="border border-gray-300 p-3">
-                                      {item.course_code}
-                                    </td>
-                                    <td className="border border-gray-300 p-3">
-                                      {item.teacher_code}
-                                    </td>
-                                    <td className="border border-gray-300 p-3">
-                                      {getSemesterDisplay(item.semester)}
-                                    </td>
-                                    <td className="border border-gray-300 p-3">
-                                      <Input
-                                        type="date"
-                                        value={item.exam_date}
-                                        onChange={(e) => handleDateChange(index, e.target.value)}
-                                        className="w-full min-w-[140px]"
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    </td>
-                                    <td className="border border-gray-300 p-3">
-                                      {item.day_of_week}
-                                    </td>
-                                    <td className="border border-gray-300 p-3">
-                                      {item.time_slot}
-                                    </td>
-                                  </tr>
-                                )}
-                              </Draggable>
-                            );
-                          })}
-                          {provided.placeholder}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </Droppable>
+                <div className="space-y-6">
+                  {sortedDates.map((dateKey) => {
+                    const dateObj = new Date(dateKey);
+                    const dayOfWeek = dateObj.getDay();
+                    const maxExams = dayOfWeek === 5 ? 1 : 4;
+                    const hasExcess = scheduleByDate[dateKey].length > maxExams;
+
+                    return (
+                      <div key={dateKey} className={cn(
+                        "border rounded-lg p-4",
+                        hasExcess ? "border-red-300 bg-red-50" : "border-gray-200"
+                      )}>
+                        <div className="flex justify-between items-center mb-3">
+                          <div>
+                            <h3 className="text-lg font-semibold">
+                              {dateObj.toLocaleDateString("en-US", { 
+                                weekday: "long",
+                                year: "numeric", 
+                                month: "long", 
+                                day: "numeric" 
+                              })}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {scheduleByDate[dateKey].length} exam{scheduleByDate[dateKey].length !== 1 ? 's' : ''} scheduled 
+                              (Max: {maxExams})
+                            </p>
+                          </div>
+                          {hasExcess && (
+                            <div className="text-red-600 text-sm font-medium">
+                              Too many exams!
+                            </div>
+                          )}
+                        </div>
+
+                        <Droppable droppableId={`date-${dateKey}`}>
+                          {(provided, snapshot) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className={cn(
+                                "space-y-2 min-h-[60px] p-2 rounded border-2 border-dashed transition-colors",
+                                snapshot.isDraggingOver
+                                  ? "border-blue-400 bg-blue-50"
+                                  : "border-gray-300"
+                              )}
+                            >
+                              {scheduleByDate[dateKey].map((exam, index) => (
+                                <Draggable
+                                  key={`${exam.course_code}-${exam.teacher_code}-${exam.originalIndex}`}
+                                  draggableId={`${exam.course_code}-${exam.teacher_code}-${exam.originalIndex}`}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className={cn(
+                                        "p-3 bg-white border rounded-lg shadow-sm transition-all cursor-move",
+                                        snapshot.isDragging
+                                          ? "shadow-xl bg-blue-50 border-blue-300"
+                                          : "hover:shadow-md"
+                                      )}
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <div className="font-semibold text-gray-900">
+                                            {exam.course_code}
+                                          </div>
+                                          <div className="text-sm text-gray-600">
+                                            Teacher: {exam.teacher_code}
+                                          </div>
+                                          <div className="text-sm text-gray-500">
+                                            {getSemesterDisplay(exam.semester)} • {exam.time_slot}
+                                          </div>
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                          Drag to move
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    );
+                  })}
+                </div>
               </DragDropContext>
             </CardContent>
           </Card>
         )}
+
+        {/* Clash Detection Dialog */}
+        <AlertDialog open={showClashDialog} onOpenChange={setShowClashDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                Schedule Conflict Detected
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Moving <strong>{clashDetails?.exam.course_code}</strong> to{" "}
+                <strong>{clashDetails?.targetDate && new Date(clashDetails.targetDate).toLocaleDateString()}</strong>{" "}
+                will cause the following conflicts:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  {clashDetails?.warnings.map((warning, index) => (
+                    <li key={index} className="text-red-600">{warning}</li>
+                  ))}
+                </ul>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowClashDialog(false);
+                setClashDetails(null);
+                setPendingMove(null);
+              }}>
+                Cancel Move
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleOverrideMove}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Override & Move Anyway
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
