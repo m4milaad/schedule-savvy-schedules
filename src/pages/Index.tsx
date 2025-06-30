@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +32,6 @@ export default function Index() {
   const [loading, setLoading] = useState(false);
   const [editingGap, setEditingGap] = useState<string | null>(null);
   const [tempGapValue, setTempGapValue] = useState<number>(0);
-  const [overrideRules, setOverrideRules] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -334,173 +332,7 @@ export default function Index() {
     }
   };
 
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    if (!destination) return;
-
-    if (destination.droppableId === source.droppableId && destination.index === source.index) {
-      return;
-    }
-
-    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
-    if (!draggedExam) return;
-
-    const targetDateString = destination.droppableId.replace('date-', '');
-    const targetDate = new Date(targetDateString);
-
-    // Check constraints only if override is not enabled
-    if (!overrideRules) {
-      const examsOnTargetDate = generatedSchedule.filter(exam =>
-        exam.date.toDateString() === targetDate.toDateString() &&
-        exam.id !== draggedExam.id
-      );
-
-      const semesterExamOnDate = examsOnTargetDate.find(exam =>
-        exam.semester === draggedExam.semester
-      );
-
-      if (semesterExamOnDate) {
-        toast({
-          title: "Cannot Move Exam",
-          description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}.`,
-          variant: "destructive",
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setOverrideRules(true);
-                // Retry the move with override enabled
-                setTimeout(() => {
-                  const updatedSchedule = generatedSchedule.map(exam => {
-                    if (exam.id === draggableId) {
-                      return {
-                        ...exam,
-                        date: targetDate,
-                        exam_date: targetDate.toISOString().split("T")[0],
-                        dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                        day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                        timeSlot: getExamTimeSlot(targetDate),
-                        time_slot: getExamTimeSlot(targetDate)
-                      };
-                    }
-                    return exam;
-                  });
-                  updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
-                  setGeneratedSchedule(updatedSchedule);
-                  toast({
-                    title: "Exam Moved Successfully",
-                    description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
-                  });
-                }, 100);
-              }}
-            >
-              Override
-            </Button>
-          )
-        });
-        return;
-      }
-
-      if (examsOnTargetDate.length >= 4) {
-        toast({
-          title: "Cannot Move Exam",
-          description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
-          variant: "destructive",
-          action: (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setOverrideRules(true);
-                // Retry the move with override enabled
-                setTimeout(() => {
-                  const updatedSchedule = generatedSchedule.map(exam => {
-                    if (exam.id === draggableId) {
-                      return {
-                        ...exam,
-                        date: targetDate,
-                        exam_date: targetDate.toISOString().split("T")[0],
-                        dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                        day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                        timeSlot: getExamTimeSlot(targetDate),
-                        time_slot: getExamTimeSlot(targetDate)
-                      };
-                    }
-                    return exam;
-                  });
-                  updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
-                  setGeneratedSchedule(updatedSchedule);
-                  toast({
-                    title: "Exam Moved Successfully",
-                    description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
-                  });
-                }, 100);
-              }}
-            >
-              Override
-            </Button>
-          )
-        });
-        return;
-      }
-
-      if (!draggedExam.is_first_paper) {
-        const semesterExams = generatedSchedule
-          .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
-          .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
-
-        const previousExam = semesterExams[semesterExams.length - 1];
-        if (previousExam) {
-          const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
-          if (daysDiff < draggedExam.gap_days) {
-            toast({
-              title: "Gap Requirement Not Met",
-              description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
-              variant: "destructive",
-              action: (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setOverrideRules(true);
-                    // Retry the move with override enabled
-                    setTimeout(() => {
-                      const updatedSchedule = generatedSchedule.map(exam => {
-                        if (exam.id === draggableId) {
-                          return {
-                            ...exam,
-                            date: targetDate,
-                            exam_date: targetDate.toISOString().split("T")[0],
-                            dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                            day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-                            timeSlot: getExamTimeSlot(targetDate),
-                            time_slot: getExamTimeSlot(targetDate)
-                          };
-                        }
-                        return exam;
-                      });
-                      updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
-                      setGeneratedSchedule(updatedSchedule);
-                      toast({
-                        title: "Exam Moved Successfully",
-                        description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
-                      });
-                    }, 100);
-                  }}
-                >
-                  Override
-                </Button>
-              )
-            });
-            return;
-          }
-        }
-      }
-    }
-
-    // If we reach here, either override is enabled or all constraints are satisfied
+  const performMove = (draggableId: string, targetDate: Date) => {
     const updatedSchedule = generatedSchedule.map(exam => {
       if (exam.id === draggableId) {
         return {
@@ -519,11 +351,104 @@ export default function Index() {
     updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
     setGeneratedSchedule(updatedSchedule);
 
-    const warningMessage = overrideRules ? " (Rules Override Enabled)" : "";
+    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
     toast({
       title: "Exam Moved Successfully",
-      description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()}${warningMessage}`,
+      description: `${draggedExam?.courseCode} moved to ${targetDate.toLocaleDateString()}`,
     });
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+      return;
+    }
+
+    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
+    if (!draggedExam) return;
+
+    const targetDateString = destination.droppableId.replace('date-', '');
+    const targetDate = new Date(targetDateString);
+
+    // Check constraints - always check, no persistent override state
+    const examsOnTargetDate = generatedSchedule.filter(exam =>
+      exam.date.toDateString() === targetDate.toDateString() &&
+      exam.id !== draggedExam.id
+    );
+
+    const semesterExamOnDate = examsOnTargetDate.find(exam =>
+      exam.semester === draggedExam.semester
+    );
+
+    if (semesterExamOnDate) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}.`,
+        variant: "destructive",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => performMove(draggableId, targetDate)}
+          >
+            Override
+          </Button>
+        )
+      });
+      return;
+    }
+
+    if (examsOnTargetDate.length >= 4) {
+      toast({
+        title: "Cannot Move Exam",
+        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
+        variant: "destructive",
+        action: (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => performMove(draggableId, targetDate)}
+          >
+            Override
+          </Button>
+        )
+      });
+      return;
+    }
+
+    if (!draggedExam.is_first_paper) {
+      const semesterExams = generatedSchedule
+        .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
+        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+
+      const previousExam = semesterExams[semesterExams.length - 1];
+      if (previousExam) {
+        const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < draggedExam.gap_days) {
+          toast({
+            title: "Gap Requirement Not Met",
+            description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
+            variant: "destructive",
+            action: (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => performMove(draggableId, targetDate)}
+              >
+                Override
+              </Button>
+            )
+          });
+          return;
+        }
+      }
+    }
+
+    // If we reach here, all constraints are satisfied
+    performMove(draggableId, targetDate);
   };
 
   const handleSaveSchedule = async () => {
