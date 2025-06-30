@@ -349,6 +349,7 @@ export default function Index() {
     const targetDateString = destination.droppableId.replace('date-', '');
     const targetDate = new Date(targetDateString);
 
+    // Check constraints only if override is not enabled
     if (!overrideRules) {
       const examsOnTargetDate = generatedSchedule.filter(exam =>
         exam.date.toDateString() === targetDate.toDateString() &&
@@ -362,8 +363,42 @@ export default function Index() {
       if (semesterExamOnDate) {
         toast({
           title: "Cannot Move Exam",
-          description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}. Enable "Override Rules" to bypass this constraint.`,
-          variant: "destructive"
+          description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}.`,
+          variant: "destructive",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setOverrideRules(true);
+                // Retry the move with override enabled
+                setTimeout(() => {
+                  const updatedSchedule = generatedSchedule.map(exam => {
+                    if (exam.id === draggableId) {
+                      return {
+                        ...exam,
+                        date: targetDate,
+                        exam_date: targetDate.toISOString().split("T")[0],
+                        dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                        day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                        timeSlot: getExamTimeSlot(targetDate),
+                        time_slot: getExamTimeSlot(targetDate)
+                      };
+                    }
+                    return exam;
+                  });
+                  updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+                  setGeneratedSchedule(updatedSchedule);
+                  toast({
+                    title: "Exam Moved Successfully",
+                    description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
+                  });
+                }, 100);
+              }}
+            >
+              Override
+            </Button>
+          )
         });
         return;
       }
@@ -371,8 +406,42 @@ export default function Index() {
       if (examsOnTargetDate.length >= 4) {
         toast({
           title: "Cannot Move Exam",
-          description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full. Enable "Override Rules" to bypass this constraint.`,
-          variant: "destructive"
+          description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
+          variant: "destructive",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setOverrideRules(true);
+                // Retry the move with override enabled
+                setTimeout(() => {
+                  const updatedSchedule = generatedSchedule.map(exam => {
+                    if (exam.id === draggableId) {
+                      return {
+                        ...exam,
+                        date: targetDate,
+                        exam_date: targetDate.toISOString().split("T")[0],
+                        dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                        day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                        timeSlot: getExamTimeSlot(targetDate),
+                        time_slot: getExamTimeSlot(targetDate)
+                      };
+                    }
+                    return exam;
+                  });
+                  updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+                  setGeneratedSchedule(updatedSchedule);
+                  toast({
+                    title: "Exam Moved Successfully",
+                    description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
+                  });
+                }, 100);
+              }}
+            >
+              Override
+            </Button>
+          )
         });
         return;
       }
@@ -388,8 +457,42 @@ export default function Index() {
           if (daysDiff < draggedExam.gap_days) {
             toast({
               title: "Gap Requirement Not Met",
-              description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available. Enable "Override Rules" to bypass this constraint.`,
-              variant: "destructive"
+              description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
+              variant: "destructive",
+              action: (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setOverrideRules(true);
+                    // Retry the move with override enabled
+                    setTimeout(() => {
+                      const updatedSchedule = generatedSchedule.map(exam => {
+                        if (exam.id === draggableId) {
+                          return {
+                            ...exam,
+                            date: targetDate,
+                            exam_date: targetDate.toISOString().split("T")[0],
+                            dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                            day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+                            timeSlot: getExamTimeSlot(targetDate),
+                            time_slot: getExamTimeSlot(targetDate)
+                          };
+                        }
+                        return exam;
+                      });
+                      updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
+                      setGeneratedSchedule(updatedSchedule);
+                      toast({
+                        title: "Exam Moved Successfully",
+                        description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()} (Rules Override Enabled)`,
+                      });
+                    }, 100);
+                  }}
+                >
+                  Override
+                </Button>
+              )
             });
             return;
           }
@@ -397,6 +500,7 @@ export default function Index() {
       }
     }
 
+    // If we reach here, either override is enabled or all constraints are satisfied
     const updatedSchedule = generatedSchedule.map(exam => {
       if (exam.id === draggableId) {
         return {
@@ -599,8 +703,6 @@ export default function Index() {
           {isScheduleGenerated && (
             <ScheduleStatusCard
               scheduleCount={generatedSchedule.length}
-              overrideRules={overrideRules}
-              onOverrideChange={setOverrideRules}
             />
           )}
 
@@ -669,7 +771,6 @@ export default function Index() {
           {isScheduleGenerated && (
             <ScheduleTable
               generatedSchedule={generatedSchedule}
-              overrideRules={overrideRules}
               onDragEnd={onDragEnd}
             />
           )}

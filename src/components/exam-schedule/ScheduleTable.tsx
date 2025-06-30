@@ -17,13 +17,11 @@ import { getExamTimeSlot } from "@/utils/scheduleUtils";
 
 interface ScheduleTableProps {
   generatedSchedule: ExamScheduleItem[];
-  overrideRules: boolean;
   onDragEnd: (result: DropResult) => void;
 }
 
 export const ScheduleTable = ({
   generatedSchedule,
-  overrideRules,
   onDragEnd,
 }: ScheduleTableProps) => {
   // Group schedule by dates for table display
@@ -46,19 +44,11 @@ export const ScheduleTable = ({
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
           Exam Schedule (Drag & Drop to Reschedule)
-          {overrideRules && (
-            <Badge variant="destructive" className="ml-2">
-              Rules Override Active
-            </Badge>
-          )}
         </CardTitle>
         <CardDescription>
           <div className="space-y-1">
             <div>
-              {overrideRules 
-                ? "Rules override enabled - drag freely without constraints" 
-                : "Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements"
-              }
+              Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1">
