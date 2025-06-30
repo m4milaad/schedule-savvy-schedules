@@ -392,6 +392,7 @@ export default function Index() {
           <Button 
             variant="outline" 
             size="sm" 
+            className="text-black hover:text-red-600"
             onClick={() => performMove(draggableId, targetDate)}
           >
             Override
