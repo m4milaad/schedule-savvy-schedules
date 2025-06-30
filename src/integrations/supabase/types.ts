@@ -113,31 +113,31 @@ export type Database = {
       }
       holidays: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           holiday_date: string
           holiday_name: string
           id: string
           is_recurring: boolean | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           holiday_date: string
           holiday_name: string
           id?: string
           is_recurring?: boolean | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           holiday_date?: string
           holiday_name?: string
           id?: string
           is_recurring?: boolean | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
