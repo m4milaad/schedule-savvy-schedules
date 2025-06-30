@@ -14,7 +14,7 @@ export const getAllSemesters = (semesterType: "odd" | "even") => [
 
 export const getExamTimeSlot = (date: Date) => {
   const dayOfWeek = date.getDay();
-  return dayOfWeek === 5 ? "11:00 AM - 2:00 PM" : "12:00 PM - 3:00 PM";
+  return dayOfWeek === 5 ? "11:00 AM - 1:30 PM" : "12:00 PM - 2:30 PM";
 };
 
 export const getSemesterDisplay = (semester: number) => {
