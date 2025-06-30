@@ -64,9 +64,18 @@ interface ExamScheduleItem {
   is_first_paper?: boolean;
 }
 
+interface Holiday {
+  id: string;
+  holiday_date: string;
+  holiday_name: string;
+  description: string | null;
+  is_recurring: boolean | null;
+}
+
 export default function Index() {
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [holidays, setHolidays] = useState<Date[]>([]);
+  const [holidaysData, setHolidaysData] = useState<Holiday[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
@@ -135,6 +144,9 @@ export default function Index() {
 
       if (error) throw error;
 
+      // Store both the raw data and converted dates
+      setHolidaysData(data || []);
+      
       // Convert holiday dates to Date objects
       const holidayDates = (data || []).map(holiday => new Date(holiday.holiday_date));
       setHolidays(holidayDates);
@@ -146,6 +158,54 @@ export default function Index() {
         variant: "destructive",
       });
     }
+  };
+
+  // Calculate working days and holidays in selected date range
+  const getDateRangeInfo = () => {
+    if (!startDate || !endDate) return null;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    let totalDays = 0;
+    let workingDays = 0;
+    let weekendDays = 0;
+    let holidaysInRange: Holiday[] = [];
+    
+    let currentDate = new Date(start);
+    
+    while (currentDate <= end) {
+      totalDays++;
+      
+      const dayOfWeek = currentDate.getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      
+      // Check if current date is a holiday
+      const holidayOnDate = holidaysData.find(holiday => {
+        const holidayDate = new Date(holiday.holiday_date);
+        return holidayDate.toDateString() === currentDate.toDateString();
+      });
+      
+      if (holidayOnDate) {
+        holidaysInRange.push(holidayOnDate);
+      }
+      
+      if (isWeekend) {
+        weekendDays++;
+      } else if (!holidayOnDate) {
+        workingDays++;
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return {
+      totalDays,
+      workingDays,
+      weekendDays,
+      holidaysInRange,
+      holidayCount: holidaysInRange.length
+    };
   };
 
   const getCoursesBySemester = (semester: number) => {
@@ -678,6 +738,9 @@ export default function Index() {
     new Date(a).getTime() - new Date(b).getTime()
   );
 
+  // Get date range information
+  const dateRangeInfo = getDateRangeInfo();
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -808,6 +871,51 @@ export default function Index() {
                   </Popover>
                 </div>
 
+                {/* Date Range Information */}
+                {dateRangeInfo && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-blue-600" />
+                      <Label className="text-sm font-medium text-blue-700">Date Range Analysis</Label>
+                    </div>
+                    
+                    <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Days:</span>
+                          <span className="font-medium">{dateRangeInfo.totalDays}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Weekends:</span>
+                          <span className="font-medium">{dateRangeInfo.weekendDays}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Holidays:</span>
+                          <span className="font-medium">{dateRangeInfo.holidayCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-green-700 font-medium">Working Days:</span>
+                          <span className="font-bold text-green-700">{dateRangeInfo.workingDays}</span>
+                        </div>
+                      </div>
+                      
+                      {dateRangeInfo.holidaysInRange.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-blue-200">
+                          <div className="text-xs font-medium text-gray-700 mb-2">Holidays in Range:</div>
+                          <div className="max-h-20 overflow-y-auto space-y-1">
+                            {dateRangeInfo.holidaysInRange.map((holiday, index) => (
+                              <div key={index} className="text-xs bg-white p-1 rounded border">
+                                <div className="font-medium">{new Date(holiday.holiday_date).toLocaleDateString()}</div>
+                                <div className="text-gray-600">{holiday.holiday_name}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={generateSchedule}
                   className="w-full"
@@ -838,37 +946,39 @@ export default function Index() {
                   </div>
                 )}
 
-                {/* Holidays Information */}
-                <div className="space-y-2 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-gray-500" />
-                    <Label className="text-sm font-medium">Holidays</Label>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {holidays.length > 0 ? (
-                      <div>
-                        <p className="mb-2">{holidays.length} holidays configured</p>
-                        <div className="max-h-24 overflow-y-auto space-y-1">
-                          {holidays.slice(0, 3).map((holiday, index) => (
-                            <div key={index} className="text-xs bg-gray-50 p-1 rounded">
-                              {holiday.toLocaleDateString()}
-                            </div>
-                          ))}
-                          {holidays.length > 3 && (
-                            <div className="text-xs text-gray-500">
-                              ... and {holidays.length - 3} more
-                            </div>
-                          )}
+                {/* Holidays Information - Only show when no date range is selected */}
+                {!dateRangeInfo && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-gray-500" />
+                      <Label className="text-sm font-medium">Holidays</Label>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {holidays.length > 0 ? (
+                        <div>
+                          <p className="mb-2">{holidays.length} holidays configured</p>
+                          <div className="max-h-24 overflow-y-auto space-y-1">
+                            {holidays.slice(0, 3).map((holiday, index) => (
+                              <div key={index} className="text-xs bg-gray-50 p-1 rounded">
+                                {holiday.toLocaleDateString()}
+                              </div>
+                            ))}
+                            {holidays.length > 3 && (
+                              <div className="text-xs text-gray-500">
+                                ... and {holidays.length - 3} more
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <p>No holidays configured</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-2">
-                      Holidays are managed in the Admin Panel
-                    </p>
+                      ) : (
+                        <p>No holidays configured</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        Holidays are managed in the Admin Panel
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
