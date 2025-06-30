@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Settings, RefreshCw } from "lucide-react";
@@ -9,15 +15,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 import { useExamData } from "@/hooks/useExamData";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
-import { 
-  getAllSemesters, 
-  detectSemesterType, 
-  generateExamDates, 
-  getExamTimeSlot 
+import {
+  getAllSemesters,
+  detectSemesterType,
+  generateExamDates,
+  getExamTimeSlot,
 } from "@/utils/scheduleUtils";
 import { ScheduleStatusCard } from "@/components/exam-schedule/ScheduleStatusCard";
 import { SemesterCard } from "@/components/exam-schedule/SemesterCard";
@@ -28,7 +34,9 @@ export default function Index() {
   const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<Record<number, string[]>>({});
+  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
+    Record<number, string[]>
+  >({});
   const [loading, setLoading] = useState(false);
   const [editingGap, setEditingGap] = useState<string | null>(null);
   const [tempGapValue, setTempGapValue] = useState<number>(0);
@@ -80,44 +88,44 @@ export default function Index() {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     let totalDays = 0;
     let workingDays = 0;
     let weekendDays = 0;
     let holidaysInRange: Holiday[] = [];
-    
+
     let currentDate = new Date(start);
-    
+
     while (currentDate <= end) {
       totalDays++;
-      
+
       const dayOfWeek = currentDate.getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      const holidayOnDate = holidaysData.find(holiday => {
+
+      const holidayOnDate = holidaysData.find((holiday) => {
         const holidayDate = new Date(holiday.holiday_date);
         return holidayDate.toDateString() === currentDate.toDateString();
       });
-      
+
       if (holidayOnDate) {
         holidaysInRange.push(holidayOnDate);
       }
-      
+
       if (isWeekend) {
         weekendDays++;
       } else if (!holidayOnDate) {
         workingDays++;
       }
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return {
       totalDays,
       workingDays,
       weekendDays,
       holidaysInRange,
-      holidayCount: holidaysInRange.length
+      holidayCount: holidaysInRange.length,
     };
   };
 
@@ -231,28 +239,46 @@ export default function Index() {
 
         const availableSemesters = Object.keys(coursesBySemester)
           .map(Number)
-          .filter(semester => {
-            const hasUnscheduledCourses = coursesBySemester[semester].some(course =>
-              !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+          .filter((semester) => {
+            const hasUnscheduledCourses = coursesBySemester[semester].some(
+              (course) =>
+                !schedule.find(
+                  (exam) =>
+                    exam.course_code === course.course_code &&
+                    exam.teacher_code === course.teacher_code
+                )
             );
-            const notScheduledToday = semesterLastScheduledDate[semester] !== dateKey;
+            const notScheduledToday =
+              semesterLastScheduledDate[semester] !== dateKey;
 
             const lastScheduledExam = schedule
-              .filter(exam => exam.semester === semester)
-              .sort((a, b) => new Date(b.exam_date).getTime() - new Date(a.exam_date).getTime())[0];
+              .filter((exam) => exam.semester === semester)
+              .sort(
+                (a, b) =>
+                  new Date(b.exam_date).getTime() -
+                  new Date(a.exam_date).getTime()
+              )[0];
 
             if (!lastScheduledExam) {
               return hasUnscheduledCourses && notScheduledToday;
             }
 
-            const nextCourse = coursesBySemester[semester].find(course =>
-              !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+            const nextCourse = coursesBySemester[semester].find(
+              (course) =>
+                !schedule.find(
+                  (exam) =>
+                    exam.course_code === course.course_code &&
+                    exam.teacher_code === course.teacher_code
+                )
             );
 
             if (!nextCourse) return false;
 
             const lastExamDate = new Date(lastScheduledExam.exam_date);
-            const daysDiff = Math.floor((currentExamDate.getTime() - lastExamDate.getTime()) / (1000 * 60 * 60 * 24));
+            const daysDiff = Math.floor(
+              (currentExamDate.getTime() - lastExamDate.getTime()) /
+                (1000 * 60 * 60 * 24)
+            );
             const requiredGap = nextCourse.gap_days || 2;
             const gapMet = daysDiff >= requiredGap;
 
@@ -262,25 +288,36 @@ export default function Index() {
         for (const semester of availableSemesters) {
           if (scheduledToday >= maxExamsPerDay) break;
 
-          const unscheduledCourse = coursesBySemester[semester].find(course =>
-            !schedule.find(exam => exam.course_code === course.course_code && exam.teacher_code === course.teacher_code)
+          const unscheduledCourse = coursesBySemester[semester].find(
+            (course) =>
+              !schedule.find(
+                (exam) =>
+                  exam.course_code === course.course_code &&
+                  exam.teacher_code === course.teacher_code
+              )
           );
 
           if (unscheduledCourse) {
-            const isFirstPaper = !schedule.some(exam => exam.semester === semester);
+            const isFirstPaper = !schedule.some(
+              (exam) => exam.semester === semester
+            );
 
             const exam: ExamScheduleItem = {
               id: `exam-${schedule.length}`,
               course_code: unscheduledCourse.course_code,
               teacher_code: unscheduledCourse.teacher_code,
               exam_date: currentExamDate.toISOString().split("T")[0],
-              day_of_week: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              day_of_week: currentExamDate.toLocaleDateString("en-US", {
+                weekday: "long",
+              }),
               time_slot: getExamTimeSlot(currentExamDate),
               semester: unscheduledCourse.semester,
               program_type: unscheduledCourse.program_type,
               date: currentExamDate,
               courseCode: unscheduledCourse.course_code,
-              dayOfWeek: currentExamDate.toLocaleDateString("en-US", { weekday: "long" }),
+              dayOfWeek: currentExamDate.toLocaleDateString("en-US", {
+                weekday: "long",
+              }),
               timeSlot: getExamTimeSlot(currentExamDate),
               gap_days: unscheduledCourse.gap_days || 2,
               is_first_paper: isFirstPaper,
@@ -333,16 +370,20 @@ export default function Index() {
   };
 
   const performMove = (draggableId: string, targetDate: Date) => {
-    const updatedSchedule = generatedSchedule.map(exam => {
+    const updatedSchedule = generatedSchedule.map((exam) => {
       if (exam.id === draggableId) {
         return {
           ...exam,
           date: targetDate,
           exam_date: targetDate.toISOString().split("T")[0],
-          dayOfWeek: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
-          day_of_week: targetDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          dayOfWeek: targetDate.toLocaleDateString("en-US", {
+            weekday: "long",
+          }),
+          day_of_week: targetDate.toLocaleDateString("en-US", {
+            weekday: "long",
+          }),
           timeSlot: getExamTimeSlot(targetDate),
-          time_slot: getExamTimeSlot(targetDate)
+          time_slot: getExamTimeSlot(targetDate),
         };
       }
       return exam;
@@ -351,10 +392,14 @@ export default function Index() {
     updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
     setGeneratedSchedule(updatedSchedule);
 
-    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
+    const draggedExam = generatedSchedule.find(
+      (exam) => exam.id === draggableId
+    );
     toast({
       title: "Exam Moved Successfully",
-      description: `${draggedExam?.courseCode} moved to ${targetDate.toLocaleDateString()}`,
+      description: `${
+        draggedExam?.courseCode
+      } moved to ${targetDate.toLocaleDateString()}`,
     });
   };
 
@@ -363,41 +408,49 @@ export default function Index() {
 
     if (!destination) return;
 
-    if (destination.droppableId === source.droppableId && destination.index === source.index) {
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
       return;
     }
 
-    const draggedExam = generatedSchedule.find(exam => exam.id === draggableId);
+    const draggedExam = generatedSchedule.find(
+      (exam) => exam.id === draggableId
+    );
     if (!draggedExam) return;
 
-    const targetDateString = destination.droppableId.replace('date-', '');
+    const targetDateString = destination.droppableId.replace("date-", "");
     const targetDate = new Date(targetDateString);
 
     // Check constraints - always check, no persistent override state
-    const examsOnTargetDate = generatedSchedule.filter(exam =>
-      exam.date.toDateString() === targetDate.toDateString() &&
-      exam.id !== draggedExam.id
+    const examsOnTargetDate = generatedSchedule.filter(
+      (exam) =>
+        exam.date.toDateString() === targetDate.toDateString() &&
+        exam.id !== draggedExam.id
     );
 
-    const semesterExamOnDate = examsOnTargetDate.find(exam =>
-      exam.semester === draggedExam.semester
+    const semesterExamOnDate = examsOnTargetDate.find(
+      (exam) => exam.semester === draggedExam.semester
     );
 
     if (semesterExamOnDate) {
       toast({
         title: "Cannot Move Exam",
-        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}.`,
+        description: `Semester ${
+          draggedExam.semester
+        } already has an exam on ${targetDate.toLocaleDateString()}.`,
         variant: "destructive",
         action: (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="text-black hover:text-red-600"
             onClick={() => performMove(draggableId, targetDate)}
           >
             Override
           </Button>
-        )
+        ),
       });
       return;
     }
@@ -408,40 +461,51 @@ export default function Index() {
         description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
         variant: "destructive",
         action: (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            className="text-black hover:text-red-600"
+            size="sm"
             onClick={() => performMove(draggableId, targetDate)}
           >
             Override
           </Button>
-        )
+        ),
       });
       return;
     }
 
     if (!draggedExam.is_first_paper) {
       const semesterExams = generatedSchedule
-        .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
-        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+        .filter(
+          (exam) =>
+            exam.semester === draggedExam.semester && exam.id !== draggedExam.id
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+        );
 
       const previousExam = semesterExams[semesterExams.length - 1];
       if (previousExam) {
-        const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
+        const daysDiff = Math.floor(
+          (targetDate.getTime() - new Date(previousExam.exam_date).getTime()) /
+            (1000 * 60 * 60 * 24)
+        );
         if (daysDiff < draggedExam.gap_days) {
           toast({
             title: "Gap Requirement Not Met",
             description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
             variant: "destructive",
             action: (
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-black hover:text-red-600"
                 onClick={() => performMove(draggableId, targetDate)}
               >
                 Override
               </Button>
-            )
+            ),
           });
           return;
         }
@@ -464,11 +528,13 @@ export default function Index() {
 
     try {
       setLoading(true);
-      await supabase.from("exam_schedules").delete().in("semester", allSemesters);
-
-      const { error } = await supabase
+      await supabase
         .from("exam_schedules")
-        .insert(generatedSchedule.map(exam => ({
+        .delete()
+        .in("semester", allSemesters);
+
+      const { error } = await supabase.from("exam_schedules").insert(
+        generatedSchedule.map((exam) => ({
           course_code: exam.course_code,
           teacher_code: exam.teacher_code,
           exam_date: exam.exam_date,
@@ -476,7 +542,8 @@ export default function Index() {
           time_slot: exam.time_slot,
           semester: exam.semester,
           program_type: exam.program_type,
-        })));
+        }))
+      );
 
       if (error) throw error;
 
@@ -508,31 +575,43 @@ export default function Index() {
 
     try {
       const excelData = generatedSchedule
-        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
-        .map(exam => ({
-          'Date': new Date(exam.exam_date).toLocaleDateString(),
-          'Day': exam.day_of_week,
-          'Time': exam.time_slot,
-          'Course Code': exam.course_code,
-          'Teacher Code': exam.teacher_code,
-          'Semester': exam.semester,
-          'Program': exam.program_type,
-          'Gap Days': exam.gap_days,
-          'First Paper': exam.is_first_paper ? 'Yes' : 'No'
+        .sort(
+          (a, b) =>
+            new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+        )
+        .map((exam) => ({
+          Date: new Date(exam.exam_date).toLocaleDateString(),
+          Day: exam.day_of_week,
+          Time: exam.time_slot,
+          "Course Code": exam.course_code,
+          "Teacher Code": exam.teacher_code,
+          Semester: exam.semester,
+          Program: exam.program_type,
+          "Gap Days": exam.gap_days,
+          "First Paper": exam.is_first_paper ? "Yes" : "No",
         }));
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
 
       const colWidths = [
-        { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 12 },
-        { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 18 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 12 },
       ];
-      ws['!cols'] = colWidths;
+      ws["!cols"] = colWidths;
 
-      XLSX.utils.book_append_sheet(wb, ws, 'Exam Schedule');
+      XLSX.utils.book_append_sheet(wb, ws, "Exam Schedule");
 
-      const filename = `exam-schedule-${semesterType}-semesters-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const filename = `exam-schedule-${semesterType}-semesters-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       XLSX.writeFile(wb, filename);
 
       toast({
@@ -591,7 +670,9 @@ export default function Index() {
                   Central University of Kashmir
                 </h1>
                 <p className="text-gray-600">
-                  Generate optimized exam schedules with custom gap settings and drag & drop interface<br />
+                  Generate optimized exam schedules with custom gap settings and
+                  drag & drop interface
+                  <br />
                   developed by{" "}
                   <a
                     href="https://m4milaad.github.io/Resume/"
@@ -612,7 +693,12 @@ export default function Index() {
                 className="flex items-center gap-2"
                 disabled={loadingLastSchedule}
               >
-                <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
+                <RefreshCw
+                  className={cn(
+                    "w-4 h-4",
+                    loadingLastSchedule && "animate-spin"
+                  )}
+                />
                 Reload Last Schedule
               </Button>
               <Button
@@ -627,16 +713,15 @@ export default function Index() {
           </div>
 
           {isScheduleGenerated && (
-            <ScheduleStatusCard
-              scheduleCount={generatedSchedule.length}
-            />
+            <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
           )}
 
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Semester Selection</CardTitle>
               <CardDescription>
-                Choose between odd or even semesters (includes both B.Tech and M.Tech)
+                Choose between odd or even semesters (includes both B.Tech and
+                M.Tech)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -679,10 +764,14 @@ export default function Index() {
                   key={semester}
                   semester={semester}
                   courseTeachers={courseTeachers}
-                  selectedCourseTeachers={selectedCourseTeachers[semester] || []}
+                  selectedCourseTeachers={
+                    selectedCourseTeachers[semester] || []
+                  }
                   editingGap={editingGap}
                   tempGapValue={tempGapValue}
-                  onToggleCourse={(courseId) => toggleCourseTeacher(semester, courseId)}
+                  onToggleCourse={(courseId) =>
+                    toggleCourseTeacher(semester, courseId)
+                  }
                   onSelectAll={() => selectAllForSemester(semester)}
                   onDeselectAll={() => deselectAllForSemester(semester)}
                   onEditGap={handleEditGap}
