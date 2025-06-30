@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Edit2, Check, X, Clock, CalendarDays } from "lucide-react";
+import { CalendarIcon, Settings, Download, Save, AlertTriangle, GripVertical, Edit2, Check, X, Clock, CalendarDays, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 import * as XLSX from 'xlsx';
 
 interface CourseTeacher {
@@ -87,6 +88,8 @@ export default function Index() {
   const [isScheduleGenerated, setIsScheduleGenerated] = useState(false);
   const [editingGap, setEditingGap] = useState<string | null>(null);
   const [tempGapValue, setTempGapValue] = useState<number>(0);
+  const [overrideRules, setOverrideRules] = useState(false);
+  const [loadingLastSchedule, setLoadingLastSchedule] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -95,10 +98,11 @@ export default function Index() {
   const getMTechSemesters = () => semesterType === "odd" ? [9, 11] : [10, 12];
   const allSemesters = [...getBTechSemesters(), ...getMTechSemesters()];
 
-  // Load course-teacher combinations and holidays from database
+  // Load course-teacher combinations, holidays, and last schedule from database
   useEffect(() => {
     loadCourseTeachers();
     loadHolidays();
+    loadLastSchedule();
   }, []);
 
   // Auto-select all courses when semester type changes or data loads
@@ -157,6 +161,75 @@ export default function Index() {
         description: "Failed to load holidays data",
         variant: "destructive",
       });
+    }
+  };
+
+  const loadLastSchedule = async () => {
+    try {
+      setLoadingLastSchedule(true);
+      const { data, error } = await supabase
+        .from("exam_schedules")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50); // Get recent schedules to check for the latest complete set
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // Convert database schedule to ExamScheduleItem format
+        const scheduleItems: ExamScheduleItem[] = data.map((item, index) => ({
+          id: `exam-${index}`,
+          course_code: item.course_code,
+          teacher_code: item.teacher_code,
+          exam_date: item.exam_date,
+          day_of_week: item.day_of_week,
+          time_slot: item.time_slot,
+          semester: item.semester,
+          program_type: item.program_type || "B.Tech",
+          date: new Date(item.exam_date),
+          courseCode: item.course_code,
+          dayOfWeek: item.day_of_week,
+          timeSlot: item.time_slot,
+          gap_days: 2, // Default gap, will be updated from course_teacher_codes if needed
+          is_first_paper: false, // Will be calculated
+        }));
+
+        // Sort by date and calculate first papers
+        scheduleItems.sort((a, b) => a.date.getTime() - b.date.getTime());
+        
+        // Mark first papers for each semester
+        const semesterFirstPapers = new Set<number>();
+        scheduleItems.forEach(exam => {
+          if (!semesterFirstPapers.has(exam.semester)) {
+            exam.is_first_paper = true;
+            semesterFirstPapers.add(exam.semester);
+          }
+        });
+
+        setGeneratedSchedule(scheduleItems);
+        setIsScheduleGenerated(true);
+
+        // Detect semester type from the loaded schedule
+        const semesters = [...new Set(scheduleItems.map(item => item.semester))];
+        const hasOddSemesters = semesters.some(sem => sem % 2 === 1);
+        const hasEvenSemesters = semesters.some(sem => sem % 2 === 0);
+        
+        if (hasOddSemesters && !hasEvenSemesters) {
+          setSemesterType("odd");
+        } else if (hasEvenSemesters && !hasOddSemesters) {
+          setSemesterType("even");
+        }
+
+        toast({
+          title: "Schedule Loaded",
+          description: `Loaded last generated schedule with ${scheduleItems.length} exams`,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading last schedule:", error);
+      // Don't show error toast as this is optional functionality
+    } finally {
+      setLoadingLastSchedule(false);
     }
   };
 
@@ -501,52 +574,54 @@ export default function Index() {
     const targetDateString = destination.droppableId.replace('date-', '');
     const targetDate = new Date(targetDateString);
 
-    // Check constraints for the target date
-    const examsOnTargetDate = generatedSchedule.filter(exam =>
-      exam.date.toDateString() === targetDate.toDateString() &&
-      exam.id !== draggedExam.id
-    );
+    // Check constraints for the target date (only if override is disabled)
+    if (!overrideRules) {
+      const examsOnTargetDate = generatedSchedule.filter(exam =>
+        exam.date.toDateString() === targetDate.toDateString() &&
+        exam.id !== draggedExam.id
+      );
 
-    // Check if semester already has exam on target date
-    const semesterExamOnDate = examsOnTargetDate.find(exam =>
-      exam.semester === draggedExam.semester
-    );
+      // Check if semester already has exam on target date
+      const semesterExamOnDate = examsOnTargetDate.find(exam =>
+        exam.semester === draggedExam.semester
+      );
 
-    if (semesterExamOnDate) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}`,
-        variant: "destructive"
-      });
-      return;
-    }
+      if (semesterExamOnDate) {
+        toast({
+          title: "Cannot Move Exam",
+          description: `Semester ${draggedExam.semester} already has an exam on ${targetDate.toLocaleDateString()}. Enable "Override Rules" to bypass this constraint.`,
+          variant: "destructive"
+        });
+        return;
+      }
 
-    // Check if target date already has 4 exams
-    if (examsOnTargetDate.length >= 4) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
-        variant: "destructive"
-      });
-      return;
-    }
+      // Check if target date already has 4 exams
+      if (examsOnTargetDate.length >= 4) {
+        toast({
+          title: "Cannot Move Exam",
+          description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full. Enable "Override Rules" to bypass this constraint.`,
+          variant: "destructive"
+        });
+        return;
+      }
 
-    // Check gap requirement if not first paper
-    if (!draggedExam.is_first_paper) {
-      const semesterExams = generatedSchedule
-        .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
-        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
+      // Check gap requirement if not first paper
+      if (!draggedExam.is_first_paper) {
+        const semesterExams = generatedSchedule
+          .filter(exam => exam.semester === draggedExam.semester && exam.id !== draggedExam.id)
+          .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime());
 
-      const previousExam = semesterExams[semesterExams.length - 1];
-      if (previousExam) {
-        const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff < draggedExam.gap_days) {
-          toast({
-            title: "Gap Requirement Not Met",
-            description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
-            variant: "destructive"
-          });
-          return;
+        const previousExam = semesterExams[semesterExams.length - 1];
+        if (previousExam) {
+          const daysDiff = Math.floor((targetDate.getTime() - new Date(previousExam.exam_date).getTime()) / (1000 * 60 * 60 * 24));
+          if (daysDiff < draggedExam.gap_days) {
+            toast({
+              title: "Gap Requirement Not Met",
+              description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available. Enable "Override Rules" to bypass this constraint.`,
+              variant: "destructive"
+            });
+            return;
+          }
         }
       }
     }
@@ -572,9 +647,10 @@ export default function Index() {
 
     setGeneratedSchedule(updatedSchedule);
 
+    const warningMessage = overrideRules ? " (Rules Override Enabled)" : "";
     toast({
       title: "Exam Moved Successfully",
-      description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()}`,
+      description: `${draggedExam.courseCode} moved to ${targetDate.toLocaleDateString()}${warningMessage}`,
     });
   };
 
@@ -774,15 +850,62 @@ export default function Index() {
               </div>
             </div>
 
-            <Button
-              onClick={() => navigate("/admin-login")}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Admin Panel
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={loadLastSchedule}
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled={loadingLastSchedule}
+              >
+                <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
+                Reload Last Schedule
+              </Button>
+              <Button
+                onClick={() => navigate("/admin-login")}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                Admin Panel
+              </Button>
+            </div>
           </div>
+
+          {/* Last Schedule Status */}
+          {isScheduleGenerated && (
+            <Card className="mb-6 bg-green-50 border-green-200">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-green-600" />
+                    <span className="text-green-800 font-medium">
+                      Last Generated Schedule Loaded ({generatedSchedule.length} exams)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="override-rules"
+                        checked={overrideRules}
+                        onCheckedChange={setOverrideRules}
+                      />
+                      <Label htmlFor="override-rules" className="text-sm font-medium">
+                        Override Drag & Drop Rules
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>When enabled, allows moving exams without constraint validation</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Semester Type Selector */}
           <Card className="mb-6">
@@ -816,7 +939,7 @@ export default function Index() {
             <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Schedule Settings</CardTitle>
-                <CardDescription>Configure exam dates</CardDescription>
+                <CardDescription>Configure exam dates or view last schedule</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -921,7 +1044,7 @@ export default function Index() {
                   className="w-full"
                   disabled={loading}
                 >
-                  Generate Schedule
+                  Generate New Schedule
                 </Button>
 
                 {isScheduleGenerated && (
@@ -1154,10 +1277,20 @@ export default function Index() {
                 <CardTitle className="flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5" />
                   Exam Schedule (Drag & Drop to Reschedule)
+                  {overrideRules && (
+                    <Badge variant="destructive" className="ml-2">
+                      Rules Override Active
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   <div className="space-y-1">
-                    <div>Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements</div>
+                    <div>
+                      {overrideRules 
+                        ? "Rules override enabled - drag freely without constraints" 
+                        : "Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements"
+                      }
+                    </div>
                     <div className="flex items-center gap-4 text-xs">
                       <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
