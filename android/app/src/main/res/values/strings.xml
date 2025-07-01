@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CUK Exam Schedule</string>
+    <string name="title_activity_main">CUK Exam Schedule</string>
+    <string name="package_name">app.lovable.c26871e166834556bc27845d5db5696e</string>
+    <string name="custom_url_scheme">app.lovable.c26871e166834556bc27845d5db5696e</string>
+</resources>
