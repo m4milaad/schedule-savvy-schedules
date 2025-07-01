@@ -8,11 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { ExamScheduleItem } from "@/types/examSchedule";
 import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { useToast } from "@/hooks/use-toast";
+import { SplashScreen } from "./SplashScreen";
 
 export const MobileScheduleViewer = () => {
   const [schedule, setSchedule] = useState<ExamScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
+  const [showSplash, setShowSplash] = useState(true);
   const { toast } = useToast();
 
   const fetchSchedule = async () => {
@@ -67,8 +69,14 @@ export const MobileScheduleViewer = () => {
   };
 
   useEffect(() => {
-    fetchSchedule();
-  }, []);
+    if (!showSplash) {
+      fetchSchedule();
+    }
+  }, [showSplash]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
 
   const semesters = [...new Set(schedule.map(item => item.semester))].sort((a, b) => a - b);
   const filteredSchedule = selectedSemester 
@@ -91,6 +99,10 @@ export const MobileScheduleViewer = () => {
     acc[dateKey].push(exam);
     return acc;
   }, {} as { [key: string]: ExamScheduleItem[] });
+
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
 
   if (loading) {
     return (
