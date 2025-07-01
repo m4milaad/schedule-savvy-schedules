@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Save, Download, CalendarDays } from "lucide-react";
+import { CalendarIcon, Save, Download, CalendarDays, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Holiday } from "@/types/examSchedule";
@@ -21,11 +21,22 @@ interface DateRangeInfo {
   holidayCount: number;
 }
 
+interface MinimumDaysInfo {
+  totalCourses: number;
+  minimumDays: number;
+  semesterBreakdown: Array<{
+    semester: number;
+    courseCount: number;
+    totalGapDays: number;
+  }>;
+}
+
 interface ScheduleSettingsProps {
   startDate?: Date;
   endDate?: Date;
   holidays: Date[];
   dateRangeInfo: DateRangeInfo | null;
+  minimumDaysInfo: MinimumDaysInfo | null;
   isScheduleGenerated: boolean;
   loading: boolean;
   onStartDateChange: (date: Date | undefined) => void;
@@ -40,6 +51,7 @@ export const ScheduleSettings = ({
   endDate,
   holidays,
   dateRangeInfo,
+  minimumDaysInfo,
   isScheduleGenerated,
   loading,
   onStartDateChange,
@@ -48,6 +60,9 @@ export const ScheduleSettings = ({
   onSaveSchedule,
   onDownloadExcel,
 }: ScheduleSettingsProps) => {
+  const isInsufficientDays = dateRangeInfo && minimumDaysInfo && 
+    dateRangeInfo.workingDays < minimumDaysInfo.minimumDays;
+
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
@@ -152,10 +167,64 @@ export const ScheduleSettings = ({
           </div>
         )}
 
+        {/* Minimum Days Requirement */}
+        {minimumDaysInfo && (
+          <div className="space-y-3 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              {isInsufficientDays ? (
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+              ) : (
+                <CalendarDays className="h-4 w-4 text-green-600" />
+              )}
+              <Label className={`text-sm font-medium ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+                Schedule Requirements
+              </Label>
+            </div>
+            
+            <div className={`p-3 rounded-lg space-y-2 ${isInsufficientDays ? 'bg-red-50' : 'bg-green-50'}`}>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Courses:</span>
+                  <span className="font-medium">{minimumDaysInfo.totalCourses}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={`font-medium ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+                    Min Days Needed:
+                  </span>
+                  <span className={`font-bold ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+                    {minimumDaysInfo.minimumDays}
+                  </span>
+                </div>
+              </div>
+
+              {isInsufficientDays && dateRangeInfo && (
+                <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800">
+                  <div className="font-medium">⚠️ Insufficient Time Range</div>
+                  <div>Need {minimumDaysInfo.minimumDays - dateRangeInfo.workingDays} more working days</div>
+                </div>
+              )}
+              
+              {minimumDaysInfo.semesterBreakdown.length > 0 && (
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <div className="text-xs font-medium text-gray-700 mb-2">By Semester:</div>
+                  <div className="max-h-20 overflow-y-auto space-y-1">
+                    {minimumDaysInfo.semesterBreakdown.map((sem, index) => (
+                      <div key={index} className="text-xs bg-white p-1 rounded border flex justify-between">
+                        <span>Sem {sem.semester}: {sem.courseCount} courses</span>
+                        <span className="text-gray-600">{sem.totalGapDays} days</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <Button
           onClick={onGenerateSchedule}
           className="w-full"
-          disabled={loading}
+          disabled={loading || isInsufficientDays}
         >
           Generate New Schedule
         </Button>
