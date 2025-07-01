@@ -129,7 +129,7 @@ export default function Index() {
     };
   };
 
-  // Calculate minimum required days for selected courses
+  // Calculate minimum required days for selected courses - FIXED VERSION
   const calculateMinimumRequiredDays = () => {
     if (!startDate || !endDate) return null;
 
@@ -154,34 +154,39 @@ export default function Index() {
       return acc;
     }, {} as Record<number, CourseTeacher[]>);
 
-    let totalMinimumDays = 0;
-
-    // Calculate minimum days for each semester
-    for (const semester in coursesBySemester) {
+    // Calculate days needed for each semester separately
+    const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
       const semesterCourses = coursesBySemester[semester];
-      if (semesterCourses.length === 0) continue;
+      if (semesterCourses.length === 0) return { semester: parseInt(semester), courseCount: 0, totalGapDays: 0 };
 
+      // Sort courses by gap days (longest gap first for realistic scheduling)
+      const sortedCourses = [...semesterCourses].sort((a, b) => (b.gap_days || 2) - (a.gap_days || 2));
+      
       // First exam needs 1 day
-      totalMinimumDays += 1;
-
+      let totalDays = 1;
+      
       // Subsequent exams need their gap days
-      for (let i = 1; i < semesterCourses.length; i++) {
-        const course = semesterCourses[i];
+      for (let i = 1; i < sortedCourses.length; i++) {
+        const course = sortedCourses[i];
         const gapDays = course.gap_days || 2;
-        totalMinimumDays += gapDays;
+        totalDays += gapDays;
       }
-    }
+
+      return {
+        semester: parseInt(semester),
+        courseCount: semesterCourses.length,
+        totalGapDays: totalDays
+      };
+    });
+
+    // The minimum days needed is the maximum days required by any single semester
+    // since courses from different semesters can be scheduled in parallel
+    const maxSemesterRequirement = Math.max(...semesterRequirements.map(req => req.totalGapDays));
 
     return {
       totalCourses: allSelectedCourses.length,
-      minimumDays: totalMinimumDays,
-      semesterBreakdown: Object.keys(coursesBySemester).map(semester => ({
-        semester: parseInt(semester),
-        courseCount: coursesBySemester[semester].length,
-        totalGapDays: coursesBySemester[semester].reduce((sum, course, index) => {
-          return index === 0 ? 1 : sum + (course.gap_days || 2);
-        }, 0)
-      }))
+      minimumDays: maxSemesterRequirement,
+      semesterBreakdown: semesterRequirements
     };
   };
 
