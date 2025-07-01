@@ -129,6 +129,62 @@ export default function Index() {
     };
   };
 
+  // Calculate minimum required days for selected courses
+  const calculateMinimumRequiredDays = () => {
+    if (!startDate || !endDate) return null;
+
+    const allSelectedCourses = [];
+    for (const semester of allSemesters) {
+      const semesterCourses = getCoursesBySemester(semester);
+      const selectedIds = selectedCourseTeachers[semester] || [];
+      const selectedSemesterCourses = semesterCourses.filter((ct) =>
+        selectedIds.includes(ct.id)
+      );
+      allSelectedCourses.push(...selectedSemesterCourses);
+    }
+
+    if (allSelectedCourses.length === 0) return null;
+
+    // Group courses by semester
+    const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
+      if (!acc[course.semester]) {
+        acc[course.semester] = [];
+      }
+      acc[course.semester].push(course);
+      return acc;
+    }, {} as Record<number, CourseTeacher[]>);
+
+    let totalMinimumDays = 0;
+
+    // Calculate minimum days for each semester
+    for (const semester in coursesBySemester) {
+      const semesterCourses = coursesBySemester[semester];
+      if (semesterCourses.length === 0) continue;
+
+      // First exam needs 1 day
+      totalMinimumDays += 1;
+
+      // Subsequent exams need their gap days
+      for (let i = 1; i < semesterCourses.length; i++) {
+        const course = semesterCourses[i];
+        const gapDays = course.gap_days || 2;
+        totalMinimumDays += gapDays;
+      }
+    }
+
+    return {
+      totalCourses: allSelectedCourses.length,
+      minimumDays: totalMinimumDays,
+      semesterBreakdown: Object.keys(coursesBySemester).map(semester => ({
+        semester: parseInt(semester),
+        courseCount: coursesBySemester[semester].length,
+        totalGapDays: coursesBySemester[semester].reduce((sum, course, index) => {
+          return index === 0 ? 1 : sum + (course.gap_days || 2);
+        }, 0)
+      }))
+    };
+  };
+
   const getCoursesBySemester = (semester: number) => {
     return courseTeachers.filter((ct) => ct.semester === semester);
   };
@@ -174,6 +230,22 @@ export default function Index() {
         variant: "destructive",
       });
       return;
+    }
+
+    // Calculate minimum required days and validate
+    const minimumDaysInfo = calculateMinimumRequiredDays();
+    const dateRangeInfo = getDateRangeInfo();
+
+    if (minimumDaysInfo && dateRangeInfo) {
+      if (dateRangeInfo.workingDays < minimumDaysInfo.minimumDays) {
+        const shortfall = minimumDaysInfo.minimumDays - dateRangeInfo.workingDays;
+        toast({
+          title: "Insufficient Time Range",
+          description: `You need at least ${minimumDaysInfo.minimumDays} working days to schedule ${minimumDaysInfo.totalCourses} courses with their gap requirements, but only have ${dateRangeInfo.workingDays} working days available. Please extend your end date by at least ${shortfall} more working days.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // Get selected courses
@@ -225,8 +297,11 @@ export default function Index() {
 
       let currentDateIndex = 0;
       let allCoursesScheduled = false;
+      let maxIterations = examDates.length * 10; // Prevent infinite loops
+      let iterations = 0;
 
-      while (!allCoursesScheduled && currentDateIndex < examDates.length) {
+      while (!allCoursesScheduled && currentDateIndex < examDates.length && iterations < maxIterations) {
+        iterations++;
         const currentExamDate = examDates[currentDateIndex];
         const dateKey = currentExamDate.toDateString();
 
@@ -338,16 +413,16 @@ export default function Index() {
 
         if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
           currentDateIndex = 0;
-
-          if (examDates.length < Math.ceil(totalCourses / maxExamsPerDay)) {
-            toast({
-              title: "Warning",
-              description: `Need more exam dates to schedule all ${totalCourses} exams with the gap constraints. Only ${totalScheduled} exams scheduled.`,
-              variant: "destructive",
-            });
-            break;
-          }
         }
+      }
+
+      if (iterations >= maxIterations) {
+        toast({
+          title: "Scheduling Error",
+          description: "Unable to schedule all exams within the constraints. Please check your gap requirements and date range.",
+          variant: "destructive",
+        });
+        return;
       }
 
       setGeneratedSchedule(schedule);
@@ -653,6 +728,7 @@ export default function Index() {
   };
 
   const dateRangeInfo = getDateRangeInfo();
+  const minimumDaysInfo = calculateMinimumRequiredDays();
 
   return (
     <TooltipProvider>
@@ -749,6 +825,7 @@ export default function Index() {
               endDate={endDate}
               holidays={holidays}
               dateRangeInfo={dateRangeInfo}
+              minimumDaysInfo={minimumDaysInfo}
               isScheduleGenerated={isScheduleGenerated}
               loading={loading}
               onStartDateChange={setStartDate}
