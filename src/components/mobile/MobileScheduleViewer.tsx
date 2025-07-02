@@ -131,7 +131,6 @@ export const MobileScheduleViewer = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-md mx-auto">
-        {/* Header Card */}
         <Card className="mb-6 shadow-lg">
           <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
             <div className="flex items-center justify-center mb-2">
@@ -164,7 +163,6 @@ export const MobileScheduleViewer = () => {
               </p>
             </div>
             
-            {/* Semester Filter */}
             {semesters.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2">
                 <Button
@@ -191,7 +189,6 @@ export const MobileScheduleViewer = () => {
           </CardContent>
         </Card>
 
-        {/* Schedule List */}
         <div className="space-y-4">
           {Object.keys(groupedSchedule)
             .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
@@ -266,7 +263,6 @@ export const MobileScheduleViewer = () => {
             })}
         </div>
 
-        {/* Empty State */}
         {filteredSchedule.length === 0 && !loading && (
           <Card className="shadow-md">
             <CardContent className="text-center py-12">
@@ -291,7 +287,6 @@ export const MobileScheduleViewer = () => {
           </Card>
         )}
 
-        {/* Footer */}
         <div className="text-center mt-8 pb-4">
           <p className="text-xs text-gray-500">
             Developed by Milad Ajaz Bhat
