@@ -15,7 +15,7 @@ const queryClient = new QueryClient();
 const App = () => {
   // Check if running in Capacitor (mobile app)
   const isCapacitor = window.location.protocol === 'capacitor:' || 
-                     window.location.hostname === 'localhost' && window.location.port === '';
+                     (window.location.hostname === 'localhost' && window.location.port === '');
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -24,7 +24,6 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Redirect to mobile schedule for Capacitor app */}
             <Route 
               path="/" 
               element={isCapacitor ? <Navigate to="/mobile-schedule" replace /> : <Index />} 
