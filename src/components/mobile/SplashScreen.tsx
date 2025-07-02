@@ -12,7 +12,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     const timer = setTimeout(() => {
       setFadeOut(true);
       setTimeout(onComplete, 500); // Wait for fade out animation
-    }, 2500); // Show splash for 2.5 seconds
+    }, 3000); // Show splash for 3 seconds
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -23,31 +23,41 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="text-center animate-fade-in">
-        {/* CUK Logo */}
-        <div className="mb-6">
-          <img 
-            src="/CUKLogo.ico" 
-            alt="Central University of Kashmir Logo" 
-            className="w-24 h-24 mx-auto mb-4 animate-scale-in"
-          />
+      <div className="text-center animate-fade-in flex flex-col justify-between h-full py-12">
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col items-center justify-center">
+          {/* CUK Logo */}
+          <div className="mb-8">
+            <img 
+              src="/CUKLogo.ico" 
+              alt="Central University of Kashmir Logo" 
+              className="w-32 h-32 mx-auto mb-6 animate-scale-in drop-shadow-lg"
+            />
+          </div>
+          
+          {/* University Name */}
+          <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center px-4 leading-tight">
+            Central University of Kashmir
+          </h1>
+          
+          {/* DateSheet Title */}
+          <h2 className="text-3xl font-bold text-blue-600 mb-8 tracking-wide">
+            DateSheet
+          </h2>
+          
+          {/* Loading indicator */}
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
         </div>
         
-        {/* University Name */}
-        <h1 className="text-2xl font-bold text-gray-800 mb-2 text-center px-4">
-          Central University of Kashmir
-        </h1>
-        
-        {/* DateSheet Title */}
-        <h2 className="text-xl font-semibold text-blue-600 mb-8">
-          DateSheet
-        </h2>
-        
-        {/* Loading indicator */}
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+        {/* Developer Credit */}
+        <div className="text-center">
+          <p className="text-sm text-gray-600 font-medium">
+            Developed by Milad Ajaz Bhat
+          </p>
         </div>
       </div>
     </div>

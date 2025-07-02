@@ -55,12 +55,25 @@ export const MobileScheduleViewer = () => {
         });
 
         setSchedule(scheduleItems);
+        
+        if (scheduleItems.length > 0) {
+          toast({
+            title: "Schedule Loaded",
+            description: `Found ${scheduleItems.length} scheduled exams`,
+          });
+        }
+      } else {
+        toast({
+          title: "No Schedule Found",
+          description: "No exam schedule has been published yet",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching schedule:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch exam schedule",
+        description: "Failed to fetch exam schedule. Please check your internet connection.",
         variant: "destructive",
       });
     } finally {
@@ -106,10 +119,10 @@ export const MobileScheduleViewer = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading exam schedule...</p>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Loading exam schedule...</p>
         </div>
       </div>
     );
@@ -118,50 +131,63 @@ export const MobileScheduleViewer = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-md mx-auto">
-        <Card className="mb-6">
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Exam Schedule
-            </CardTitle>
-            <p className="text-sm text-gray-600">Central University of Kashmir</p>
+        {/* Header Card */}
+        <Card className="mb-6 shadow-lg">
+          <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+            <div className="flex items-center justify-center mb-2">
+              <img 
+                src="/CUKLogo.ico" 
+                alt="CUK Logo" 
+                className="w-8 h-8 mr-2"
+              />
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Exam DateSheet
+              </CardTitle>
+            </div>
+            <p className="text-blue-100 text-sm">Central University of Kashmir</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={fetchSchedule}
                 disabled={loading}
+                className="flex items-center gap-2"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <p className="text-sm text-gray-600">
-                {filteredSchedule.length} exams
+              <p className="text-sm text-gray-600 font-medium">
+                {filteredSchedule.length} exam{filteredSchedule.length !== 1 ? 's' : ''}
               </p>
             </div>
             
             {/* Semester Filter */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Button
-                variant={selectedSemester === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedSemester(null)}
-              >
-                All
-              </Button>
-              {semesters.map(semester => (
+            {semesters.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
                 <Button
-                  key={semester}
-                  variant={selectedSemester === semester ? "default" : "outline"}
+                  variant={selectedSemester === null ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedSemester(semester)}
+                  onClick={() => setSelectedSemester(null)}
+                  className="text-xs"
                 >
-                  Sem {semester}
+                  All Semesters
                 </Button>
-              ))}
-            </div>
+                {semesters.map(semester => (
+                  <Button
+                    key={semester}
+                    variant={selectedSemester === semester ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedSemester(semester)}
+                    className="text-xs"
+                  >
+                    Sem {semester}
+                  </Button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -174,57 +200,58 @@ export const MobileScheduleViewer = () => {
               const examsOnDate = groupedSchedule[dateString];
               
               return (
-                <Card key={dateString}>
-                  <CardHeader className="pb-3">
+                <Card key={dateString} className="shadow-md">
+                  <CardHeader className="pb-3 bg-gray-50 rounded-t-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">
+                        <h3 className="font-semibold text-gray-800">
                           {date.toLocaleDateString('en-US', { 
                             weekday: 'long',
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
+                            year: 'numeric'
                           })}
                         </h3>
-                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
                           <Clock className="h-3 w-3" />
                           {getExamTimeSlot(date)}
                         </p>
                       </div>
-                      <Badge variant="outline">
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                         {examsOnDate.length} exam{examsOnDate.length > 1 ? 's' : ''}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-3">
                     <div className="space-y-3">
                       {examsOnDate.map(exam => (
                         <div
                           key={exam.id}
-                          className="border rounded-lg p-3 bg-white"
+                          className="border rounded-lg p-3 bg-white hover:shadow-sm transition-shadow"
                         >
                           <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge className={getSemesterColor(exam.semester)}>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={getSemesterColor(exam.semester)} variant="outline">
                                 Sem {exam.semester}
                               </Badge>
                               {exam.is_first_paper && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">
                                   First Paper
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 font-medium">
                               {exam.program_type}
                             </span>
                           </div>
                           
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Book className="h-4 w-4 text-gray-500" />
-                              <span className="font-medium">{exam.course_code}</span>
+                              <Book className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                              <span className="font-medium text-gray-800">{exam.course_code}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
+                              <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                               <span className="text-sm text-gray-600">
                                 {exam.teacher_code}
                               </span>
@@ -239,23 +266,37 @@ export const MobileScheduleViewer = () => {
             })}
         </div>
 
+        {/* Empty State */}
         {filteredSchedule.length === 0 && !loading && (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500">No exams scheduled</p>
+          <Card className="shadow-md">
+            <CardContent className="text-center py-12">
+              <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">No Exams Scheduled</h3>
+              <p className="text-gray-500 mb-4">
+                {selectedSemester 
+                  ? `No exams found for Semester ${selectedSemester}`
+                  : "No exam schedule has been published yet"
+                }
+              </p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={fetchSchedule}
-                className="mt-4"
+                className="flex items-center gap-2 mx-auto"
               >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+                <RefreshCw className="h-4 w-4" />
+                Check Again
               </Button>
             </CardContent>
           </Card>
         )}
+
+        {/* Footer */}
+        <div className="text-center mt-8 pb-4">
+          <p className="text-xs text-gray-500">
+            Developed by Milad Ajaz Bhat
+          </p>
+        </div>
       </div>
     </div>
   );
