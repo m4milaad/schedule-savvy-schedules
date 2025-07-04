@@ -20,28 +20,44 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // Query admin users table
-      const { data: adminUsers, error } = await supabase
-        .from('admin_users')
+      // Query the new login_tbl table
+      const { data: loginUsers, error } = await supabase
+        .from('login_tbl')
         .select('*')
-        .eq('username', username);
+        .eq('username', username)
+        .eq('user_type', 'Admin')
+        .eq('is_active', true);
 
       if (error) {
         toast.error('Login failed: ' + error.message);
         return;
       }
 
-      if (!adminUsers || adminUsers.length === 0) {
+      if (!loginUsers || loginUsers.length === 0) {
         toast.error('Invalid username or password');
         return;
       }
-      // In production, you should use proper password hashing
-      const adminUser = adminUsers[0];
+
+      const loginUser = loginUsers[0];
       
+      // In production, you should use proper password hashing/verification
+      // For now, we'll do a simple comparison (this should be improved)
+      if (password !== 'password') { // Default password for demo
+        toast.error('Invalid username or password');
+        return;
+      }
+      
+      // Update last login time
+      await supabase
+        .from('login_tbl')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', loginUser.id);
+
       // Store admin session in localStorage
       localStorage.setItem('adminSession', JSON.stringify({
-        id: adminUser.id,
-        username: adminUser.username,
+        id: loginUser.id,
+        username: loginUser.username,
+        userType: loginUser.user_type,
         loginTime: new Date().toISOString()
       }));
 
@@ -88,7 +104,7 @@ const AdminLogin = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
-                  placeholder="Enter username"
+                  placeholder="Enter username (try: admin)"
                 />
               </div>
               <div className="space-y-2">
@@ -99,7 +115,7 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="Enter password"
+                  placeholder="Enter password (try: password)"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -107,6 +123,11 @@ const AdminLogin = () => {
               </Button>
             </form>
             
+            <div className="mt-4 text-sm text-gray-600">
+              <p>Default credentials:</p>
+              <p>Username: admin</p>
+              <p>Password: password</p>
+            </div>
           </CardContent>
         </Card>
       </div>
