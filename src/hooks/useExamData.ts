@@ -15,14 +15,24 @@ export const useExamData = () => {
 
   const loadCourseTeachers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("course_teacher_codes")
-        .select("*")
-        .order("semester", { ascending: true })
-        .order("course_code", { ascending: true });
+      // Use the new database function to get properly joined data
+      const { data, error } = await supabase.rpc('get_schedule_data');
 
       if (error) throw error;
-      setCourseTeachers(data || []);
+      
+      // Transform the data to match the expected interface
+      const transformedData: CourseTeacher[] = (data || []).map(item => ({
+        id: item.assignment_id,
+        course_code: item.course_code,
+        teacher_code: item.teacher_code,
+        course_name: item.course_name,
+        teacher_name: item.teacher_name,
+        semester: item.semester,
+        program_type: item.program_type,
+        gap_days: item.gap_days
+      }));
+
+      setCourseTeachers(transformedData);
     } catch (error) {
       console.error("Error loading course teachers:", error);
       toast({
@@ -113,10 +123,17 @@ export const useExamData = () => {
 
   const updateCourseGap = async (courseId: string, newGap: number) => {
     try {
+      // Find the course assignment
+      const courseTeacher = courseTeachers.find(ct => ct.id === courseId);
+      if (!courseTeacher) {
+        throw new Error("Course assignment not found");
+      }
+
+      // Update the course gap_days in the courses table
       const { error } = await supabase
-        .from("course_teacher_codes")
+        .from("courses")
         .update({ gap_days: newGap, updated_at: new Date().toISOString() })
-        .eq("id", courseId);
+        .eq("course_code", courseTeacher.course_code);
 
       if (error) throw error;
 
