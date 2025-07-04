@@ -92,19 +92,27 @@ const AdminDashboard = () => {
 
   const fetchCodes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('course_teacher_codes')
-        .select('*')
-        .order('program_type', { ascending: true })
-        .order('semester', { ascending: true })
-        .order('course_code', { ascending: true });
+      // Use the new database function to get course-teacher data
+      const { data, error } = await supabase.rpc('get_schedule_data');
 
       if (error) {
         toast.error('Failed to fetch codes: ' + error.message);
         return;
       }
 
-      setCodes(data || []);
+      // Transform the data to match the expected interface
+      const transformedData: CourseTeacherCode[] = (data || []).map(item => ({
+        id: item.assignment_id,
+        course_code: item.course_code,
+        teacher_code: item.teacher_code,
+        course_name: item.course_name,
+        teacher_name: item.teacher_name,
+        semester: item.semester,
+        program_type: item.program_type,
+        gap_days: item.gap_days
+      }));
+
+      setCodes(transformedData);
     } catch (error) {
       console.error('Error fetching codes:', error);
       toast.error('Failed to fetch codes');
@@ -141,9 +149,17 @@ const AdminDashboard = () => {
     e.preventDefault();
     
     try {
-      const { error } = await supabase
-        .from('course_teacher_codes')
-        .insert([formData]);
+      // Use the new database function to add course-teacher assignment
+      const { data, error } = await supabase.rpc('manage_course_teacher_assignment', {
+        p_action: 'add',
+        p_course_code: formData.course_code,
+        p_teacher_code: formData.teacher_code,
+        p_course_name: formData.course_name,
+        p_teacher_name: formData.teacher_name,
+        p_semester: formData.semester,
+        p_program_type: formData.program_type,
+        p_gap_days: formData.gap_days
+      });
 
       if (error) {
         toast.error('Failed to add code: ' + error.message);
@@ -166,10 +182,17 @@ const AdminDashboard = () => {
     if (!editingCode) return;
 
     try {
-      const { error } = await supabase
-        .from('course_teacher_codes')
-        .update(formData)
-        .eq('id', editingCode.id);
+      // Use the new database function to update course-teacher assignment
+      const { data, error } = await supabase.rpc('manage_course_teacher_assignment', {
+        p_action: 'update',
+        p_course_code: formData.course_code,
+        p_teacher_code: formData.teacher_code,
+        p_course_name: formData.course_name,
+        p_teacher_name: formData.teacher_name,
+        p_semester: formData.semester,
+        p_program_type: formData.program_type,
+        p_gap_days: formData.gap_days
+      });
 
       if (error) {
         toast.error('Failed to update code: ' + error.message);
@@ -187,14 +210,16 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteCode = async (id: string) => {
+  const handleDeleteCode = async (courseCode: string, teacherCode: string) => {
     if (!confirm('Are you sure you want to delete this code?')) return;
 
     try {
-      const { error } = await supabase
-        .from('course_teacher_codes')
-        .delete()
-        .eq('id', id);
+      // Use the new database function to remove course-teacher assignment
+      const { data, error } = await supabase.rpc('manage_course_teacher_assignment', {
+        p_action: 'remove',
+        p_course_code: courseCode,
+        p_teacher_code: teacherCode
+      });
 
       if (error) {
         toast.error('Failed to delete code: ' + error.message);
@@ -438,13 +463,18 @@ const AdminDashboard = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from('course_teacher_codes')
-        .insert(bulkData);
-
-      if (error) {
-        toast.error('Failed to bulk insert: ' + error.message);
-        return;
+      // Use the new database function to add multiple course-teacher assignments
+      for (const item of bulkData) {
+        await supabase.rpc('manage_course_teacher_assignment', {
+          p_action: 'add',
+          p_course_code: item.course_code,
+          p_teacher_code: item.teacher_code,
+          p_course_name: item.course_name,
+          p_teacher_name: item.teacher_name,
+          p_semester: item.semester,
+          p_program_type: item.program_type,
+          p_gap_days: item.gap_days
+        });
       }
 
       toast.success(`Successfully inserted ${bulkData.length} records`);
@@ -859,7 +889,7 @@ const AdminDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDeleteCode(code.id)}
+                              onClick={() => handleDeleteCode(code.course_code, code.teacher_code)}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
