@@ -12,7 +12,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Settings, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
 import * as XLSX from "xlsx";
@@ -54,6 +53,7 @@ export default function Index() {
     loadingLastSchedule,
     loadLastSchedule,
     updateCourseGap,
+    saveScheduleToDatabase,
   } = useExamData();
 
   const allSemesters = getAllSemesters(semesterType);
@@ -82,7 +82,6 @@ export default function Index() {
     }
   }, [generatedSchedule]);
 
-  // Calculate working days and holidays in selected date range
   const getDateRangeInfo = () => {
     if (!startDate || !endDate) return null;
 
@@ -129,7 +128,6 @@ export default function Index() {
     };
   };
 
-  // Calculate minimum required days for selected courses - FIXED VERSION
   const calculateMinimumRequiredDays = () => {
     if (!startDate || !endDate) return null;
 
@@ -145,7 +143,6 @@ export default function Index() {
 
     if (allSelectedCourses.length === 0) return null;
 
-    // Group courses by semester
     const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
       if (!acc[course.semester]) {
         acc[course.semester] = [];
@@ -154,18 +151,14 @@ export default function Index() {
       return acc;
     }, {} as Record<number, CourseTeacher[]>);
 
-    // Calculate days needed for each semester separately
     const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
       const semesterCourses = coursesBySemester[semester];
       if (semesterCourses.length === 0) return { semester: parseInt(semester), courseCount: 0, totalGapDays: 0 };
 
-      // Sort courses by gap days (longest gap first for realistic scheduling)
       const sortedCourses = [...semesterCourses].sort((a, b) => (b.gap_days || 2) - (a.gap_days || 2));
       
-      // First exam needs 1 day
       let totalDays = 1;
       
-      // Subsequent exams need their gap days
       for (let i = 1; i < sortedCourses.length; i++) {
         const course = sortedCourses[i];
         const gapDays = course.gap_days || 2;
@@ -179,8 +172,6 @@ export default function Index() {
       };
     });
 
-    // The minimum days needed is the maximum days required by any single semester
-    // since courses from different semesters can be scheduled in parallel
     const maxSemesterRequirement = Math.max(...semesterRequirements.map(req => req.totalGapDays));
 
     return {
@@ -237,7 +228,6 @@ export default function Index() {
       return;
     }
 
-    // Calculate minimum required days and validate
     const minimumDaysInfo = calculateMinimumRequiredDays();
     const dateRangeInfo = getDateRangeInfo();
 
@@ -253,7 +243,6 @@ export default function Index() {
       }
     }
 
-    // Get selected courses
     const allSelectedCourses = [];
     for (const semester of allSemesters) {
       const semesterCourses = getCoursesBySemester(semester);
@@ -287,7 +276,6 @@ export default function Index() {
         return;
       }
 
-      // Group courses by semester for scheduling
       const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
         if (!acc[course.semester]) {
           acc[course.semester] = [];
@@ -302,7 +290,7 @@ export default function Index() {
 
       let currentDateIndex = 0;
       let allCoursesScheduled = false;
-      let maxIterations = examDates.length * 10; // Prevent infinite loops
+      let maxIterations = examDates.length * 10;
       let iterations = 0;
 
       while (!allCoursesScheduled && currentDateIndex < examDates.length && iterations < maxIterations) {
@@ -325,7 +313,7 @@ export default function Index() {
                 !schedule.find(
                   (exam) =>
                     exam.course_code === course.course_code &&
-                    exam.teacher_code === course.teacher_code
+                    exam.teacher_name === course.teacher_name
                 )
             );
             const notScheduledToday =
@@ -348,7 +336,7 @@ export default function Index() {
                 !schedule.find(
                   (exam) =>
                     exam.course_code === course.course_code &&
-                    exam.teacher_code === course.teacher_code
+                    exam.teacher_name === course.teacher_name
                 )
             );
 
@@ -373,7 +361,7 @@ export default function Index() {
               !schedule.find(
                 (exam) =>
                   exam.course_code === course.course_code &&
-                  exam.teacher_code === course.teacher_code
+                  exam.teacher_name === course.teacher_name
               )
           );
 
@@ -385,7 +373,7 @@ export default function Index() {
             const exam: ExamScheduleItem = {
               id: `exam-${schedule.length}`,
               course_code: unscheduledCourse.course_code,
-              teacher_code: unscheduledCourse.teacher_code,
+              teacher_name: unscheduledCourse.teacher_name || "TBD",
               exam_date: currentExamDate.toISOString().split("T")[0],
               day_of_week: currentExamDate.toLocaleDateString("en-US", {
                 weekday: "long",
@@ -401,6 +389,7 @@ export default function Index() {
               timeSlot: getExamTimeSlot(currentExamDate),
               gap_days: unscheduledCourse.gap_days || 2,
               is_first_paper: isFirstPaper,
+              venue_name: "Main Hall",
             };
 
             schedule.push(exam);
@@ -503,7 +492,6 @@ export default function Index() {
     const targetDateString = destination.droppableId.replace("date-", "");
     const targetDate = new Date(targetDateString);
 
-    // Check constraints - always check, no persistent override state
     const examsOnTargetDate = generatedSchedule.filter(
       (exam) =>
         exam.date.toDateString() === targetDate.toDateString() &&
@@ -592,7 +580,6 @@ export default function Index() {
       }
     }
 
-    // If we reach here, all constraints are satisfied
     performMove(draggableId, targetDate);
   };
 
@@ -608,29 +595,7 @@ export default function Index() {
 
     try {
       setLoading(true);
-      await supabase
-        .from("exam_schedules")
-        .delete()
-        .in("semester", allSemesters);
-
-      const { error } = await supabase.from("exam_schedules").insert(
-        generatedSchedule.map((exam) => ({
-          course_code: exam.course_code,
-          teacher_code: exam.teacher_code,
-          exam_date: exam.exam_date,
-          day_of_week: exam.day_of_week,
-          time_slot: exam.time_slot,
-          semester: exam.semester,
-          program_type: exam.program_type,
-        }))
-      );
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Exam schedule saved successfully!",
-      });
+      await saveScheduleToDatabase(generatedSchedule);
     } catch (error) {
       console.error("Error saving schedule:", error);
       toast({
@@ -664,11 +629,12 @@ export default function Index() {
           Day: exam.day_of_week,
           Time: exam.time_slot,
           "Course Code": exam.course_code,
-          "Teacher Code": exam.teacher_code,
+          "Teacher Name": exam.teacher_name,
           Semester: exam.semester,
           Program: exam.program_type,
           "Gap Days": exam.gap_days,
           "First Paper": exam.is_first_paper ? "Yes" : "No",
+          Venue: exam.venue_name,
         }));
 
       const wb = XLSX.utils.book_new();
@@ -679,11 +645,12 @@ export default function Index() {
         { wch: 10 },
         { wch: 18 },
         { wch: 12 },
-        { wch: 12 },
+        { wch: 15 },
         { wch: 10 },
         { wch: 10 },
         { wch: 10 },
         { wch: 12 },
+        { wch: 15 },
       ];
       ws["!cols"] = colWidths;
 
