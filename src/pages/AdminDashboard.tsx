@@ -92,13 +92,16 @@ const AdminDashboard = () => {
 
   const fetchCodes = async () => {
     try {
-      // Use the new database function to get course-teacher data
+      // Use the fixed database function to get course-teacher data
       const { data, error } = await supabase.rpc('get_schedule_data');
 
       if (error) {
+        console.error('Supabase error:', error);
         toast.error('Failed to fetch codes: ' + error.message);
         return;
       }
+
+      console.log('Fetched data:', data);
 
       // Transform the data to match the expected interface
       const transformedData: CourseTeacherCode[] = (data || []).map(item => ({
@@ -463,21 +466,43 @@ const AdminDashboard = () => {
     }
 
     try {
-      // Use the new database function to add multiple course-teacher assignments
+      // Use the fixed database function to add multiple course-teacher assignments
+      let successCount = 0;
+      let errorCount = 0;
+      
       for (const item of bulkData) {
-        await supabase.rpc('manage_course_teacher_assignment', {
-          p_action: 'add',
-          p_course_code: item.course_code,
-          p_teacher_code: item.teacher_code,
-          p_course_name: item.course_name,
-          p_teacher_name: item.teacher_name,
-          p_semester: item.semester,
-          p_program_type: item.program_type,
-          p_gap_days: item.gap_days
-        });
+        try {
+          const { error } = await supabase.rpc('manage_course_teacher_assignment', {
+            p_action: 'add',
+            p_course_code: item.course_code,
+            p_teacher_code: item.teacher_code,
+            p_course_name: item.course_name,
+            p_teacher_name: item.teacher_name,
+            p_semester: item.semester,
+            p_program_type: item.program_type,
+            p_gap_days: item.gap_days
+          });
+          
+          if (error) {
+            console.error('Error inserting item:', item, error);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+        } catch (itemError) {
+          console.error('Exception inserting item:', item, itemError);
+          errorCount++;
+        }
       }
 
-      toast.success(`Successfully inserted ${bulkData.length} records`);
+      if (successCount > 0) {
+        toast.success(`Successfully inserted ${successCount} records${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+      }
+      
+      if (errorCount > 0 && successCount === 0) {
+        toast.error(`Failed to insert ${errorCount} records`);
+      }
+
       setBulkData([]);
       setIsBulkUploadDialogOpen(false);
       if (fileInputRef.current) {
