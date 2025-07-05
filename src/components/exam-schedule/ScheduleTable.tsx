@@ -131,7 +131,7 @@ export const ScheduleTable = ({
                                         </TooltipTrigger>
                                         <TooltipContent>
                                           <div className="text-xs">
-                                            <div><strong>{exam.courseCode}</strong> - {exam.teacher_code}</div>
+                                            <div><strong>{exam.courseCode}</strong> - {exam.teacher_name}</div>
                                             <div>Semester {exam.semester} ({exam.program_type})</div>
                                             <div>Gap: {exam.gap_days} days</div>
                                             {exam.is_first_paper && <div className="text-green-600">First Paper</div>}

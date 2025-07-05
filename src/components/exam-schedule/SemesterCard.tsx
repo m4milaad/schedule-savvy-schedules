@@ -89,7 +89,7 @@ export const SemesterCard = ({
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="font-medium">
-                      {ct.course_code} - {ct.teacher_code}
+                      {ct.course_code} - {ct.teacher_name}
                     </div>
                     {ct.course_name && (
                       <div className="text-sm text-gray-600">

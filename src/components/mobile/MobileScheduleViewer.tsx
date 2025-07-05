@@ -20,10 +20,7 @@ export const MobileScheduleViewer = () => {
   const fetchSchedule = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("exam_schedules")
-        .select("*")
-        .order("exam_date", { ascending: true });
+      const { data, error } = await supabase.rpc('get_exam_schedule_data');
 
       if (error) throw error;
 
@@ -31,18 +28,19 @@ export const MobileScheduleViewer = () => {
         const scheduleItems: ExamScheduleItem[] = data.map((item, index) => ({
           id: `exam-${index}`,
           course_code: item.course_code,
-          teacher_code: item.teacher_code,
+          teacher_name: "TBD", // Will be populated from course-teacher mapping  
           exam_date: item.exam_date,
-          day_of_week: item.day_of_week,
-          time_slot: item.time_slot,
-          semester: item.semester,
-          program_type: item.program_type || "B.Tech",
+          day_of_week: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
+          time_slot: "9:00 AM - 12:00 PM", // Default time slot
+          semester: 1, // Default semester
+          program_type: "B.Tech", // Default program type
           date: new Date(item.exam_date),
           courseCode: item.course_code,
-          dayOfWeek: item.day_of_week,
-          timeSlot: item.time_slot,
+          dayOfWeek: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
+          timeSlot: "9:00 AM - 12:00 PM",
           gap_days: 2,
           is_first_paper: false,
+          venue_name: item.venue_name,
         }));
 
         // Mark first papers for each semester
@@ -64,7 +62,7 @@ export const MobileScheduleViewer = () => {
         }
       } else {
         toast({
-          title: "No Schedule Found",
+          title: "No Schedule Found", 
           description: "No exam schedule has been published yet",
           variant: "destructive",
         });
@@ -250,7 +248,7 @@ export const MobileScheduleViewer = () => {
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
                               <span className="text-sm text-gray-600">
-                                {exam.teacher_code}
+                                {exam.teacher_name}
                               </span>
                             </div>
                           </div>

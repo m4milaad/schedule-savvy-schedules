@@ -15,22 +15,53 @@ export const useExamData = () => {
 
   const loadCourseTeachers = async () => {
     try {
-      // Use the new database function to get courses with teachers
-      const { data, error } = await supabase.rpc('get_courses_with_teachers');
+      // Get courses and teachers data from separate tables
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .select(`
+          course_id,
+          course_code,
+          course_name,
+          course_type,
+          departments (
+            dept_name
+          )
+        `);
 
-      if (error) throw error;
-      
+      const { data: teachersData, error: teachersError } = await supabase
+        .from('teachers')
+        .select(`
+          teacher_id,
+          teacher_name,
+          departments (
+            dept_name
+          )
+        `);
+
+      if (coursesError) throw coursesError;
+      if (teachersError) throw teachersError;
+
       // Transform the data to match the expected interface
-      const transformedData: CourseTeacher[] = (data || []).map(item => ({
-        id: `${item.course_id}-${item.teacher_id}`,
-        course_code: item.course_code,
-        course_name: item.course_name,
-        teacher_name: item.teacher_name,
-        dept_name: item.dept_name,
-        semester: item.semester,
-        program_type: item.program_type,
-        gap_days: item.gap_days
-      }));
+      const transformedData: CourseTeacher[] = [];
+      
+      if (coursesData && teachersData) {
+        coursesData.forEach(course => {
+          teachersData.forEach(teacher => {
+            if (course.departments?.dept_name === teacher.departments?.dept_name) {
+              transformedData.push({
+                id: `${course.course_id}-${teacher.teacher_id}`,
+                course_code: course.course_code,
+                course_name: course.course_name,
+                teacher_name: teacher.teacher_name,
+                dept_name: course.departments?.dept_name || 'Unknown',
+                semester: 1, // Default semester
+                program_type: 'B.Tech', // Default program type
+                gap_days: 2 // Default gap days
+              });
+            }
+          });
+        });
+      }
 
       setCourseTeachers(transformedData);
     } catch (error) {
@@ -45,7 +76,10 @@ export const useExamData = () => {
 
   const loadHolidays = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_all_holidays');
+      const { data, error } = await supabase
+        .from('holidays')
+        .select('*')
+        .order('holiday_date', { ascending: true });
 
       if (error) throw error;
 
@@ -53,7 +87,7 @@ export const useExamData = () => {
         id: holiday.holiday_id,
         holiday_date: holiday.holiday_date,
         holiday_name: holiday.holiday_name,
-        description: holiday.description,
+        description: holiday.holiday_description,
         is_recurring: holiday.is_recurring
       }));
 
@@ -81,7 +115,7 @@ export const useExamData = () => {
         const scheduleItems: ExamScheduleItem[] = data.map((item, index) => ({
           id: `exam-${index}`,
           course_code: item.course_code,
-          teacher_name: "TBD", // Will be populated from course-teacher mapping
+          teacher_name: "TBD", // Will need to be populated from course-teacher mapping
           exam_date: item.exam_date,
           day_of_week: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
           time_slot: "9:00 AM - 12:00 PM", // Default time slot
@@ -147,14 +181,67 @@ export const useExamData = () => {
 
   const saveScheduleToDatabase = async (schedule: ExamScheduleItem[]) => {
     try {
+      // Get or create a default session
+      let { data: sessionData, error: sessionError } = await supabase
+        .from('sessions')
+        .select('session_id')
+        .eq('session_name', 'Current Session')
+        .single();
+
+      if (sessionError || !sessionData) {
+        const { data: newSession, error: newSessionError } = await supabase
+          .from('sessions')
+          .insert({
+            session_name: 'Current Session',
+            session_year: new Date().getFullYear()
+          })
+          .select('session_id')
+          .single();
+
+        if (newSessionError) throw newSessionError;
+        sessionData = newSession;
+      }
+
+      // Get or create a default venue
+      let { data: venueData, error: venueError } = await supabase
+        .from('venues')
+        .select('venue_id')
+        .eq('venue_name', 'Main Hall')
+        .single();
+
+      if (venueError || !venueData) {
+        const { data: newVenue, error: newVenueError } = await supabase
+          .from('venues')
+          .insert({
+            venue_name: 'Main Hall',
+            venue_capacity: 100
+          })
+          .select('venue_id')
+          .single();
+
+        if (newVenueError) throw newVenueError;
+        venueData = newVenue;
+      }
+
       // Save each exam to the datesheets table
       for (const exam of schedule) {
-        await supabase.rpc('create_exam_schedule', {
-          p_course_code: exam.course_code,
-          p_exam_date: exam.exam_date,
-          p_venue_name: exam.venue_name || 'Main Hall',
-          p_session_name: 'Current Session'
-        });
+        // Get course_id from course_code
+        const { data: courseData } = await supabase
+          .from('courses')
+          .select('course_id')
+          .eq('course_code', exam.course_code)
+          .single();
+
+        if (courseData) {
+          await supabase
+            .from('datesheets')
+            .upsert({
+              session_id: sessionData.session_id,
+              exam_date: exam.exam_date,
+              course_id: courseData.course_id,
+              venue_assigned: venueData.venue_id
+            });
+        }
       }
 
       toast({
