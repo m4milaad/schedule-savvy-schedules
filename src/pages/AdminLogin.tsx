@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Home } from 'lucide-react';
 
 const AdminLogin = () => {
-  const [userId, setUserId] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,11 +20,11 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // Query the login_tbl table with the correct column names
+      // Query the login_tbl table using username
       const { data: loginUsers, error } = await supabase
         .from('login_tbl')
         .select('*')
-        .eq('user_id', userId)
+        .eq('username', username)
         .eq('type', 'Admin');
 
       if (error) {
@@ -34,7 +34,7 @@ const AdminLogin = () => {
       }
 
       if (!loginUsers || loginUsers.length === 0) {
-        toast.error('Invalid user ID or password');
+        toast.error('Invalid username or password');
         return;
       }
 
@@ -42,13 +42,14 @@ const AdminLogin = () => {
       
       // Check password (in production, use proper password hashing)
       if (password !== loginUser.password) {
-        toast.error('Invalid user ID or password');
+        toast.error('Invalid username or password');
         return;
       }
       
       // Store admin session in localStorage
       localStorage.setItem('adminSession', JSON.stringify({
         id: loginUser.user_id,
+        username: loginUser.username,
         userType: loginUser.type,
         loginTime: new Date().toISOString()
       }));
@@ -89,14 +90,14 @@ const AdminLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="userId">User ID</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="userId"
+                  id="username"
                   type="text"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
-                  placeholder="Enter user ID"
+                  placeholder="Enter username"
                 />
               </div>
               <div className="space-y-2">
@@ -117,7 +118,8 @@ const AdminLogin = () => {
             
             <div className="mt-4 text-sm text-gray-600">
               <p>For demo purposes:</p>
-              <p>Check the login_tbl table for available admin user IDs and passwords</p>
+              <p>Username: admin</p>
+              <p>Check the login_tbl table for the password</p>
             </div>
           </CardContent>
         </Card>
