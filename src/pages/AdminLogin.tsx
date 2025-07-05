@@ -20,7 +20,7 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // Query the login_tbl table with the new structure
+      // Query the login_tbl table with the correct column names
       const { data: loginUsers, error } = await supabase
         .from('login_tbl')
         .select('*')
@@ -28,6 +28,7 @@ const AdminLogin = () => {
         .eq('type', 'Admin');
 
       if (error) {
+        console.error('Database query error:', error);
         toast.error('Login failed: ' + error.message);
         return;
       }
@@ -39,9 +40,8 @@ const AdminLogin = () => {
 
       const loginUser = loginUsers[0];
       
-      // In production, you should use proper password hashing/verification
-      // For now, we'll do a simple comparison (this should be improved)
-      if (password !== 'password') { // Default password for demo
+      // Check password (in production, use proper password hashing)
+      if (password !== loginUser.password) {
         toast.error('Invalid user ID or password');
         return;
       }
@@ -107,7 +107,7 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="Enter password (try: password)"
+                  placeholder="Enter password"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -117,8 +117,7 @@ const AdminLogin = () => {
             
             <div className="mt-4 text-sm text-gray-600">
               <p>For demo purposes:</p>
-              <p>User ID: Check the database for available admin user IDs</p>
-              <p>Password: password</p>
+              <p>Check the login_tbl table for available admin user IDs and passwords</p>
             </div>
           </CardContent>
         </Card>
