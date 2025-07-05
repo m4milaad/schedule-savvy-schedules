@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Home } from 'lucide-react';
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -20,13 +20,12 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // Query the new login_tbl table
+      // Query the login_tbl table with the new structure
       const { data: loginUsers, error } = await supabase
         .from('login_tbl')
         .select('*')
-        .eq('username', username)
-        .eq('user_type', 'Admin')
-        .eq('is_active', true);
+        .eq('user_id', userId)
+        .eq('type', 'Admin');
 
       if (error) {
         toast.error('Login failed: ' + error.message);
@@ -34,7 +33,7 @@ const AdminLogin = () => {
       }
 
       if (!loginUsers || loginUsers.length === 0) {
-        toast.error('Invalid username or password');
+        toast.error('Invalid user ID or password');
         return;
       }
 
@@ -43,21 +42,14 @@ const AdminLogin = () => {
       // In production, you should use proper password hashing/verification
       // For now, we'll do a simple comparison (this should be improved)
       if (password !== 'password') { // Default password for demo
-        toast.error('Invalid username or password');
+        toast.error('Invalid user ID or password');
         return;
       }
       
-      // Update last login time
-      await supabase
-        .from('login_tbl')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', loginUser.id);
-
       // Store admin session in localStorage
       localStorage.setItem('adminSession', JSON.stringify({
-        id: loginUser.id,
-        username: loginUser.username,
-        userType: loginUser.user_type,
+        id: loginUser.user_id,
+        userType: loginUser.type,
         loginTime: new Date().toISOString()
       }));
 
@@ -97,14 +89,14 @@ const AdminLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="userId">User ID</Label>
                 <Input
-                  id="username"
+                  id="userId"
                   type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                   required
-                  placeholder="Enter username (try: admin)"
+                  placeholder="Enter user ID"
                 />
               </div>
               <div className="space-y-2">
@@ -124,8 +116,8 @@ const AdminLogin = () => {
             </form>
             
             <div className="mt-4 text-sm text-gray-600">
-              <p>Default credentials:</p>
-              <p>Username: admin</p>
+              <p>For demo purposes:</p>
+              <p>User ID: Check the database for available admin user IDs</p>
               <p>Password: password</p>
             </div>
           </CardContent>
