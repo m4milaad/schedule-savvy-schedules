@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,16 +131,30 @@ export default function AdminDashboard() {
   };
 
   const loadHolidays = async () => {
-    const { data, error } = await supabase.rpc('get_all_holidays');
-    if (error) throw error;
-    const transformedHolidays = (data || []).map(holiday => ({
-      id: holiday.holiday_id,
-      holiday_date: holiday.holiday_date,
-      holiday_name: holiday.holiday_name,
-      description: holiday.description,
-      is_recurring: holiday.is_recurring
-    }));
-    setHolidays(transformedHolidays);
+    try {
+      const { data, error } = await supabase
+        .from('holidays')
+        .select('*')
+        .order('holiday_date', { ascending: true });
+
+      if (error) throw error;
+
+      const transformedHolidays = (data || []).map(holiday => ({
+        id: holiday.holiday_id,
+        holiday_date: holiday.holiday_date,
+        holiday_name: holiday.holiday_name,
+        description: holiday.holiday_description,
+        is_recurring: holiday.is_recurring
+      }));
+      setHolidays(transformedHolidays);
+    } catch (error) {
+      console.error("Error loading holidays:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load holidays data",
+        variant: "destructive",
+      });
+    }
   };
 
   const addSchool = async () => {
