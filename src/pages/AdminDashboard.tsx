@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import BulkUploadModal from "@/components/admin/BulkUploadModal";
 import { 
   School, 
   Department, 
@@ -29,6 +30,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Bulk upload modal state
+  const [bulkUploadModal, setBulkUploadModal] = useState<{
+    isOpen: boolean;
+    type: 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays';
+  }>({ isOpen: false, type: 'schools' });
 
   // Form states
   const [newSchool, setNewSchool] = useState({ school_name: "" });
@@ -154,6 +161,86 @@ export default function AdminDashboard() {
         description: "Failed to load holidays data",
         variant: "destructive",
       });
+    }
+  };
+
+  // Bulk upload handlers
+  const handleBulkUpload = async (data: any[], type: string) => {
+    try {
+      let insertData = data;
+      let tableName = type;
+
+      // Transform data based on type
+      switch (type) {
+        case 'schools':
+          insertData = data.map(item => ({ school_name: item.school_name }));
+          break;
+        case 'departments':
+          insertData = data.map(item => ({ 
+            dept_name: item.dept_name, 
+            school_id: item.school_id 
+          }));
+          break;
+        case 'courses':
+          insertData = data.map(item => ({
+            course_name: item.course_name,
+            course_code: item.course_code,
+            course_credits: item.course_credits || 3,
+            course_type: item.course_type || 'Theory',
+            dept_id: item.dept_id
+          }));
+          break;
+        case 'teachers':
+          insertData = data.map(item => ({
+            teacher_name: item.teacher_name,
+            teacher_email: item.teacher_email,
+            contact_no: item.contact_no,
+            designation: item.designation,
+            dept_id: item.dept_id
+          }));
+          break;
+        case 'venues':
+          insertData = data.map(item => ({
+            venue_name: item.venue_name,
+            venue_address: item.venue_address,
+            venue_capacity: item.venue_capacity || 50
+          }));
+          break;
+        case 'sessions':
+          insertData = data.map(item => ({
+            session_name: item.session_name,
+            session_year: item.session_year
+          }));
+          break;
+        case 'holidays':
+          for (const item of data) {
+            await supabase.rpc('manage_holiday', {
+              p_action: 'add',
+              p_holiday_date: item.holiday_date,
+              p_holiday_name: item.holiday_name,
+              p_holiday_description: item.holiday_description || '',
+              p_is_recurring: item.is_recurring || false
+            });
+          }
+          await loadHolidays();
+          return;
+      }
+
+      const { error } = await supabase.from(tableName).insert(insertData);
+      if (error) throw error;
+
+      // Reload the specific data
+      switch (type) {
+        case 'schools': await loadSchools(); break;
+        case 'departments': await loadDepartments(); break;
+        case 'courses': await loadCourses(); break;
+        case 'teachers': await loadTeachers(); break;
+        case 'venues': await loadVenues(); break;
+        case 'sessions': await loadSessions(); break;
+      }
+    } catch (error) {
+      console.error(`Bulk upload error for ${type}:`, error);
+      throw error;
     }
   };
 
@@ -468,9 +555,18 @@ export default function AdminDashboard() {
           {/* Schools Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Schools
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Schools
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'schools' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -499,9 +595,18 @@ export default function AdminDashboard() {
           {/* Departments Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Departments
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Departments
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'departments' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -546,9 +651,18 @@ export default function AdminDashboard() {
           {/* Courses Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Courses
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Courses
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'courses' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -603,9 +717,18 @@ export default function AdminDashboard() {
           {/* Teachers Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Teachers
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Teachers
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'teachers' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -661,9 +784,18 @@ export default function AdminDashboard() {
           {/* Venues Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Venues
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Venues
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'venues' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -703,9 +835,18 @@ export default function AdminDashboard() {
           {/* Holidays Management */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Holidays
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Holidays
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setBulkUploadModal({ isOpen: true, type: 'holidays' })}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -775,6 +916,13 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
+
+      <BulkUploadModal
+        isOpen={bulkUploadModal.isOpen}
+        onClose={() => setBulkUploadModal({ ...bulkUploadModal, isOpen: false })}
+        type={bulkUploadModal.type}
+        onUpload={(data) => handleBulkUpload(data, bulkUploadModal.type)}
+      />
     </div>
   );
 }
