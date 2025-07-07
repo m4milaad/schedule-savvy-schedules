@@ -19,6 +19,9 @@ import {
   Holiday 
 } from "@/types/examSchedule";
 
+type TableName = 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions';
+type BulkUploadType = 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays';
+
 export default function AdminDashboard() {
   const [schools, setSchools] = useState<School[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -34,7 +37,7 @@ export default function AdminDashboard() {
   // Bulk upload modal state
   const [bulkUploadModal, setBulkUploadModal] = useState<{
     isOpen: boolean;
-    type: 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays';
+    type: BulkUploadType;
   }>({ isOpen: false, type: 'schools' });
 
   // Form states
@@ -165,21 +168,24 @@ export default function AdminDashboard() {
   };
 
   // Bulk upload handlers
-  const handleBulkUpload = async (data: any[], type: string) => {
+  const handleBulkUpload = async (data: any[], type: BulkUploadType) => {
     try {
       let insertData = data;
-      let tableName = type;
 
-      // Transform data based on type
+      // Transform data based on type and handle each case
       switch (type) {
         case 'schools':
           insertData = data.map(item => ({ school_name: item.school_name }));
+          await insertToTable('schools', insertData);
+          await loadSchools();
           break;
         case 'departments':
           insertData = data.map(item => ({ 
             dept_name: item.dept_name, 
             school_id: item.school_id 
           }));
+          await insertToTable('departments', insertData);
+          await loadDepartments();
           break;
         case 'courses':
           insertData = data.map(item => ({
@@ -189,6 +195,8 @@ export default function AdminDashboard() {
             course_type: item.course_type || 'Theory',
             dept_id: item.dept_id
           }));
+          await insertToTable('courses', insertData);
+          await loadCourses();
           break;
         case 'teachers':
           insertData = data.map(item => ({
@@ -198,6 +206,8 @@ export default function AdminDashboard() {
             designation: item.designation,
             dept_id: item.dept_id
           }));
+          await insertToTable('teachers', insertData);
+          await loadTeachers();
           break;
         case 'venues':
           insertData = data.map(item => ({
@@ -205,12 +215,16 @@ export default function AdminDashboard() {
             venue_address: item.venue_address,
             venue_capacity: item.venue_capacity || 50
           }));
+          await insertToTable('venues', insertData);
+          await loadVenues();
           break;
         case 'sessions':
           insertData = data.map(item => ({
             session_name: item.session_name,
             session_year: item.session_year
           }));
+          await insertToTable('sessions', insertData);
+          await loadSessions();
           break;
         case 'holidays':
           for (const item of data) {
@@ -223,25 +237,17 @@ export default function AdminDashboard() {
             });
           }
           await loadHolidays();
-          return;
-      }
-
-      const { error } = await supabase.from(tableName).insert(insertData);
-      if (error) throw error;
-
-      // Reload the specific data
-      switch (type) {
-        case 'schools': await loadSchools(); break;
-        case 'departments': await loadDepartments(); break;
-        case 'courses': await loadCourses(); break;
-        case 'teachers': await loadTeachers(); break;
-        case 'venues': await loadVenues(); break;
-        case 'sessions': await loadSessions(); break;
+          break;
       }
     } catch (error) {
       console.error(`Bulk upload error for ${type}:`, error);
       throw error;
     }
+  };
+
+  const insertToTable = async (tableName: TableName, data: any[]) => {
+    const { error } = await supabase.from(tableName).insert(data);
+    if (error) throw error;
   };
 
   const addSchool = async () => {
