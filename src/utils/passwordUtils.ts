@@ -43,6 +43,14 @@ export const hashPassword = async (password: string): Promise<string> => {
 
 export const comparePassword = async (password: string, hash: string): Promise<boolean> => {
   try {
+    // Check if the hash is a bcrypt hash (starts with $2a$, $2b$, or $2y$)
+    if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
+      // This is a bcrypt hash, which cannot be compared client-side with Web Crypto API
+      // Return false to prevent atob error
+      console.warn('Bcrypt hash detected - client-side comparison not supported');
+      return false;
+    }
+    
     // Decode the stored hash
     const combined = new Uint8Array(
       atob(hash).split('').map(char => char.charCodeAt(0))
