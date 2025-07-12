@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Plus, Trash2, Upload, Edit2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import BulkUploadModal from "@/components/admin/BulkUploadModal";
+import { hashPassword } from "@/utils/passwordUtils";
 import { 
   School, 
   Department, 
@@ -30,6 +31,7 @@ export default function AdminDashboard() {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -75,6 +77,11 @@ export default function AdminDashboard() {
     holiday_description: "",
     is_recurring: false
   });
+  const [newAdmin, setNewAdmin] = useState({
+    username: '',
+    password: '',
+    type: 'Admin'
+  });
 
   // Edit states
   const [editingItem, setEditingItem] = useState<{
@@ -82,6 +89,10 @@ export default function AdminDashboard() {
     id: string;
     data: any;
   } | null>(null);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [adminEditModalOpen, setAdminEditModalOpen] = useState(false);
+
   useEffect(() => {
     loadAllData();
   }, []);
@@ -97,6 +108,7 @@ export default function AdminDashboard() {
         loadVenues(),
         loadSessions(),
         loadHolidays(),
+        loadAdmins(),
       ]);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -168,6 +180,26 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to load holidays data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const loadAdmins = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('login_tbl')
+        .select('*')
+        .eq('type', 'Admin')
+        .order('username');
+      
+      if (error) throw error;
+      setAdmins(data || []);
+    } catch (error) {
+      console.error('Error loading admins:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load admin users",
         variant: "destructive",
       });
     }
@@ -873,6 +905,128 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to delete holiday",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!newAdmin.username.trim() || !newAdmin.password.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Hash the password
+      const hashedPassword = await hashPassword(newAdmin.password);
+      
+      const { error } = await supabase
+        .from('login_tbl')
+        .insert([{
+          username: newAdmin.username.trim(),
+          password: hashedPassword,
+          type: newAdmin.type
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Admin user added successfully!",
+      });
+      setNewAdmin({ username: '', password: '', type: 'Admin' });
+      setAdminModalOpen(false);
+      loadAdmins();
+    } catch (error) {
+      console.error('Error adding admin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add admin user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditAdmin = (admin: any) => {
+    setEditingAdmin({
+      ...admin,
+      password: '' // Don't show existing password
+    });
+    setAdminEditModalOpen(true);
+  };
+
+  const handleUpdateAdmin = async () => {
+    if (!editingAdmin?.username?.trim()) {
+      toast({
+        title: "Error",
+        description: "Username is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const updateData: any = {
+        username: editingAdmin.username.trim(),
+        type: editingAdmin.type
+      };
+
+      // Only update password if a new one is provided
+      if (editingAdmin.password?.trim()) {
+        updateData.password = await hashPassword(editingAdmin.password);
+      }
+
+      const { error } = await supabase
+        .from('login_tbl')
+        .update(updateData)
+        .eq('user_id', editingAdmin.user_id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Admin user updated successfully!",
+      });
+      setEditingAdmin(null);
+      setAdminEditModalOpen(false);
+      loadAdmins();
+    } catch (error) {
+      console.error('Error updating admin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update admin user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAdmin = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete admin user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('login_tbl')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Admin user deleted successfully!",
+      });
+      loadAdmins();
+    } catch (error) {
+      console.error('Error deleting admin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete admin user",
         variant: "destructive",
       });
     }
@@ -1694,10 +1848,168 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Admin Users Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  Admin Users
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setAdminModalOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {admins.map((admin) => (
+                  <div key={admin.user_id} className="p-2 bg-gray-50 rounded text-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-medium">{admin.username}</div>
+                        <div className="text-gray-600">Type: {admin.type}</div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditAdmin(admin)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteAdmin(admin.user_id, admin.username)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {admins.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No admin users found
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {renderEditModal()}
+
+      {/* Add Admin Modal */}
+      {adminModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Add New Admin User</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="admin-username">Username</Label>
+                <Input
+                  id="admin-username"
+                  value={newAdmin.username}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, username: e.target.value })}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="admin-password">Password</Label>
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={newAdmin.password}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                  placeholder="Enter password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="admin-type">User Type</Label>
+                <select
+                  id="admin-type"
+                  className="w-full p-2 border rounded"
+                  value={newAdmin.type}
+                  onChange={(e) => setNewAdmin({ ...newAdmin, type: e.target.value })}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Student">Student</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setAdminModalOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleAddAdmin} className="flex-1">Add Admin</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Admin Modal */}
+      {adminEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Edit Admin User</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="edit-admin-username">Username</Label>
+                <Input
+                  id="edit-admin-username"
+                  value={editingAdmin?.username || ''}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, username: e.target.value })}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-admin-password">New Password (leave blank to keep current)</Label>
+                <Input
+                  id="edit-admin-password"
+                  type="password"
+                  value={editingAdmin?.password || ''}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, password: e.target.value })}
+                  placeholder="Enter new password (optional)"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-admin-type">User Type</Label>
+                <select
+                  id="edit-admin-type"
+                  className="w-full p-2 border rounded"
+                  value={editingAdmin?.type || 'Admin'}
+                  onChange={(e) => setEditingAdmin({ ...editingAdmin, type: e.target.value })}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Teacher">Teacher</option>
+                  <option value="Student">Student</option>
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setAdminEditModalOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateAdmin} className="flex-1">Update Admin</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <BulkUploadModal
         isOpen={bulkUploadModal.isOpen}
