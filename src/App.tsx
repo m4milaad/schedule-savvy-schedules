@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => {
             />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-users" element={<AdminUsers />} />
             <Route path="/mobile-schedule" element={<MobileSchedule />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
