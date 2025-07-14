@@ -3,6 +3,6 @@
 <resources>
     <string name="app_name">CUK DateSheet</string>
     <string name="title_activity_main">CUK DateSheet</string>
-    <string name="package_name">app.lovable.c26871e166834556bc27845d5db5696e</string>
-    <string name="custom_url_scheme">app.lovable.c26871e166834556bc27845d5db5696e</string>
+    <string name="package_name">com.cuk.examschedule</string>
+    <string name="custom_url_scheme">com.cuk.examschedule</string>
 </resources>

@@ -2,11 +2,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.c26871e166834556bc27845d5db5696e',
+  appId: 'com.cuk.examschedule',
   appName: 'CUK DateSheet',
   webDir: 'dist',
   server: {
-    url: 'https://c26871e1-6683-4556-bc27-845d5db5696e.lovableproject.com?forceHideBadge=true',
+    url: 'https://cuk-examschedule.netlify.app',
     cleartext: true
   },
   android: {
