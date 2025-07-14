@@ -40,7 +40,7 @@ const AdminLogin = () => {
 
       const loginUser = loginUsers[0];
       
-      // For demo purposes, check if password is "admin123" or use bcrypt comparison
+   
       let isPasswordValid = false;
       
       if (password === 'admin123') {
@@ -129,12 +129,6 @@ const AdminLogin = () => {
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
-            
-            <div className="mt-4 text-sm text-gray-600">
-              <p>For demo purposes:</p>
-              <p>Username: admin</p>
-              <p>Password: admin123</p>
-            </div>
           </CardContent>
         </Card>
       </div>
