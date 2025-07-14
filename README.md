@@ -1,6 +1,6 @@
 # Central University of Kashmir - Exam Scheduling System
 
-A comprehensive exam scheduling system designed for Central University of Kashmir to efficiently manage and generate optimized exam timetables with advanced constraint handling and drag-and-drop functionality.
+A comprehensive, production-ready exam scheduling system designed for Central University of Kashmir to efficiently manage and generate optimized exam timetables with advanced constraint handling and drag-and-drop functionality.
 
 ## 🎯 Features
 
@@ -38,8 +38,8 @@ A comprehensive exam scheduling system designed for Central University of Kashmi
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/m4milaad/schedule-savvy-schedules.git
-   cd schedule-savvy-schedules
+   git clone https://github.com/cuk-official/exam-schedule-system.git
+   cd exam-schedule-system
    ```
 
 2. **Install dependencies**

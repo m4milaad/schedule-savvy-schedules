@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.cuk.examschedule;
 
 import static org.junit.Assert.*;
 
