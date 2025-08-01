@@ -156,12 +156,12 @@ const AdminDashboard = () => {
               Manage Admin Users
             </Button>
             <Button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/schedule-generator')}
               variant="outline"
               className="flex items-center gap-2"
             >
               <Home className="w-4 h-4" />
-              Back to Home
+              Schedule Generator
             </Button>
           </div>
         </div>

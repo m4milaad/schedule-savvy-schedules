@@ -5,11 +5,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import StudentDashboard from "./pages/StudentDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -27,11 +30,39 @@ const App = () => {
           <Routes>
             <Route 
               path="/" 
-              element={isCapacitor ? <Navigate to="/mobile-schedule" replace /> : <Index />} 
+              element={
+                isCapacitor ? <Navigate to="/mobile-schedule" replace /> : 
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/schedule-generator" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Index />
+                </ProtectedRoute>
+              } 
             />
             <Route path="/admin-login" element={<AdminLogin />} />
-            <Route path="/admin-dashboard" element={<AdminDashboard />} />
-            <Route path="/admin-users" element={<AdminUsers />} />
+            <Route 
+              path="/admin-dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin-users" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/mobile-schedule" element={<MobileSchedule />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
