@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit2, Trash2, Home, Eye, EyeOff } from 'lucide-react';
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { hashPassword } from "@/utils/passwordUtils";
@@ -38,10 +38,23 @@ const AdminUsers = () => {
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [showEditConfirmPassword, setShowEditConfirmPassword] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is authenticated as admin
+    const adminSession = localStorage.getItem('adminSession');
+    if (!adminSession) {
+      toast({
+        title: "Access Denied",
+        description: "Please log in as an administrator",
+        variant: "destructive",
+      });
+      navigate('/admin-login');
+      return;
+    }
+
     loadAdminUsers();
-  }, []);
+  }, [navigate, toast]);
 
   const loadAdminUsers = async () => {
     try {
@@ -55,7 +68,11 @@ const AdminUsers = () => {
       setAdminUsers(data || []);
     } catch (error) {
       console.error('Error loading admin users:', error);
-      toast.error('Failed to load admin users');
+      toast({
+        title: "Error",
+        description: 'Failed to load admin users',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -63,11 +80,19 @@ const AdminUsers = () => {
 
   const validatePasswords = (password: string, confirmPassword: string) => {
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast({
+        title: "Error",
+        description: 'Passwords do not match',
+        variant: "destructive",
+      });
       return false;
     }
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+      toast({
+        title: "Error",
+        description: 'Password must be at least 6 characters long',
+        variant: "destructive",
+      });
       return false;
     }
     return true;
@@ -75,7 +100,11 @@ const AdminUsers = () => {
 
   const handleAddUser = async () => {
     if (!newUsername.trim() || !newPassword || !newConfirmPassword) {
-      toast.error('Please fill in all fields');
+      toast({
+        title: "Error",
+        description: 'Please fill in all fields',
+        variant: "destructive",
+      });
       return;
     }
 
@@ -96,7 +125,10 @@ const AdminUsers = () => {
 
       if (error) throw error;
 
-      toast.success('Admin user added successfully');
+      toast({
+        title: "Success",
+        description: 'Admin user added successfully',
+      });
       setNewUsername('');
       setNewPassword('');
       setNewConfirmPassword('');
@@ -105,13 +137,21 @@ const AdminUsers = () => {
       loadAdminUsers();
     } catch (error) {
       console.error('Error adding admin user:', error);
-      toast.error('Failed to add admin user');
+      toast({
+        title: "Error",
+        description: 'Failed to add admin user',
+        variant: "destructive",
+      });
     }
   };
 
   const handleEditUser = async () => {
     if (!editingUser || !editUsername.trim()) {
-      toast.error('Please enter a username');
+      toast({
+        title: "Error",
+        description: 'Please enter a username',
+        variant: "destructive",
+      });
       return;
     }
 
@@ -140,7 +180,10 @@ const AdminUsers = () => {
 
       if (error) throw error;
 
-      toast.success('Admin user updated successfully');
+      toast({
+        title: "Success",
+        description: 'Admin user updated successfully',
+      });
       setEditingUser(null);
       setEditUsername('');
       setEditPassword('');
@@ -150,7 +193,11 @@ const AdminUsers = () => {
       loadAdminUsers();
     } catch (error) {
       console.error('Error updating admin user:', error);
-      toast.error('Failed to update admin user');
+      toast({
+        title: "Error",
+        description: 'Failed to update admin user',
+        variant: "destructive",
+      });
     }
   };
 
@@ -163,11 +210,18 @@ const AdminUsers = () => {
 
       if (error) throw error;
 
-      toast.success('Admin user deleted successfully');
+      toast({
+        title: "Success",
+        description: 'Admin user deleted successfully',
+      });
       loadAdminUsers();
     } catch (error) {
       console.error('Error deleting admin user:', error);
-      toast.error('Failed to delete admin user');
+      toast({
+        title: "Error",
+        description: 'Failed to delete admin user',
+        variant: "destructive",
+      });
     }
   };
 
