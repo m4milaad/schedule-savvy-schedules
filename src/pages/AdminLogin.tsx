@@ -40,19 +40,13 @@ const AdminLogin = () => {
 
       const loginUser = loginUsers[0];
       
-   
+      // Use bcrypt comparison for all passwords
       let isPasswordValid = false;
-      
-      if (password === 'admin123') {
-        isPasswordValid = true;
-      } else {
-        // Try bcrypt comparison for other passwords
-        try {
-          isPasswordValid = await comparePassword(password, loginUser.password);
-        } catch (error) {
-          console.error('Password comparison error:', error);
-          isPasswordValid = false;
-        }
+      try {
+        isPasswordValid = await comparePassword(password, loginUser.password);
+      } catch (error) {
+        console.error('Password comparison error:', error);
+        isPasswordValid = false;
       }
       
       if (!isPasswordValid) {
