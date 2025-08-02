@@ -5,15 +5,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Home } from 'lucide-react';
-import { comparePassword } from "@/utils/passwordUtils";
+import bcrypt from 'bcryptjs';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,32 +26,54 @@ const AdminLogin = () => {
         .from('login_tbl')
         .select('*')
         .eq('username', username)
-        .eq('type', 'Admin');
+        .ilike('type', 'Admin');
 
       if (error) {
         console.error('Database query error:', error);
-        toast.error('Login failed: ' + error.message);
+        toast({
+          title: "Error",
+          description: 'Login failed: ' + error.message,
+          variant: "destructive",
+        });
         return;
       }
 
       if (!loginUsers || loginUsers.length === 0) {
-        toast.error('Invalid username or password');
+        toast({
+          title: "Error",
+          description: 'Invalid username or password',
+          variant: "destructive",
+        });
         return;
       }
 
       const loginUser = loginUsers[0];
       
-      // Use bcrypt comparison for all passwords
+      // Check if password is already hashed (starts with $2a$, $2b$, or $2y$)
       let isPasswordValid = false;
-      try {
-        isPasswordValid = await comparePassword(password, loginUser.password);
-      } catch (error) {
-        console.error('Password comparison error:', error);
-        isPasswordValid = false;
+      
+      if (loginUser.password.startsWith('$2a$') || 
+          loginUser.password.startsWith('$2b$') || 
+          loginUser.password.startsWith('$2y$')) {
+        // Password is bcrypt hashed
+        try {
+          isPasswordValid = await bcrypt.compare(password, loginUser.password);
+        } catch (error) {
+          console.error('Bcrypt comparison error:', error);
+          isPasswordValid = false;
+        }
+      } else {
+        // Password might be plain text (for development/testing)
+        console.warn('Plain text password detected in database - this should be hashed in production');
+        isPasswordValid = password === loginUser.password;
       }
       
       if (!isPasswordValid) {
-        toast.error('Invalid username or password');
+        toast({
+          title: "Error",
+          description: 'Invalid username or password',
+          variant: "destructive",
+        });
         return;
       }
       
@@ -62,12 +85,19 @@ const AdminLogin = () => {
         loginTime: new Date().toISOString()
       }));
 
-      toast.success('Login successful!');
+      toast({
+        title: "Success",
+        description: 'Login successful!',
+      });
       navigate('/admin-dashboard');
       
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
+      toast({
+        title: "Error",
+        description: 'Login failed. Please try again.',
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, Users } from 'lucide-react';
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { School, Department, Course, Teacher, Venue, Session, Holiday } from "@/types/examSchedule";
@@ -25,10 +25,41 @@ const AdminDashboard = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is authenticated as admin
+    const adminSession = localStorage.getItem('adminSession');
+    if (!adminSession) {
+      toast({
+        title: "Access Denied",
+        description: "Please log in as an administrator",
+        variant: "destructive",
+      });
+      navigate('/admin-login');
+      return;
+    }
+
+    try {
+      const session = JSON.parse(adminSession);
+      if (!session.userType || session.userType !== 'Admin') {
+        toast({
+          title: "Access Denied",
+          description: "Admin privileges required",
+          variant: "destructive",
+        });
+        navigate('/admin-login');
+        return;
+      }
+    } catch (error) {
+      console.error('Invalid admin session:', error);
+      localStorage.removeItem('adminSession');
+      navigate('/admin-login');
+      return;
+    }
+
     loadAllData();
-  }, []);
+  }, [navigate, toast]);
 
   const loadAllData = async () => {
     try {
@@ -44,12 +75,24 @@ const AdminDashboard = () => {
       ]);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Failed to load some data');
+      toast({
+        title: "Error",
+        description: 'Failed to load some data',
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('adminSession');
+    toast({
+      title: "Success",
+      description: "Logged out successfully",
+    });
+    navigate('/admin-login');
+  };
   const loadSchools = async () => {
     const { data, error } = await supabase
       .from('schools')
@@ -147,6 +190,14 @@ const AdminDashboard = () => {
             <p className="text-gray-600">Manage university data and settings</p>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Logout
+            </Button>
             <Button
               onClick={() => navigate('/admin-users')}
               variant="outline"
