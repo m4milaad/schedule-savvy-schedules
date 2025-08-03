@@ -25,15 +25,27 @@ const AdminLogin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both username and password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      console.log('Starting login process...');
+      console.log('=== LOGIN ATTEMPT ===');
+      console.log('Username:', username);
+      console.log('Password length:', password.length);
       
       // Clear any existing auth state first
       adminAuth.clearAuthState();
       
-      const result = await adminAuth.login(username, password);
+      const result = await adminAuth.login(username.trim(), password);
       
       if (result.success && result.user) {
         toast({
@@ -41,9 +53,10 @@ const AdminLogin = () => {
           description: `Welcome back, ${result.user.full_name}!`,
         });
         
-        console.log('Login successful, redirecting to admin dashboard...');
+        console.log('Login successful, redirecting...');
         navigate('/admin-dashboard');
       } else {
+        console.log('Login failed:', result.error);
         toast({
           title: "Login Failed",
           description: result.error || 'Invalid username or password',
