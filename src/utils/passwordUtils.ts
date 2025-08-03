@@ -7,11 +7,18 @@ export const hashPassword = async (password: string): Promise<string> => {
 };
 
 export const comparePassword = async (password: string, hash: string): Promise<boolean> => {
-  // Check if the hash is a valid bcrypt hash
-  if (!hash || (!hash.startsWith('$2a$') && !hash.startsWith('$2b$') && !hash.startsWith('$2y$'))) {
-    console.warn('Invalid bcrypt hash format');
+  try {
+    // Check if the hash is a valid bcrypt hash
+    if (!hash || (!hash.startsWith('$2a$') && !hash.startsWith('$2b$') && !hash.startsWith('$2y$'))) {
+      console.warn('Invalid bcrypt hash format:', hash);
+      return false;
+    }
+    
+    const result = await bcrypt.compare(password, hash);
+    console.log('Password comparison result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error comparing password:', error);
     return false;
   }
-  
-  return await bcrypt.compare(password, hash);
 };
