@@ -11,11 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { hashPassword } from "@/utils/passwordUtils";
+import { adminAuth } from "@/utils/adminAuth";
 
 interface AdminUser {
-  user_id: string;
+  id: string;
   username: string;
-  type: string;
+  full_name: string;
+  email: string;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -25,12 +28,14 @@ const AdminUsers = () => {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newConfirmPassword, setNewConfirmPassword] = useState('');
-  const [newUserType, setNewUserType] = useState('Admin');
+  const [newFullName, setNewFullName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editConfirmPassword, setEditConfirmPassword] = useState('');
-  const [editUserType, setEditUserType] = useState('');
+  const [editFullName, setEditFullName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -42,8 +47,7 @@ const AdminUsers = () => {
 
   useEffect(() => {
     // Check if user is authenticated as admin
-    const adminSession = localStorage.getItem('adminSession');
-    if (!adminSession) {
+    if (!adminAuth.isLoggedIn()) {
       toast({
         title: "Access Denied",
         description: "Please log in as an administrator",
@@ -60,8 +64,8 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('login_tbl')
-        .select('user_id, username, type, created_at')
+        .from('admin_users')
+        .select('id, username, full_name, email, is_active, created_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -99,10 +103,10 @@ const AdminUsers = () => {
   };
 
   const handleAddUser = async () => {
-    if (!newUsername.trim() || !newPassword || !newConfirmPassword) {
+    if (!newUsername.trim() || !newPassword || !newConfirmPassword || !newFullName.trim()) {
       toast({
         title: "Error",
-        description: 'Please fill in all fields',
+        description: 'Please fill in all required fields',
         variant: "destructive",
       });
       return;
@@ -116,11 +120,13 @@ const AdminUsers = () => {
       const hashedPassword = await hashPassword(newPassword);
       
       const { error } = await supabase
-        .from('login_tbl')
+        .from('admin_users')
         .insert({
           username: newUsername.trim(),
-          password: hashedPassword,
-          type: newUserType
+          password_hash: hashedPassword,
+          full_name: newFullName.trim(),
+          email: newEmail.trim() || null,
+          is_active: true
         });
 
       if (error) throw error;
@@ -132,7 +138,8 @@ const AdminUsers = () => {
       setNewUsername('');
       setNewPassword('');
       setNewConfirmPassword('');
-      setNewUserType('Admin');
+      setNewFullName('');
+      setNewEmail('');
       setIsAddDialogOpen(false);
       loadAdminUsers();
     } catch (error) {
@@ -146,10 +153,10 @@ const AdminUsers = () => {
   };
 
   const handleEditUser = async () => {
-    if (!editingUser || !editUsername.trim()) {
+    if (!editingUser || !editUsername.trim() || !editFullName.trim()) {
       toast({
         title: "Error",
-        description: 'Please enter a username',
+        description: 'Please enter required fields',
         variant: "destructive",
       });
       return;
@@ -165,18 +172,19 @@ const AdminUsers = () => {
     try {
       const updateData: any = {
         username: editUsername.trim(),
-        type: editUserType
+        full_name: editFullName.trim(),
+        email: editEmail.trim() || null
       };
 
       // Only update password if a new one is provided
       if (editPassword) {
-        updateData.password = await hashPassword(editPassword);
+        updateData.password_hash = await hashPassword(editPassword);
       }
 
       const { error } = await supabase
-        .from('login_tbl')
+        .from('admin_users')
         .update(updateData)
-        .eq('user_id', editingUser.user_id);
+        .eq('id', editingUser.id);
 
       if (error) throw error;
 
@@ -188,7 +196,8 @@ const AdminUsers = () => {
       setEditUsername('');
       setEditPassword('');
       setEditConfirmPassword('');
-      setEditUserType('');
+      setEditFullName('');
+      setEditEmail('');
       setIsEditDialogOpen(false);
       loadAdminUsers();
     } catch (error) {
@@ -204,9 +213,9 @@ const AdminUsers = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       const { error } = await supabase
-        .from('login_tbl')
+        .from('admin_users')
         .delete()
-        .eq('user_id', userId);
+        .eq('id', userId);
 
       if (error) throw error;
 
@@ -230,7 +239,8 @@ const AdminUsers = () => {
     setEditUsername(user.username);
     setEditPassword('');
     setEditConfirmPassword('');
-    setEditUserType(user.type);
+    setEditFullName(user.full_name);
+    setEditEmail(user.email || '');
     setIsEditDialogOpen(true);
   };
 
@@ -238,7 +248,8 @@ const AdminUsers = () => {
     setNewUsername('');
     setNewPassword('');
     setNewConfirmPassword('');
-    setNewUserType('Admin');
+    setNewFullName('');
+    setNewEmail('');
     setShowNewPassword(false);
     setShowNewConfirmPassword(false);
   };
@@ -248,7 +259,8 @@ const AdminUsers = () => {
     setEditUsername('');
     setEditPassword('');
     setEditConfirmPassword('');
-    setEditUserType('');
+    setEditFullName('');
+    setEditEmail('');
     setShowEditPassword(false);
     setShowEditConfirmPassword(false);
   };
@@ -353,17 +365,23 @@ const AdminUsers = () => {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="new-user-type">User Type</Label>
-                      <Select value={newUserType} onValueChange={setNewUserType}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select user type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Teacher">Teacher</SelectItem>
-                          <SelectItem value="Student">Student</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="new-full-name">Full Name</Label>
+                      <Input
+                        id="new-full-name"
+                        value={newFullName}
+                        onChange={(e) => setNewFullName(e.target.value)}
+                        placeholder="Enter full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="new-email">Email (optional)</Label>
+                      <Input
+                        id="new-email"
+                        type="email"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="Enter email address"
+                      />
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleAddUser} className="flex-1">Add User</Button>
@@ -377,11 +395,17 @@ const AdminUsers = () => {
           <CardContent>
             <div className="space-y-2">
               {adminUsers.map((user) => (
-                <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <div className="font-medium">{user.username}</div>
                     <div className="text-sm text-gray-500">
-                      Type: {user.type}
+                      Name: {user.full_name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Email: {user.email || 'Not provided'}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Status: {user.is_active ? 'Active' : 'Inactive'}
                     </div>
                     <div className="text-sm text-gray-500">
                       Created: {new Date(user.created_at).toLocaleDateString()}
@@ -410,7 +434,7 @@ const AdminUsers = () => {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteUser(user.user_id)}>
+                          <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
                             Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -484,17 +508,23 @@ const AdminUsers = () => {
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit-user-type">User Type</Label>
-                <Select value={editUserType} onValueChange={setEditUserType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Teacher">Teacher</SelectItem>
-                    <SelectItem value="Student">Student</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="edit-full-name">Full Name</Label>
+                <Input
+                  id="edit-full-name"
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">Email (optional)</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="Enter email address"
+                />
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleEditUser} className="flex-1">Update User</Button>
