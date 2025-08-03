@@ -117,7 +117,9 @@ const AdminUsers = () => {
     }
 
     try {
+      console.log('Creating new admin user...');
       const hashedPassword = await hashPassword(newPassword);
+      console.log('Password hashed successfully');
       
       const { error } = await supabase
         .from('admin_users')
@@ -135,6 +137,7 @@ const AdminUsers = () => {
         title: "Success",
         description: 'Admin user added successfully',
       });
+      console.log('Admin user created successfully');
       setNewUsername('');
       setNewPassword('');
       setNewConfirmPassword('');
