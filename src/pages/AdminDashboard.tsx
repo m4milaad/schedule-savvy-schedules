@@ -6,6 +6,7 @@ import { Home, Users } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
+import { adminAuth } from "@/utils/adminAuth";
 import { School, Department, Course, Teacher, Venue, Session, Holiday } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -29,31 +30,12 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     // Check if user is authenticated as admin
-    const adminSession = localStorage.getItem('adminSession');
-    if (!adminSession) {
+    if (!adminAuth.isLoggedIn()) {
       toast({
         title: "Access Denied",
         description: "Please log in as an administrator",
         variant: "destructive",
       });
-      navigate('/admin-login');
-      return;
-    }
-
-    try {
-      const session = JSON.parse(adminSession);
-      if (!session.userType || session.userType !== 'Admin') {
-        toast({
-          title: "Access Denied",
-          description: "Admin privileges required",
-          variant: "destructive",
-        });
-        navigate('/admin-login');
-        return;
-      }
-    } catch (error) {
-      console.error('Invalid admin session:', error);
-      localStorage.removeItem('adminSession');
       navigate('/admin-login');
       return;
     }
@@ -86,7 +68,7 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminSession');
+    adminAuth.logout();
     toast({
       title: "Success",
       description: "Logged out successfully",
