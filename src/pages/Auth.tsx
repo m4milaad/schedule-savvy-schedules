@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Users, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
 interface Department {
@@ -311,7 +311,7 @@ const Auth = () => {
 
         <div className="text-center mt-6 text-sm text-gray-600">
           <p>
-            Admin login? <a href="/admin-login" className="text-blue-600 hover:underline">Click here</a>
+            Admin login? <Link to="/admin-login" className="text-blue-600 hover:underline">Click here</Link>
           </p>
         </div>
       </div>
