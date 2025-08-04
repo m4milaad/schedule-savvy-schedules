@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Users, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -143,24 +144,38 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 transition-colors duration-500">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <GraduationCap className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900">CUK Exam System</h1>
-          <p className="text-gray-600">Central University of Kashmir</p>
+        <div className="flex justify-end mb-4">
+          <ThemeToggle />
+        </div>
+        
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="mb-4 animate-scale-in">
+            <img 
+              src="/favicon.ico" 
+              alt="CUK Logo" 
+              className="w-16 h-16 mx-auto mb-4 transition-transform duration-300 hover:scale-110"
+            />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
+            CUK Exam System
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
+            Central University of Kashmir
+          </p>
         </div>
 
-        <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => setIsSignUp(value === "signup")}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+        <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => setIsSignUp(value === "signup")} className="animate-fade-in">
+          <TabsList className="grid w-full grid-cols-2 transition-all duration-300">
+            <TabsTrigger value="signin" className="transition-all duration-300 hover:scale-105">Sign In</TabsTrigger>
+            <TabsTrigger value="signup" className="transition-all duration-300 hover:scale-105">Sign Up</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Shield className="w-5 h-5" />
                   Sign In
                 </CardTitle>
@@ -168,7 +183,7 @@ const Auth = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email" className="dark:text-gray-300 transition-colors duration-300">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -176,10 +191,11 @@ const Auth = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="your.email@cukashmir.ac.in"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password" className="dark:text-gray-300 transition-colors duration-300">Password</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -187,9 +203,10 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       placeholder="Enter your password"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
@@ -198,9 +215,9 @@ const Auth = () => {
           </TabsContent>
 
           <TabsContent value="signup">
-            <Card>
+            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Users className="w-5 h-5" />
                   Create Account
                 </CardTitle>
@@ -208,7 +225,7 @@ const Auth = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name" className="dark:text-gray-300 transition-colors duration-300">Full Name</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -216,11 +233,12 @@ const Auth = () => {
                       onChange={(e) => setFullName(e.target.value)}
                       required
                       placeholder="Enter your full name"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="dark:text-gray-300 transition-colors duration-300">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -228,11 +246,12 @@ const Auth = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       placeholder="your.email@cukashmir.ac.in"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="user-type">Account Type</Label>
+                    <Label htmlFor="user-type" className="dark:text-gray-300 transition-colors duration-300">Account Type</Label>
                     <Select value={userType} onValueChange={(value: 'student' | 'department_admin') => setUserType(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select account type" />
@@ -246,7 +265,7 @@ const Auth = () => {
 
                   {userType === 'student' && (
                     <div className="space-y-2">
-                      <Label htmlFor="enrollment-no">Enrollment Number</Label>
+                      <Label htmlFor="enrollment-no" className="dark:text-gray-300 transition-colors duration-300">Enrollment Number</Label>
                       <Input
                         id="enrollment-no"
                         type="text"
@@ -254,13 +273,14 @@ const Auth = () => {
                         onChange={(e) => setEnrollmentNo(e.target.value)}
                         required
                         placeholder="Enter your enrollment number"
+                        className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                       />
                     </div>
                   )}
 
                   {userType === 'department_admin' && (
                     <div className="space-y-2">
-                      <Label htmlFor="department">Department</Label>
+                      <Label htmlFor="department" className="dark:text-gray-300 transition-colors duration-300">Department</Label>
                       <Select value={deptId} onValueChange={setDeptId}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your department" />
@@ -277,7 +297,7 @@ const Auth = () => {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password" className="dark:text-gray-300 transition-colors duration-300">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -285,11 +305,12 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       placeholder="Create a password (min 6 characters)"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Label htmlFor="confirm-password" className="dark:text-gray-300 transition-colors duration-300">Confirm Password</Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -297,10 +318,11 @@ const Auth = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
                       placeholder="Confirm your password"
+                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
                     {loading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
@@ -309,9 +331,9 @@ const Auth = () => {
           </TabsContent>
         </Tabs>
 
-        <div className="text-center mt-6 text-sm text-gray-600">
+        <div className="text-center mt-6 text-sm text-gray-600 dark:text-gray-400 transition-colors duration-300">
           <p>
-            Admin login? <Link to="/admin-login" className="text-blue-600 hover:underline">Click here</Link>
+            Admin login? <Link to="/admin-login" className="text-blue-600 dark:text-blue-400 hover:underline transition-colors duration-300">Click here</Link>
           </p>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit2, Trash2, Home, Eye, EyeOff } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { hashPassword } from "@/utils/passwordUtils";
 import { adminAuth } from "@/utils/adminAuth";
@@ -280,33 +281,49 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-500">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin User Management</h1>
-            <p className="text-gray-600">Manage administrator accounts and permissions</p>
+            <div className="flex items-center gap-3 mb-2">
+              <img 
+                src="/favicon.ico" 
+                alt="CUK Logo" 
+                className="w-10 h-10 transition-transform duration-300 hover:scale-110"
+              />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
+                Admin User Management
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
+              Manage administrator accounts and permissions
+            </p>
           </div>
-          <Button
-            onClick={() => navigate('/admin-dashboard')}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Home className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <ThemeToggle />
+            <Button
+              onClick={() => navigate('/admin-dashboard')}
+              variant="outline"
+              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+            >
+              <Home className="w-4 h-4" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
 
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Admin Users ({adminUsers.length})</CardTitle>
+              <CardTitle className="dark:text-gray-100 transition-colors duration-300">
+                Admin Users ({adminUsers.length})
+              </CardTitle>
               <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
                 setIsAddDialogOpen(open);
                 if (!open) resetAddForm();
               }}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Admin User
                   </Button>
@@ -398,19 +415,19 @@ const AdminUsers = () => {
           <CardContent>
             <div className="space-y-2">
               {adminUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg transition-all duration-300 hover:shadow-md hover:scale-[1.02] dark:border-slate-700">
                   <div>
-                    <div className="font-medium">{user.username}</div>
-                    <div className="text-sm text-gray-500">
+                    <div className="font-medium dark:text-gray-100 transition-colors duration-300">{user.username}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                       Name: {user.full_name}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                       Email: {user.email || 'Not provided'}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                       Status: {user.is_active ? 'Active' : 'Inactive'}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
                       Created: {new Date(user.created_at).toLocaleDateString()}
                     </div>
                   </div>
@@ -418,13 +435,14 @@ const AdminUsers = () => {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="transition-all duration-300 hover:scale-110 hover:shadow-md"
                       onClick={() => openEditDialog(user)}
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-all duration-300 hover:scale-110 hover:shadow-md">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </AlertDialogTrigger>
