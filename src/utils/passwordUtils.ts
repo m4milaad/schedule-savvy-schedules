@@ -6,6 +6,15 @@ export const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, SALT_ROUNDS);
 };
 
+// For testing - generate correct hashes
+export const generateTestHashes = async () => {
+  const adminHash = await bcrypt.hash('admin123', SALT_ROUNDS);
+  const miladHash = await bcrypt.hash('milad3103', SALT_ROUNDS);
+  console.log('Admin hash:', adminHash);
+  console.log('Milad hash:', miladHash);
+  return { adminHash, miladHash };
+};
+
 export const comparePassword = async (password: string, hash: string): Promise<boolean> => {
   try {
     console.log('Comparing password with hash...');

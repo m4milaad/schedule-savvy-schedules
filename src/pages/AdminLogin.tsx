@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Home, Eye, EyeOff } from 'lucide-react';
 import { adminAuth } from '@/utils/adminAuth';
+import { generateTestHashes } from '@/utils/passwordUtils';
 
 const AdminLogin = () => {
   const [username, setUsername] = useState('');
@@ -185,6 +186,20 @@ const AdminLogin = () => {
                   disabled={isLoading}
                 >
                   <span className="font-mono">m4milaad / milad3103</span>
+                </Button>
+                
+                {/* Debug: Generate correct hashes */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs"
+                  onClick={async () => {
+                    const hashes = await generateTestHashes();
+                    console.log('Generated hashes:', hashes);
+                  }}
+                >
+                  Generate Correct Hashes (Check Console)
                 </Button>
               </div>
             </div>
