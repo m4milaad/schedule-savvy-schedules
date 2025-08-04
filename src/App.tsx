@@ -42,9 +42,9 @@ const App = () => {
             <Route 
               path="/schedule-generator" 
               element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <AdminProtectedRoute>
                   <Index />
-                </ProtectedRoute>
+                </AdminProtectedRoute>
               } 
             />
             <Route path="/admin-login" element={<AdminLogin />} />
@@ -59,9 +59,9 @@ const App = () => {
             <Route 
               path="/admin-users" 
               element={
-                <ProtectedRoute allowedRoles={['admin']}>
+                <AdminProtectedRoute>
                   <AdminUsers />
-                </ProtectedRoute>
+                </AdminProtectedRoute>
               } 
             />
             <Route path="/mobile-schedule" element={<MobileSchedule />} />
