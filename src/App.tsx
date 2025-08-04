@@ -13,6 +13,7 @@ import AdminUsers from "./pages/AdminUsers";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -50,9 +51,9 @@ const App = () => {
             <Route 
               path="/admin-dashboard" 
               element={
-                <ProtectedRoute allowedRoles={['admin', 'department_admin']}>
+                <AdminProtectedRoute>
                   <AdminDashboard />
-                </ProtectedRoute>
+                </AdminProtectedRoute>
               } 
             />
             <Route 
