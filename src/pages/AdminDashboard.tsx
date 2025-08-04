@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Home, Users } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { adminAuth } from "@/utils/adminAuth";
 import { School, Department, Course, Teacher, Venue, Session, Holiday } from "@/types/examSchedule";
@@ -164,18 +165,30 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-500">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600">Manage university data and settings</p>
+            <div className="flex items-center gap-3 mb-2">
+              <img 
+                src="/favicon.ico" 
+                alt="CUK Logo" 
+                className="w-10 h-10 transition-transform duration-300 hover:scale-110"
+              />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
+                Admin Dashboard
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
+              Manage university data and settings
+            </p>
           </div>
           <div className="flex gap-2">
+            <ThemeToggle />
             <Button
               onClick={handleLogout}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             >
               <Home className="w-4 h-4" />
               Logout
@@ -183,7 +196,7 @@ const AdminDashboard = () => {
             <Button
               onClick={() => navigate('/admin-users')}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             >
               <Users className="w-4 h-4" />
               Manage Admin Users
@@ -191,7 +204,7 @@ const AdminDashboard = () => {
             <Button
               onClick={() => navigate('/schedule-generator')}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
             >
               <Home className="w-4 h-4" />
               Schedule Generator
@@ -199,42 +212,42 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="schools" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="schools">Schools</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="courses">Courses</TabsTrigger>
-            <TabsTrigger value="teachers">Teachers</TabsTrigger>
-            <TabsTrigger value="venues">Venues</TabsTrigger>
-            <TabsTrigger value="sessions">Sessions</TabsTrigger>
-            <TabsTrigger value="holidays">Holidays</TabsTrigger>
+        <Tabs defaultValue="schools" className="space-y-6 animate-fade-in">
+          <TabsList className="grid w-full grid-cols-7 transition-all duration-300">
+            <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105">Schools</TabsTrigger>
+            <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105">Departments</TabsTrigger>
+            <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105">Courses</TabsTrigger>
+            <TabsTrigger value="teachers" className="transition-all duration-300 hover:scale-105">Teachers</TabsTrigger>
+            <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105">Venues</TabsTrigger>
+            <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105">Sessions</TabsTrigger>
+            <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105">Holidays</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="schools">
+          <TabsContent value="schools" className="animate-fade-in">
             <SchoolsTab schools={schools} onRefresh={loadSchools} />
           </TabsContent>
 
-          <TabsContent value="departments">
+          <TabsContent value="departments" className="animate-fade-in">
             <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />
           </TabsContent>
 
-          <TabsContent value="courses">
+          <TabsContent value="courses" className="animate-fade-in">
             <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />
           </TabsContent>
 
-          <TabsContent value="teachers">
+          <TabsContent value="teachers" className="animate-fade-in">
             <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />
           </TabsContent>
 
-          <TabsContent value="venues">
+          <TabsContent value="venues" className="animate-fade-in">
             <VenuesTab venues={venues} onRefresh={loadVenues} />
           </TabsContent>
 
-          <TabsContent value="sessions">
+          <TabsContent value="sessions" className="animate-fade-in">
             <SessionsTab sessions={sessions} onRefresh={loadSessions} />
           </TabsContent>
 
-          <TabsContent value="holidays">
+          <TabsContent value="holidays" className="animate-fade-in">
             <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />
           </TabsContent>
         </Tabs>

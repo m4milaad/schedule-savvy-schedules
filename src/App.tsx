@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -23,53 +24,55 @@ const App = () => {
                      (window.location.hostname === 'localhost' && window.location.port === '');
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                isCapacitor ? <Navigate to="/mobile-schedule" replace /> : 
-                <ProtectedRoute allowedRoles={['student']}>
-                  <StudentDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/schedule-generator" 
-              element={
-                <AdminProtectedRoute>
-                  <Index />
-                </AdminProtectedRoute>
-              } 
-            />
-            <Route path="/admin-login" element={<AdminLogin />} />
-            <Route 
-              path="/admin-dashboard" 
-              element={
-                <AdminProtectedRoute>
-                  <AdminDashboard />
-                </AdminProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin-users" 
-              element={
-                <AdminProtectedRoute>
-                  <AdminUsers />
-                </AdminProtectedRoute>
-              } 
-            />
-            <Route path="/mobile-schedule" element={<MobileSchedule />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route 
+                path="/" 
+                element={
+                  isCapacitor ? <Navigate to="/mobile-schedule" replace /> : 
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <StudentDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/schedule-generator" 
+                element={
+                  <AdminProtectedRoute>
+                    <Index />
+                  </AdminProtectedRoute>
+                } 
+              />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route 
+                path="/admin-dashboard" 
+                element={
+                  <AdminProtectedRoute>
+                    <AdminDashboard />
+                  </AdminProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin-users" 
+                element={
+                  <AdminProtectedRoute>
+                    <AdminUsers />
+                  </AdminProtectedRoute>
+                } 
+              />
+              <Route path="/mobile-schedule" element={<MobileSchedule />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 };
 

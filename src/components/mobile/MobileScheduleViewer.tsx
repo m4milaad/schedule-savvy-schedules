@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Book, User, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ExamScheduleItem } from "@/types/examSchedule";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { useToast } from "@/hooks/use-toast";
 import { SplashScreen } from "./SplashScreen";
@@ -127,47 +128,52 @@ export const MobileScheduleViewer = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 transition-colors duration-500">
       <div className="max-w-md mx-auto">
-        <Card className="mb-6 shadow-lg">
-          <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+        <Card className="mb-6 shadow-lg transition-all duration-300 hover:shadow-xl animate-fade-in">
+          <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-t-lg transition-all duration-300">
             <div className="flex items-center justify-center mb-2">
               <img 
-                src="/CUKLogo.ico" 
+                src="/favicon.ico" 
                 alt="CUK Logo" 
-                className="w-8 h-8 mr-2"
+                className="w-8 h-8 mr-2 transition-transform duration-300 hover:scale-110"
               />
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 animate-scale-in">
                 <Calendar className="h-5 w-5" />
                 Exam DateSheet
               </CardTitle>
             </div>
-            <p className="text-blue-100 text-sm">Central University of Kashmir</p>
+            <p className="text-blue-100 dark:text-blue-200 text-sm transition-colors duration-300">
+              Central University of Kashmir
+            </p>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                <ThemeToggle />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={fetchSchedule}
                 disabled={loading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md"
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <p className="text-sm text-gray-600 font-medium">
+              <p className="text-sm text-gray-600 dark:text-gray-400 font-medium transition-colors duration-300">
                 {filteredSchedule.length} exam{filteredSchedule.length !== 1 ? 's' : ''}
               </p>
             </div>
             
             {semesters.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-2 mb-2 animate-fade-in">
                 <Button
                   variant={selectedSemester === null ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedSemester(null)}
-                  className="text-xs"
+                  className="text-xs transition-all duration-300 hover:scale-105"
                 >
                   All Semesters
                 </Button>
@@ -177,7 +183,7 @@ export const MobileScheduleViewer = () => {
                     variant={selectedSemester === semester ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedSemester(semester)}
-                    className="text-xs"
+                    className="text-xs transition-all duration-300 hover:scale-105"
                   >
                     Sem {semester}
                   </Button>
@@ -190,16 +196,20 @@ export const MobileScheduleViewer = () => {
         <div className="space-y-4">
           {Object.keys(groupedSchedule)
             .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-            .map(dateString => {
+            .map((dateString, index) => {
               const date = new Date(dateString);
               const examsOnDate = groupedSchedule[dateString];
               
               return (
-                <Card key={dateString} className="shadow-md">
-                  <CardHeader className="pb-3 bg-gray-50 rounded-t-lg">
+                <Card 
+                  key={dateString} 
+                  className="shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <CardHeader className="pb-3 bg-gray-50 dark:bg-slate-800 rounded-t-lg transition-colors duration-300">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-800">
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 transition-colors duration-300">
                           {date.toLocaleDateString('en-US', { 
                             weekday: 'long',
                             month: 'short',
@@ -207,7 +217,7 @@ export const MobileScheduleViewer = () => {
                             year: 'numeric'
                           })}
                         </h3>
-                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1 mt-1 transition-colors duration-300">
                           <Clock className="h-3 w-3" />
                           {getExamTimeSlot(date)}
                         </p>
@@ -219,10 +229,11 @@ export const MobileScheduleViewer = () => {
                   </CardHeader>
                   <CardContent className="pt-3">
                     <div className="space-y-3">
-                      {examsOnDate.map(exam => (
+                      {examsOnDate.map((exam, examIndex) => (
                         <div
                           key={exam.id}
-                          className="border rounded-lg p-3 bg-white hover:shadow-sm transition-shadow"
+                          className="border rounded-lg p-3 bg-white dark:bg-slate-700 dark:border-slate-600 hover:shadow-sm transition-all duration-300 hover:scale-[1.02] animate-scale-in"
+                          style={{ animationDelay: `${(index * 0.1) + (examIndex * 0.05)}s` }}
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -235,19 +246,19 @@ export const MobileScheduleViewer = () => {
                                 </Badge>
                               )}
                             </div>
-                            <span className="text-xs text-gray-500 font-medium">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium transition-colors duration-300">
                               {exam.program_type}
                             </span>
                           </div>
                           
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                              <Book className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="font-medium text-gray-800">{exam.course_code}</span>
+                              <Book className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0 transition-colors duration-300" />
+                              <span className="font-medium text-gray-800 dark:text-gray-200 transition-colors duration-300">{exam.course_code}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">
+                              <User className="h-4 w-4 text-gray-500 dark:text-gray-400 flex-shrink-0 transition-colors duration-300" />
+                              <span className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                                 {exam.teacher_name}
                               </span>
                             </div>
@@ -262,11 +273,11 @@ export const MobileScheduleViewer = () => {
         </div>
 
         {filteredSchedule.length === 0 && !loading && (
-          <Card className="shadow-md">
+          <Card className="shadow-md transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardContent className="text-center py-12">
-              <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">No Exams Scheduled</h3>
-              <p className="text-gray-500 mb-4">
+              <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600 transition-colors duration-300 animate-scale-in" />
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">No Exams Scheduled</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4 transition-colors duration-300">
                 {selectedSemester 
                   ? `No exams found for Semester ${selectedSemester}`
                   : "No exam schedule has been published yet"
@@ -276,7 +287,7 @@ export const MobileScheduleViewer = () => {
                 variant="outline"
                 size="sm"
                 onClick={fetchSchedule}
-                className="flex items-center gap-2 mx-auto"
+                className="flex items-center gap-2 mx-auto transition-all duration-300 hover:scale-105 hover:shadow-md"
               >
                 <RefreshCw className="h-4 w-4" />
                 Check Again
@@ -286,7 +297,7 @@ export const MobileScheduleViewer = () => {
         )}
 
         <div className="text-center mt-8 pb-4">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
             Developed by Milad Ajaz Bhat
           </p>
         </div>
