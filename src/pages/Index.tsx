@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Settings, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
 import * as XLSX from "xlsx";
@@ -802,22 +803,22 @@ export default function Index() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 p-6 transition-colors duration-500">
         <div className="max-w-7xl mx-auto">
           {/* Main application header with responsive layout */}
           <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 md:gap-0">
             {/* Left section: University logo and title/description */}
-            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 text-center md:text-left">
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 text-center md:text-left animate-fade-in">
               <img
-                src="/CUKLogo.ico"
+                src="/favicon.ico"
                 alt="CUK Logo"
-                className="w-16 h-16 md:w-20 md:h-20 mt-1" // Responsive logo size
+                className="w-16 h-16 md:w-20 md:h-20 mt-1 transition-transform duration-300 hover:scale-110 animate-scale-in" // Responsive logo size
               />
               <div>
-                <h1 className="text-2xl md:text-4xl font-bold text-gray-900"> {/* Responsive title size */}
+                <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300"> {/* Responsive title size */}
                   Central University of Kashmir
                 </h1>
-                <p className="text-sm md:text-base text-gray-600"> {/* Responsive paragraph size */}
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 transition-colors duration-300"> {/* Responsive paragraph size */}
                   Generate optimized exam schedules with custom gap settings and
                   drag & drop interface
                   <br /> {/* Forces a line break on all screen sizes */}
@@ -826,7 +827,7 @@ export default function Index() {
                     href="https://m4milaad.github.io/Resume/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold underline text-blue-600 hover:text-blue-800"
+                    className="font-bold underline text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300"
                   >
                     Milad Ajaz Bhat
                   </a>
@@ -835,11 +836,12 @@ export default function Index() {
             </div>
 
             {/* Right section: Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-4 md:mt-0"> {/* Buttons stack on smaller screens */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-4 md:mt-0 animate-fade-in"> {/* Buttons stack on smaller screens */}
+              <ThemeToggle />
               <Button
                 onClick={loadLastSchedule}
                 variant="outline"
-                className="flex items-center gap-2 w-full sm:w-auto"
+                className="flex items-center gap-2 w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-lg"
                 disabled={loadingLastSchedule}
               >
                 <RefreshCw
@@ -853,7 +855,7 @@ export default function Index() {
               <Button
                 onClick={() => navigate("/admin-login")}
                 variant="outline"
-                className="flex items-center gap-2 w-full sm:w-auto"
+                className="flex items-center gap-2 w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
                 <Settings className="w-4 h-4" />
                 Admin Panel
@@ -862,14 +864,18 @@ export default function Index() {
           </div>
 
           {isScheduleGenerated && (
-            <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
+            <div className="animate-fade-in">
+              <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
+            </div>
           )}
 
           {/* Semester selection card */}
-          <Card className="mb-6">
+          <Card className="mb-6 transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
-              <CardTitle>Semester Selection</CardTitle>
-              <CardDescription>
+              <CardTitle className="dark:text-gray-100 transition-colors duration-300">
+                Semester Selection
+              </CardTitle>
+              <CardDescription className="dark:text-gray-400 transition-colors duration-300">
                 Choose between odd or even semesters (includes both B.Tech and
                 M.Tech)
               </CardDescription>
@@ -881,11 +887,11 @@ export default function Index() {
                   setSemesterType(value as "odd" | "even")
                 }
               >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="odd" className="text-lg font-medium">
+                <TabsList className="grid w-full grid-cols-2 transition-all duration-300">
+                  <TabsTrigger value="odd" className="text-lg font-medium transition-all duration-300 hover:scale-105">
                     Odd Semesters
                   </TabsTrigger>
-                  <TabsTrigger value="even" className="text-lg font-medium">
+                  <TabsTrigger value="even" className="text-lg font-medium transition-all duration-300 hover:scale-105">
                     Even Semesters
                   </TabsTrigger>
                 </TabsList>
@@ -894,7 +900,7 @@ export default function Index() {
           </Card>
 
           {/* Main content grid for schedule settings and semester cards */}
-          <div className="grid lg:grid-cols-4 gap-6">
+          <div className="grid lg:grid-cols-4 gap-6 animate-fade-in">
             <ScheduleSettings
               startDate={startDate}
               endDate={endDate}
@@ -912,8 +918,8 @@ export default function Index() {
 
             <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
               {allSemesters.map((semester) => (
-                <SemesterCard
-                  key={semester}
+                <div key={semester} className="animate-fade-in" style={{ animationDelay: `${semester * 0.1}s` }}>
+                  <SemesterCard
                   semester={semester}
                   courseTeachers={courseTeachers}
                   selectedCourseTeachers={
@@ -930,17 +936,20 @@ export default function Index() {
                   onSaveGap={handleSaveGap}
                   onCancelGap={handleCancelGap}
                   onTempGapChange={setTempGapValue}
-                />
+                  />
+                </div>
               ))}
             </div>
           </div>
 
           {/* Display generated schedule table if available */}
           {isScheduleGenerated && (
-            <ScheduleTable
-              generatedSchedule={generatedSchedule}
-              onDragEnd={onDragEnd}
-            />
+            <div className="animate-fade-in">
+              <ScheduleTable
+                generatedSchedule={generatedSchedule}
+                onDragEnd={onDragEnd}
+              />
+            </div>
           )}
         </div>
       </div>

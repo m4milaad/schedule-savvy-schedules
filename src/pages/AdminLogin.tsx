@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Home, Eye, EyeOff } from 'lucide-react';
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { adminAuth } from '@/utils/adminAuth';
 
 const AdminLogin = () => {
@@ -89,31 +90,43 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 p-4 transition-colors duration-500">
       <div className="w-full max-w-md">
         {/* Home Button */}
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <Button 
             onClick={() => navigate('/')}
             variant="outline"
-            className="flex items-center gap-2 hover:bg-white/80"
+            className="flex items-center gap-2 hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all duration-300 hover:scale-105"
           >
             <Home className="w-4 h-4" />
             Back to Home
           </Button>
+          <ThemeToggle />
         </div>
 
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur">
+        <Card className="shadow-xl border-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur transition-all duration-500 hover:shadow-2xl animate-fade-in">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-slate-800">Admin Login</CardTitle>
-            <CardDescription className="text-slate-600">
+            <div className="flex items-center justify-center mb-4 animate-scale-in">
+              <img 
+                src="/favicon.ico" 
+                alt="CUK Logo" 
+                className="w-16 h-16 transition-transform duration-300 hover:scale-110"
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold text-slate-800 dark:text-slate-200 transition-colors duration-300">
+              Admin Login
+            </CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400 transition-colors duration-300">
               Enter your admin credentials to access the dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-slate-700">Username</Label>
+                <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                  Username
+                </Label>
                 <Input
                   id="username"
                   type="text"
@@ -121,12 +134,14 @@ const AdminLogin = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   placeholder="Enter username"
-                  className="border-slate-300 focus:border-blue-500"
+                  className="border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-slate-700">Password</Label>
+                <Label htmlFor="password" className="text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                  Password
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -135,7 +150,7 @@ const AdminLogin = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="Enter password"
-                    className="border-slate-300 focus:border-blue-500 pr-10"
+                    className="border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 pr-10 transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500"
                   />
                   <Button
                     type="button"
@@ -145,9 +160,9 @@ const AdminLogin = () => {
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-slate-400" />
+                      <EyeOff className="h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-300" />
                     ) : (
-                      <Eye className="h-4 w-4 text-slate-400" />
+                      <Eye className="h-4 w-4 text-slate-400 dark:text-slate-500 transition-colors duration-300" />
                     )}
                   </Button>
                 </div>
@@ -155,39 +170,12 @@ const AdminLogin = () => {
               
               <Button 
                 type="submit" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
+                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg" 
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-slate-50 rounded-lg border">
-              <p className="text-sm font-medium text-slate-700 mb-3">Demo Credentials:</p>
-              <div className="space-y-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-left"
-                  onClick={() => handleDemoLogin('admin', 'admin123')}
-                  disabled={isLoading}
-                >
-                  <span className="font-mono">admin / admin123</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-left"
-                  onClick={() => handleDemoLogin('m4milaad', 'milad3103')}
-                  disabled={isLoading}
-                >
-                  <span className="font-mono">m4milaad / milad3103</span>
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
