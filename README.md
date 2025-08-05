@@ -16,10 +16,12 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 - **Semester-wise Organization**: Separate management for odd/even semesters
 - **Real-time Feedback**: Instant validation of scheduling constraints
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Dark/Light Theme**: Beautiful animated theme switching with system preference detection
 
 ### **Administrative Tools**
-- **Course Management**: Add, edit, and delete course-teacher combinations
+- **Comprehensive Data Management**: Schools, departments, courses, teachers, venues, sessions, holidays, and students
 - **Bulk Import/Export**: Excel-based data import and export functionality
+- **User Management**: Secure admin user creation and management with bcrypt password hashing
 - **Custom Gap Settings**: Configure preparation days per course or use system defaults
 - **Schedule Persistence**: Save and retrieve generated schedules
 
@@ -28,11 +30,18 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 - **Detailed Reports**: Include gap information, first paper indicators, and program details
 - **Print-friendly Layouts**: Optimized for printing and sharing
 
+### **Mobile Application**
+- **Android App**: Native mobile app for students to view exam schedules
+- **Real-time Sync**: Always shows current schedule from database
+- **Offline Capability**: Cached data when offline
+- **Push Notifications**: Exam reminders and updates
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn package manager
+- Supabase account for database
 
 ### Installation
 
@@ -49,36 +58,73 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 
 3. **Set up environment variables**
    ```bash
-   # Database configuration is pre-configured for the CUK system
-   # No additional setup required for basic usage
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Update .env with your Supabase credentials
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-4. **Start the development server**
+4. **Set up the database**
+   - Import the provided SQL schema into your Supabase project
+   - Run the migration files in the `supabase/migrations` folder
+
+5. **Start the development server**
    ```bash
    npm run dev
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Open your browser and navigate to `http://localhost:8080`
    - The application will be running with hot-reload enabled
 
 ## 📋 Usage Guide
 
+### **For Students**
+
+1. **Create Account**
+   - Register with university email
+   - Select "Student" account type
+   - Enter enrollment number
+   - Choose department
+
+2. **View Schedule**
+   - Access personal exam schedule
+   - Filter by semester
+   - View exam details and venues
+
+3. **Mobile App**
+   - Download the Android APK
+   - View schedules offline
+   - Get push notifications
+
 ### **For Administrators**
 
 1. **Access Admin Panel**
-   - Click "Admin Panel" button on the homepage
+   - Navigate to `/admin-login`
    - Login with administrator credentials
+   - Access comprehensive dashboard
 
-2. **Manage Course Data**
-   - Add individual courses or bulk import via Excel
-   - Set custom gap days for specific courses
-   - Configure semester assignments and program types
+2. **Manage University Data**
+   - **Schools**: Add and manage schools
+   - **Departments**: Organize departments under schools
+   - **Courses**: Create course catalog with credits and types
+   - **Teachers**: Manage faculty information
+   - **Venues**: Set up exam venues with capacity
+   - **Sessions**: Configure academic sessions
+   - **Holidays**: Set holidays to exclude from scheduling
+   - **Students**: Manage student records
 
 3. **Bulk Data Management**
-   - Download Excel template for bulk uploads
-   - Import course data with validation
+   - Download Excel templates for bulk uploads
+   - Import data with validation
    - Export current data for backup or sharing
+
+4. **User Management**
+   - Create additional admin accounts
+   - Manage user permissions
+   - Secure password management with bcrypt
 
 ### **For Schedule Generation**
 
@@ -109,21 +155,32 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 - **Frontend**: React 18 with TypeScript
 - **UI Framework**: Tailwind CSS with shadcn/ui components
 - **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth + Custom Admin Auth
 - **Build Tool**: Vite
-- **State Management**: React Hooks
+- **State Management**: React Hooks + TanStack Query
 - **Drag & Drop**: react-beautiful-dnd
 - **Excel Processing**: xlsx library
+- **Mobile**: Capacitor for Android app
 
 ### **Database Schema**
-- **course_teacher_codes**: Course and teacher information with gap settings
-- **exam_schedules**: Generated exam schedules with constraints
+- **schools**: University schools/faculties
+- **departments**: Academic departments
+- **courses**: Course catalog with metadata
+- **teachers**: Faculty information
+- **venues**: Exam venues with capacity
+- **sessions**: Academic sessions/years
+- **holidays**: Holiday calendar
+- **students**: Student records
+- **datesheets**: Generated exam schedules
 - **admin_users**: Administrative access control
+- **profiles**: User profiles for authentication
 
 ### **Key Components**
 - **Schedule Generator**: Core algorithm for constraint-based scheduling
 - **Drag & Drop Interface**: Interactive schedule modification
-- **Admin Dashboard**: Course and data management
+- **Admin Dashboard**: Comprehensive data management
 - **Export System**: Excel and report generation
+- **Mobile App**: Android application for students
 
 ## 🔧 Configuration
 
@@ -146,15 +203,19 @@ course.gap_days: 1-10 days
 - Program-specific semester handling
 
 ### **Time Slots**
-- **Regular Days**: 12:00 PM - 3:00 PM
-- **Fridays**: 11:00 AM - 2:00 PM
+- **Regular Days**: 12:00 PM - 2:30 PM
+- **Fridays**: 11:00 AM - 1:30 PM
 
 ## 📊 Data Management
 
 ### **Excel Import Format**
-| Course Code | Teacher Code | Semester | Course Name | Teacher Name |
-|-------------|--------------|----------|-------------|--------------|
-| BT-101      | AH          | 1        | Business Tech | Ahmad Hassan |
+| Field | Description | Required |
+|-------|-------------|----------|
+| Course Code | Unique course identifier | Yes |
+| Course Name | Full course name | Yes |
+| Teacher Name | Faculty member name | Yes |
+| Semester | Semester number (1-12) | Yes |
+| Program Type | B.Tech or M.Tech | Yes |
 
 ### **Supported Operations**
 - Bulk course import/export
@@ -164,10 +225,12 @@ course.gap_days: 1-10 days
 
 ## 🛡️ Security Features
 
-- **Admin Authentication**: Secure login system for administrative access
-- **Data Validation**: Input validation and constraint checking
+- **Supabase Authentication**: Secure user registration and login
+- **Admin Authentication**: Separate admin login system with bcrypt password hashing
+- **Row Level Security**: Database-level access control
 - **Session Management**: Secure session handling
-- **Access Control**: Role-based access to administrative functions
+- **Role-based Access**: Different permissions for students, admins, and department admins
+- **Data Validation**: Input validation and constraint checking
 
 ## 🎨 User Interface
 
@@ -176,6 +239,7 @@ course.gap_days: 1-10 days
 - **Visual Feedback**: Real-time validation and status indicators
 - **Responsive Layout**: Optimized for all screen sizes
 - **Accessibility**: WCAG-compliant design patterns
+- **Dark/Light Theme**: Animated theme switching with smooth transitions
 
 ### **Color Coding**
 - **B.Tech Semesters**: Red (1-2), Blue (3-4), Green (5-6), Purple (7-8)
@@ -188,6 +252,7 @@ course.gap_days: 1-10 days
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
+npm run build:dev    # Build for development
 npm run preview      # Preview production build
 npm run lint         # Run ESLint
 ```
@@ -199,12 +264,46 @@ npm run lint         # Run ESLint
 - Write descriptive commit messages
 - Test thoroughly before deployment
 
+## 📱 Mobile App Development
+
+### **Android Build**
+```bash
+# Build web app
+npm run build
+
+# Sync with Capacitor
+npx cap sync android
+
+# Open in Android Studio
+npx cap open android
+```
+
+### **Features**
+- Native Android application
+- Real-time data synchronization
+- Offline capability
+- Push notifications
+- Material Design UI
+
 ## 📈 Performance Optimization
 
 - **Code Splitting**: Lazy loading for optimal performance
-- **Caching**: Efficient data caching strategies
+- **Caching**: Efficient data caching strategies with TanStack Query
 - **Bundle Optimization**: Minimized production builds
 - **Database Indexing**: Optimized queries for large datasets
+- **Image Optimization**: Proper favicon and asset management
+
+## 🚀 Deployment
+
+### **Web Application**
+- Deploy to Netlify, Vercel, or any static hosting
+- Configure environment variables
+- Set up custom domain
+
+### **Mobile Application**
+- Build APK using Android Studio
+- Sign with production keystore
+- Distribute via Google Play Store or direct APK
 
 ## 🤝 Contributing
 
@@ -214,15 +313,65 @@ This system is specifically designed for Central University of Kashmir. For modi
 2. Ensure all changes maintain backward compatibility
 3. Test thoroughly with realistic data sets
 4. Document any new features or configuration options
+5. Follow the component separation principles
 
 ## 📞 Support
 
-For technical support or feature requests related to the Central University of Kashmir Exam Scheduling System, please contact the development team.
+For technical support or feature requests related to the Central University of Kashmir Exam Scheduling System:
 
-## 👨‍💻 Developer
+- **Developer**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)
+- **Email**: mb4milad.bhattt@gmail.com
+- **University**: Central University of Kashmir
 
-**Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)
+## 🔐 Admin Setup
+
+### **Creating Admin Users**
+1. Generate bcrypt hash for password:
+   ```javascript
+   const bcrypt = require('bcryptjs');
+   bcrypt.hash('your_password', 10, (err, hash) => {
+     console.log('Hash:', hash);
+   });
+   ```
+
+2. Insert into database:
+   ```sql
+   INSERT INTO admin_users (username, password_hash, full_name, email, is_active)
+   VALUES ('admin', 'generated_hash_here', 'Administrator', 'admin@cukashmir.ac.in', true);
+   ```
+
+## 📋 Database Schema
+
+### **Core Tables**
+- `schools` - University schools/faculties
+- `departments` - Academic departments
+- `courses` - Course catalog
+- `teachers` - Faculty information
+- `students` - Student records
+- `venues` - Exam venues
+- `sessions` - Academic sessions
+- `holidays` - Holiday calendar
+- `datesheets` - Exam schedules
+- `admin_users` - Admin authentication
+- `profiles` - User profiles
+
+### **Authentication Tables**
+- `profiles` - User profiles linked to Supabase auth
+- `admin_users` - Separate admin authentication system
+
+## 🎯 Future Enhancements
+
+- **Advanced Analytics**: Exam statistics and reporting
+- **Email Notifications**: Automated exam reminders
+- **Calendar Integration**: Sync with Google Calendar
+- **API Development**: REST API for third-party integrations
+- **Multi-language Support**: Hindi and Urdu language options
 
 ---
+
+**Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)  
+**Institution**: Central University of Kashmir  
+**Version**: 2.0.0  
+**Last Updated**: January 2025
 
 *This system is specifically designed for Central University of Kashmir's academic scheduling needs, incorporating institutional requirements and constraints for optimal exam timetable generation.*

@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 interface BulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays';
+  type: 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays' | 'students';
   onUpload: (data: any[]) => Promise<void>;
 }
 
@@ -46,6 +46,14 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
         holiday_date: '2024-01-01', 
         holiday_description: 'New Year Day', 
         is_recurring: true 
+      }],
+      students: [{ 
+        student_name: 'John Doe', 
+        student_enrollment_no: 'CUK2024001', 
+        student_email: 'john.doe@cukashmir.ac.in', 
+        student_address: '123 Main St, Srinagar', 
+        dept_id: 'dept-uuid-here',
+        student_year: 1 
       }]
     };
     return templates[type];
