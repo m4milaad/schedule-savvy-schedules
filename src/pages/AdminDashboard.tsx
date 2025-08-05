@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { adminAuth } from "@/utils/adminAuth";
-import { School, Department, Course, Teacher, Venue, Session, Holiday } from "@/types/examSchedule";
+import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
 import { CoursesTab } from "@/components/admin/CoursesTab";
@@ -16,6 +16,7 @@ import { TeachersTab } from "@/components/admin/TeachersTab";
 import { VenuesTab } from "@/components/admin/VenuesTab";
 import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
+import { StudentsTab } from "@/components/admin/StudentsTab";
 
 const AdminDashboard = () => {
   const [schools, setSchools] = useState<School[]>([]);
@@ -25,6 +26,7 @@ const AdminDashboard = () => {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -54,7 +56,8 @@ const AdminDashboard = () => {
         loadTeachers(),
         loadVenues(),
         loadSessions(),
-        loadHolidays()
+        loadHolidays(),
+        loadStudents()
       ]);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -153,6 +156,16 @@ const AdminDashboard = () => {
     setHolidays(transformedHolidays);
   };
 
+  const loadStudents = async () => {
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .order('student_name');
+    
+    if (error) throw error;
+    setStudents(data || []);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -213,7 +226,7 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="schools" className="space-y-6 animate-fade-in">
-          <TabsList className="grid w-full grid-cols-7 transition-all duration-300">
+          <TabsList className="grid w-full grid-cols-8 transition-all duration-300">
             <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105">Schools</TabsTrigger>
             <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105">Departments</TabsTrigger>
             <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105">Courses</TabsTrigger>
@@ -221,6 +234,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105">Venues</TabsTrigger>
             <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105">Sessions</TabsTrigger>
             <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105">Holidays</TabsTrigger>
+            <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105">Students</TabsTrigger>
           </TabsList>
 
           <TabsContent value="schools" className="animate-fade-in">
@@ -249,6 +263,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="holidays" className="animate-fade-in">
             <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />
+          </TabsContent>
+
+          <TabsContent value="students" className="animate-fade-in">
+            <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />
           </TabsContent>
         </Tabs>
       </div>
