@@ -157,13 +157,28 @@ const AdminDashboard = () => {
   };
 
   const loadStudents = async () => {
-    const { data, error } = await supabase
+    try {
+      console.log('Loading students from database...');
+      const { data, error } = await supabase
       .from('students')
       .select('*')
       .order('student_name');
     
-    if (error) throw error;
-    setStudents(data || []);
+      if (error) {
+        console.error('Error loading students:', error);
+        throw error;
+      }
+      
+      console.log('Students loaded:', data?.length || 0);
+      setStudents(data || []);
+    } catch (error) {
+      console.error('Failed to load students:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load students data",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
