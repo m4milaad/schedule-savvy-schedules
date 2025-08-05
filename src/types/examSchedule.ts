@@ -91,3 +91,15 @@ export interface Session {
   created_at: string;
   updated_at: string;
 }
+
+export interface Student {
+  student_id: string;
+  student_name: string;
+  student_enrollment_no: string;
+  student_email: string | null;
+  student_address: string | null;
+  dept_id: string | null;
+  student_year: number;
+  created_at: string;
+  updated_at: string;
+}
