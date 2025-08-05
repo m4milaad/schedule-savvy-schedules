@@ -6,10 +6,10 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 
 ### **Smart Scheduling Engine**
 - **Gap-based Constraints**: Configurable preparation days between consecutive exams for each semester
-- **Multi-Program Support**: Handles both B.Tech (Semesters 1-8) and M.Tech (Semesters 9-12) programs
-- **Conflict Detection**: Prevents scheduling conflicts across multiple semesters
+- **Multi-Program Support**: Handles all programs University offers
+- **Conflict Detection**: Prevents scheduling conflicts across multiple students
 - **Holiday Management**: Excludes weekends and custom holidays from exam dates
-- **Capacity Management**: Maximum 4 exams per day with semester-wise distribution
+- **Capacity Management**: Genrates exams per day with semester-wise distribution and Venue capacity
 
 ### **Interactive Interface**
 - **Drag & Drop Rescheduling**: Visual interface to reschedule exams with real-time validation
@@ -47,8 +47,8 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/cuk-official/exam-schedule-system.git
-   cd exam-schedule-system
+   git clone https://github.com/m4milaad/schedule-savvy-schedules.git
+   cd schedule-savvy-schedules
    ```
 
 2. **Install dependencies**
@@ -78,6 +78,7 @@ A comprehensive, production-ready exam scheduling system designed for Central Un
 6. **Access the application**
    - Open your browser and navigate to `http://localhost:8080`
    - The application will be running with hot-reload enabled
+   - You can also use it over vercel deployment `https://ds-cuk.vercel.app/`
 
 ## 📋 Usage Guide
 
@@ -196,11 +197,11 @@ course.gap_days: 1-10 days
 ```
 
 ### **Scheduling Constraints**
-- Maximum 4 exams per day
+- Maximum exams as per venue capacity per day
 - One exam per semester per day
 - Configurable gap days between consecutive exams
 - Weekend and holiday exclusions
-- Program-specific semester handling
+- Student-specific conflict handling
 
 ### **Time Slots**
 - **Regular Days**: 12:00 PM - 2:30 PM
@@ -371,7 +372,7 @@ For technical support or feature requests related to the Central University of K
 
 **Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)  
 **Institution**: Central University of Kashmir  
-**Version**: 2.0.0  
-**Last Updated**: January 2025
+**Version**: 2.3.4 beta
+**Last Updated**: August 2025
 
 *This system is specifically designed for Central University of Kashmir's academic scheduling needs, incorporating institutional requirements and constraints for optimal exam timetable generation.*
