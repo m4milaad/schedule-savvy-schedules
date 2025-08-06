@@ -298,16 +298,16 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
               <GraduationCap className="w-8 h-8 text-blue-600" />
               Student Dashboard
             </h1>
-            <p className="text-gray-600">Welcome, {profile?.full_name}</p>
+            <p className="text-muted-foreground">Welcome, {profile?.full_name}</p>
           </div>
           <Button onClick={signOut} variant="outline" className="flex items-center gap-2">
             <LogOut className="w-4 h-4" />
