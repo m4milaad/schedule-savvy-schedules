@@ -280,7 +280,7 @@ const StudentDashboard = () => {
   const filteredCourses = availableCourses.filter(course => {
     const matchesSearch = course.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.course_code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSemester = !semesterFilter || course.semester.toString() === semesterFilter;
+    const matchesSemester = !semesterFilter || semesterFilter === 'all' || course.semester.toString() === semesterFilter;
     const notEnrolled = !enrollments.some(enrollment => enrollment.course_id === course.course_id);
     
     return matchesSearch && matchesSemester && notEnrolled;
@@ -408,7 +408,7 @@ const StudentDashboard = () => {
                       <SelectValue placeholder="Filter by semester" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Semesters</SelectItem>
+                      <SelectItem value="all">All Semesters</SelectItem>
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(sem => (
                         <SelectItem key={sem} value={sem.toString()}>
                           Semester {sem}
