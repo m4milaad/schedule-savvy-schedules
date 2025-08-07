@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit2, Trash2, Upload } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Edit2, Trash2, Upload, BookOpen } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
@@ -20,6 +21,8 @@ interface Student {
     student_address: string | null;
     dept_id: string | null;
     student_year: number;
+    semester: number;
+    abc_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -27,6 +30,11 @@ interface Student {
 interface Department {
     dept_id: string;
     dept_name: string;
+}
+
+interface StudentEnrollment {
+    course_code: string;
+    course_name: string;
 }
 
 interface StudentsTabProps {
@@ -40,20 +48,63 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
+    const [studentEnrollments, setStudentEnrollments] = useState<Record<string, StudentEnrollment[]>>({});
     const [formData, setFormData] = useState({
         student_name: '',
         student_enrollment_no: '',
         student_email: '',
         student_address: '',
         dept_id: '',
-        student_year: 1
+        student_year: 1,
+        semester: 1,
+        abc_id: ''
     });
     const { toast } = useToast();
+
+    // Load enrolled subjects for all students
+    React.useEffect(() => {
+        loadStudentEnrollments();
+    }, [students]);
+
+    const loadStudentEnrollments = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('student_courses')
+                .select(`
+                    student_id,
+                    courses (
+                        course_code,
+                        course_name
+                    )
+                `)
+                .in('student_id', students.map(s => s.student_id));
+
+            if (error) throw error;
+
+            const enrollmentMap: Record<string, StudentEnrollment[]> = {};
+            (data || []).forEach((item: any) => {
+                if (!enrollmentMap[item.student_id]) {
+                    enrollmentMap[item.student_id] = [];
+                }
+                if (item.courses) {
+                    enrollmentMap[item.student_id].push({
+                        course_code: item.courses.course_code,
+                        course_name: item.courses.course_name
+                    });
+                }
+            });
+
+            setStudentEnrollments(enrollmentMap);
+        } catch (error) {
+            console.error('Error loading student enrollments:', error);
+        }
+    };
 
     const filteredStudents = students.filter(student =>
         student.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.student_enrollment_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (student.student_email && student.student_email.toLowerCase().includes(searchTerm.toLowerCase()))
+        (student.student_email && student.student_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (student.abc_id && student.abc_id.includes(searchTerm))
     );
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -68,11 +119,26 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             return;
         }
 
+        // Validate ABC ID is numeric only
+        if (formData.abc_id && !/^\d+$/.test(formData.abc_id)) {
+            toast({
+                title: "Error",
+                description: "ABC ID must contain only numbers",
+                variant: "destructive",
+            });
+            return;
+        }
+
         try {
+            const submitData = {
+                ...formData,
+                abc_id: formData.abc_id || null
+            };
+
             if (editingStudent) {
                 const { error } = await supabase
                     .from('students')
-                    .update(formData)
+                    .update(submitData)
                     .eq('student_id', editingStudent.student_id);
 
                 if (error) throw error;
@@ -84,7 +150,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             } else {
                 const { error } = await supabase
                     .from('students')
-                    .insert(formData);
+                    .insert(submitData);
 
                 if (error) throw error;
 
@@ -96,7 +162,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
             resetForm();
             onRefresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving student:', error);
             toast({
                 title: "Error",
@@ -114,7 +180,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             student_email: student.student_email || '',
             student_address: student.student_address || '',
             dept_id: student.dept_id || '',
-            student_year: student.student_year
+            student_year: student.student_year,
+            semester: student.semester || 1,
+            abc_id: student.abc_id || ''
         });
         setIsDialogOpen(true);
     };
@@ -133,7 +201,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 description: "Student deleted successfully",
             });
             onRefresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting student:', error);
             toast({
                 title: "Error",
@@ -145,17 +213,24 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const handleBulkUpload = async (data: any[]) => {
         try {
+            // Validate ABC IDs are numeric
+            const invalidAbcIds = data.filter(item => item.abc_id && !/^\d+$/.test(item.abc_id));
+            if (invalidAbcIds.length > 0) {
+                throw new Error('ABC ID must contain only numbers');
+            }
+
             const { error } = await supabase
                 .from('students')
                 .insert(data);
 
             if (error) throw error;
             onRefresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Bulk upload error:', error);
             throw error;
         }
     };
+
     const resetForm = () => {
         setFormData({
             student_name: '',
@@ -163,7 +238,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             student_email: '',
             student_address: '',
             dept_id: '',
-            student_year: 1
+            student_year: 1,
+            semester: 1,
+            abc_id: ''
         });
         setEditingStudent(null);
         setIsDialogOpen(false);
@@ -175,11 +252,17 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         return dept ? dept.dept_name : 'Unknown';
     };
 
+    const handleAbcIdChange = (value: string) => {
+        // Only allow numeric input
+        const numericValue = value.replace(/\D/g, '');
+        setFormData({ ...formData, abc_id: numericValue });
+    };
+
     return (
-        <Card className="transition-all duration-300 hover:shadow-lg">
+        <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
                 <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                         Students ({students.length})
                     </CardTitle>
                     <div className="flex gap-2">
@@ -203,7 +286,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 transition-colors duration-300" />
                         <Input
-                            placeholder="Search students by name, enrollment number, or email..."
+                            placeholder="Search students by name, enrollment number, email, or ABC ID..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
@@ -217,9 +300,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                             <TableRow>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300">Name</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300">Enrollment No</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300">ABC ID</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300">Email</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Year</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Year/Semester</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Enrolled Subjects</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -232,9 +317,39 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 >
                                     <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">{student.student_name}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_enrollment_no}</TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
+                                        {student.abc_id ? (
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                {student.abc_id}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-gray-400">Not Set</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_email || 'N/A'}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">{getDepartmentName(student.dept_id)}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_year} Year</TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
+                                        <div className="flex flex-col gap-1">
+                                            <Badge variant="secondary">Year {student.student_year}</Badge>
+                                            <Badge variant="outline">Sem {student.semester || 1}</Badge>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
+                                        <div className="flex flex-wrap gap-1 max-w-48">
+                                            {studentEnrollments[student.student_id]?.length > 0 ? (
+                                                studentEnrollments[student.student_id].map((enrollment, idx) => (
+                                                    <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                                        {enrollment.course_code}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-gray-400 text-sm flex items-center gap-1">
+                                                    <BookOpen className="w-3 h-3" />
+                                                    No enrollments
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex gap-2">
                                             <Button
@@ -276,7 +391,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                             ))}
                             {filteredStudents.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8 transition-colors duration-300">
+                                    <TableCell colSpan={8} className="text-center text-gray-500 dark:text-gray-400 py-8 transition-colors duration-300">
                                         {searchTerm ? 'No students found matching your search.' : 'No students found. Click "Add Student" to create the first student record.'}
                                     </TableCell>
                                 </TableRow>
@@ -289,7 +404,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>
+                        <DialogTitle className="dark:text-gray-100 transition-colors duration-300">
                             {editingStudent ? 'Edit Student' : 'Add New Student'}
                         </DialogTitle>
                     </DialogHeader>
@@ -314,6 +429,18 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 placeholder="Enter enrollment number"
                                 className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                                 required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="abc_id" className="dark:text-gray-300 transition-colors duration-300">ABC ID (Numeric Only)</Label>
+                            <Input
+                                id="abc_id"
+                                value={formData.abc_id}
+                                onChange={(e) => handleAbcIdChange(e.target.value)}
+                                placeholder="Enter ABC ID (numbers only)"
+                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                pattern="[0-9]*"
+                                inputMode="numeric"
                             />
                         </div>
                         <div>
@@ -352,19 +479,36 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                            <Label htmlFor="student_year" className="dark:text-gray-300 transition-colors duration-300">Year</Label>
-                            <Select value={formData.student_year.toString()} onValueChange={(value) => setFormData({ ...formData, student_year: parseInt(value) })}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select year" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">1st Year</SelectItem>
-                                    <SelectItem value="2">2nd Year</SelectItem>
-                                    <SelectItem value="3">3rd Year</SelectItem>
-                                    <SelectItem value="4">4th Year</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="student_year" className="dark:text-gray-300 transition-colors duration-300">Year</Label>
+                                <Select value={formData.student_year.toString()} onValueChange={(value) => setFormData({ ...formData, student_year: parseInt(value) })}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">1st Year</SelectItem>
+                                        <SelectItem value="2">2nd Year</SelectItem>
+                                        <SelectItem value="3">3rd Year</SelectItem>
+                                        <SelectItem value="4">4th Year</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="semester" className="dark:text-gray-300 transition-colors duration-300">Semester</Label>
+                                <Select value={formData.semester.toString()} onValueChange={(value) => setFormData({ ...formData, semester: parseInt(value) })}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select semester" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(sem => (
+                                            <SelectItem key={sem} value={sem.toString()}>
+                                                Semester {sem}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <div className="flex gap-2">
                             <Button type="submit" className="flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg">
