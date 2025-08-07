@@ -8,6 +8,9 @@ export interface Profile {
   full_name: string;
   email?: string;
   contact_no?: string;
+  address?: string;
+  semester?: number;
+  abc_id?: string;
   created_at: string;
   updated_at: string;
 }
