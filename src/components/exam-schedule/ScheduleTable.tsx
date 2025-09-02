@@ -48,7 +48,7 @@ export const ScheduleTable = ({
         <CardDescription>
           <div className="space-y-1">
             <div>
-              Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements
+              Constraints: Max 4 exams per day, 1 exam per semester per day, individual gap requirements, no student overlaps
             </div>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1">

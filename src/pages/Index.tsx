@@ -29,6 +29,7 @@ import { ScheduleStatusCard } from "@/components/exam-schedule/ScheduleStatusCar
 import { SemesterCard } from "@/components/exam-schedule/SemesterCard";
 import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Index() {
   // State management for various scheduling parameters and data
@@ -334,9 +335,47 @@ export default function Index() {
         return acc;
       }, {} as Record<number, CourseTeacher[]>);
 
+      // Load student enrollment data to prevent overlaps
+      const { data: studentEnrollments, error: enrollmentError } = await supabase
+        .from('student_enrollments')
+        .select(`
+          student_id,
+          course_id,
+          courses (
+            course_code,
+            semester
+          )
+        `)
+        .eq('is_active', true);
+
+      if (enrollmentError) {
+        console.error('Error loading student enrollments:', enrollmentError);
+        toast({
+          title: "Warning",
+          description: "Could not load student enrollment data. Student overlap prevention may not work properly.",
+          variant: "destructive",
+        });
+      }
+
+      // Create student-course mapping for overlap detection
+      const studentCourseMap: Record<string, string[]> = {};
+      if (studentEnrollments) {
+        studentEnrollments.forEach((enrollment: any) => {
+          const studentId = enrollment.student_id;
+          const courseCode = enrollment.courses?.course_code;
+          if (studentId && courseCode) {
+            if (!studentCourseMap[studentId]) {
+              studentCourseMap[studentId] = [];
+            }
+            studentCourseMap[studentId].push(courseCode);
+          }
+        });
+      }
+
       const schedule: ExamScheduleItem[] = [];
       const dateScheduleCount: Record<string, number> = {}; // Tracks exams per day
       const semesterLastScheduledDate: Record<number, string> = {}; // Tracks last scheduled date for each semester
+      const studentExamDates: Record<string, Set<string>> = {}; // Tracks exam dates for each student to prevent overlaps
 
       let currentDateIndex = 0;
       let allCoursesScheduled = false;
@@ -422,6 +461,24 @@ export default function Index() {
           );
 
           if (unscheduledCourse) {
+            // Check for student overlap before scheduling
+            const studentsEnrolledInCourse = Object.keys(studentCourseMap).filter(
+              studentId => studentCourseMap[studentId].includes(unscheduledCourse.course_code)
+            );
+
+            // Check if any student enrolled in this course already has an exam on this date
+            const hasStudentOverlap = studentsEnrolledInCourse.some(studentId => {
+              if (!studentExamDates[studentId]) {
+                studentExamDates[studentId] = new Set();
+              }
+              return studentExamDates[studentId].has(dateKey);
+            });
+
+            if (hasStudentOverlap) {
+              // Skip this course for now if it would create a student overlap
+              continue;
+            }
+
             const isFirstPaper = !schedule.some(
               (exam) => exam.semester === semester
             );
@@ -447,6 +504,14 @@ export default function Index() {
               is_first_paper: isFirstPaper,
               venue_name: "Main Hall", // Default venue
             };
+
+            // Record this exam date for all students enrolled in the course
+            studentsEnrolledInCourse.forEach(studentId => {
+              if (!studentExamDates[studentId]) {
+                studentExamDates[studentId] = new Set();
+              }
+              studentExamDates[studentId].add(dateKey);
+            });
 
             schedule.push(exam);
             scheduledToday++;
@@ -483,7 +548,7 @@ export default function Index() {
 
       toast({
         title: "Success",
-        description: `Generated schedule for ${schedule.length} exams with individual gap requirements`,
+        description: `Generated schedule for ${schedule.length} exams with gap requirements and no student overlaps`,
       });
     } catch (error) {
       console.error("Error generating schedule:", error);
