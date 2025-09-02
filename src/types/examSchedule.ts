@@ -100,6 +100,8 @@ export interface Student {
   student_address: string | null;
   dept_id: string | null;
   student_year: number;
+  semester: number;
+  abc_id: string | null;
   created_at: string;
   updated_at: string;
 }
