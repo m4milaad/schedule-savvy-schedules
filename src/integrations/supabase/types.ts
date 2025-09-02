@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -280,36 +280,45 @@ export type Database = {
       }
       profiles: {
         Row: {
+          abc_id: string | null
+          address: string | null
           contact_no: string | null
           created_at: string | null
           dept_id: string | null
           email: string | null
           full_name: string
           id: string
+          semester: number | null
           student_enrollment_no: string | null
           updated_at: string | null
           user_id: string | null
           user_type: string
         }
         Insert: {
+          abc_id?: string | null
+          address?: string | null
           contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           email?: string | null
           full_name: string
           id?: string
+          semester?: number | null
           student_enrollment_no?: string | null
           updated_at?: string | null
           user_id?: string | null
           user_type: string
         }
         Update: {
+          abc_id?: string | null
+          address?: string | null
           contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           email?: string | null
           full_name?: string
           id?: string
+          semester?: number | null
           student_enrollment_no?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -468,8 +477,10 @@ export type Database = {
       }
       students: {
         Row: {
+          abc_id: string | null
           created_at: string | null
           dept_id: string | null
+          semester: number | null
           student_address: string | null
           student_email: string | null
           student_enrollment_no: string
@@ -479,8 +490,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          abc_id?: string | null
           created_at?: string | null
           dept_id?: string | null
+          semester?: number | null
           student_address?: string | null
           student_email?: string | null
           student_enrollment_no: string
@@ -490,8 +503,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          abc_id?: string | null
           created_at?: string | null
           dept_id?: string | null
+          semester?: number | null
           student_address?: string | null
           student_email?: string | null
           student_enrollment_no?: string
@@ -635,29 +650,29 @@ export type Database = {
       get_exam_schedule_data: {
         Args: Record<PropertyKey, never>
         Returns: {
-          exam_date: string
           course_code: string
           course_name: string
-          venue_name: string
+          exam_date: string
           session_name: string
+          venue_name: string
         }[]
       }
       get_schedule_data: {
         Args: {
-          p_semester?: number
-          p_program_type?: string
           p_course_code?: string
+          p_program_type?: string
+          p_semester?: number
         }
         Returns: {
           assignment_id: string
           course_code: string
-          teacher_code: string
           course_name: string
-          teacher_name: string
-          semester: number
-          program_type: string
           gap_days: number
           has_exam_scheduled: boolean
+          program_type: string
+          semester: number
+          teacher_code: string
+          teacher_name: string
         }[]
       }
       get_user_department: {
@@ -672,12 +687,12 @@ export type Database = {
         Args: {
           p_action: string
           p_course_code: string
-          p_teacher_code: string
           p_course_name?: string
-          p_teacher_name?: string
-          p_semester?: number
-          p_program_type?: string
           p_gap_days?: number
+          p_program_type?: string
+          p_semester?: number
+          p_teacher_code: string
+          p_teacher_name?: string
         }
         Returns: Json
       }
@@ -685,8 +700,8 @@ export type Database = {
         Args: {
           p_action: string
           p_holiday_date: string
-          p_holiday_name: string
           p_holiday_description?: string
+          p_holiday_name: string
           p_is_recurring?: boolean
         }
         Returns: Json
