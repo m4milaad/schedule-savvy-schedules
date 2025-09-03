@@ -105,115 +105,108 @@ export const CourseEnrollmentCard = ({
               className="w-5 h-5"
             />
             <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
+              <CardTitle className="text-xl font-bold text-primary">
                 {courseTeacher.course_code}
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 {courseTeacher.course_name}
               </p>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                <span className="flex items-center gap-1">
+                  👨‍🏫 {courseTeacher.teacher_name || 'TBD'}
+                </span>
+                <span>🏢 {courseTeacher.dept_name}</span>
+                <Badge variant="outline" className="text-xs">
+                  {getSemesterDisplay(courseTeacher.semester)}
+                </Badge>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {getSemesterDisplay(courseTeacher.semester)}
-            </Badge>
             <Badge variant="outline" className="text-xs flex items-center gap-1">
               <Users className="h-3 w-3" />
               {enrolledStudents.length} Students
             </Badge>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              {editingGap === courseTeacher.id ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    value={tempGapValue}
+                    onChange={(e) => onTempGapChange(parseInt(e.target.value) || 0)}
+                    min="0"
+                    max="10"
+                    className="w-16 h-7 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onSaveGap(courseTeacher.id)}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Check className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onCancelGap}
+                    className="h-7 w-7 p-0"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">{courseTeacher.gap_days} days</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onEditGap(courseTeacher.id, courseTeacher.gap_days)}
+                    className="h-7 w-7 p-0"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
       
       <CardContent className="pt-0">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              👨‍🏫 {courseTeacher.teacher_name || 'TBD'}
-            </span>
-            <span className="flex items-center gap-1">
-              🏢 {courseTeacher.dept_name}
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            {editingGap === courseTeacher.id ? (
-              <div className="flex items-center gap-1">
-                <Input
-                  type="number"
-                  value={tempGapValue}
-                  onChange={(e) => onTempGapChange(parseInt(e.target.value) || 0)}
-                  min="0"
-                  max="10"
-                  className="w-16 h-7 text-xs"
-                />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onSaveGap(courseTeacher.id)}
-                  className="h-7 w-7 p-0"
-                >
-                  <Check className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onCancelGap}
-                  className="h-7 w-7 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <span className="text-sm">{courseTeacher.gap_days} days</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEditGap(courseTeacher.id, courseTeacher.gap_days)}
-                  className="h-7 w-7 p-0"
-                >
-                  <Edit2 className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {enrolledStudents.length > 0 && (
+        {enrolledStudents.length > 0 ? (
           <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-between h-8 text-xs"
+                className="w-full justify-between h-8 text-sm mb-3"
               >
-                <span>View Enrolled Students ({enrolledStudents.length})</span>
+                <span>Enrolled Students ({enrolledStudents.length})</span>
                 <ChevronDown className={`h-4 w-4 transition-transform ${
                   isExpanded ? 'rotate-180' : ''
                 }`} />
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent>
-              <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <div className="p-3 bg-muted/50 rounded-lg">
                 {loading ? (
                   <p className="text-center text-sm text-muted-foreground">Loading students...</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {enrolledStudents.map((student) => (
                       <div
                         key={student.student_id}
-                        className="p-2 bg-background rounded border text-xs"
+                        className="p-3 bg-background rounded border text-sm"
                       >
-                        <div className="font-medium">{student.student_name}</div>
-                        <div className="text-muted-foreground">
-                          {student.student_enrollment_no}
+                        <div className="font-medium text-primary">{student.student_name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          📋 {student.student_enrollment_no}
                         </div>
                         {student.abc_id && (
-                          <div className="text-muted-foreground">
-                            ABC: {student.abc_id}
+                          <div className="text-xs text-muted-foreground">
+                            🆔 ABC: {student.abc_id}
                           </div>
                         )}
                       </div>
@@ -223,6 +216,11 @@ export const CourseEnrollmentCard = ({
               </div>
             </CollapsibleContent>
           </Collapsible>
+        ) : (
+          <div className="text-center py-4 text-muted-foreground">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No students enrolled in this course</p>
+          </div>
         )}
       </CardContent>
     </Card>
