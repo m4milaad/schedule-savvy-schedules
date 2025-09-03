@@ -26,6 +26,13 @@ export interface ExamScheduleItem {
   gap_days: number;
   is_first_paper?: boolean;
   venue_name?: string;
+  enrolled_students_count?: number;
+  enrolled_students?: {
+    student_id: string;
+    student_name: string;
+    student_enrollment_no: string;
+    abc_id?: string;
+  }[];
 }
 
 export interface Holiday {
