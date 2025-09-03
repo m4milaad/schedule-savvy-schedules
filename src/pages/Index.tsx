@@ -208,14 +208,15 @@ export default function Index() {
   };
 
   /**
-   * Filters courses with enrolled students by course code.
-   * @returns {CourseTeacher[]} An array of course teachers with enrollment data.
+   * Gets all unique courses with their enrollment data.
+   * @returns {CourseTeacher[]} An array of all available courses.
    */
-  const getCoursesWithEnrollments = () => {
-    return courseTeachers.filter((ct) => {
-      // Check if this course has enrolled students
-      return allSemesters.includes(ct.semester);
-    });
+  const getAllAvailableCourses = () => {
+    // Filter courses by selected semester type
+    const filteredCourses = courseTeachers.filter((ct) => 
+      allSemesters.includes(ct.semester)
+    );
+    return filteredCourses;
   };
 
   /**
@@ -993,10 +994,10 @@ export default function Index() {
               onDownloadExcel={handleDownloadExcel}
             />
 
-            {/* Course selection with enrollment data */}
+            {/* Course selection by course code */}
             <div className="lg:col-span-3">
               <div className="grid gap-4">
-                {getCoursesWithEnrollments().map((courseTeacher) => (
+                {getAllAvailableCourses().map((courseTeacher) => (
                   <CourseEnrollmentCard
                     key={courseTeacher.id}
                     courseTeacher={courseTeacher}
