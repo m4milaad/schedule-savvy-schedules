@@ -30,6 +30,7 @@ import { SemesterCard } from "@/components/exam-schedule/SemesterCard";
 import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmentCard";
 
 export default function Index() {
   // State management for various scheduling parameters and data
@@ -204,6 +205,17 @@ export default function Index() {
       minimumDays: maxSemesterRequirement,
       semesterBreakdown: semesterRequirements
     };
+  };
+
+  /**
+   * Filters courses with enrolled students by course code.
+   * @returns {CourseTeacher[]} An array of course teachers with enrollment data.
+   */
+  const getCoursesWithEnrollments = () => {
+    return courseTeachers.filter((ct) => {
+      // Check if this course has enrolled students
+      return allSemesters.includes(ct.semester);
+    });
   };
 
   /**
@@ -981,29 +993,28 @@ export default function Index() {
               onDownloadExcel={handleDownloadExcel}
             />
 
-            <div className="lg:col-span-3 grid md:grid-cols-2 gap-4">
-              {allSemesters.map((semester) => (
-                <div key={semester} className="animate-fade-in" style={{ animationDelay: `${semester * 0.1}s` }}>
-                  <SemesterCard
-                  semester={semester}
-                  courseTeachers={courseTeachers}
-                  selectedCourseTeachers={
-                    selectedCourseTeachers[semester] || []
-                  }
-                  editingGap={editingGap}
-                  tempGapValue={tempGapValue}
-                  onToggleCourse={(courseId) =>
-                    toggleCourseTeacher(semester, courseId)
-                  }
-                  onSelectAll={() => selectAllForSemester(semester)}
-                  onDeselectAll={() => deselectAllForSemester(semester)}
-                  onEditGap={handleEditGap}
-                  onSaveGap={handleSaveGap}
-                  onCancelGap={handleCancelGap}
-                  onTempGapChange={setTempGapValue}
+            {/* Course selection with enrollment data */}
+            <div className="lg:col-span-3">
+              <div className="grid gap-4">
+                {getCoursesWithEnrollments().map((courseTeacher) => (
+                  <CourseEnrollmentCard
+                    key={courseTeacher.id}
+                    courseTeacher={courseTeacher}
+                    isSelected={Object.values(selectedCourseTeachers)
+                      .flat()
+                      .includes(courseTeacher.id)}
+                    onToggle={() => 
+                      toggleCourseTeacher(courseTeacher.semester, courseTeacher.id)
+                    }
+                    editingGap={editingGap}
+                    tempGapValue={tempGapValue}
+                    onEditGap={handleEditGap}
+                    onSaveGap={handleSaveGap}
+                    onCancelGap={handleCancelGap}
+                    onTempGapChange={setTempGapValue}
                   />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 
