@@ -881,31 +881,30 @@ export default function Index() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 p-6 transition-colors duration-500">
-        <div className="max-w-7xl mx-auto">
-          {/* Main application header with responsive layout */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 md:gap-0">
-            {/* Left section: University logo and title/description */}
-            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3 text-center md:text-left animate-fade-in">
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+        <div className="container mx-auto px-6 py-8 space-y-8">
+          {/* Enhanced Header Section */}
+          <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-6 rounded-xl border shadow-sm">
+            <div className="flex items-center space-x-4">
               <img
                 src="/favicon.ico"
                 alt="CUK Logo"
-                className="w-16 h-16 md:w-20 md:h-20 mt-1 transition-transform duration-300 hover:scale-110 animate-scale-in" // Responsive logo size
+                className="w-16 h-16 transition-transform duration-300 hover:scale-110"
               />
-              <div>
-                <h1 className="text-2xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300"> {/* Responsive title size */}
+              <div className="space-y-1">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Central University of Kashmir
                 </h1>
-                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 transition-colors duration-300"> {/* Responsive paragraph size */}
-                  Generate optimized exam schedules with custom gap settings and
-                  drag & drop interface
-                  <br /> {/* Forces a line break on all screen sizes */}
-                  developed by{" "}
+                <p className="text-muted-foreground text-lg">
+                  Exam Schedule Generator - Create optimized exam timetables
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Developed by{" "}
                   <a
                     href="https://m4milaad.github.io/Resume/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold underline text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300"
+                    className="font-semibold text-primary hover:underline"
                   >
                     Milad Ajaz Bhat
                   </a>
@@ -913,13 +912,12 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Right section: Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-4 md:mt-0 animate-fade-in"> {/* Buttons stack on smaller screens */}
+            <div className="flex items-center gap-3">
               <ThemeToggle />
               <Button
                 onClick={loadLastSchedule}
                 variant="outline"
-                className="flex items-center gap-2 w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className="flex items-center gap-2 shadow-sm"
                 disabled={loadingLastSchedule}
               >
                 <RefreshCw
@@ -933,7 +931,7 @@ export default function Index() {
               <Button
                 onClick={() => navigate("/admin-login")}
                 variant="outline"
-                className="flex items-center gap-2 w-full sm:w-auto transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className="flex items-center gap-2 shadow-sm"
               >
                 <Settings className="w-4 h-4" />
                 Admin Panel
