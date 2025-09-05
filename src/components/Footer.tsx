@@ -6,7 +6,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground mb-4 sm:mb-0">
-            © <span>{new Date().getFullYear()}</span> Yuva Global Enterprises | Developed by{' '}
+            © <span>{new Date().getFullYear()}</span> Central University of Kashmir | Developed by{' '}
             <a 
               href="https://m4milaad.github.io/Resume/" 
               target="_blank" 
