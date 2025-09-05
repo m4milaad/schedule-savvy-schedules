@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home, Users } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Home, Users, Menu, X } from 'lucide-react';
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -17,6 +19,7 @@ import { VenuesTab } from "@/components/admin/VenuesTab";
 import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
+import { Footer } from "@/components/Footer";
 
 const AdminDashboard = () => {
   const [schools, setSchools] = useState<School[]>([]);
@@ -28,8 +31,10 @@ const AdminDashboard = () => {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     // Check if user is authenticated as admin
@@ -192,65 +197,137 @@ const AdminDashboard = () => {
     );
   }
 
+  // Navigation menu items
+  const navigationButtons = (
+    <div className="flex flex-col md:flex-row gap-2">
+      <ThemeToggle />
+      <Button
+        onClick={handleLogout}
+        variant="outline"
+        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+      >
+        <Home className="w-4 h-4" />
+        Logout
+      </Button>
+      <Button
+        onClick={() => navigate('/admin-users')}
+        variant="outline"
+        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+      >
+        <Users className="w-4 h-4" />
+        Manage Admin Users
+      </Button>
+      <Button
+        onClick={() => navigate('/schedule-generator')}
+        variant="outline"
+        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+      >
+        <Home className="w-4 h-4" />
+        Schedule Generator
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-500">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background flex flex-col transition-colors duration-500">
+      <div className="max-w-6xl mx-auto p-4 md:p-6 flex-1">
+        {/* Header with responsive navigation */}
         <div className="flex justify-between items-center mb-8 animate-fade-in">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <img 
                 src="/favicon.ico" 
                 alt="CUK Logo" 
-                className="w-10 h-10 transition-transform duration-300 hover:scale-110"
+                className="w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 hover:scale-110"
               />
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground transition-colors duration-300">
                 Admin Dashboard
               </h1>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
+            <p className="text-muted-foreground transition-colors duration-300 text-sm md:text-base">
               Manage university data and settings
             </p>
           </div>
-          <div className="flex gap-2">
-            <ThemeToggle />
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            >
-              <Home className="w-4 h-4" />
-              Logout
-            </Button>
-            <Button
-              onClick={() => navigate('/admin-users')}
-              variant="outline"
-              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            >
-              <Users className="w-4 h-4" />
-              Manage Admin Users
-            </Button>
-            <Button
-              onClick={() => navigate('/schedule-generator')}
-              variant="outline"
-              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            >
-              <Home className="w-4 h-4" />
-              Schedule Generator
-            </Button>
-          </div>
+          
+          {/* Desktop Navigation */}
+          {!isMobile && navigationButtons}
+          
+          {/* Mobile Navigation */}
+          {isMobile && (
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Menu className="w-4 h-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <div className="flex flex-col gap-4 mt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <img 
+                      src="/favicon.ico" 
+                      alt="CUK Logo" 
+                      className="w-8 h-8"
+                    />
+                    <span className="font-semibold">Admin Menu</span>
+                  </div>
+                  {navigationButtons}
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
 
         <Tabs defaultValue="schools" className="space-y-6 animate-fade-in">
-          <TabsList className="grid w-full grid-cols-8 transition-all duration-300">
-            <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105">Schools</TabsTrigger>
-            <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105">Departments</TabsTrigger>
-            <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105">Courses</TabsTrigger>
-            <TabsTrigger value="teachers" className="transition-all duration-300 hover:scale-105">Teachers</TabsTrigger>
-            <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105">Venues</TabsTrigger>
-            <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105">Sessions</TabsTrigger>
-            <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105">Holidays</TabsTrigger>
-            <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105">Students</TabsTrigger>
+          <TabsList className={`grid w-full transition-all duration-300 ${
+            isMobile ? 'grid-cols-4 gap-1' : 'grid-cols-8'
+          }`}>
+            <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+              Schools
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+              {isMobile ? 'Depts' : 'Departments'}
+            </TabsTrigger>
+            <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+              Courses
+            </TabsTrigger>
+            <TabsTrigger value="teachers" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+              Teachers
+            </TabsTrigger>
+            {!isMobile && (
+              <>
+                <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Venues
+                </TabsTrigger>
+                <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Sessions
+                </TabsTrigger>
+                <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Holidays
+                </TabsTrigger>
+                <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Students
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
+          
+          {/* Mobile: Additional tabs in a second row */}
+          {isMobile && (
+            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2">
+              <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs">
+                Venues
+              </TabsTrigger>
+              <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs">
+                Sessions
+              </TabsTrigger>
+              <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs">
+                Holidays
+              </TabsTrigger>
+              <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs">
+                Students
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="schools" className="animate-fade-in">
             <SchoolsTab schools={schools} onRefresh={loadSchools} />
@@ -285,6 +362,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 };

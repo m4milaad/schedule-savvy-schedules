@@ -68,8 +68,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
+            // Updated query to use student_enrollments table which links to profiles
             const { data, error } = await supabase
-                .from('student_courses')
+                .from('student_enrollments')
                 .select(`
                     student_id,
                     courses (
@@ -77,6 +78,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         course_name
                     )
                 `)
+                .eq('is_active', true)
                 .in('student_id', students.map(s => s.student_id));
 
             if (error) throw error;
@@ -97,6 +99,38 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             setStudentEnrollments(enrollmentMap);
         } catch (error) {
             console.error('Error loading student enrollments:', error);
+            // Try alternative approach if the above fails
+            try {
+                const { data: altData, error: altError } = await supabase
+                    .from('student_courses')
+                    .select(`
+                        student_id,
+                        courses (
+                            course_code,
+                            course_name
+                        )
+                    `)
+                    .in('student_id', students.map(s => s.student_id));
+
+                if (altError) throw altError;
+
+                const enrollmentMap: Record<string, StudentEnrollment[]> = {};
+                (altData || []).forEach((item: any) => {
+                    if (!enrollmentMap[item.student_id]) {
+                        enrollmentMap[item.student_id] = [];
+                    }
+                    if (item.courses) {
+                        enrollmentMap[item.student_id].push({
+                            course_code: item.courses.course_code,
+                            course_name: item.courses.course_name
+                        });
+                    }
+                });
+
+                setStudentEnrollments(enrollmentMap);
+            } catch (altError) {
+                console.error('Error loading student enrollments (alternative):', altError);
+            }
         }
     };
 
