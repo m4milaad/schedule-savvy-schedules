@@ -5,18 +5,27 @@ export const Footer: React.FC = () => {
     <footer className="bg-card border-t mt-auto">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground mb-4 sm:mb-0">
-            © <span>{new Date().getFullYear()}</span> Central University of Kashmir | Developed by{' '}
-            <a 
-              href="https://m4milaad.github.io/Resume/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 transition-colors duration-200"
+            <p className="text-sm text-muted-foreground mb-4 sm:mb-0">
+            © <span>{new Date().getFullYear()}</span>{' '}
+            <a
+                href="https://www.cukashmir.ac.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors duration-200"
             >
-              Milad Ajaz Bhat
+                Central University of Kashmir
+            </a>{' '}
+            | Developed by{' '}
+            <a
+                href="https://m4milaad.github.io/Resume/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors duration-200"
+            >
+                Milad Ajaz Bhat
             </a>{' '}
             | All Rights Reserved.
-          </p>
+        </p>
           <div className="flex items-center gap-4">
             <img 
               src="/favicon.ico" 
