@@ -125,13 +125,13 @@ export const CourseEnrollmentCard = ({
 
   return (
     <Card 
-      className={`transition-all duration-300 border shadow-sm hover:shadow-md ${
+      className={`transition-all duration-300 border shadow-sm hover:shadow-md h-full ${
         isSelected 
           ? 'ring-2 ring-primary bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20' 
           : 'bg-card hover:bg-card/80'
       }`}
     >
-      <CardHeader className="pb-3"
+      <CardHeader className="pb-2"
         role="button"
         tabIndex={0}
         aria-expanded={showStudents}
@@ -143,44 +143,41 @@ export const CourseEnrollmentCard = ({
           }
         }}
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
             <Checkbox
               checked={isSelected}
               onCheckedChange={onToggle}
-              className="w-4 h-4 sm:w-5 sm:h-5 border-2 flex-shrink-0"
+              className="w-4 h-4 border-2 flex-shrink-0"
               onClick={(e) => e.stopPropagation()}
             />
-            <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
-              <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold text-primary tracking-tight truncate">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-lg font-bold text-primary tracking-tight truncate">
                 {courseTeacher.course_code}
               </CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground font-medium line-clamp-2">
+              <p className="text-sm text-muted-foreground font-medium line-clamp-2">
                 {courseTeacher.course_name}
               </p>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md">
-                  <User className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{courseTeacher.teacher_name || 'TBD'}</span>
-                </span>
-                <span className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 rounded-md">
-                  <Building2 className="h-3 w-3 flex-shrink-0" />
-                  <span className="truncate">{courseTeacher.dept_name}</span>
-                </span>
-                <Badge variant="secondary" className="text-xs font-medium whitespace-nowrap">
-                  {getSemesterDisplay(courseTeacher.semester)}
-                </Badge>
-              </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-            <Badge variant="outline" className="text-xs flex items-center gap-1.5 bg-background/50 whitespace-nowrap">
-              <Users className="h-3 w-3" />
-              {enrolledStudents.length} Students
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-md">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{courseTeacher.teacher_name || 'TBD'}</span>
+            </span>
+            <Badge variant="secondary" className="text-xs font-medium">
+              {getSemesterDisplay(courseTeacher.semester)}
             </Badge>
-            <div className="flex items-center gap-2 bg-background/50 px-2 sm:px-3 py-1.5 rounded-md">
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+          </div>
+          
+          <div className="flex items-center justify-between gap-2">
+            <Badge variant="outline" className="text-xs flex items-center gap-1 bg-background/50">
+              <Users className="h-3 w-3" />
+              {enrolledStudents.length}
+            </Badge>
+            <div className="flex items-center gap-1 bg-background/50 px-2 py-1 rounded-md">
+              <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               {editingGap === courseTeacher.id ? (
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                   <Input
@@ -189,13 +186,13 @@ export const CourseEnrollmentCard = ({
                     onChange={(e) => onTempGapChange(parseInt(e.target.value) || 0)}
                     min="0"
                     max="10"
-                    className="w-12 sm:w-16 h-6 sm:h-7 text-xs border-0 bg-background"
+                    className="w-12 h-6 text-xs border-0 bg-background"
                   />
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => onSaveGap(courseTeacher.id)}
-                    className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-green-500/10 hover:text-green-600"
+                    className="h-6 w-6 p-0 hover:bg-green-500/10 hover:text-green-600"
                   >
                     <Check className="h-3 w-3" />
                   </Button>
@@ -203,19 +200,19 @@ export const CourseEnrollmentCard = ({
                     size="sm"
                     variant="ghost"
                     onClick={onCancelGap}
-                    className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-red-500/10 hover:text-red-600"
+                    className="h-6 w-6 p-0 hover:bg-red-500/10 hover:text-red-600"
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{courseTeacher.gap_days} days</span>
+                  <span className="text-xs font-medium">{courseTeacher.gap_days}d</span>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => onEditGap(courseTeacher.id, courseTeacher.gap_days)}
-                    className="h-6 w-6 sm:h-7 sm:w-7 p-0 hover:bg-primary/10 hover:text-primary"
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                   >
                     <Edit2 className="h-3 w-3" />
                   </Button>

@@ -16,6 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
 import * as XLSX from "xlsx";
+import { normalizeCourseCode, shouldMergeCourses } from "@/utils/courseUtils";
 
 import { useExamData } from "@/hooks/useExamData";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
@@ -395,7 +396,7 @@ export default function Index() {
       let maxIterations = examDates.length * 10; // Safeguard against infinite loops
       let iterations = 0;
 
-      // Main scheduling loop
+      // Main scheduling loop with enhanced rules
       while (!allCoursesScheduled && currentDateIndex < examDates.length && iterations < maxIterations) {
         iterations++;
         const currentExamDate = examDates[currentDateIndex];
@@ -423,20 +424,10 @@ export default function Index() {
             const notScheduledToday =
               semesterLastScheduledDate[semester] !== dateKey;
 
-            // Find the last scheduled exam for the current semester to check gap requirements
-            const lastScheduledExam = schedule
-              .filter((exam) => exam.semester === semester)
-              .sort(
-                (a, b) =>
-                  new Date(b.exam_date).getTime() -
-                  new Date(a.exam_date).getTime()
-              )[0];
-
-            if (!lastScheduledExam) {
-              return hasUnscheduledCourses && notScheduledToday; // First paper for this semester
-            }
-
-            // Get the next unscheduled course for this semester to check its gap requirement
+            // Find the last scheduled exam for any student who would take this semester's next exam
+            let lastRelevantExamDate: Date | null = null;
+            
+            // Get the next unscheduled course for this semester
             const nextCourse = coursesBySemester[semester].find(
               (course) =>
                 !schedule.find(
@@ -448,16 +439,40 @@ export default function Index() {
 
             if (!nextCourse) return false; // No more unscheduled courses for this semester
 
-            // Calculate days passed since the last exam for this semester
-            const lastExamDate = new Date(lastScheduledExam.exam_date);
+            // Find students enrolled in this course and check their last exam dates
+            const studentsInCourse = Object.keys(studentCourseMap).filter(
+              studentId => studentCourseMap[studentId].includes(nextCourse.course_code)
+            );
+
+            // For each student, find their most recent exam date
+            studentsInCourse.forEach(studentId => {
+              if (studentExamDates[studentId]) {
+                const studentDates = Array.from(studentExamDates[studentId])
+                  .map(dateStr => new Date(dateStr))
+                  .sort((a, b) => b.getTime() - a.getTime());
+                
+                if (studentDates.length > 0) {
+                  const studentLastExam = studentDates[0];
+                  if (!lastRelevantExamDate || studentLastExam > lastRelevantExamDate) {
+                    lastRelevantExamDate = studentLastExam;
+                  }
+                }
+              }
+            });
+
+            if (!lastRelevantExamDate) {
+              return hasUnscheduledCourses && notScheduledToday; // First exam for these students
+            }
+
+            // Apply mandatory 2-day cooldown rule
             const daysDiff = Math.floor(
-              (currentExamDate.getTime() - lastExamDate.getTime()) /
+              (currentExamDate.getTime() - lastRelevantExamDate.getTime()) /
                 (1000 * 60 * 60 * 24)
             );
-            const requiredGap = nextCourse.gap_days || 2;
-            const gapMet = daysDiff >= requiredGap;
+            const mandatoryCooldown = 2; // 2 full days off
+            const cooldownMet = daysDiff > mandatoryCooldown; // Must be greater than 2 (3rd day or later)
 
-            return hasUnscheduledCourses && notScheduledToday && gapMet;
+            return hasUnscheduledCourses && notScheduledToday && cooldownMet;
           });
 
         // Schedule exams for available semesters on the current date
@@ -474,12 +489,18 @@ export default function Index() {
           );
 
           if (unscheduledCourse) {
-            // Check for student overlap before scheduling
+            // Rule 1: No Student Overlap - Check if any student has an exam on this date
             const studentsEnrolledInCourse = Object.keys(studentCourseMap).filter(
-              studentId => studentCourseMap[studentId].includes(unscheduledCourse.course_code)
+              studentId => {
+                // Also check for merged course codes (BT and BTCS)
+                const normalizedCourseCode = unscheduledCourse.course_code.replace('BTCS-', 'BT-');
+                return studentCourseMap[studentId].some(code => 
+                  code === unscheduledCourse.course_code || 
+                  code.replace('BTCS-', 'BT-') === normalizedCourseCode
+                );
+              }
             );
 
-            // Check if any student enrolled in this course already has an exam on this date
             const hasStudentOverlap = studentsEnrolledInCourse.some(studentId => {
               if (!studentExamDates[studentId]) {
                 studentExamDates[studentId] = new Set();
@@ -488,8 +509,17 @@ export default function Index() {
             });
 
             if (hasStudentOverlap) {
-              // Skip this course for now if it would create a student overlap
-              continue;
+              continue; // Rule 1: Prevent student overlap
+            }
+
+            // Rule 4: Course Merging - Check if merged course already scheduled
+            const normalizedCourseCode = unscheduledCourse.course_code.replace('BTCS-', 'BT-');
+            const mergedCourseAlreadyScheduled = schedule.some(exam => 
+              exam.course_code.replace('BTCS-', 'BT-') === normalizedCourseCode
+            );
+
+            if (mergedCourseAlreadyScheduled) {
+              continue; // Skip if merged course already scheduled
             }
 
             const isFirstPaper = !schedule.some(
@@ -994,7 +1024,7 @@ export default function Index() {
 
             {/* Course selection by course code */}
             <div className="lg:col-span-3">
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {getAllAvailableCourses().map((courseTeacher) => (
                   <CourseEnrollmentCard
                     key={courseTeacher.id}
