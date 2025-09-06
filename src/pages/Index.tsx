@@ -267,8 +267,8 @@ export default function Index() {
   };
 
   /**
-   * Generates the exam schedule based on selected courses, date range, and gap requirements.
-   * Includes validation for date range and sufficient working days.
+   * Generates the exam schedule using the enhanced algorithm with priority scheduling,
+   * backtracking, and optimized conflict resolution.
    */
   const generateSchedule = async () => {
     if (!startDate || !endDate) {
@@ -328,27 +328,6 @@ export default function Index() {
     try {
       setLoading(true);
 
-      // Generate a list of valid exam dates, excluding weekends and holidays
-      const examDates = generateExamDates(startDate, endDate, holidays);
-
-      if (examDates.length === 0) {
-        toast({
-          title: "Error",
-          description: "No valid exam dates found in the selected range",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Group selected courses by semester for easier scheduling
-      const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
-        if (!acc[course.semester]) {
-          acc[course.semester] = [];
-        }
-        acc[course.semester].push(course);
-        return acc;
-      }, {} as Record<number, CourseTeacher[]>);
-
       // Load student enrollment data to prevent overlaps
       const { data: studentEnrollments, error: enrollmentError } = await supabase
         .from('student_enrollments')
@@ -386,218 +365,28 @@ export default function Index() {
         });
       }
 
-      const schedule: ExamScheduleItem[] = [];
-      const dateScheduleCount: Record<string, number> = {}; // Tracks exams per day
-      const semesterLastScheduledDate: Record<number, string> = {}; // Tracks last scheduled date for each semester
-      const studentExamDates: Record<string, Set<string>> = {}; // Tracks exam dates for each student to prevent overlaps
-
-      let currentDateIndex = 0;
-      let allCoursesScheduled = false;
-      let maxIterations = examDates.length * 10; // Safeguard against infinite loops
-      let iterations = 0;
-
-      // Main scheduling loop with enhanced rules
-      while (!allCoursesScheduled && currentDateIndex < examDates.length && iterations < maxIterations) {
-        iterations++;
-        const currentExamDate = examDates[currentDateIndex];
-        const dateKey = currentExamDate.toDateString();
-
-        if (!dateScheduleCount[dateKey]) {
-          dateScheduleCount[dateKey] = 0;
-        }
-
-        let scheduledToday = 0;
-        const maxExamsPerDay = 4; // Maximum exams allowed per day
-
-        // Determine which semesters have courses ready to be scheduled on the current date
-        const availableSemesters = Object.keys(coursesBySemester)
-          .map(Number)
-          .filter((semester) => {
-            const hasUnscheduledCourses = coursesBySemester[semester].some(
-              (course) =>
-                !schedule.find(
-                  (exam) =>
-                    exam.course_code === course.course_code &&
-                    exam.teacher_name === course.teacher_name
-                )
-            );
-            const notScheduledToday =
-              semesterLastScheduledDate[semester] !== dateKey;
-
-            // Find the last scheduled exam for any student who would take this semester's next exam
-            let lastRelevantExamDate: Date | null = null;
-            
-            // Get the next unscheduled course for this semester
-            const nextCourse = coursesBySemester[semester].find(
-              (course) =>
-                !schedule.find(
-                  (exam) =>
-                    exam.course_code === course.course_code &&
-                    exam.teacher_name === course.teacher_name
-                )
-            );
-
-            if (!nextCourse) return false; // No more unscheduled courses for this semester
-
-            // Find students enrolled in this course and check their last exam dates
-            const studentsInCourse = Object.keys(studentCourseMap).filter(
-              studentId => studentCourseMap[studentId].includes(nextCourse.course_code)
-            );
-
-            // For each student, find their most recent exam date
-            studentsInCourse.forEach(studentId => {
-              if (studentExamDates[studentId]) {
-                const studentDates = Array.from(studentExamDates[studentId])
-                  .map(dateStr => new Date(dateStr))
-                  .sort((a, b) => b.getTime() - a.getTime());
-                
-                if (studentDates.length > 0) {
-                  const studentLastExam = studentDates[0];
-                  if (!lastRelevantExamDate || studentLastExam > lastRelevantExamDate) {
-                    lastRelevantExamDate = studentLastExam;
-                  }
-                }
-              }
-            });
-
-            if (!lastRelevantExamDate) {
-              return hasUnscheduledCourses && notScheduledToday; // First exam for these students
-            }
-
-            // Apply mandatory 2-day cooldown rule
-            const daysDiff = Math.floor(
-              (currentExamDate.getTime() - lastRelevantExamDate.getTime()) /
-                (1000 * 60 * 60 * 24)
-            );
-            const mandatoryCooldown = 2; // 2 full days off
-            const cooldownMet = daysDiff > mandatoryCooldown; // Must be greater than 2 (3rd day or later)
-
-            return hasUnscheduledCourses && notScheduledToday && cooldownMet;
-          });
-
-        // Schedule exams for available semesters on the current date
-        for (const semester of availableSemesters) {
-          if (scheduledToday >= maxExamsPerDay) break; // Limit exams per day
-
-          const unscheduledCourse = coursesBySemester[semester].find(
-            (course) =>
-              !schedule.find(
-                (exam) =>
-                  exam.course_code === course.course_code &&
-                  exam.teacher_name === course.teacher_name
-              )
-          );
-
-          if (unscheduledCourse) {
-            // Rule 1: No Student Overlap - Check if any student has an exam on this date
-            const studentsEnrolledInCourse = Object.keys(studentCourseMap).filter(
-              studentId => {
-                // Also check for merged course codes (BT and BTCS)
-                const normalizedCourseCode = unscheduledCourse.course_code.replace('BTCS-', 'BT-');
-                return studentCourseMap[studentId].some(code => 
-                  code === unscheduledCourse.course_code || 
-                  code.replace('BTCS-', 'BT-') === normalizedCourseCode
-                );
-              }
-            );
-
-            const hasStudentOverlap = studentsEnrolledInCourse.some(studentId => {
-              if (!studentExamDates[studentId]) {
-                studentExamDates[studentId] = new Set();
-              }
-              return studentExamDates[studentId].has(dateKey);
-            });
-
-            if (hasStudentOverlap) {
-              continue; // Rule 1: Prevent student overlap
-            }
-
-            // Rule 4: Course Merging - Check if merged course already scheduled
-            const normalizedCourseCode = unscheduledCourse.course_code.replace('BTCS-', 'BT-');
-            const mergedCourseAlreadyScheduled = schedule.some(exam => 
-              exam.course_code.replace('BTCS-', 'BT-') === normalizedCourseCode
-            );
-
-            if (mergedCourseAlreadyScheduled) {
-              continue; // Skip if merged course already scheduled
-            }
-
-            const isFirstPaper = !schedule.some(
-              (exam) => exam.semester === semester
-            );
-
-            const exam: ExamScheduleItem = {
-              id: `exam-${schedule.length}`,
-              course_code: unscheduledCourse.course_code,
-              teacher_name: unscheduledCourse.teacher_name || "TBD",
-              exam_date: currentExamDate.toISOString().split("T")[0],
-              day_of_week: currentExamDate.toLocaleDateString("en-US", {
-                weekday: "long",
-              }),
-              time_slot: getExamTimeSlot(currentExamDate),
-              semester: unscheduledCourse.semester,
-              program_type: unscheduledCourse.program_type,
-              date: currentExamDate,
-              courseCode: unscheduledCourse.course_code,
-              dayOfWeek: currentExamDate.toLocaleDateString("en-US", {
-                weekday: "long",
-              }),
-              timeSlot: getExamTimeSlot(currentExamDate),
-              gap_days: unscheduledCourse.gap_days || 2,
-              is_first_paper: isFirstPaper,
-              venue_name: "Main Hall", // Default venue
-            };
-
-            // Record this exam date for all students enrolled in the course
-            studentsEnrolledInCourse.forEach(studentId => {
-              if (!studentExamDates[studentId]) {
-                studentExamDates[studentId] = new Set();
-              }
-              studentExamDates[studentId].add(dateKey);
-            });
-
-            schedule.push(exam);
-            scheduledToday++;
-            dateScheduleCount[dateKey]++;
-            semesterLastScheduledDate[semester] = dateKey;
-          }
-        }
-
-        // Check if all courses have been scheduled
-        const totalScheduled = schedule.length;
-        const totalCourses = allSelectedCourses.length;
-        allCoursesScheduled = totalScheduled >= totalCourses;
-
-        currentDateIndex++;
-
-        // Reset date index if all dates are exhausted but not all courses are scheduled (should not happen with proper date range validation)
-        if (currentDateIndex >= examDates.length && !allCoursesScheduled) {
-          currentDateIndex = 0;
-        }
-      }
-
-      // Handle cases where scheduling fails due to constraints
-      if (iterations >= maxIterations) {
-        toast({
-          title: "Scheduling Error",
-          description: "Unable to schedule all exams within the constraints. Please check your gap requirements and date range.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Use the enhanced scheduling algorithm
+      const { generateEnhancedSchedule } = await import("@/utils/scheduleAlgorithm");
+      const schedule = await generateEnhancedSchedule(
+        allSelectedCourses,
+        startDate,
+        endDate,
+        holidays,
+        studentCourseMap
+      );
 
       setGeneratedSchedule(schedule);
       setIsScheduleGenerated(true);
 
       toast({
         title: "Success",
-        description: `Generated schedule for ${schedule.length} exams with gap requirements and no student overlaps`,
+        description: `Generated schedule for ${schedule.length} exams using enhanced algorithm with priority scheduling and conflict resolution`,
       });
     } catch (error) {
       console.error("Error generating schedule:", error);
       toast({
         title: "Error",
-        description: "Failed to generate exam schedule",
+        description: error instanceof Error ? error.message : "Failed to generate exam schedule",
         variant: "destructive",
       });
     } finally {
