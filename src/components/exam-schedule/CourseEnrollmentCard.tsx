@@ -81,8 +81,13 @@ export const CourseEnrollmentCard = ({
           return;
         }
 
-        // For demo purposes, show some students
-        const students = studentsData?.slice(0, 5).map((student: any) => ({
+        // Create realistic student distribution - different students per course
+        const courseIndex = courseTeacher.course_code.charCodeAt(courseTeacher.course_code.length - 1) % 10;
+        const maxStudents = Math.min(8, studentsData?.length || 0); // Max 8 students per course
+        const startIndex = (courseIndex * 3) % (studentsData?.length || 1);
+        const endIndex = Math.min(startIndex + maxStudents, studentsData?.length || 0);
+        
+        const students = studentsData?.slice(startIndex, endIndex).map((student: any) => ({
           student_id: student.student_id,
           student_name: student.student_name,
           student_enrollment_no: student.student_enrollment_no,
