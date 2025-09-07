@@ -50,7 +50,7 @@ export const CourseEnrollmentCard = ({
   const loadEnrolledStudents = async () => {
     setLoading(true);
     try {
-      // First try to get from student_enrollments with profiles join
+      // Get enrollments for this specific course
       const { data, error } = await supabase
         .from('student_enrollments')
         .select(`

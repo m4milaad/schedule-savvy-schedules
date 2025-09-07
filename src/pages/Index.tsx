@@ -337,6 +337,11 @@ export default function Index() {
           courses (
             course_code,
             semester
+          ),
+          profiles (
+            id,
+            full_name,
+            student_enrollment_no
           )
         `)
         .eq('is_active', true);
@@ -354,7 +359,7 @@ export default function Index() {
       const studentCourseMap: Record<string, string[]> = {};
       if (studentEnrollments) {
         studentEnrollments.forEach((enrollment: any) => {
-          const studentId = enrollment.student_id;
+          const studentId = enrollment.profiles?.id || enrollment.student_id;
           const courseCode = enrollment.courses?.course_code;
           if (studentId && courseCode) {
             if (!studentCourseMap[studentId]) {
