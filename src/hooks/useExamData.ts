@@ -49,7 +49,7 @@ export const useExamData = () => {
           teachersData.forEach(teacher => {
             if (course.departments?.dept_name === teacher.departments?.dept_name) {
               transformedData.push({
-                id: `${course.course_id}-${teacher.teacher_id}`,
+                id: course.course_id, // Use course_id directly instead of concatenation
                 course_code: course.course_code,
                 course_name: course.course_name,
                 teacher_name: teacher.teacher_name,
