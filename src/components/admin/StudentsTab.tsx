@@ -68,7 +68,24 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
-            // Updated query to use student_enrollments table which links to profiles
+            // Map students to their corresponding profiles
+            const studentProfileMap = new Map();
+            for (const student of students) {
+                // Find the corresponding profile for this student
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('user_type', 'student')
+                    .eq('student_enrollment_no', student.student_enrollment_no)
+                    .single();
+                
+                if (profileData) {
+                    studentProfileMap.set(student.student_id, profileData.id);
+                }
+            }
+
+            // Get enrollments using profile IDs
+            const profileIds = Array.from(studentProfileMap.values());
             const { data, error } = await supabase
                 .from('student_enrollments')
                 .select(`
@@ -79,20 +96,27 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     )
                 `)
                 .eq('is_active', true)
-                .in('student_id', students.map(s => s.student_id));
+                .in('student_id', profileIds);
 
             if (error) throw error;
 
+            // Map back to student IDs
             const enrollmentMap: Record<string, StudentEnrollment[]> = {};
             (data || []).forEach((item: any) => {
-                if (!enrollmentMap[item.student_id]) {
-                    enrollmentMap[item.student_id] = [];
-                }
-                if (item.courses) {
-                    enrollmentMap[item.student_id].push({
-                        course_code: item.courses.course_code,
-                        course_name: item.courses.course_name
-                    });
+                // Find the student ID that corresponds to this profile ID
+                const studentId = Array.from(studentProfileMap.entries())
+                    .find(([_, profileId]) => profileId === item.student_id)?.[0];
+                
+                if (studentId) {
+                    if (!enrollmentMap[studentId]) {
+                        enrollmentMap[studentId] = [];
+                    }
+                    if (item.courses) {
+                        enrollmentMap[studentId].push({
+                            course_code: item.courses.course_code,
+                            course_name: item.courses.course_name
+                        });
+                    }
                 }
             });
 
