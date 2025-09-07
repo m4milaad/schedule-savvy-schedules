@@ -647,6 +647,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      create_realistic_student_enrollments: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_exam_schedule_data: {
         Args: Record<PropertyKey, never>
         Returns: {
