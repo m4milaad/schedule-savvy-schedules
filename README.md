@@ -215,8 +215,8 @@ course.gap_days: 1-10 days
 | Course Code | Unique course identifier | Yes |
 | Course Name | Full course name | Yes |
 | Teacher Name | Faculty member name | Yes |
-| Semester | Semester number (1-12) | Yes |
-| Program Type | B.Tech or M.Tech | Yes |
+| Semester | All | Yes |
+| Program Type | University Wide | Yes |
 
 ### **Supported Operations**
 - Bulk course import/export
@@ -297,7 +297,7 @@ npx cap open android
 ## 🚀 Deployment
 
 ### **Web Application**
-- Deploy to Netlify, Vercel, or any static hosting
+- Deployed to Vercel
 - Configure environment variables
 - Set up custom domain
 
@@ -372,7 +372,7 @@ For technical support or feature requests related to the Central University of K
 
 **Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)  
 **Institution**: Central University of Kashmir  
-**Version**: 2.3.4 beta
-**Last Updated**: August 2025
+**Version**: 2.3.8 beta
+**Last Updated**: September 2025
 
 *This system is specifically designed for Central University of Kashmir's academic scheduling needs, incorporating institutional requirements and constraints for optimal exam timetable generation.*
