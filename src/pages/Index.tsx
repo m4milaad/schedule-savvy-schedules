@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Settings, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,13 +20,10 @@ import { normalizeCourseCode, shouldMergeCourses } from "@/utils/courseUtils";
 import { useExamData } from "@/hooks/useExamData";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
 import {
-  getAllSemesters,
-  detectSemesterType,
   generateExamDates,
   getExamTimeSlot,
 } from "@/utils/scheduleUtils";
 import { ScheduleStatusCard } from "@/components/exam-schedule/ScheduleStatusCard";
-import { SemesterCard } from "@/components/exam-schedule/SemesterCard";
 import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,15 +31,13 @@ import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmen
 
 export default function Index() {
   // State management for various scheduling parameters and data
-  const [semesterType, setSemesterType] = useState<"odd" | "even">("odd");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
-  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<
-    Record<number, string[]>
-  >({});
+  const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingGap, setEditingGap] = useState<string | null>(null);
   const [tempGapValue, setTempGapValue] = useState<number>(0);
+  const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,37 +56,42 @@ export default function Index() {
     saveScheduleToDatabase,
   } = useExamData();
 
-  const allSemesters = getAllSemesters(semesterType);
-
   /**
-   * Effect to auto-select all courses when semester type changes or initial data loads.
-   * Ensures all available courses for the selected semester type are pre-selected for scheduling.
+   * Effect to load enrollment counts and auto-select courses with enrolled students
    */
   useEffect(() => {
     if (courseTeachers.length > 0) {
-      const autoSelected: Record<number, string[]> = {};
-      allSemesters.forEach((semester) => {
-        const semesterCourses = courseTeachers.filter(
-          (ct) => ct.semester === semester
-        );
-        autoSelected[semester] = semesterCourses.map((ct) => ct.id);
-      });
-      setSelectedCourseTeachers(autoSelected);
+      loadEnrollmentCounts();
     }
-  }, [courseTeachers, semesterType]);
+  }, [courseTeachers]);
 
-  /**
-   * Effect to auto-detect the semester type from a previously loaded schedule.
-   * This helps in maintaining context if a schedule is reloaded.
-   */
-  useEffect(() => {
-    if (generatedSchedule.length > 0) {
-      const detectedType = detectSemesterType(generatedSchedule);
-      if (detectedType) {
-        setSemesterType(detectedType);
-      }
+  const loadEnrollmentCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('student_enrollments')
+        .select('course_id')
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      // Count enrollments per course
+      const counts: Record<string, number> = {};
+      data?.forEach((enrollment: any) => {
+        counts[enrollment.course_id] = (counts[enrollment.course_id] || 0) + 1;
+      });
+
+      setCourseEnrollmentCounts(counts);
+
+      // Auto-select only courses with enrolled students
+      const coursesWithStudents = courseTeachers
+        .filter((ct) => counts[ct.id] > 0)
+        .map((ct) => ct.id);
+      
+      setSelectedCourseTeachers(coursesWithStudents);
+    } catch (error) {
+      console.error('Error loading enrollment counts:', error);
     }
-  }, [generatedSchedule]);
+  };
 
   /**
    * Calculates and returns information about the selected date range,
@@ -153,15 +152,9 @@ export default function Index() {
   const calculateMinimumRequiredDays = () => {
     if (!startDate || !endDate) return null;
 
-    const allSelectedCourses = [];
-    for (const semester of allSemesters) {
-      const semesterCourses = getCoursesBySemester(semester);
-      const selectedIds = selectedCourseTeachers[semester] || [];
-      const selectedSemesterCourses = semesterCourses.filter((ct) =>
-        selectedIds.includes(ct.id)
-      );
-      allSelectedCourses.push(...selectedSemesterCourses);
-    }
+    const allSelectedCourses = courseTeachers.filter((ct) =>
+      selectedCourseTeachers.includes(ct.id)
+    );
 
     if (allSelectedCourses.length === 0) return null;
 
@@ -209,24 +202,25 @@ export default function Index() {
   };
 
   /**
-   * Gets all unique courses with their enrollment data.
-   * @returns {CourseTeacher[]} An array of all available courses.
+   * Gets all courses sorted by enrollment count (courses with students first)
+   * @returns {CourseTeacher[]} An array of all available courses sorted by enrollment.
    */
   const getAllAvailableCourses = () => {
-    // Filter courses by selected semester type
-    const filteredCourses = courseTeachers.filter((ct) => 
-      allSemesters.includes(ct.semester)
-    );
-    return filteredCourses;
+    return [...courseTeachers].sort((a, b) => {
+      const aCount = courseEnrollmentCounts[a.id] || 0;
+      const bCount = courseEnrollmentCounts[b.id] || 0;
+      // Sort by enrollment count descending (courses with students first)
+      return bCount - aCount;
+    });
   };
 
   /**
-   * Filters course teachers by a given semester.
-   * @param {number} semester - The semester number.
-   * @returns {CourseTeacher[]} An array of course teachers for the specified semester.
+   * Calculate total enrolled students across selected courses
    */
-  const getCoursesBySemester = (semester: number) => {
-    return courseTeachers.filter((ct) => ct.semester === semester);
+  const getTotalEnrolledStudents = () => {
+    return selectedCourseTeachers.reduce((total, courseId) => {
+      return total + (courseEnrollmentCounts[courseId] || 0);
+    }, 0);
   };
 
   /**
@@ -305,16 +299,10 @@ export default function Index() {
       }
     }
 
-    // Collect all selected courses across all semesters
-    const allSelectedCourses = [];
-    for (const semester of allSemesters) {
-      const semesterCourses = getCoursesBySemester(semester);
-      const selectedIds = selectedCourseTeachers[semester] || [];
-      const selectedSemesterCourses = semesterCourses.filter((ct) =>
-        selectedIds.includes(ct.id)
-      );
-      allSelectedCourses.push(...selectedSemesterCourses);
-    }
+    // Collect all selected courses
+    const allSelectedCourses = courseTeachers.filter((ct) =>
+      selectedCourseTeachers.includes(ct.id)
+    );
 
     if (allSelectedCourses.length === 0) {
       toast({
@@ -644,7 +632,7 @@ export default function Index() {
       XLSX.utils.book_append_sheet(wb, ws, "Exam Schedule");
 
       // Generate filename and download the Excel file
-      const filename = `exam-schedule-${semesterType}-semesters-${
+      const filename = `exam-schedule-${
         new Date().toISOString().split("T")[0]
       }.xlsx`;
       XLSX.writeFile(wb, filename);
@@ -664,40 +652,29 @@ export default function Index() {
   };
 
   /**
-   * Toggles the selection state of a course teacher for a specific semester.
-   * @param {number} semester - The semester number.
+   * Toggles the selection state of a course teacher.
    * @param {string} id - The ID of the course teacher.
    */
-  const toggleCourseTeacher = (semester: number, id: string) => {
-    setSelectedCourseTeachers((prev) => ({
-      ...prev,
-      [semester]: prev[semester]?.includes(id)
-        ? prev[semester].filter((ctId) => ctId !== id)
-        : [...(prev[semester] || []), id],
-    }));
+  const toggleCourseTeacher = (id: string) => {
+    setSelectedCourseTeachers((prev) =>
+      prev.includes(id)
+        ? prev.filter((ctId) => ctId !== id)
+        : [...prev, id]
+    );
   };
 
   /**
-   * Selects all course teachers for a given semester.
-   * @param {number} semester - The semester number.
+   * Selects all course teachers
    */
-  const selectAllForSemester = (semester: number) => {
-    const semesterCourses = getCoursesBySemester(semester);
-    setSelectedCourseTeachers((prev) => ({
-      ...prev,
-      [semester]: semesterCourses.map((ct) => ct.id),
-    }));
+  const selectAllCourses = () => {
+    setSelectedCourseTeachers(courseTeachers.map((ct) => ct.id));
   };
 
   /**
-   * Deselects all course teachers for a given semester.
-   * @param {number} semester - The semester number.
+   * Deselects all course teachers
    */
-  const deselectAllForSemester = (semester: number) => {
-    setSelectedCourseTeachers((prev) => ({
-      ...prev,
-      [semester]: [],
-    }));
+  const deselectAllCourses = () => {
+    setSelectedCourseTeachers([]);
   };
 
   const dateRangeInfo = getDateRangeInfo();
@@ -769,37 +746,39 @@ export default function Index() {
             </div>
           )}
 
-          {/* Semester selection card */}
+          {/* Course selection summary */}
           <Card className="mb-6 transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
-              <CardTitle className="dark:text-gray-100 transition-colors duration-300">
-                Semester Selection
-              </CardTitle>
-              <CardDescription className="dark:text-gray-400 transition-colors duration-300">
-                Choose between odd or even semesters (includes both B.Tech and
-                M.Tech)
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="dark:text-gray-100 transition-colors duration-300">
+                    Course Selection
+                  </CardTitle>
+                  <CardDescription className="dark:text-gray-400 transition-colors duration-300">
+                    {selectedCourseTeachers.length} of {courseTeachers.length} courses selected • {getTotalEnrolledStudents()} students enrolled
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllCourses}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={deselectAllCourses}
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <Tabs
-                value={semesterType}
-                onValueChange={(value) =>
-                  setSemesterType(value as "odd" | "even")
-                }
-              >
-                <TabsList className="grid w-full grid-cols-2 transition-all duration-300">
-                  <TabsTrigger value="odd" className="text-lg font-medium transition-all duration-300 hover:scale-105">
-                    Odd Semesters
-                  </TabsTrigger>
-                  <TabsTrigger value="even" className="text-lg font-medium transition-all duration-300 hover:scale-105">
-                    Even Semesters
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardContent>
           </Card>
 
-          {/* Main content grid for schedule settings and semester cards */}
+          {/* Main content grid for schedule settings and course cards */}
           <div className="grid lg:grid-cols-4 gap-6 animate-fade-in">
             <ScheduleSettings
               startDate={startDate}
@@ -823,18 +802,15 @@ export default function Index() {
                   <CourseEnrollmentCard
                     key={courseTeacher.id}
                     courseTeacher={courseTeacher}
-                    isSelected={Object.values(selectedCourseTeachers)
-                      .flat()
-                      .includes(courseTeacher.id)}
-                    onToggle={() => 
-                      toggleCourseTeacher(courseTeacher.semester, courseTeacher.id)
-                    }
+                    isSelected={selectedCourseTeachers.includes(courseTeacher.id)}
+                    onToggle={() => toggleCourseTeacher(courseTeacher.id)}
                     editingGap={editingGap}
                     tempGapValue={tempGapValue}
                     onEditGap={handleEditGap}
                     onSaveGap={handleSaveGap}
                     onCancelGap={handleCancelGap}
                     onTempGapChange={setTempGapValue}
+                    enrollmentCount={courseEnrollmentCounts[courseTeacher.id] || 0}
                   />
                 ))}
               </div>
