@@ -19,6 +19,7 @@ interface CourseEnrollmentCardProps {
   onSaveGap: (courseId: string) => void;
   onCancelGap: () => void;
   onTempGapChange: (value: number) => void;
+  enrollmentCount: number;
 }
 
 interface EnrolledStudent {
@@ -38,6 +39,7 @@ export const CourseEnrollmentCard = ({
   onSaveGap,
   onCancelGap,
   onTempGapChange,
+  enrollmentCount,
 }: CourseEnrollmentCardProps) => {
   const [enrolledStudents, setEnrolledStudents] = useState<EnrolledStudent[]>([]);
   const [loading, setLoading] = useState(false);
@@ -113,15 +115,6 @@ export const CourseEnrollmentCard = ({
     }
   };
 
-  const getSemesterDisplay = (semester: number) => {
-    if (semester <= 8) {
-      return `B.Tech Semester ${semester}`;
-    } else {
-      const mtechSem = semester - 8;
-      return `M.Tech Semester ${mtechSem}`;
-    }
-  };
-
   const handleCardClick = () => {
     if (enrolledStudents.length > 0) {
       setShowStudents(!showStudents);
@@ -171,15 +164,12 @@ export const CourseEnrollmentCard = ({
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{courseTeacher.teacher_name || 'TBD'}</span>
             </span>
-            <Badge variant="secondary" className="text-xs font-medium">
-              {getSemesterDisplay(courseTeacher.semester)}
-            </Badge>
           </div>
           
           <div className="flex items-center justify-between gap-2">
             <Badge variant="outline" className="text-xs flex items-center gap-1 bg-background/50">
               <Users className="h-3 w-3" />
-              {enrolledStudents.length}
+              {enrollmentCount}
             </Badge>
             <div className="flex items-center gap-1 bg-background/50 px-2 py-1 rounded-md">
               <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -227,7 +217,7 @@ export const CourseEnrollmentCard = ({
           </div>
         </div>
         
-        {enrolledStudents.length > 0 && (
+        {enrollmentCount > 0 && (
           <div className="flex items-center justify-center pt-2">
             <Button
               variant="ghost"

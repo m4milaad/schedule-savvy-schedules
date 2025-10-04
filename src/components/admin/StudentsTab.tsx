@@ -68,25 +68,25 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
-            // Map students to their corresponding profiles
-            const studentProfileMap = new Map();
-            for (const student of students) {
-                // Find the corresponding profile for this student
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('id')
-                    .eq('user_type', 'student')
-                    .eq('student_enrollment_no', student.student_enrollment_no)
-                    .single();
-                
-                if (profileData) {
-                    studentProfileMap.set(student.student_id, profileData.id);
-                }
-            }
+            // First, get all profiles with their enrollment numbers
+            const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('id, student_enrollment_no')
+                .eq('user_type', 'student');
 
-            // Get enrollments using profile IDs
-            const profileIds = Array.from(studentProfileMap.values());
-            const { data, error } = await supabase
+            if (profilesError) throw profilesError;
+
+            // Create a map from enrollment number to profile ID
+            const enrollmentToProfileMap = new Map();
+            profilesData?.forEach((profile: any) => {
+                if (profile.student_enrollment_no) {
+                    enrollmentToProfileMap.set(profile.student_enrollment_no, profile.id);
+                }
+            });
+
+            // Get all enrollments at once
+            const profileIds = Array.from(enrollmentToProfileMap.values());
+            const { data: enrollmentsData, error: enrollmentsError } = await supabase
                 .from('student_enrollments')
                 .select(`
                     student_id,
@@ -98,63 +98,34 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 .eq('is_active', true)
                 .in('student_id', profileIds);
 
-            if (error) throw error;
+            if (enrollmentsError) throw enrollmentsError;
 
-            // Map back to student IDs
-            const enrollmentMap: Record<string, StudentEnrollment[]> = {};
-            (data || []).forEach((item: any) => {
-                // Find the student ID that corresponds to this profile ID
-                const studentId = Array.from(studentProfileMap.entries())
-                    .find(([_, profileId]) => profileId === item.student_id)?.[0];
-                
-                if (studentId) {
-                    if (!enrollmentMap[studentId]) {
-                        enrollmentMap[studentId] = [];
-                    }
-                    if (item.courses) {
-                        enrollmentMap[studentId].push({
-                            course_code: item.courses.course_code,
-                            course_name: item.courses.course_name
-                        });
-                    }
+            // Build enrollments map by profile ID first
+            const profileEnrollmentsMap: Record<string, StudentEnrollment[]> = {};
+            (enrollmentsData || []).forEach((item: any) => {
+                if (!profileEnrollmentsMap[item.student_id]) {
+                    profileEnrollmentsMap[item.student_id] = [];
+                }
+                if (item.courses) {
+                    profileEnrollmentsMap[item.student_id].push({
+                        course_code: item.courses.course_code,
+                        course_name: item.courses.course_name
+                    });
                 }
             });
 
-            setStudentEnrollments(enrollmentMap);
+            // Now map to student IDs using enrollment numbers
+            const studentEnrollmentsMap: Record<string, StudentEnrollment[]> = {};
+            students.forEach((student) => {
+                const profileId = enrollmentToProfileMap.get(student.student_enrollment_no);
+                if (profileId && profileEnrollmentsMap[profileId]) {
+                    studentEnrollmentsMap[student.student_id] = profileEnrollmentsMap[profileId];
+                }
+            });
+
+            setStudentEnrollments(studentEnrollmentsMap);
         } catch (error) {
             console.error('Error loading student enrollments:', error);
-            // Try alternative approach if the above fails
-            try {
-                const { data: altData, error: altError } = await supabase
-                    .from('student_courses')
-                    .select(`
-                        student_id,
-                        courses (
-                            course_code,
-                            course_name
-                        )
-                    `)
-                    .in('student_id', students.map(s => s.student_id));
-
-                if (altError) throw altError;
-
-                const enrollmentMap: Record<string, StudentEnrollment[]> = {};
-                (altData || []).forEach((item: any) => {
-                    if (!enrollmentMap[item.student_id]) {
-                        enrollmentMap[item.student_id] = [];
-                    }
-                    if (item.courses) {
-                        enrollmentMap[item.student_id].push({
-                            course_code: item.courses.course_code,
-                            course_name: item.courses.course_name
-                        });
-                    }
-                });
-
-                setStudentEnrollments(enrollmentMap);
-            } catch (altError) {
-                console.error('Error loading student enrollments (alternative):', altError);
-            }
         }
     };
 
