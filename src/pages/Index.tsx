@@ -69,22 +69,31 @@ export default function Index() {
     try {
       const { data, error } = await supabase
         .from('student_enrollments')
-        .select('course_id')
+        .select('course_id, student_id')
         .eq('is_active', true);
 
       if (error) throw error;
 
-      // Count enrollments per course
-      const counts: Record<string, number> = {};
+      // Count enrollments per course with unique students
+      const counts: Record<string, Set<string>> = {};
       data?.forEach((enrollment: any) => {
-        counts[enrollment.course_id] = (counts[enrollment.course_id] || 0) + 1;
+        if (!counts[enrollment.course_id]) {
+          counts[enrollment.course_id] = new Set();
+        }
+        counts[enrollment.course_id].add(enrollment.student_id);
       });
 
-      setCourseEnrollmentCounts(counts);
+      // Convert sets to counts
+      const countNumbers: Record<string, number> = {};
+      Object.keys(counts).forEach((courseId) => {
+        countNumbers[courseId] = counts[courseId].size;
+      });
+
+      setCourseEnrollmentCounts(countNumbers);
 
       // Auto-select only courses with enrolled students
       const coursesWithStudents = courseTeachers
-        .filter((ct) => counts[ct.id] > 0)
+        .filter((ct) => countNumbers[ct.id] > 0)
         .map((ct) => ct.id);
       
       setSelectedCourseTeachers(coursesWithStudents);

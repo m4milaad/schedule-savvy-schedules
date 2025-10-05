@@ -164,18 +164,50 @@ const AdminDashboard = () => {
   const loadStudents = async () => {
     try {
       console.log('Loading students from database...');
-      const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .order('student_name');
+      // Get all students from students table
+      const { data: studentsData, error: studentsError } = await supabase
+        .from('students')
+        .select('*')
+        .order('full_name');
     
-      if (error) {
-        console.error('Error loading students:', error);
-        throw error;
+      if (studentsError) {
+        console.error('Error loading students:', studentsError);
+        throw studentsError;
       }
       
-      console.log('Students loaded:', data?.length || 0);
-      setStudents(data || []);
+      // Also get profiles that are students but don't have student records
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_type', 'student');
+        
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+      }
+      
+      // Create a set of student IDs we already have in students table
+      const existingStudentIds = new Set(studentsData?.map((s: any) => s.student_id) || []);
+      
+      // Add profile-only students to the list
+      const profileOnlyStudents = (profilesData || [])
+        .filter((p: any) => !existingStudentIds.has(p.id))
+        .map((p: any) => ({
+          student_id: p.id,
+          student_name: p.full_name || 'Unknown',
+          student_enrollment_no: p.student_enrollment_no || `PENDING-${p.id}`,
+          student_email: p.email,
+          student_address: p.address,
+          dept_id: p.dept_id,
+          student_year: 1,
+          semester: p.semester || 1,
+          abc_id: p.abc_id,
+          created_at: p.created_at,
+          updated_at: p.updated_at
+        }));
+      
+      const allStudents = [...(studentsData || []), ...profileOnlyStudents];
+      console.log('Students loaded:', allStudents.length);
+      setStudents(allStudents);
     } catch (error) {
       console.error('Failed to load students:', error);
       toast({
