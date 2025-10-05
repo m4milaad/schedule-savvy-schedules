@@ -68,24 +68,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
-            // First, get all profiles with their enrollment numbers
-            const { data: profilesData, error: profilesError } = await supabase
-                .from('profiles')
-                .select('id, student_enrollment_no')
-                .eq('user_type', 'student');
-
-            if (profilesError) throw profilesError;
-
-            // Create a map from enrollment number to profile ID
-            const enrollmentToProfileMap = new Map();
-            profilesData?.forEach((profile: any) => {
-                if (profile.student_enrollment_no) {
-                    enrollmentToProfileMap.set(profile.student_enrollment_no, profile.id);
-                }
-            });
-
-            // Get all enrollments at once
-            const profileIds = Array.from(enrollmentToProfileMap.values());
+            // Get all student enrollments directly using student_id
             const { data: enrollmentsData, error: enrollmentsError } = await supabase
                 .from('student_enrollments')
                 .select(`
@@ -95,35 +78,25 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         course_name
                     )
                 `)
-                .eq('is_active', true)
-                .in('student_id', profileIds);
+                .eq('is_active', true);
 
             if (enrollmentsError) throw enrollmentsError;
 
-            // Build enrollments map by profile ID first
-            const profileEnrollmentsMap: Record<string, StudentEnrollment[]> = {};
+            // Build enrollments map by student_id
+            const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
             (enrollmentsData || []).forEach((item: any) => {
-                if (!profileEnrollmentsMap[item.student_id]) {
-                    profileEnrollmentsMap[item.student_id] = [];
+                if (!enrollmentsMap[item.student_id]) {
+                    enrollmentsMap[item.student_id] = [];
                 }
                 if (item.courses) {
-                    profileEnrollmentsMap[item.student_id].push({
+                    enrollmentsMap[item.student_id].push({
                         course_code: item.courses.course_code,
                         course_name: item.courses.course_name
                     });
                 }
             });
 
-            // Now map to student IDs using enrollment numbers
-            const studentEnrollmentsMap: Record<string, StudentEnrollment[]> = {};
-            students.forEach((student) => {
-                const profileId = enrollmentToProfileMap.get(student.student_enrollment_no);
-                if (profileId && profileEnrollmentsMap[profileId]) {
-                    studentEnrollmentsMap[student.student_id] = profileEnrollmentsMap[profileId];
-                }
-            });
-
-            setStudentEnrollments(studentEnrollmentsMap);
+            setStudentEnrollments(enrollmentsMap);
         } catch (error) {
             console.error('Error loading student enrollments:', error);
         }
