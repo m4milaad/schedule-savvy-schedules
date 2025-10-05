@@ -15,6 +15,20 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface Student {
+  student_id: string;
+  student_name: string;
+  student_enrollment_no: string;
+  student_email?: string;
+  student_address?: string;
+  dept_id?: string;
+  student_year: number;
+  semester: number;
+  abc_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StudentEnrollment {
   id: string;
   student_id: string;
