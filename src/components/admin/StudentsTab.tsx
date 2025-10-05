@@ -68,11 +68,14 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
-            // Get all student enrollments directly using student_id
+            console.log('[StudentsTab] Loading enrollments... Students count:', students.length);
+            
+            // Get all student enrollments with course details
             const { data: enrollmentsData, error: enrollmentsError } = await supabase
                 .from('student_enrollments')
                 .select(`
                     student_id,
+                    course_id,
                     courses (
                         course_code,
                         course_name
@@ -80,25 +83,38 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 `)
                 .eq('is_active', true);
 
-            if (enrollmentsError) throw enrollmentsError;
+            if (enrollmentsError) {
+                console.error('[StudentsTab] Enrollments error:', enrollmentsError);
+                return;
+            }
+
+            console.log('[StudentsTab] Raw enrollments data:', enrollmentsData?.length, 'records');
+            console.log('[StudentsTab] Sample student IDs from table:', students.slice(0, 3).map(s => s.student_id));
 
             // Build enrollments map by student_id
             const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
+            
             (enrollmentsData || []).forEach((item: any) => {
-                if (!enrollmentsMap[item.student_id]) {
-                    enrollmentsMap[item.student_id] = [];
+                const studentId = item.student_id;
+                
+                if (!enrollmentsMap[studentId]) {
+                    enrollmentsMap[studentId] = [];
                 }
+                
                 if (item.courses) {
-                    enrollmentsMap[item.student_id].push({
+                    enrollmentsMap[studentId].push({
                         course_code: item.courses.course_code,
                         course_name: item.courses.course_name
                     });
                 }
             });
 
+            console.log('[StudentsTab] Enrollments map built. Students with enrollments:', Object.keys(enrollmentsMap).length);
+            console.log('[StudentsTab] Sample enrollment mapping:', Object.entries(enrollmentsMap).slice(0, 2));
+            
             setStudentEnrollments(enrollmentsMap);
         } catch (error) {
-            console.error('Error loading student enrollments:', error);
+            console.error('[StudentsTab] Error loading student enrollments:', error);
         }
     };
 
