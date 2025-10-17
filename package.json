@@ -71,7 +71,7 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",
     "xlsx": "^0.18.5",
-    "zod": "^3.23.8"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",
