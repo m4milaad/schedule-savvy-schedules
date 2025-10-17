@@ -3,6 +3,8 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
+import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 export type UserProfile = Profile;
 
@@ -79,6 +81,23 @@ export const useAuth = () => {
     student_enrollment_no?: string;
   }) => {
     try {
+      // Validate inputs
+      try {
+        signUpSchema.parse({
+          email,
+          password,
+          fullName: userData.full_name,
+          userType: userData.user_type,
+          enrollmentNumber: userData.student_enrollment_no,
+          deptId: userData.dept_id,
+        });
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          throw new Error(validationError.issues[0].message);
+        }
+        throw validationError;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -109,6 +128,16 @@ export const useAuth = () => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Validate inputs
+      try {
+        signInSchema.parse({ email, password });
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          throw new Error(validationError.issues[0].message);
+        }
+        throw validationError;
+      }
+
       // Clean up any existing auth state
       cleanupAuthState();
       
@@ -185,6 +214,16 @@ export const useAuth = () => {
     if (!user || !profile) return { error: 'No user logged in' };
 
     try {
+      // Validate inputs
+      try {
+        profileUpdateSchema.parse(updates);
+      } catch (validationError) {
+        if (validationError instanceof z.ZodError) {
+          throw new Error(validationError.issues[0].message);
+        }
+        throw validationError;
+      }
+
       const { data, error } = await (supabase as any)
         .from('profiles')
         .update(updates)

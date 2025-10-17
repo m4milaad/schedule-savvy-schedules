@@ -20,10 +20,6 @@ export const adminAuth = {
   // Login function
   async login(username: string, password: string): Promise<{ success: boolean; error?: string; user?: AdminUser }> {
     try {
-      console.log('=== ADMIN LOGIN DEBUG ===');
-      console.log('Username:', username);
-      console.log('Password provided:', !!password);
-      
       // Query the admin_users table
       const { data: adminUsers, error } = await supabase
         .from('admin_users')
@@ -33,7 +29,6 @@ export const adminAuth = {
         .single();
 
       if (error) {
-        console.error('Database query error:', error);
         if (error.code === 'PGRST116') {
           return { success: false, error: 'User not found or inactive' };
         }
@@ -41,22 +36,15 @@ export const adminAuth = {
       }
 
       if (!adminUsers) {
-        console.log('No admin user found');
         return { success: false, error: 'Invalid credentials' };
       }
 
-      console.log('Found admin user:', adminUsers.username);
-      console.log('Stored hash preview:', adminUsers.password_hash ? adminUsers.password_hash.substring(0, 20) + '...' : 'null');
-      
       // Verify password
       const isPasswordValid = await comparePassword(password, adminUsers.password_hash);
       
       if (!isPasswordValid) {
-        console.log('Password verification failed for user:', username);
         return { success: false, error: 'Invalid credentials' };
       }
-
-      console.log('Password verified successfully for user:', username);
 
       // Create user object without password
       const user: AdminUser = {
@@ -74,11 +62,9 @@ export const adminAuth = {
       };
       
       localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-      console.log('Admin session stored for user:', user.username);
 
       return { success: true, user };
     } catch (error) {
-      console.error('Login error:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
   },
@@ -103,7 +89,6 @@ export const adminAuth = {
       
       return session;
     } catch (error) {
-      console.error('Error getting admin session:', error);
       return null;
     }
   },
