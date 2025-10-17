@@ -68,8 +68,6 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const loadStudentEnrollments = async () => {
         try {
-            console.log('[StudentsTab] Loading enrollments... Students count:', students.length);
-            
             // Get all student enrollments with course details
             const { data: enrollmentsData, error: enrollmentsError } = await supabase
                 .from('student_enrollments')
@@ -84,12 +82,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 .eq('is_active', true);
 
             if (enrollmentsError) {
-                console.error('[StudentsTab] Enrollments error:', enrollmentsError);
                 return;
             }
-
-            console.log('[StudentsTab] Raw enrollments data:', enrollmentsData?.length, 'records');
-            console.log('[StudentsTab] Sample student IDs from table:', students.slice(0, 3).map(s => s.student_id));
 
             // Build enrollments map by student_id
             const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
@@ -108,13 +102,10 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     });
                 }
             });
-
-            console.log('[StudentsTab] Enrollments map built. Students with enrollments:', Object.keys(enrollmentsMap).length);
-            console.log('[StudentsTab] Sample enrollment mapping:', Object.entries(enrollmentsMap).slice(0, 2));
             
             setStudentEnrollments(enrollmentsMap);
         } catch (error) {
-            console.error('[StudentsTab] Error loading student enrollments:', error);
+            // Silent fail - enrollments will show as empty
         }
     };
 
