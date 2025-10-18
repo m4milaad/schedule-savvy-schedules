@@ -657,7 +657,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_course_enrollments: {
+        Row: {
+          abc_id: string | null
+          course_id: string | null
+          student_enrollment_no: string | null
+          student_id: string | null
+          student_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+        ]
+      }
     }
     Functions: {
       cleanup_orphaned_records: {
