@@ -335,9 +335,9 @@ export default function Index() {
             course_code,
             semester
           ),
-          profiles (
-            id,
-            full_name,
+          students (
+            student_id,
+            student_name,
             student_enrollment_no
           )
         `)

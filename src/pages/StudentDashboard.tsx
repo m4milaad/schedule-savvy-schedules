@@ -133,7 +133,7 @@ const StudentDashboard = () => {
   const loadEnrollments = async () => {
     if (!profile) return;
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('student_enrollments')
       .select(`
         *,
@@ -211,7 +211,7 @@ const StudentDashboard = () => {
     if (!profile) return;
 
     // Get student's enrolled courses
-    const { data: studentCourses, error: enrollmentError } = await (supabase as any)
+    const { data: studentCourses, error: enrollmentError } = await supabase
       .from('student_enrollments')
       .select('course_id')
       .eq('student_id', profile.id)
@@ -275,13 +275,13 @@ const StudentDashboard = () => {
 
     setEnrolling(true);
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('student_enrollments')
         .insert({
           student_id: profile.id,
           course_id: courseId,
           is_active: true
-        } as any);
+        });
 
       if (error) throw error;
 
@@ -308,9 +308,9 @@ const StudentDashboard = () => {
     if (!profile) return;
 
     try {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('student_enrollments')
-        .update({ is_active: false } as any)
+        .update({ is_active: false })
         .eq('id', enrollmentId);
 
       if (error) throw error;
