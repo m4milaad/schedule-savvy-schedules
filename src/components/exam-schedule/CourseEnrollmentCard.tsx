@@ -52,13 +52,13 @@ export const CourseEnrollmentCard = ({
   const loadEnrolledStudents = async () => {
     setLoading(true);
     try {
-      // Get enrollments for this specific course
+      // Get enrollments for this specific course with student data
       const { data, error } = await supabase
         .from('student_enrollments')
         .select(`
           student_id,
-          profiles (
-            full_name,
+          students (
+            student_name,
             student_enrollment_no,
             abc_id
           )
@@ -68,48 +68,21 @@ export const CourseEnrollmentCard = ({
 
       if (error) {
         console.error('Error loading enrolled students:', error);
-        // Fallback: try to get students from students table with matching course
-        const { data: studentsData, error: studentsError } = await supabase
-          .from('students')
-          .select(`
-            student_id,
-            student_name,
-            student_enrollment_no,
-            abc_id
-          `);
-
-        if (studentsError) {
-          console.error('Error loading students fallback:', studentsError);
-          return;
-        }
-
-        // Create realistic student distribution - different students per course
-        const courseIndex = courseTeacher.course_code.charCodeAt(courseTeacher.course_code.length - 1) % 10;
-        const maxStudents = Math.min(8, studentsData?.length || 0); // Max 8 students per course
-        const startIndex = (courseIndex * 3) % (studentsData?.length || 1);
-        const endIndex = Math.min(startIndex + maxStudents, studentsData?.length || 0);
-        
-        const students = studentsData?.slice(startIndex, endIndex).map((student: any) => ({
-          student_id: student.student_id,
-          student_name: student.student_name,
-          student_enrollment_no: student.student_enrollment_no,
-          abc_id: student.abc_id,
-        })) || [];
-
-        setEnrolledStudents(students);
+        setEnrolledStudents([]);
         return;
       }
 
       const students = data?.map((enrollment: any) => ({
         student_id: enrollment.student_id,
-        student_name: enrollment.profiles?.full_name || 'Unknown',
-        student_enrollment_no: enrollment.profiles?.student_enrollment_no || 'Unknown',
-        abc_id: enrollment.profiles?.abc_id,
+        student_name: enrollment.students?.student_name || 'Unknown',
+        student_enrollment_no: enrollment.students?.student_enrollment_no || 'Unknown',
+        abc_id: enrollment.students?.abc_id,
       })) || [];
 
       setEnrolledStudents(students);
     } catch (error) {
       console.error('Error loading enrolled students:', error);
+      setEnrolledStudents([]);
     } finally {
       setLoading(false);
     }
