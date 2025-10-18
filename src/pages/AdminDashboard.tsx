@@ -168,7 +168,7 @@ const AdminDashboard = () => {
       const { data: studentsData, error: studentsError } = await supabase
         .from('students')
         .select('*')
-        .order('full_name');
+        .order('student_name');
     
       if (studentsError) {
         console.error('Error loading students:', studentsError);
