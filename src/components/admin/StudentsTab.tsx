@@ -82,6 +82,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 .eq('is_active', true);
 
             if (enrollmentsError) {
+                console.error('Error loading enrollments:', enrollmentsError);
                 return;
             }
 
@@ -105,7 +106,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             
             setStudentEnrollments(enrollmentsMap);
         } catch (error) {
-            // Silent fail - enrollments will show as empty
+            console.error('Error in loadStudentEnrollments:', error);
         }
     };
 
