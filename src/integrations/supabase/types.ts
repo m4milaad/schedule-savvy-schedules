@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -466,13 +466,6 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["course_id"]
           },
-          {
-            foreignKeyName: "student_enrollments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       students: {
@@ -701,6 +694,15 @@ export type Database = {
           semester: number
           teacher_code: string
           teacher_name: string
+        }[]
+      }
+      get_student_enrollment_info: {
+        Args: { enrollment_student_id: string }
+        Returns: {
+          abc_id: string
+          student_enrollment_no: string
+          student_id: string
+          student_name: string
         }[]
       }
       get_user_department: {
