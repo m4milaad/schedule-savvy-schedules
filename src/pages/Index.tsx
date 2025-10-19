@@ -38,6 +38,7 @@ export default function Index() {
   const [editingGap, setEditingGap] = useState<string | null>(null);
   const [tempGapValue, setTempGapValue] = useState<number>(0);
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
+  const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -352,19 +353,22 @@ export default function Index() {
       const courseCodeById = new Map(courseTeachers.map(ct => [ct.id, ct.course_code]));
 
       // Create student-course mapping for overlap detection
-      const studentCourseMap: Record<string, string[]> = {};
+      const newStudentCourseMap: Record<string, string[]> = {};
       if (enrollments) {
         enrollments.forEach((enrollment: any) => {
           const studentId = enrollment.student_id;
           const courseCode = courseCodeById.get(enrollment.course_id);
           if (studentId && courseCode) {
-            if (!studentCourseMap[studentId]) {
-              studentCourseMap[studentId] = [];
+            if (!newStudentCourseMap[studentId]) {
+              newStudentCourseMap[studentId] = [];
             }
-            studentCourseMap[studentId].push(courseCode);
+            newStudentCourseMap[studentId].push(courseCode);
           }
         });
       }
+
+      // Store in state for drag-and-drop validation
+      setStudentCourseMap(newStudentCourseMap);
 
       // Use the enhanced scheduling algorithm
       const { generateEnhancedSchedule } = await import("@/utils/scheduleAlgorithm");
@@ -373,7 +377,7 @@ export default function Index() {
         startDate,
         endDate,
         holidays,
-        studentCourseMap
+        newStudentCourseMap
       );
 
       setGeneratedSchedule(schedule);
@@ -469,17 +473,37 @@ export default function Index() {
         exam.id !== draggedExam.id
     );
 
-    // Prevent scheduling multiple exams for the same semester on the same day
-    const semesterExamOnDate = examsOnTargetDate.find(
-      (exam) => exam.semester === draggedExam.semester
+    // Check for student enrollment conflicts - ensure no student has two exams on the same day
+    const draggedCourseCode = normalizeCourseCode(draggedExam.course_code);
+    const studentsInDraggedCourse = Object.keys(studentCourseMap).filter(studentId =>
+      studentCourseMap[studentId].some(code => normalizeCourseCode(code) === draggedCourseCode)
     );
 
-    if (semesterExamOnDate) {
+    let conflictingExam = null;
+    let conflictingStudentsCount = 0;
+
+    for (const exam of examsOnTargetDate) {
+      const examCourseCode = normalizeCourseCode(exam.course_code);
+      const studentsInExam = Object.keys(studentCourseMap).filter(studentId =>
+        studentCourseMap[studentId].some(code => normalizeCourseCode(code) === examCourseCode)
+      );
+
+      // Find students enrolled in both courses
+      const conflictingStudents = studentsInDraggedCourse.filter(studentId =>
+        studentsInExam.includes(studentId)
+      );
+
+      if (conflictingStudents.length > 0) {
+        conflictingExam = exam;
+        conflictingStudentsCount = conflictingStudents.length;
+        break;
+      }
+    }
+
+    if (conflictingExam) {
       toast({
         title: "Cannot Move Exam",
-        description: `Semester ${
-          draggedExam.semester
-        } already has an exam on ${targetDate.toLocaleDateString()}.`,
+        description: `${conflictingStudentsCount} student${conflictingStudentsCount > 1 ? 's are' : ' is'} enrolled in both ${draggedExam.course_code} and ${conflictingExam.course_code}. Moving would create an exam conflict on ${targetDate.toLocaleDateString()}.`,
         variant: "destructive",
         action: (
           <Button
@@ -515,42 +539,60 @@ export default function Index() {
       return;
     }
 
-    // Validate gap requirements for non-first papers
+    // Validate gap requirements based on student enrollments
     if (!draggedExam.is_first_paper) {
-      const semesterExams = generatedSchedule
-        .filter(
-          (exam) =>
-            exam.semester === draggedExam.semester && exam.id !== draggedExam.id
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
+      const draggedCourseNormalized = normalizeCourseCode(draggedExam.course_code);
+      const studentsInDraggedCourse = Object.keys(studentCourseMap).filter(studentId =>
+        studentCourseMap[studentId].some(code => normalizeCourseCode(code) === draggedCourseNormalized)
+      );
+
+      // Check gap for all exams that share students with the dragged course
+      let minGapViolation: { exam: ExamScheduleItem; daysDiff: number; studentCount: number } | null = null;
+
+      for (const exam of generatedSchedule) {
+        if (exam.id === draggedExam.id) continue;
+
+        const examCourseNormalized = normalizeCourseCode(exam.course_code);
+        const studentsInExam = Object.keys(studentCourseMap).filter(studentId =>
+          studentCourseMap[studentId].some(code => normalizeCourseCode(code) === examCourseNormalized)
         );
 
-      const previousExam = semesterExams[semesterExams.length - 1]; // Get the most recent exam for the same semester
-      if (previousExam) {
-        const daysDiff = Math.floor(
-          (targetDate.getTime() - new Date(previousExam.exam_date).getTime()) /
-            (1000 * 60 * 60 * 24)
+        // Find students enrolled in both courses
+        const sharedStudents = studentsInDraggedCourse.filter(studentId =>
+          studentsInExam.includes(studentId)
         );
-        if (daysDiff < draggedExam.gap_days) {
-          toast({
-            title: "Gap Requirement Not Met",
-            description: `This course requires ${draggedExam.gap_days} days gap. Only ${daysDiff} days available.`,
-            variant: "destructive",
-            action: (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-black hover:text-red-600"
-                onClick={() => performMove(draggableId, targetDate)}
-              >
-                Override
-              </Button>
-            ),
-          });
-          return;
+
+        if (sharedStudents.length > 0) {
+          const daysDiff = Math.abs(Math.floor(
+            (targetDate.getTime() - new Date(exam.exam_date).getTime()) /
+              (1000 * 60 * 60 * 24)
+          ));
+
+          if (daysDiff < draggedExam.gap_days) {
+            if (!minGapViolation || daysDiff < minGapViolation.daysDiff) {
+              minGapViolation = { exam, daysDiff, studentCount: sharedStudents.length };
+            }
+          }
         }
+      }
+
+      if (minGapViolation) {
+        toast({
+          title: "Gap Requirement Not Met",
+          description: `${minGapViolation.studentCount} student${minGapViolation.studentCount > 1 ? 's have' : ' has'} ${minGapViolation.exam.course_code} with only ${minGapViolation.daysDiff} day${minGapViolation.daysDiff !== 1 ? 's' : ''} gap. Requires ${draggedExam.gap_days} days.`,
+          variant: "destructive",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-black hover:text-red-600"
+              onClick={() => performMove(draggableId, targetDate)}
+            >
+              Override
+            </Button>
+          ),
+        });
+        return;
       }
     }
 
