@@ -211,14 +211,22 @@ export default function Index() {
   };
 
   /**
-   * Gets all courses sorted by enrollment count (courses with students first)
-   * @returns {CourseTeacher[]} An array of all available courses sorted by enrollment.
+   * Gets all courses sorted by selection status first, then by enrollment count
+   * @returns {CourseTeacher[]} An array of all available courses sorted by selection and enrollment.
    */
   const getAllAvailableCourses = () => {
     return [...courseTeachers].sort((a, b) => {
+      const aSelected = selectedCourseTeachers.includes(a.id);
+      const bSelected = selectedCourseTeachers.includes(b.id);
+      
+      // Sort by selection status first (selected courses on top)
+      if (aSelected !== bSelected) {
+        return aSelected ? -1 : 1;
+      }
+      
+      // Then sort by enrollment count descending (courses with students first)
       const aCount = courseEnrollmentCounts[a.id] || 0;
       const bCount = courseEnrollmentCounts[b.id] || 0;
-      // Sort by enrollment count descending (courses with students first)
       return bCount - aCount;
     });
   };
