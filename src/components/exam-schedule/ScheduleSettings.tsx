@@ -126,38 +126,38 @@ export const ScheduleSettings = ({
         {dateRangeInfo && (
           <div className="space-y-3 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-blue-600" />
-              <Label className="text-sm font-medium text-blue-700">Date Range Analysis</Label>
+              <CalendarDays className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <Label className="text-sm font-medium text-blue-700 dark:text-blue-400">Date Range Analysis</Label>
             </div>
-            
-            <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+
+            <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg space-y-2">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Days:</span>
-                  <span className="font-medium">{dateRangeInfo.totalDays}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total Days:</span>
+                  <span className="font-medium dark:text-gray-200">{dateRangeInfo.totalDays}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Weekends:</span>
-                  <span className="font-medium">{dateRangeInfo.weekendDays}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Weekends:</span>
+                  <span className="font-medium dark:text-gray-200">{dateRangeInfo.weekendDays}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Holidays:</span>
-                  <span className="font-medium">{dateRangeInfo.holidayCount}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Holidays:</span>
+                  <span className="font-medium dark:text-gray-200">{dateRangeInfo.holidayCount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-green-700 font-medium">Working Days:</span>
-                  <span className="font-bold text-green-700">{dateRangeInfo.workingDays}</span>
+                  <span className="text-green-700 dark:text-green-400 font-medium">Working Days:</span>
+                  <span className="font-bold text-green-700 dark:text-green-400">{dateRangeInfo.workingDays}</span>
                 </div>
               </div>
-              
+
               {dateRangeInfo.holidaysInRange.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-blue-200">
-                  <div className="text-xs font-medium text-gray-700 mb-2">Holidays in Range:</div>
+                <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-800">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Holidays in Range:</div>
                   <div className="max-h-20 overflow-y-auto space-y-1">
                     {dateRangeInfo.holidaysInRange.map((holiday, index) => (
-                      <div key={index} className="text-xs bg-white p-1 rounded border">
-                        <div className="font-medium">{new Date(holiday.holiday_date).toLocaleDateString()}</div>
-                        <div className="text-gray-600">{holiday.holiday_name}</div>
+                      <div key={index} className="text-xs bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-700">
+                        <div className="font-medium dark:text-gray-200">{new Date(holiday.holiday_date).toLocaleDateString()}</div>
+                        <div className="text-gray-600 dark:text-gray-400">{holiday.holiday_name}</div>
                       </div>
                     ))}
                   </div>
@@ -172,46 +172,46 @@ export const ScheduleSettings = ({
           <div className="space-y-3 pt-4 border-t">
             <div className="flex items-center gap-2">
               {isInsufficientDays ? (
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
               ) : (
-                <CalendarDays className="h-4 w-4 text-green-600" />
+                <CalendarDays className="h-4 w-4 text-green-600 dark:text-green-400" />
               )}
-              <Label className={`text-sm font-medium ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+              <Label className={`text-sm font-medium ${isInsufficientDays ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
                 Schedule Requirements
               </Label>
             </div>
-            
-            <div className={`p-3 rounded-lg space-y-2 ${isInsufficientDays ? 'bg-red-50' : 'bg-green-50'}`}>
+
+            <div className={`p-3 rounded-lg space-y-2 ${isInsufficientDays ? 'bg-red-50 dark:bg-red-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Courses:</span>
-                  <span className="font-medium">{minimumDaysInfo.totalCourses}</span>
+                  <span className="text-gray-600 dark:text-gray-400">Total Courses:</span>
+                  <span className="font-medium dark:text-gray-200">{minimumDaysInfo.totalCourses}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className={`font-medium ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+                  <span className={`font-medium ${isInsufficientDays ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
                     Min Days Needed:
                   </span>
-                  <span className={`font-bold ${isInsufficientDays ? 'text-red-700' : 'text-green-700'}`}>
+                  <span className={`font-bold ${isInsufficientDays ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
                     {minimumDaysInfo.minimumDays}
                   </span>
                 </div>
               </div>
 
               {isInsufficientDays && dateRangeInfo && (
-                <div className="mt-2 p-2 bg-red-100 rounded text-xs text-red-800">
+                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-xs text-red-800 dark:text-red-300">
                   <div className="font-medium">⚠️ Insufficient Time Range</div>
                   <div>Need {minimumDaysInfo.minimumDays - dateRangeInfo.workingDays} more working days</div>
                 </div>
               )}
-              
+
               {minimumDaysInfo.semesterBreakdown.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-gray-200">
-                  <div className="text-xs font-medium text-gray-700 mb-2">By Semester:</div>
+                <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">By Semester:</div>
                   <div className="max-h-20 overflow-y-auto space-y-1">
                     {minimumDaysInfo.semesterBreakdown.map((sem, index) => (
-                      <div key={index} className="text-xs bg-white p-1 rounded border flex justify-between">
-                        <span>Sem {sem.semester}: {sem.courseCount} courses</span>
-                        <span className="text-gray-600">{sem.totalGapDays} days</span>
+                      <div key={index} className="text-xs bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-700 flex justify-between">
+                        <span className="dark:text-gray-200">Sem {sem.semester}: {sem.courseCount} courses</span>
+                        <span className="text-gray-600 dark:text-gray-400">{sem.totalGapDays} days</span>
                       </div>
                     ))}
                   </div>
@@ -258,18 +258,18 @@ export const ScheduleSettings = ({
               <CalendarDays className="h-4 w-4 text-gray-500" />
               <Label className="text-sm font-medium">Holidays</Label>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               {holidays.length > 0 ? (
                 <div>
                   <p className="mb-2">{holidays.length} holidays configured</p>
                   <div className="max-h-24 overflow-y-auto space-y-1">
                     {holidays.slice(0, 3).map((holiday, index) => (
-                      <div key={index} className="text-xs bg-gray-50 p-1 rounded">
+                      <div key={index} className="text-xs bg-gray-50 dark:bg-gray-800 p-1 rounded dark:text-gray-300">
                         {holiday.toLocaleDateString()}
                       </div>
                     ))}
                     {holidays.length > 3 && (
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         ... and {holidays.length - 3} more
                       </div>
                     )}
@@ -278,7 +278,7 @@ export const ScheduleSettings = ({
               ) : (
                 <p>No holidays configured</p>
               )}
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Holidays are managed in the Admin Panel
               </p>
             </div>
