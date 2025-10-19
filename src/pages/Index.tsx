@@ -156,7 +156,7 @@ export default function Index() {
 
   /**
    * Calculates the minimum number of working days required to schedule all selected courses
-   * based on their individual gap requirements.
+   * based on their individual gap requirements and student enrollment conflicts.
    * @returns {object | null} Minimum day requirements or null if no courses are selected.
    */
   const calculateMinimumRequiredDays = () => {
@@ -168,8 +168,19 @@ export default function Index() {
 
     if (allSelectedCourses.length === 0) return null;
 
-    // Group courses by semester to calculate requirements per semester
-    const coursesBySemester = allSelectedCourses.reduce((acc, course) => {
+    // Group courses by normalized code to handle BT/BTCS merging
+    const uniqueCourses = new Map<string, CourseTeacher>();
+    allSelectedCourses.forEach(course => {
+      const normalizedCode = normalizeCourseCode(course.course_code);
+      if (!uniqueCourses.has(normalizedCode)) {
+        uniqueCourses.set(normalizedCode, course);
+      }
+    });
+
+    const mergedCourses = Array.from(uniqueCourses.values());
+
+    // Group courses by semester
+    const coursesBySemester = mergedCourses.reduce((acc, course) => {
       if (!acc[course.semester]) {
         acc[course.semester] = [];
       }
@@ -177,35 +188,34 @@ export default function Index() {
       return acc;
     }, {} as Record<number, CourseTeacher[]>);
 
-    // Calculate minimum days needed for each semester based on gap days
+    // Calculate minimum days for each semester considering efficient scheduling
     const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
       const semesterCourses = coursesBySemester[semester];
       if (semesterCourses.length === 0) return { semester: parseInt(semester), courseCount: 0, totalGapDays: 0 };
 
-      // Sort courses by gap days in descending order to prioritize larger gaps
-      const sortedCourses = [...semesterCourses].sort((a, b) => (b.gap_days || 2) - (a.gap_days || 2));
-      
-      let totalDays = 1; // Start with 1 day for the first exam
-      
-      // Accumulate days based on required gaps between consecutive exams
-      for (let i = 1; i < sortedCourses.length; i++) {
-        const course = sortedCourses[i];
-        const gapDays = course.gap_days || 2; // Default gap of 2 days
-        totalDays += gapDays;
-      }
+      // Get the maximum gap requirement among courses
+      const maxGap = Math.max(...semesterCourses.map(c => c.gap_days || 2));
+
+      // Calculate minimum days: (courses - 1) * gap + 1
+      // This assumes optimal packing where we can schedule one exam per gap period
+      const minDays = Math.max(
+        semesterCourses.length, // At minimum, need one day per course
+        (semesterCourses.length - 1) * maxGap + 1 // Ideal case with maximum gap
+      );
 
       return {
         semester: parseInt(semester),
         courseCount: semesterCourses.length,
-        totalGapDays: totalDays
+        totalGapDays: minDays
       };
     });
 
-    // The overall minimum days is determined by the semester with the highest requirement
+    // Since different semesters can have exams on the same day (no student conflicts),
+    // we need to consider the maximum requirement across semesters, not the sum
     const maxSemesterRequirement = Math.max(...semesterRequirements.map(req => req.totalGapDays));
 
     return {
-      totalCourses: allSelectedCourses.length,
+      totalCourses: mergedCourses.length,
       minimumDays: maxSemesterRequirement,
       semesterBreakdown: semesterRequirements
     };
