@@ -52,32 +52,46 @@ export const CourseEnrollmentCard = ({
   const loadEnrolledStudents = async () => {
     setLoading(true);
     try {
-      // Get enrollments for this specific course with student data
-      const { data, error } = await supabase
+      // Step 1: Fetch enrollments for this course
+      const { data: enrollments, error: enrollErr } = await supabase
         .from('student_enrollments')
-        .select(`
-          student_id,
-          students (
-            student_name,
-            student_enrollment_no,
-            abc_id
-          )
-        `)
+        .select('student_id')
         .eq('course_id', courseTeacher.id)
         .eq('is_active', true);
 
-      if (error) {
-        console.error('Error loading enrolled students:', error);
+      if (enrollErr) {
+        console.error('Error loading enrolled students (enrollments):', enrollErr);
         setEnrolledStudents([]);
         return;
       }
 
-      const students = data?.map((enrollment: any) => ({
-        student_id: enrollment.student_id,
-        student_name: enrollment.students?.student_name || 'Unknown',
-        student_enrollment_no: enrollment.students?.student_enrollment_no || 'Unknown',
-        abc_id: enrollment.students?.abc_id,
-      })) || [];
+      const studentIds = Array.from(new Set((enrollments || [])
+        .map((e: any) => e.student_id)
+        .filter(Boolean)));
+
+      if (studentIds.length === 0) {
+        setEnrolledStudents([]);
+        return;
+      }
+
+      // Step 2: Fetch student details for the enrolled student ids
+      const { data: studentsData, error: studentsErr } = await supabase
+        .from('students')
+        .select('student_id, student_name, student_enrollment_no, abc_id')
+        .in('student_id', studentIds);
+
+      if (studentsErr) {
+        console.error('Error loading enrolled students (details):', studentsErr);
+        setEnrolledStudents([]);
+        return;
+      }
+
+      const students: EnrolledStudent[] = (studentsData || []).map((s: any) => ({
+        student_id: s.student_id,
+        student_name: s.student_name || 'Unknown',
+        student_enrollment_no: s.student_enrollment_no || 'Unknown',
+        abc_id: s.abc_id || undefined,
+      }));
 
       setEnrolledStudents(students);
     } catch (error) {

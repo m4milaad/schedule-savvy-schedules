@@ -334,21 +334,9 @@ export default function Index() {
       setLoading(true);
 
       // Load student enrollment data to prevent overlaps
-      const { data: studentEnrollments, error: enrollmentError } = await supabase
+      const { data: enrollments, error: enrollmentError } = await supabase
         .from('student_enrollments')
-        .select(`
-          student_id,
-          course_id,
-          courses (
-            course_code,
-            semester
-          ),
-          students (
-            student_id,
-            student_name,
-            student_enrollment_no
-          )
-        `)
+        .select('student_id, course_id')
         .eq('is_active', true);
 
       if (enrollmentError) {
@@ -360,12 +348,15 @@ export default function Index() {
         });
       }
 
+      // Build a map of course_id -> course_code from loaded courseTeachers
+      const courseCodeById = new Map(courseTeachers.map(ct => [ct.id, ct.course_code]));
+
       // Create student-course mapping for overlap detection
       const studentCourseMap: Record<string, string[]> = {};
-      if (studentEnrollments) {
-        studentEnrollments.forEach((enrollment: any) => {
-          const studentId = enrollment.profiles?.id || enrollment.student_id;
-          const courseCode = enrollment.courses?.course_code;
+      if (enrollments) {
+        enrollments.forEach((enrollment: any) => {
+          const studentId = enrollment.student_id;
+          const courseCode = courseCodeById.get(enrollment.course_id);
           if (studentId && courseCode) {
             if (!studentCourseMap[studentId]) {
               studentCourseMap[studentId] = [];
