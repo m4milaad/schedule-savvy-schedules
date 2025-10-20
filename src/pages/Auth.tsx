@@ -88,10 +88,25 @@ const Auth = () => {
           return;
         }
 
-        if (password.length < 6) {
+        if (password.length < 12) {
           toast({
             title: "Error",
-            description: "Password must be at least 6 characters long",
+            description: "Password must be at least 12 characters long",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Check password complexity
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+        if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+          toast({
+            title: "Error",
+            description: "Password must contain uppercase, lowercase, number, and special character",
             variant: "destructive",
           });
           return;

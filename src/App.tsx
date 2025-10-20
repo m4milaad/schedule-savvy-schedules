@@ -10,7 +10,6 @@ import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -55,14 +54,6 @@ const App = () => {
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
-                  </AdminProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin-users" 
-                element={
-                  <AdminProtectedRoute>
-                    <AdminUsers />
                   </AdminProtectedRoute>
                 } 
               />
