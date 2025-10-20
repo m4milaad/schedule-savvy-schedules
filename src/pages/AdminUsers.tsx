@@ -12,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { hashPassword } from "@/utils/passwordUtils";
-import { adminAuth } from "@/utils/adminAuth";
 
 interface AdminUser {
   id: string;
@@ -47,19 +46,9 @@ const AdminUsers = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is authenticated as admin
-    if (!adminAuth.isLoggedIn()) {
-      toast({
-        title: "Access Denied",
-        description: "Please log in as an administrator",
-        variant: "destructive",
-      });
-      navigate('/admin-login');
-      return;
-    }
-
+    // Authentication is now handled by AdminProtectedRoute
     loadAdminUsers();
-  }, [navigate, toast]);
+  }, []);
 
   const loadAdminUsers = async () => {
     try {

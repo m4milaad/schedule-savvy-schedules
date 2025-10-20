@@ -7,10 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Home, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { adminAuth } from '@/utils/adminAuth';
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -19,18 +19,33 @@ const AdminLogin = () => {
 
   // Check if already logged in
   useEffect(() => {
-    if (adminAuth.isLoggedIn()) {
-      navigate('/admin-dashboard');
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      // Check if user has admin role
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .in('role', ['admin', 'department_admin']);
+
+      if (roles && roles.length > 0) {
+        navigate('/admin-dashboard', { replace: true });
+      }
     }
-  }, [navigate]);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username.trim() || !password.trim()) {
+    if (!email.trim() || !password.trim()) {
       toast({
         title: "Error",
-        description: "Please enter both username and password",
+        description: "Please enter both email and password",
         variant: "destructive",
       });
       return;
@@ -39,54 +54,49 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      console.log('=== LOGIN ATTEMPT ===');
-      console.log('Username:', username);
-      console.log('Password length:', password.length);
-      
-      // Clear any existing auth state first
-      adminAuth.clearAuthState();
-      
-      const result = await adminAuth.login(username.trim(), password);
-      
-      if (result.success && result.user) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Check if user has admin role
+        const { data: roles, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .in('role', ['admin', 'department_admin']);
+
+        if (roleError) throw roleError;
+
+        if (!roles || roles.length === 0) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Access Denied",
+            description: "You do not have administrator privileges",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${result.user.full_name}!`,
+          description: "Welcome back!",
         });
         
-        console.log('Login successful, redirecting...');
         navigate('/admin-dashboard');
-      } else {
-        console.log('Login failed:', result.error);
-        toast({
-          title: "Login Failed",
-          description: result.error || 'Invalid username or password',
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error('Unexpected login error:', error);
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: 'An unexpected error occurred. Please try again.',
+        title: "Login Failed",
+        description: error.message || 'Invalid credentials',
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleDemoLogin = async (demoUsername: string, demoPassword: string) => {
-    setUsername(demoUsername);
-    setPassword(demoPassword);
-    
-    // Trigger form submission after a short delay
-    setTimeout(() => {
-      const form = document.querySelector('form');
-      if (form) {
-        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-      }
-    }, 100);
   };
 
   return (
@@ -124,16 +134,16 @@ const AdminLogin = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 transition-colors duration-300">
-                  Username
+                <Label htmlFor="email" className="text-slate-700 dark:text-slate-300 transition-colors duration-300">
+                  Email
                 </Label>
                 <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="Enter username"
+                  placeholder="Enter your email"
                   className="border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-500"
                 />
               </div>
