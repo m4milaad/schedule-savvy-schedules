@@ -372,7 +372,7 @@ For technical support or feature requests related to the Central University of K
 
 **Developed by**: [Milad Ajaz Bhat](https://m4milaad.github.io/Resume/)  
 **Institution**: Central University of Kashmir  
-**Version**: 2.3.8 beta
-**Last Updated**: September 2025
+**Version**: 2.4.6 beta
+**Last Updated**: October 2025
 
 *This system is specifically designed for Central University of Kashmir's academic scheduling needs, incorporating institutional requirements and constraints for optimal exam timetable generation.*
