@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
-import { adminAuth } from "@/utils/adminAuth";
 import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -37,19 +36,9 @@ const AdminDashboard = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // Check if user is authenticated as admin
-    if (!adminAuth.isLoggedIn()) {
-      toast({
-        title: "Access Denied",
-        description: "Please log in as an administrator",
-        variant: "destructive",
-      });
-      navigate('/admin-login');
-      return;
-    }
-
+    // Authentication is now handled by AdminProtectedRoute
     loadAllData();
-  }, [navigate, toast]);
+  }, []);
 
   const loadAllData = async () => {
     try {
@@ -76,8 +65,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    adminAuth.logout();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "Success",
       description: "Logged out successfully",
