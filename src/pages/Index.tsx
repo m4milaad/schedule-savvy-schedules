@@ -853,7 +853,6 @@ export default function Index() {
               startDate={startDate}
               endDate={endDate}
               holidays={holidays}
-              holidaysData={holidaysData}
               dateRangeInfo={dateRangeInfo}
               minimumDaysInfo={minimumDaysInfo}
               isScheduleGenerated={isScheduleGenerated}
