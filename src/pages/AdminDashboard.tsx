@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Users, Menu, X } from 'lucide-react';
+import { Home, Menu, X } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -229,14 +229,6 @@ const AdminDashboard = () => {
       >
         <Home className="w-4 h-4" />
         Logout
-      </Button>
-      <Button
-        onClick={() => navigate('/admin-users')}
-        variant="outline"
-        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-      >
-        <Users className="w-4 h-4" />
-        Manage Admin Users
       </Button>
       <Button
         onClick={() => navigate('/schedule-generator')}
