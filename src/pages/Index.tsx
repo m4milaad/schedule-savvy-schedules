@@ -243,12 +243,21 @@ export default function Index() {
   };
 
   /**
-   * Calculate total enrolled students across selected courses
+   * Calculate total unique students enrolled in selected courses
    */
   const getTotalEnrolledStudents = () => {
-    return selectedCourseTeachers.reduce((total, courseId) => {
-      return total + (courseEnrollmentCounts[courseId] || 0);
-    }, 0);
+    const uniqueStudents = new Set<string>();
+
+    selectedCourseTeachers.forEach(courseId => {
+      Object.entries(studentCourseMap).forEach(([studentId, courses]) => {
+        const course = courseTeachers.find(ct => ct.id === courseId);
+        if (course && courses.some(c => normalizeCourseCode(c) === normalizeCourseCode(course.course_code))) {
+          uniqueStudents.add(studentId);
+        }
+      });
+    });
+
+    return uniqueStudents.size;
   };
 
   /**
@@ -844,6 +853,7 @@ export default function Index() {
               startDate={startDate}
               endDate={endDate}
               holidays={holidays}
+              holidaysData={holidaysData}
               dateRangeInfo={dateRangeInfo}
               minimumDaysInfo={minimumDaysInfo}
               isScheduleGenerated={isScheduleGenerated}
@@ -858,7 +868,15 @@ export default function Index() {
             {/* Course selection by course code */}
             <div className="lg:col-span-3">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {getAllAvailableCourses().map((courseTeacher) => (
+                {getAllAvailableCourses()
+                  .sort((a, b) => {
+                    const aSelected = selectedCourseTeachers.includes(a.id);
+                    const bSelected = selectedCourseTeachers.includes(b.id);
+                    if (aSelected && !bSelected) return -1;
+                    if (!aSelected && bSelected) return 1;
+                    return 0;
+                  })
+                  .map((courseTeacher) => (
                   <CourseEnrollmentCard
                     key={courseTeacher.id}
                     courseTeacher={courseTeacher}
