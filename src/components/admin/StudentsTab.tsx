@@ -271,20 +271,22 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     return (
         <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                         Students ({students.length})
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
                             <Upload className="w-4 h-4 mr-2" />
-                            Bulk Upload
+                            <span className="hidden sm:inline">Bulk Upload</span>
+                            <span className="sm:hidden">Upload</span>
                         </Button>
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button onClick={() => resetForm()} size="sm" className="transition-all duration-300 hover:scale-105">
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Add Student
+                                    <span className="hidden sm:inline">Add Student</span>
+                                    <span className="sm:hidden">Add</span>
                                 </Button>
                             </DialogTrigger>
                         </Dialog>
@@ -304,18 +306,18 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto rounded-lg border">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Name</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Enrollment No</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">ABC ID</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Email</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Year/Semester</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Enrolled Subjects</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px]">Name</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px]">Enrollment No</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">ABC ID</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden md:table-cell">Email</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px] hidden lg:table-cell">Department</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">Year/Sem</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden xl:table-cell">Enrolled Subjects</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -329,44 +331,44 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_enrollment_no}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">
                                         {student.abc_id ? (
-                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
                                                 {student.abc_id}
                                             </Badge>
                                         ) : (
-                                            <span className="text-gray-400">Not Set</span>
+                                            <span className="text-gray-400 text-xs">N/A</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_email || 'N/A'}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">{getDepartmentName(student.dept_id)}</TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden md:table-cell">{student.student_email || 'N/A'}</TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden lg:table-cell">{getDepartmentName(student.dept_id)}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">
                                         <div className="flex flex-col gap-1">
-                                            <Badge variant="secondary">Year {student.student_year}</Badge>
-                                            <Badge variant="outline">Sem {student.semester || 1}</Badge>
+                                            <Badge variant="secondary" className="text-xs">Y{student.student_year}</Badge>
+                                            <Badge variant="outline" className="text-xs">S{student.semester || 1}</Badge>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden xl:table-cell">
                                         <div className="flex flex-wrap gap-1 max-w-48">
                                             {studentEnrollments[student.student_id]?.length > 0 ? (
                                                 studentEnrollments[student.student_id].map((enrollment, idx) => (
-                                                    <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                                    <Badge key={idx} variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
                                                         {enrollment.course_code}
                                                     </Badge>
                                                 ))
                                             ) : (
-                                                <span className="text-gray-400 text-sm flex items-center gap-1">
+                                                <span className="text-gray-400 text-xs flex items-center gap-1">
                                                     <BookOpen className="w-3 h-3" />
-                                                    No enrollments
+                                                    None
                                                 </span>
                                             )}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-1">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => handleEdit(student)}
-                                                className="transition-all duration-300 hover:scale-110 hover:shadow-md"
+                                                className="transition-all duration-300 hover:scale-110 hover:shadow-md h-8 w-8 p-0"
                                             >
                                                 <Edit2 className="w-3 h-3" />
                                             </Button>
@@ -375,7 +377,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        className="transition-all duration-300 hover:scale-110 hover:shadow-md text-destructive hover:text-destructive"
+                                                        className="transition-all duration-300 hover:scale-110 hover:shadow-md text-destructive hover:text-destructive h-8 w-8 p-0"
                                                     >
                                                         <Trash2 className="w-3 h-3" />
                                                     </Button>
@@ -412,7 +414,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             </CardContent>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="dark:text-gray-100 transition-colors duration-300">
                             {editingStudent ? 'Edit Student' : 'Add New Student'}
