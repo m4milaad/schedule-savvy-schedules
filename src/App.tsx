@@ -12,6 +12,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
+import ManageAdmins from "./pages/ManageAdmins";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 
@@ -54,6 +55,14 @@ const App = () => {
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
+                  </AdminProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/manage-admins" 
+                element={
+                  <AdminProtectedRoute>
+                    <ManageAdmins />
                   </AdminProtectedRoute>
                 } 
               />
