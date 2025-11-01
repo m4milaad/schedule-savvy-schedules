@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, X } from 'lucide-react';
+import { Home, Menu, X, Shield } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -223,12 +223,12 @@ const AdminDashboard = () => {
     <div className="flex flex-col md:flex-row gap-2">
       <ThemeToggle />
       <Button
-        onClick={handleLogout}
+        onClick={() => navigate('/manage-admins')}
         variant="outline"
         className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
       >
-        <Home className="w-4 h-4" />
-        Logout
+        <Shield className="w-4 h-4" />
+        Manage Admins
       </Button>
       <Button
         onClick={() => navigate('/schedule-generator')}
@@ -237,6 +237,14 @@ const AdminDashboard = () => {
       >
         <Home className="w-4 h-4" />
         Schedule Generator
+      </Button>
+      <Button
+        onClick={handleLogout}
+        variant="outline"
+        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+      >
+        <Home className="w-4 h-4" />
+        Logout
       </Button>
     </div>
   );
