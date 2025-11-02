@@ -754,21 +754,21 @@ export default function Index() {
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
         <div className="container mx-auto px-6 py-8 space-y-8">
           {/* Enhanced Header Section */}
-          <div className="flex items-center justify-between bg-card/50 backdrop-blur-sm p-6 rounded-xl border shadow-sm">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border shadow-sm">
+            <div className="flex items-center space-x-3 md:space-x-4">
               <img
                 src="/favicon.ico"
                 alt="CUK Logo"
-                className="w-16 h-16 transition-transform duration-300 hover:scale-110"
+                className="w-12 h-12 md:w-16 md:h-16 transition-transform duration-300 hover:scale-110"
               />
               <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                <h1 className="text-xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Central University of Kashmir
                 </h1>
-                <p className="text-muted-foreground text-lg">
-                  Exam Schedule Generator - Create optimized exam timetables
+                <p className="text-muted-foreground text-sm md:text-lg">
+                  Exam Schedule Generator
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground hidden md:block">
                   Developed by{" "}
                   <a
                     href="https://m4milaad.github.io/Resume/"
@@ -782,11 +782,12 @@ export default function Index() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <ThemeToggle />
               <Button
                 onClick={loadLastSchedule}
                 variant="outline"
+                size="sm"
                 className="flex items-center gap-2 shadow-sm"
                 disabled={loadingLastSchedule}
               >
@@ -796,15 +797,18 @@ export default function Index() {
                     loadingLastSchedule && "animate-spin"
                   )}
                 />
-                Reload Last Schedule
+                <span className="hidden sm:inline">Reload Last Schedule</span>
+                <span className="sm:hidden">Reload</span>
               </Button>
               <Button
                 onClick={() => navigate("/admin-login")}
                 variant="outline"
+                size="sm"
                 className="flex items-center gap-2 shadow-sm"
               >
                 <Settings className="w-4 h-4" />
-                Admin Panel
+                <span className="hidden sm:inline">Admin Panel</span>
+                <span className="sm:hidden">Admin</span>
               </Button>
             </div>
           </div>
@@ -818,13 +822,13 @@ export default function Index() {
           {/* Course selection summary */}
           <Card className="mb-6 transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <CardTitle className="dark:text-gray-100 transition-colors duration-300">
+                  <CardTitle className="dark:text-gray-100 transition-colors duration-300 text-lg md:text-xl">
                     Course Selection
                   </CardTitle>
-                  <CardDescription className="dark:text-gray-400 transition-colors duration-300">
-                    {selectedCourseTeachers.length} of {courseTeachers.length} courses selected • {getTotalEnrolledStudents()} students enrolled
+                  <CardDescription className="dark:text-gray-400 transition-colors duration-300 text-xs md:text-sm">
+                    {selectedCourseTeachers.length} of {courseTeachers.length} courses • {getTotalEnrolledStudents()} students
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
@@ -848,7 +852,7 @@ export default function Index() {
           </Card>
 
           {/* Main content grid for schedule settings and course cards */}
-          <div className="grid lg:grid-cols-4 gap-6 animate-fade-in">
+          <div className="grid lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in">
             <ScheduleSettings
               startDate={startDate}
               endDate={endDate}
@@ -866,7 +870,7 @@ export default function Index() {
 
             {/* Course selection by course code */}
             <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                 {getAllAvailableCourses()
                   .sort((a, b) => {
                     const aSelected = selectedCourseTeachers.includes(a.id);
