@@ -53,7 +53,9 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
         student_email: 'john.doe@cukashmir.ac.in', 
         student_address: '123 Main St, Srinagar', 
         dept_id: 'dept-uuid-here',
-        student_year: 1 
+        student_year: 1,
+        semester: 1,
+        abc_id: '12345678'
       }]
     };
     return templates[type];
