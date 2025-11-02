@@ -8,10 +8,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit2, Trash2, Upload, BookOpen } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload, BookOpen, Grid, List } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
+import { StudentCardView } from "./StudentCardView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Student {
     student_id: string;
@@ -49,6 +51,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [searchTerm, setSearchTerm] = useState('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [studentEnrollments, setStudentEnrollments] = useState<Record<string, StudentEnrollment[]>>({});
+    const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
     const [formData, setFormData] = useState({
         student_name: '',
         student_enrollment_no: '',
@@ -60,6 +63,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         abc_id: ''
     });
     const { toast } = useToast();
+    const isMobile = useIsMobile();
 
     // Load enrolled subjects for all students
     React.useEffect(() => {
@@ -276,6 +280,26 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         Students ({students.length})
                     </CardTitle>
                     <div className="flex flex-wrap gap-2">
+                        {!isMobile && (
+                            <div className="flex gap-1 border rounded-md p-1">
+                                <Button 
+                                    variant={viewMode === 'table' ? 'default' : 'ghost'} 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setViewMode('table')}
+                                >
+                                    <List className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                    variant={viewMode === 'cards' ? 'default' : 'ghost'} 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setViewMode('cards')}
+                                >
+                                    <Grid className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        )}
                         <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
                             <Upload className="w-4 h-4 mr-2" />
                             <span className="hidden sm:inline">Bulk Upload</span>
@@ -298,7 +322,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 transition-colors duration-300" />
                         <Input
-                            placeholder="Search students by name, enrollment number, email, or ABC ID..."
+                            placeholder="Search students..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
@@ -306,7 +330,26 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-lg border">
+                {(isMobile || viewMode === 'cards') ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {filteredStudents.map((student) => (
+                            <StudentCardView
+                                key={student.student_id}
+                                student={student}
+                                departmentName={getDepartmentName(student.dept_id)}
+                                enrollments={studentEnrollments[student.student_id] || []}
+                                onEdit={() => handleEdit(student)}
+                                onDelete={() => handleDelete(student.student_id)}
+                            />
+                        ))}
+                        {filteredStudents.length === 0 && (
+                            <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-8">
+                                {searchTerm ? 'No students found matching your search.' : 'No students found.'}
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto rounded-lg border">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -411,6 +454,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         </TableBody>
                     </Table>
                 </div>
+                )}
             </CardContent>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
