@@ -247,46 +247,34 @@ export type Database = {
       }
       profiles: {
         Row: {
-          abc_id: string | null
-          address: string | null
-          contact_no: string | null
           created_at: string | null
           dept_id: string | null
           email: string | null
           full_name: string
           id: string
           semester: number | null
-          student_enrollment_no: string | null
           updated_at: string | null
           user_id: string | null
           user_type: string
         }
         Insert: {
-          abc_id?: string | null
-          address?: string | null
-          contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           email?: string | null
           full_name: string
           id?: string
           semester?: number | null
-          student_enrollment_no?: string | null
           updated_at?: string | null
           user_id?: string | null
           user_type: string
         }
         Update: {
-          abc_id?: string | null
-          address?: string | null
-          contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           email?: string | null
           full_name?: string
           id?: string
           semester?: number | null
-          student_enrollment_no?: string | null
           updated_at?: string | null
           user_id?: string | null
           user_type?: string
@@ -627,16 +615,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_orphaned_records: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      create_realistic_student_enrollments: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      cleanup_orphaned_records: { Args: never; Returns: Json }
+      create_realistic_student_enrollments: { Args: never; Returns: Json }
       get_exam_schedule_data: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           course_code: string
           course_name: string
@@ -672,14 +654,8 @@ export type Database = {
           student_name: string
         }[]
       }
-      get_user_department: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_user_department: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
