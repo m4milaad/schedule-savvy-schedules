@@ -426,6 +426,7 @@ export type Database = {
       students: {
         Row: {
           abc_id: string | null
+          contact_no: string | null
           created_at: string | null
           dept_id: string | null
           semester: number | null
@@ -439,6 +440,7 @@ export type Database = {
         }
         Insert: {
           abc_id?: string | null
+          contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           semester?: number | null
@@ -452,6 +454,7 @@ export type Database = {
         }
         Update: {
           abc_id?: string | null
+          contact_no?: string | null
           created_at?: string | null
           dept_id?: string | null
           semester?: number | null
