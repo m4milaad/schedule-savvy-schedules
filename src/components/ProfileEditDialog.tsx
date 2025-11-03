@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Department {
   dept_id: string;
@@ -32,8 +33,47 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
     full_name: profile.full_name || '',
     email: profile.email || '',
     dept_id: profile.dept_id || '',
-    semester: profile.semester || 1
+    semester: profile.semester || 1,
+    // Student-specific fields (stored in students table)
+    student_enrollment_no: '',
+    abc_id: '',
+    contact_no: '',
+    address: ''
   });
+
+  // Load student data on mount if user is a student
+  React.useEffect(() => {
+    if (profile.user_type === 'student' && profile.id) {
+      loadStudentData();
+    }
+  }, [profile.id, profile.user_type]);
+
+  const loadStudentData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('student_enrollment_no, abc_id, student_address, student_email')
+        .eq('student_id', profile.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading student data:', error);
+        return;
+      }
+
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          student_enrollment_no: data.student_enrollment_no || '',
+          abc_id: data.abc_id || '',
+          contact_no: '', // Will need to add this to students table
+          address: data.student_address || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error in loadStudentData:', error);
+    }
+  };
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -49,15 +89,61 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
       return;
     }
 
+    // Validate ABC ID is numeric only
+    if (formData.abc_id && !/^\d+$/.test(formData.abc_id)) {
+      toast({
+        title: "Error",
+        description: "ABC ID must contain only numbers",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      await onUpdate(formData);
+      // Update profile data
+      const profileUpdates = {
+        full_name: formData.full_name,
+        email: formData.email,
+        dept_id: formData.dept_id,
+        semester: formData.semester
+      };
+      
+      await onUpdate(profileUpdates);
+
+      // If student, also update students table
+      if (profile.user_type === 'student' && profile.id) {
+        const { error: studentError } = await supabase
+          .from('students')
+          .update({
+            student_enrollment_no: formData.student_enrollment_no,
+            abc_id: formData.abc_id || null,
+            student_address: formData.address,
+            student_email: formData.email
+          })
+          .eq('student_id', profile.id);
+
+        if (studentError) {
+          console.error('Error updating student data:', studentError);
+          toast({
+            title: "Warning",
+            description: "Profile updated but student details may not have saved",
+            variant: "destructive",
+          });
+        }
+      }
       onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAbcIdChange = (value: string) => {
+    // Only allow numeric input
+    const numericValue = value.replace(/\D/g, '');
+    setFormData({ ...formData, abc_id: numericValue });
   };
 
   return (
@@ -80,6 +166,58 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
               required
             />
           </div>
+
+          {profile.user_type === 'student' && (
+            <>
+              <div>
+                <Label htmlFor="student_enrollment_no" className="dark:text-gray-300 transition-colors duration-300">Enrollment Number *</Label>
+                <Input
+                  id="student_enrollment_no"
+                  value={formData.student_enrollment_no}
+                  onChange={(e) => setFormData({ ...formData, student_enrollment_no: e.target.value })}
+                  placeholder="Enter enrollment number"
+                  className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="abc_id" className="dark:text-gray-300 transition-colors duration-300">ABC ID (Numeric Only)</Label>
+                <Input
+                  id="abc_id"
+                  value={formData.abc_id}
+                  onChange={(e) => handleAbcIdChange(e.target.value)}
+                  placeholder="Enter ABC ID (numbers only)"
+                  className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                  pattern="[0-9]*"
+                  inputMode="numeric"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contact_no" className="dark:text-gray-300 transition-colors duration-300">Contact Number</Label>
+                <Input
+                  id="contact_no"
+                  value={formData.contact_no}
+                  onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
+                  placeholder="Enter contact number"
+                  className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address" className="dark:text-gray-300 transition-colors duration-300">Address</Label>
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter your address"
+                  className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <Label htmlFor="email" className="dark:text-gray-300 transition-colors duration-300">Email</Label>
