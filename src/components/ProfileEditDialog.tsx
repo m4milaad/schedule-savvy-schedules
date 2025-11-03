@@ -52,7 +52,7 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
     try {
       const { data, error } = await supabase
         .from('students')
-        .select('student_enrollment_no, abc_id, student_address, student_email')
+        .select('student_enrollment_no, abc_id, student_address, student_email, contact_no')
         .eq('student_id', profile.id)
         .maybeSingle();
 
@@ -66,7 +66,7 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
           ...prev,
           student_enrollment_no: data.student_enrollment_no || '',
           abc_id: data.abc_id || '',
-          contact_no: '', // Will need to add this to students table
+          contact_no: data.contact_no || '',
           address: data.student_address || ''
         }));
       }
@@ -119,7 +119,8 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
             student_enrollment_no: formData.student_enrollment_no,
             abc_id: formData.abc_id || null,
             student_address: formData.address,
-            student_email: formData.email
+            student_email: formData.email,
+            contact_no: formData.contact_no
           })
           .eq('student_id', profile.id);
 
