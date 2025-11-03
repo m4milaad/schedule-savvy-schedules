@@ -31,12 +31,8 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     email: profile.email || '',
-    contact_no: profile.contact_no || '',
-    address: profile.address || '',
     dept_id: profile.dept_id || '',
-    semester: profile.semester || 1,
-    abc_id: profile.abc_id || '',
-    student_enrollment_no: profile.student_enrollment_no || ''
+    semester: profile.semester || 1
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -53,36 +49,15 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
       return;
     }
 
-    // Validate ABC ID is numeric only
-    if (formData.abc_id && !/^\d+$/.test(formData.abc_id)) {
-      toast({
-        title: "Error",
-        description: "ABC ID must contain only numbers",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
     try {
-      const updates = {
-        ...formData,
-        abc_id: formData.abc_id || null
-      };
-
-      await onUpdate(updates);
+      await onUpdate(formData);
       onClose();
     } catch (error) {
       console.error('Error updating profile:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAbcIdChange = (value: string) => {
-    // Only allow numeric input
-    const numericValue = value.replace(/\D/g, '');
-    setFormData({ ...formData, abc_id: numericValue });
   };
 
   return (
@@ -106,33 +81,6 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
             />
           </div>
 
-          {profile.user_type === 'student' && (
-            <div>
-              <Label htmlFor="student_enrollment_no" className="dark:text-gray-300 transition-colors duration-300">Enrollment Number *</Label>
-              <Input
-                id="student_enrollment_no"
-                value={formData.student_enrollment_no}
-                onChange={(e) => setFormData({ ...formData, student_enrollment_no: e.target.value })}
-                placeholder="Enter enrollment number"
-                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-                required
-              />
-            </div>
-          )}
-
-          <div>
-            <Label htmlFor="abc_id" className="dark:text-gray-300 transition-colors duration-300">ABC ID (Numeric Only)</Label>
-            <Input
-              id="abc_id"
-              value={formData.abc_id}
-              onChange={(e) => handleAbcIdChange(e.target.value)}
-              placeholder="Enter ABC ID (numbers only)"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-              pattern="[0-9]*"
-              inputMode="numeric"
-            />
-          </div>
-
           <div>
             <Label htmlFor="email" className="dark:text-gray-300 transition-colors duration-300">Email</Label>
             <Input
@@ -142,29 +90,6 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="Enter email address"
               className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="contact_no" className="dark:text-gray-300 transition-colors duration-300">Contact Number</Label>
-            <Input
-              id="contact_no"
-              value={formData.contact_no}
-              onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
-              placeholder="Enter contact number"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="address" className="dark:text-gray-300 transition-colors duration-300">Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Enter your address"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-              rows={3}
             />
           </div>
 
