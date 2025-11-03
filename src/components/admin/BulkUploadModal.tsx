@@ -108,7 +108,7 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm">
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Bulk Upload {type.charAt(0).toUpperCase() + type.slice(1)}</CardTitle>
