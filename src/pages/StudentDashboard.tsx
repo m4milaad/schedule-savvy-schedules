@@ -68,6 +68,7 @@ const StudentDashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(true);
   const [showIncompleteProfileDialog, setShowIncompleteProfileDialog] = useState(false);
+  const [studentData, setStudentData] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -80,11 +81,15 @@ const StudentDashboard = () => {
     if (!profile) return [];
     
     const missing = [];
-    if (!profile.address) missing.push('Address');
-    if (!profile.contact_no) missing.push('Contact Number');
+    // Check students table data for student-specific fields
+    if (!studentData?.student_address) missing.push('Address');
+    if (!studentData?.contact_no) missing.push('Contact Number');
+    if (!studentData?.abc_id) missing.push('ABC ID');
+    if (!studentData?.student_enrollment_no || studentData?.student_enrollment_no?.startsWith('PENDING-')) missing.push('Enrollment Number');
+    
+    // Check profile table data
     if (!profile.dept_id) missing.push('Department');
     if (!profile.semester) missing.push('Semester');
-    if (!profile.abc_id) missing.push('ABC ID');
     
     return missing;
   };
@@ -98,6 +103,19 @@ const StudentDashboard = () => {
     
     setLoading(true);
     try {
+      // Load student record from students table
+      const { data: student, error: studentError } = await supabase
+        .from('students')
+        .select('student_enrollment_no, abc_id, student_address, contact_no')
+        .eq('student_id', profile.id)
+        .maybeSingle();
+
+      if (studentError) {
+        console.error('Error loading student record:', studentError);
+      } else {
+        setStudentData(student);
+      }
+
       await Promise.all([
         loadDepartments(),
         loadEnrollments(),
