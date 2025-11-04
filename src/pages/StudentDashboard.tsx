@@ -28,6 +28,7 @@ import { ExtendedCourse } from '@/types/database';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { ProfileEditDialog } from '@/components/ProfileEditDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Footer } from '@/components/Footer';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -377,61 +378,66 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 transition-colors duration-500">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8 animate-fade-in">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 flex flex-col">
+      <div className="flex-1 p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8 animate-fade-in">
+            <div className="flex items-start gap-3">
               <img 
                 src="/favicon.ico" 
                 alt="CUK Logo" 
-                className="w-10 h-10 transition-transform duration-300 hover:scale-110 animate-scale-in"
+                className="w-10 h-10 flex-shrink-0 transition-transform duration-300 hover:scale-110 animate-scale-in"
               />
-              <div>
-                <h1 className="text-3xl font-bold text-foreground flex items-center gap-2 transition-colors duration-300">
-                  <GraduationCap className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                  Student Dashboard
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl md:text-3xl font-bold text-foreground flex items-center gap-2 transition-colors duration-300">
+                  <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-blue-600 dark:text-blue-400" />
+                  <span className="truncate">Student Dashboard</span>
                 </h1>
-                <div className="flex items-center gap-4 mt-1">
-                  <p className="text-muted-foreground transition-colors duration-300">Welcome, {profile?.full_name}</p>
+                <p className="text-sm md:text-base text-muted-foreground transition-colors duration-300 truncate mt-1">
+                  Welcome, {profile?.full_name}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   {profile?.dept_id && (
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
+                    <div className="flex items-center gap-1">
+                      <Building className="w-3 h-3 md:w-4 md:h-4 text-blue-600 dark:text-blue-400" />
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
                         {getDepartmentName(profile.dept_id)}
                       </Badge>
                     </div>
                   )}
                   {profile?.semester && (
-                    <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
-                      Semester {profile.semester}
+                    <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
+                      Sem {profile.semester}
                     </Badge>
                   )}
                 </div>
               </div>
             </div>
+            <div className="flex gap-2 flex-wrap md:flex-nowrap">
+              <ThemeToggle />
+              <Button 
+                onClick={() => setShowProfileDialog(true)}
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg text-xs md:text-sm"
+              >
+                <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
+              </Button>
+              <Button 
+                onClick={signOut} 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg text-xs md:text-sm"
+              >
+                <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+                <span className="sm:hidden">Logout</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <ThemeToggle />
-            <Button 
-              onClick={() => setShowProfileDialog(true)}
-              variant="outline" 
-              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            >
-              <Edit className="w-4 h-4" />
-              Edit Profile
-            </Button>
-            <Button 
-              onClick={signOut} 
-              variant="outline" 
-              className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
 
         {/* Profile Completion Banner */}
         {!isProfileComplete() && showCompletionBanner && (
@@ -442,12 +448,21 @@ const StudentDashboard = () => {
           />
         )}
 
-        <Tabs defaultValue="courses" className="space-y-6 animate-fade-in">
-          <TabsList className="grid w-full grid-cols-3 transition-all duration-300">
-            <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105">My Courses</TabsTrigger>
-            <TabsTrigger value="enroll" className="transition-all duration-300 hover:scale-105">Enroll in Courses</TabsTrigger>
-            <TabsTrigger value="schedule" className="transition-all duration-300 hover:scale-105">Exam Schedule</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="courses" className="space-y-4 md:space-y-6 animate-fade-in">
+            <TabsList className="grid w-full grid-cols-3 transition-all duration-300 h-auto">
+              <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+                <span className="hidden sm:inline">My Courses</span>
+                <span className="sm:hidden">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="enroll" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+                <span className="hidden sm:inline">Enroll</span>
+                <span className="sm:hidden">Enroll</span>
+              </TabsTrigger>
+              <TabsTrigger value="schedule" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+                <span className="hidden sm:inline">Exam Schedule</span>
+                <span className="sm:hidden">Exams</span>
+              </TabsTrigger>
+            </TabsList>
 
           {/* My Courses Tab */}
           <TabsContent value="courses" className="animate-fade-in">
@@ -463,53 +478,96 @@ const StudentDashboard = () => {
                   <div className="text-center py-8 animate-scale-in">
                     <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4 transition-colors duration-300" />
                     <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">You haven't enrolled in any courses yet.</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">Go to the "Enroll in Courses" tab to add courses.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">Go to the "Enroll" tab to add courses.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {enrollments.map((enrollment, index) => (
-                        <TableRow 
-                          key={enrollment.id}
-                          className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
-                            {enrollment.course.course_code}
-                          </TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_name}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_credits}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="transition-colors duration-300">
-                              Semester {enrollment.course.semester}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.dept_name || 'N/A'}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => unenrollFromCourse(enrollment.id)}
-                              className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {enrollments.map((enrollment, index) => (
+                            <TableRow 
+                              key={enrollment.id}
+                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
+                              style={{ animationDelay: `${index * 0.05}s` }}
                             >
-                              <Trash2 className="w-3 h-3" />
-                              Unenroll
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
+                                {enrollment.course.course_code}
+                              </TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_name}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_credits}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="transition-colors duration-300">
+                                  Semester {enrollment.course.semester}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.dept_name || 'N/A'}</TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => unenrollFromCourse(enrollment.id)}
+                                  className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  Unenroll
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {enrollments.map((enrollment, index) => (
+                        <Card key={enrollment.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
+                                    {enrollment.course.course_code}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {enrollment.course.course_name}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0">
+                                  Sem {enrollment.course.semester}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">Credits: {enrollment.course.course_credits}</span>
+                                <span className="text-muted-foreground truncate ml-2">{enrollment.course.dept_name || 'N/A'}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => unenrollFromCourse(enrollment.id)}
+                                className="w-full flex items-center justify-center gap-1 text-xs"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Unenroll
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -525,17 +583,17 @@ const StudentDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
                   <div className="flex-1">
                     <Input
                       placeholder="Search courses..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                      className="w-full transition-all duration-300 hover:border-blue-400 text-sm"
                     />
                   </div>
                   <Select value={semesterFilter} onValueChange={setSemesterFilter}>
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-full md:w-48">
                       <SelectValue placeholder="Filter by semester" />
                     </SelectTrigger>
                     <SelectContent>
@@ -556,48 +614,91 @@ const StudentDashboard = () => {
                     <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">Try adjusting your search or filters.</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredCourses.map((course, index) => (
-                        <TableRow 
-                          key={course.course_id}
-                          className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">{course.course_code}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_name}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_credits}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="transition-colors duration-300">
-                              Semester {course.semester}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.dept_name || 'N/A'}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              onClick={() => enrollInCourse(course.course_id)}
-                              disabled={enrolling}
-                              className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredCourses.map((course, index) => (
+                            <TableRow 
+                              key={course.course_id}
+                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
+                              style={{ animationDelay: `${index * 0.05}s` }}
                             >
-                              <Plus className="w-3 h-3" />
-                              Enroll
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">{course.course_code}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_name}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_credits}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="transition-colors duration-300">
+                                  Semester {course.semester}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.dept_name || 'N/A'}</TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  onClick={() => enrollInCourse(course.course_id)}
+                                  disabled={enrolling}
+                                  className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  Enroll
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
+                      {filteredCourses.map((course, index) => (
+                        <Card key={course.course_id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
+                                    {course.course_code}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {course.course_name}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0">
+                                  Sem {course.semester}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-muted-foreground">Credits: {course.course_credits}</span>
+                                <span className="text-muted-foreground truncate ml-2">{course.dept_name || 'N/A'}</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => enrollInCourse(course.course_id)}
+                                disabled={enrolling}
+                                className="w-full flex items-center justify-center gap-1 text-xs"
+                              >
+                                <Plus className="w-3 h-3" />
+                                Enroll
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -622,41 +723,92 @@ const StudentDashboard = () => {
                     </p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Exam Date</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Venue</TableHead>
-                        <TableHead className="dark:text-gray-300 transition-colors duration-300">Session</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Exam Date</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Venue</TableHead>
+                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Session</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {examSchedule
+                            .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
+                            .map((exam, index) => (
+                            <TableRow 
+                              key={index}
+                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
+                              style={{ animationDelay: `${index * 0.05}s` }}
+                            >
+                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
+                                {new Date(exam.exam_date).toLocaleDateString('en-US', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_code}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_name}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.venue_name}</TableCell>
+                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.session_name}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
                       {examSchedule
                         .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
                         .map((exam, index) => (
-                        <TableRow 
-                          key={index}
-                          className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                          style={{ animationDelay: `${index * 0.05}s` }}
-                        >
-                          <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
-                            {new Date(exam.exam_date).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
-                          </TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_code}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_name}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.venue_name}</TableCell>
-                          <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.session_name}</TableCell>
-                        </TableRow>
+                        <Card key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                          <CardContent className="p-4">
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-xs dark:text-gray-200">
+                                    {new Date(exam.exam_date).toLocaleDateString('en-US', {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
+                                    {exam.course_code}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {exam.course_name}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center text-xs pt-2 border-t">
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-muted-foreground truncate">{exam.venue_name}</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
+                                  {exam.session_name}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -721,7 +873,9 @@ const StudentDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
