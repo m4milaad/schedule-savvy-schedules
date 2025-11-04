@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 
 interface Department {
   dept_id: string;
@@ -88,10 +89,10 @@ const Auth = () => {
           return;
         }
 
-        if (password.length < 12) {
+        if (password.length < 8) {
           toast({
             title: "Error",
-            description: "Password must be at least 12 characters long",
+            description: "Password must be at least 8 characters long",
             variant: "destructive",
           });
           return;
@@ -319,9 +320,10 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      placeholder="Create a password (min 6 characters)"
+                      placeholder="Create a password (min 8 characters)"
                       className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                     />
+                    <PasswordStrengthChecker password={password} />
                   </div>
 
                   <div className="space-y-2">
