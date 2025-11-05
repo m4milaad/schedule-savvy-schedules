@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { GraduationCap, Users, Shield } from 'lucide-react';
+import { GraduationCap, Users, Shield, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -29,6 +29,10 @@ const Auth = () => {
   const [enrollmentNo, setEnrollmentNo] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
@@ -64,10 +68,55 @@ const Auth = () => {
         .select('dept_id, dept_name')
         .order('dept_name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading departments:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load departments",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setDepartments(data || []);
     } catch (error) {
       console.error('Error loading departments:', error);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Password reset link sent! Please check your email.",
+      });
+      setShowForgotPassword(false);
+      setResetEmail('');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset link",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -212,15 +261,40 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password" className="dark:text-gray-300 transition-colors duration-300">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="Enter your password"
-                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Enter your password"
+                        className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02] pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-sm px-0 h-auto"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Forgot Password?
+                    </Button>
                   </div>
                   <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
                     {loading ? "Signing In..." : "Sign In"}
@@ -314,29 +388,59 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-password" className="dark:text-gray-300 transition-colors duration-300">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      placeholder="Create a password (min 8 characters)"
-                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        placeholder="Create a password (min 8 characters)"
+                        className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02] pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                     <PasswordStrengthChecker password={password} />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password" className="dark:text-gray-300 transition-colors duration-300">Confirm Password</Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      placeholder="Confirm your password"
-                      className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        placeholder="Confirm your password"
+                        className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02] pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
@@ -354,6 +458,51 @@ const Auth = () => {
           </p>
         </div>
       </div>
+
+      {/* Forgot Password Dialog */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <Card className="w-full max-w-md animate-scale-in">
+            <CardHeader>
+              <CardTitle>Reset Password</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email Address</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    We'll send you a link to reset your password
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetEmail('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1" disabled={loading}>
+                    {loading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
