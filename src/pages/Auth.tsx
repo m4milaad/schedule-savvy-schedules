@@ -29,6 +29,7 @@ const Auth = () => {
   const [enrollmentNo, setEnrollmentNo] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -62,6 +63,7 @@ const Auth = () => {
   }, [user, profile, navigate]);
 
   const loadDepartments = async () => {
+    setLoadingDepartments(true);
     try {
       const { data, error } = await supabase
         .from('departments')
@@ -71,16 +73,20 @@ const Auth = () => {
       if (error) {
         console.error('Error loading departments:', error);
         toast({
-          title: "Error",
-          description: "Failed to load departments",
+          title: "Warning",
+          description: "Could not load departments. Please try refreshing the page.",
           variant: "destructive",
         });
-        return;
+        setDepartments([]);
+      } else {
+        console.log('Departments loaded:', data);
+        setDepartments(data || []);
       }
-      
-      setDepartments(data || []);
     } catch (error) {
-      console.error('Error loading departments:', error);
+      console.error('Exception loading departments:', error);
+      setDepartments([]);
+    } finally {
+      setLoadingDepartments(false);
     }
   };
 
@@ -371,16 +377,22 @@ const Auth = () => {
                   {userType === 'department_admin' && (
                     <div className="space-y-2">
                       <Label htmlFor="department" className="dark:text-gray-300 transition-colors duration-300">Department</Label>
-                      <Select value={deptId} onValueChange={setDeptId}>
+                      <Select value={deptId} onValueChange={setDeptId} disabled={loadingDepartments}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select your department" />
+                          <SelectValue placeholder={loadingDepartments ? "Loading departments..." : "Select your department"} />
                         </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                              {dept.dept_name}
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="bg-background">
+                          {loadingDepartments ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : departments.length === 0 ? (
+                            <SelectItem value="none" disabled>No departments available</SelectItem>
+                          ) : (
+                            departments.map((dept) => (
+                              <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                {dept.dept_name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
