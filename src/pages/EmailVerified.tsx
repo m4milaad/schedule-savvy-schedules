@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from 'lucide-react';
 import { ThemeToggle } from "@/components/ThemeToggle";
-import DotGrid from "@/components/DotGrid";
+import Squares from "@/components/Squares";
 
 const EmailVerified = () => {
   const navigate = useNavigate();
@@ -21,10 +21,12 @@ const EmailVerified = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <DotGrid 
-          dotSize={4}
-          gap={24}
-          className="w-full h-full"
+        <Squares
+          speed={0.5}
+          squareSize={40}
+          direction='diagonal'
+          borderColor='rgb(39,30,55)'
+          hoverFillColor='rgb(34,34,34)'
         />
       </div>
       

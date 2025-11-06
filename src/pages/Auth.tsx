@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Users, Shield, Eye, EyeOff } from 'lucide-react';
-import DotGrid from '@/components/DotGrid';
+import Squares from '@/components/Squares';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -35,7 +35,7 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
-  
+
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -227,23 +227,25 @@ const Auth = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <DotGrid 
-          dotSize={4}
-          gap={24}
-          className="w-full h-full"
+        <Squares
+          speed={0.5}
+          squareSize={40}
+          direction='diagonal'
+          borderColor='rgb(39,30,55)'
+          hoverFillColor='rgb(34,34,34)'
         />
       </div>
-      
+
       <div className="relative z-10 w-full max-w-md p-4">
         <div className="flex justify-end mb-4">
           <ThemeToggle />
         </div>
-        
+
         <div className="text-center mb-8 animate-fade-in">
           <div className="mb-4 animate-scale-in">
-            <img 
-              src="/favicon.ico" 
-              alt="CUK Logo" 
+            <img
+              src="/favicon.ico"
+              alt="CUK Logo"
               className="w-16 h-16 mx-auto mb-4 transition-transform duration-300 hover:scale-110"
             />
           </div>
