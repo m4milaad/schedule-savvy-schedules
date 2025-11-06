@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import DotGrid from "@/components/DotGrid";
+import Squares from "@/components/Squares";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -22,7 +22,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Error",
@@ -68,7 +68,7 @@ const ResetPassword = () => {
         title: "Success",
         description: "Password updated successfully! You can now sign in with your new password.",
       });
-      
+
       setTimeout(() => {
         navigate('/auth');
       }, 2000);
@@ -86,18 +86,20 @@ const ResetPassword = () => {
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <DotGrid 
-          dotSize={4}
-          gap={24}
-          className="w-full h-full"
+        <Squares
+          speed={0.5}
+          squareSize={40}
+          direction='diagonal'
+          borderColor='rgb(39,30,55)'
+          hoverFillColor='rgb(34,34,34)'
         />
       </div>
-      
+
       <div className="relative z-10 w-full max-w-md p-4">
         <div className="flex justify-end mb-4">
           <ThemeToggle />
         </div>
-        
+
         <Card className="animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
           <CardHeader>
             <div className="flex flex-col items-center gap-4">
@@ -166,9 +168,9 @@ const ResetPassword = () => {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full transition-all duration-300 hover:scale-105" 
+              <Button
+                type="submit"
+                className="w-full transition-all duration-300 hover:scale-105"
                 disabled={loading}
               >
                 {loading ? "Updating..." : "Update Password"}
