@@ -1,5 +1,5 @@
 import React from 'react';
-
+import FaultyTerminal from '@/components/Faultyterminal'
 // Lucide-react is used for icons. Assuming it's available in the environment.
 // If not, you might need to use inline SVGs or another icon library.
 // For this example, we'll use a simple SVG fallback if lucide-react isn't directly available.
@@ -22,50 +22,102 @@ const App = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-900 dark:to-slate-800 p-4 transition-colors duration-500">
+      <div className="absolute inset-0 z-0">
+        <FaultyTerminal
+          scale={1.5}
+          gridMul={[2, 1]}
+          digitSize={1.2}
+          timeScale={1}
+          pause={false}
+          scanlineIntensity={1}
+          glitchAmount={1}
+          flickerAmount={1}
+          noiseAmp={1}
+          chromaticAberration={0}
+          dither={0}
+          curvature={0}
+          tint="#a7ef9e"
+          mouseReact={true}
+          mouseStrength={0.5}
+          pageLoadAnimation={false}
+          brightness={1}
+        />
+      </div>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 sm:p-12 text-center max-w-md w-full border border-gray-200 dark:border-slate-700 transition-all duration-500 hover:shadow-2xl animate-fade-in">
-        <div className="mb-6 animate-scale-in">
-          <img 
-            src="/favicon.ico" 
-            alt="CUK Logo" 
-            className="w-20 h-20 mx-auto mb-4 transition-transform duration-300 hover:scale-110"
+
+      <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/30 p-8 text-center shadow-xl backdrop-blur-xl dark:border-slate-100/10 dark:bg-slate-900/40">
+
+        {/* Logo/Image */}
+        <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <img
+            src="/favicon.ico"
+            alt="CUK Logo"
+            className="mx-auto h-20 w-20 transition-transform duration-300 hover:scale-110"
           />
         </div>
-        <h1 className="text-6xl font-extrabold text-indigo-700 dark:text-indigo-400 mb-4 animate-bounce transition-colors duration-300">
+
+        {/* 404 Title - Modern Gradient Text */}
+        <h1
+          className="mb-4 text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 animate-fade-in"
+          style={{ animationDelay: '0.4s' }}
+        >
           404
         </h1>
-        <p className="text-2xl text-gray-800 dark:text-gray-200 font-semibold mb-4 transition-colors duration-300">
+
+        {/* Subtitle */}
+        <p
+          className="mb-4 text-3xl font-bold text-slate-900 dark:text-slate-100 animate-fade-in"
+          style={{ animationDelay: '0.6s' }}
+        >
           Page Not Found
         </p>
-        <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed transition-colors duration-300">
-          Oops! It looks like the page you're looking for doesn't exist.
-          Perhaps you typed the address incorrectly, or the page has been moved.
+
+        {/* Description */}
+        <p
+          className="mb-8 text-slate-700 dark:text-slate-300 animate-fade-in"
+          style={{ animationDelay: '0.8s' }}
+        >
+          Oops! It looks like the page you're looking for doesn't exist or has
+          been moved.
         </p>
-        <div className="space-y-4">
+
+        {/* Button Container */}
+        <div
+          className="space-y-4 animate-fade-in"
+          style={{ animationDelay: '1.0s' }}
+        >
+          {/* Primary Action Button (Home) */}
           <a
             href="/"
-            className="inline-block w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg"
+            className="inline-block w-full transform rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl"
           >
             Return to Home
           </a>
+        </div>
+
+        {/* Secondary Links */}
+        <div
+          className="mt-8 flex justify-center space-x-6 animate-fade-in"
+          style={{ animationDelay: '1.2s' }}
+        >
           <a
-            href="mailto: mb4milad.bhattt@gmail.com" 
-            className="inline-block w-full bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-sm hover:shadow-md"
+            href="mailto:mb4milad.bhattt@gmail.com"
+            className="text-sm font-medium text-indigo-700 transition-colors duration-300 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
           >
             Contact Support
           </a>
           <a
-            href="https://m4milaad.github.io/Resume" 
-            className="inline-block w-full bg-gray-200 hover:bg-gray-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-6 rounded-lg transition-all duration-300 ease-in-out transform hover:scale-105 shadow-sm hover:shadow-md"
+            href="https://m4milaad.github.io/Resume"
+            className="text-sm font-medium text-indigo-700 transition-colors duration-300 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
           >
             Developer Portfolio
           </a>
         </div>
       </div>
     </div>
+
   );
 };
 
