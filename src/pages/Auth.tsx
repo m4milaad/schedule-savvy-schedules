@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GraduationCap, Users, Shield, Eye, EyeOff } from 'lucide-react';
+import DotGrid from '@/components/DotGrid';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -24,7 +25,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [userType, setUserType] = useState<'student' | 'department_admin'>('student');
+  const [userType, setUserType] = useState<'student' | 'department_admin' | 'admin'>('student');
   const [deptId, setDeptId] = useState('');
   const [enrollmentNo, setEnrollmentNo] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -104,7 +105,7 @@ const Auth = () => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
@@ -195,6 +196,15 @@ const Auth = () => {
           return;
         }
 
+        if (userType === 'admin' && !deptId) {
+          toast({
+            title: "Error",
+            description: "Department selection is required for administrators",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const userData = {
           full_name: fullName.trim(),
           user_type: userType,
@@ -215,8 +225,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 transition-colors duration-500">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <DotGrid 
+          dotSize={4}
+          gap={24}
+          className="w-full h-full"
+        />
+      </div>
+      
+      <div className="relative z-10 w-full max-w-md p-4">
         <div className="flex justify-end mb-4">
           <ThemeToggle />
         </div>
@@ -229,10 +247,10 @@ const Auth = () => {
               className="w-16 h-16 mx-auto mb-4 transition-transform duration-300 hover:scale-110"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300">
+          <h1 className="text-3xl font-bold text-foreground transition-colors duration-300">
             CUK Exam System
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">
+          <p className="text-muted-foreground transition-colors duration-300">
             Central University of Kashmir
           </p>
         </div>
@@ -244,7 +262,7 @@ const Auth = () => {
           </TabsList>
 
           <TabsContent value="signin">
-            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in">
+            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Shield className="w-5 h-5" />
@@ -311,7 +329,7 @@ const Auth = () => {
           </TabsContent>
 
           <TabsContent value="signup">
-            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in">
+            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Users className="w-5 h-5" />
@@ -348,13 +366,14 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="user-type" className="dark:text-gray-300 transition-colors duration-300">Account Type</Label>
-                    <Select value={userType} onValueChange={(value: 'student' | 'department_admin') => setUserType(value)}>
+                    <Select value={userType} onValueChange={(value: 'student' | 'department_admin' | 'admin') => setUserType(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
                         <SelectItem value="department_admin">Department Admin</SelectItem>
+                        <SelectItem value="admin">Administrator</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -374,7 +393,7 @@ const Auth = () => {
                     </div>
                   )}
 
-                  {userType === 'department_admin' && (
+                  {(userType === 'department_admin' || userType === 'admin') && (
                     <div className="space-y-2">
                       <Label htmlFor="department" className="dark:text-gray-300 transition-colors duration-300">Department</Label>
                       <Select value={deptId} onValueChange={setDeptId} disabled={loadingDepartments}>

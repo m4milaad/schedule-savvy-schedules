@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, X, Shield } from 'lucide-react';
+import { Home, Menu, X, Shield, User } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,14 +31,59 @@ const AdminDashboard = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<'admin' | 'department_admin' | null>(null);
+  const [profileData, setProfileData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   useEffect(() => {
     // Authentication is now handled by AdminProtectedRoute
-    loadAllData();
+    checkUserRole();
   }, []);
+
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check user roles
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      // Get profile for department info
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      setProfileData(profile);
+
+      if (roles && roles.length > 0) {
+        const role = roles[0].role;
+        setUserRole(role as 'admin' | 'department_admin');
+        
+        // Check if department admin is approved
+        if (role === 'department_admin' && profile && !profile.is_approved) {
+          toast({
+            title: "Pending Approval",
+            description: "Your account is pending approval by a super administrator.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+      }
+      
+      loadAllData();
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
 
   const loadAllData = async () => {
     try {
@@ -71,7 +116,7 @@ const AdminDashboard = () => {
       title: "Success",
       description: "Logged out successfully",
     });
-    navigate('/admin-login');
+    navigate('/auth');
   };
   const loadSchools = async () => {
     const { data, error } = await supabase
@@ -222,22 +267,36 @@ const AdminDashboard = () => {
   const navigationButtons = (
     <div className="flex flex-col md:flex-row gap-2">
       <ThemeToggle />
-      <Button
-        onClick={() => navigate('/manage-admins')}
-        variant="outline"
-        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-      >
-        <Shield className="w-4 h-4" />
-        Manage Admins
-      </Button>
-      <Button
-        onClick={() => navigate('/schedule-generator')}
-        variant="outline"
-        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-      >
-        <Home className="w-4 h-4" />
-        Schedule Generator
-      </Button>
+      {userRole === 'admin' && (
+        <>
+          <Button
+            onClick={() => navigate('/manage-admins')}
+            variant="outline"
+            className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          >
+            <Shield className="w-4 h-4" />
+            Manage Admins
+          </Button>
+          <Button
+            onClick={() => navigate('/schedule-generator')}
+            variant="outline"
+            className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+          >
+            <Home className="w-4 h-4" />
+            Schedule Generator
+          </Button>
+        </>
+      )}
+      {userRole === 'department_admin' && (
+        <Button
+          onClick={() => navigate('/department-admin-profile')}
+          variant="outline"
+          className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+        >
+          <User className="w-4 h-4" />
+          My Profile
+        </Button>
+      )}
       <Button
         onClick={handleLogout}
         variant="outline"
@@ -298,16 +357,24 @@ const AdminDashboard = () => {
           )}
         </div>
 
-        <Tabs defaultValue="schools" className="space-y-6 animate-fade-in">
+        <Tabs defaultValue={userRole === 'admin' ? "schools" : "courses"} className="space-y-6 animate-fade-in">
           <TabsList className={`grid w-full transition-all duration-300 ${
-            isMobile ? 'grid-cols-4 gap-1' : 'grid-cols-8'
+            isMobile 
+              ? 'grid-cols-4 gap-1' 
+              : userRole === 'admin' 
+                ? 'grid-cols-8' 
+                : 'grid-cols-4'
           }`}>
-            <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-              Schools
-            </TabsTrigger>
-            <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-              {isMobile ? 'Depts' : 'Departments'}
-            </TabsTrigger>
+            {userRole === 'admin' && (
+              <>
+                <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Schools
+                </TabsTrigger>
+                <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  {isMobile ? 'Depts' : 'Departments'}
+                </TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
               Courses
             </TabsTrigger>
@@ -319,12 +386,16 @@ const AdminDashboard = () => {
                 <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
                   Venues
                 </TabsTrigger>
-                <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Sessions
-                </TabsTrigger>
-                <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Holidays
-                </TabsTrigger>
+                {userRole === 'admin' && (
+                  <>
+                    <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                      Sessions
+                    </TabsTrigger>
+                    <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                      Holidays
+                    </TabsTrigger>
+                  </>
+                )}
                 <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
                   Students
                 </TabsTrigger>
@@ -338,25 +409,33 @@ const AdminDashboard = () => {
               <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs">
                 Venues
               </TabsTrigger>
-              <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs">
-                Sessions
-              </TabsTrigger>
-              <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs">
-                Holidays
-              </TabsTrigger>
+              {userRole === 'admin' && (
+                <>
+                  <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs">
+                    Sessions
+                  </TabsTrigger>
+                  <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs">
+                    Holidays
+                  </TabsTrigger>
+                </>
+              )}
               <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs">
                 Students
               </TabsTrigger>
             </TabsList>
           )}
 
-          <TabsContent value="schools" className="animate-fade-in">
-            <SchoolsTab schools={schools} onRefresh={loadSchools} />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <>
+              <TabsContent value="schools" className="animate-fade-in">
+                <SchoolsTab schools={schools} onRefresh={loadSchools} />
+              </TabsContent>
 
-          <TabsContent value="departments" className="animate-fade-in">
-            <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />
-          </TabsContent>
+              <TabsContent value="departments" className="animate-fade-in">
+                <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />
+              </TabsContent>
+            </>
+          )}
 
           <TabsContent value="courses" className="animate-fade-in">
             <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />
@@ -370,13 +449,17 @@ const AdminDashboard = () => {
             <VenuesTab venues={venues} onRefresh={loadVenues} />
           </TabsContent>
 
-          <TabsContent value="sessions" className="animate-fade-in">
-            <SessionsTab sessions={sessions} onRefresh={loadSessions} />
-          </TabsContent>
+          {userRole === 'admin' && (
+            <>
+              <TabsContent value="sessions" className="animate-fade-in">
+                <SessionsTab sessions={sessions} onRefresh={loadSessions} />
+              </TabsContent>
 
-          <TabsContent value="holidays" className="animate-fade-in">
-            <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />
-          </TabsContent>
+              <TabsContent value="holidays" className="animate-fade-in">
+                <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />
+              </TabsContent>
+            </>
+          )}
 
           <TabsContent value="students" className="animate-fade-in">
             <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />

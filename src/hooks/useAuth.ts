@@ -76,7 +76,7 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, userData: {
     full_name: string;
-    user_type: 'student' | 'department_admin';
+    user_type: 'student' | 'department_admin' | 'admin';
     dept_id?: string;
     student_enrollment_no?: string;
   }) => {
@@ -102,7 +102,7 @@ export const useAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/email-verified`,
           data: userData
         }
       });
