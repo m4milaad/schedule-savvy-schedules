@@ -8,11 +8,13 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
-import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
 import ManageAdmins from "./pages/ManageAdmins";
+import EmailVerified from "./pages/EmailVerified";
+import ResetPassword from "./pages/ResetPassword";
+import DepartmentAdminProfile from "./pages/DepartmentAdminProfile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 
@@ -41,6 +43,8 @@ const App = () => {
                 } 
               />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/email-verified" element={<EmailVerified />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route 
                 path="/schedule-generator" 
                 element={
@@ -49,7 +53,6 @@ const App = () => {
                   </AdminProtectedRoute>
                 } 
               />
-              <Route path="/admin-login" element={<AdminLogin />} />
               <Route 
                 path="/admin-dashboard" 
                 element={
@@ -63,6 +66,14 @@ const App = () => {
                 element={
                   <AdminProtectedRoute>
                     <ManageAdmins />
+                  </AdminProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/department-admin-profile" 
+                element={
+                  <AdminProtectedRoute>
+                    <DepartmentAdminProfile />
                   </AdminProtectedRoute>
                 } 
               />

@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit2, Trash2, Upload, BookOpen, Grid, List } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload, BookOpen, Grid, List, KeyRound } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
@@ -357,6 +357,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px]">Enrollment No</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">ABC ID</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden md:table-cell">Email</TableHead>
+                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px] hidden lg:table-cell">Contact</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px] hidden lg:table-cell">Department</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">Year/Sem</TableHead>
                                 <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden xl:table-cell">Enrolled Subjects</TableHead>
@@ -382,6 +383,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                         )}
                                     </TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden md:table-cell">{student.student_email || 'N/A'}</TableCell>
+                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden lg:table-cell">{(student as any).contact_no || 'N/A'}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden lg:table-cell">{getDepartmentName(student.dept_id)}</TableCell>
                                     <TableCell className="dark:text-gray-300 transition-colors duration-300">
                                         <div className="flex flex-col gap-1">
@@ -412,8 +414,43 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                                 size="sm"
                                                 onClick={() => handleEdit(student)}
                                                 className="transition-all duration-300 hover:scale-110 hover:shadow-md h-8 w-8 p-0"
+                                                title="Edit Student"
                                             >
                                                 <Edit2 className="w-3 h-3" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={async () => {
+                                                  if (student.student_email) {
+                                                    try {
+                                                      const { error } = await supabase.auth.resetPasswordForEmail(student.student_email, {
+                                                        redirectTo: `${window.location.origin}/reset-password`,
+                                                      });
+                                                      if (error) throw error;
+                                                      toast({
+                                                        title: "Success",
+                                                        description: `Password reset email sent to ${student.student_email}`,
+                                                      });
+                                                    } catch (error: any) {
+                                                      toast({
+                                                        title: "Error",
+                                                        description: error.message || "Failed to send reset email",
+                                                        variant: "destructive",
+                                                      });
+                                                    }
+                                                  } else {
+                                                    toast({
+                                                      title: "Error",
+                                                      description: "Student has no email address",
+                                                      variant: "destructive",
+                                                    });
+                                                  }
+                                                }}
+                                                className="transition-all duration-300 hover:scale-110 hover:shadow-md h-8 w-8 p-0"
+                                                title="Reset Password"
+                                            >
+                                                <KeyRound className="w-3 h-3" />
                                             </Button>
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>

@@ -1,0 +1,228 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Department {
+  dept_id: string;
+  dept_name: string;
+}
+
+const DepartmentAdminProfile = () => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    dept_id: '',
+    contact_no: ''
+  });
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadProfile();
+    loadDepartments();
+  }, []);
+
+  const loadDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('*')
+        .order('dept_name');
+      
+      if (error) throw error;
+      setDepartments(data || []);
+    } catch (error) {
+      console.error('Error loading departments:', error);
+    }
+  };
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
+
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      setProfile(profileData);
+      setFormData({
+        full_name: profileData.full_name || '',
+        email: profileData.email || user.email || '',
+        dept_id: profileData.dept_id || '',
+        contact_no: (profileData as any).contact_no || ''
+      });
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Department admins can't change their department - only super admin can
+      const updateData: any = {
+        full_name: formData.full_name,
+        email: formData.email,
+        contact_no: formData.contact_no || null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+      
+      loadProfile();
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const getDepartmentName = (deptId: string) => {
+    const dept = departments.find(d => d.dept_id === deptId);
+    return dept ? dept.dept_name : 'Unknown';
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-2xl mx-auto">
+        <Button
+          onClick={() => navigate('/admin-dashboard')}
+          variant="outline"
+          className="mb-6"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
+        </Button>
+
+        <Card className="animate-fade-in">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              My Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!profile?.is_approved && (
+              <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  ⏳ Your account is pending approval by a super administrator.
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_no">Contact Number</Label>
+                <Input
+                  id="contact_no"
+                  type="tel"
+                  value={formData.contact_no}
+                  onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Department</Label>
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm font-medium">{getDepartmentName(formData.dept_id)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Only super administrators can change your department
+                  </p>
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default DepartmentAdminProfile;
