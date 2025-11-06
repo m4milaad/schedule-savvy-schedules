@@ -252,6 +252,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_approved: boolean | null
           semester: number | null
           updated_at: string | null
           user_id: string | null
@@ -263,6 +264,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          is_approved?: boolean | null
           semester?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -274,6 +276,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          is_approved?: boolean | null
           semester?: number | null
           updated_at?: string | null
           user_id?: string | null
@@ -664,6 +667,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_approved_department_admin: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       manage_course_teacher_assignment: {
