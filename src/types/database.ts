@@ -11,6 +11,7 @@ export interface Profile {
   address?: string;
   semester?: number;
   abc_id?: string;
+  is_approved?: boolean;
   created_at: string;
   updated_at: string;
 }
