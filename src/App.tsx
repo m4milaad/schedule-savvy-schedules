@@ -1,4 +1,4 @@
-
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,7 +17,6 @@ import ResetPassword from "./pages/ResetPassword";
 import DepartmentAdminProfile from "./pages/DepartmentAdminProfile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
-import { AuditLogsTab } from "@/components/admin/AuditLogsTab.tsx";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 const queryClient = new QueryClient();
 
@@ -80,9 +79,9 @@ const App = () => {
               />
               <Route path="/admin-logs" element={
                 <AdminProtectedRoute>
-                <AuditLogsPage />
+                  <AuditLogsPage />
                 </AdminProtectedRoute>
-                } 
+              }
               />
               <Route path="/mobile-schedule" element={<MobileSchedule />} />
               <Route path="*" element={<NotFound />} />
@@ -90,7 +89,9 @@ const App = () => {
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
+      <Analytics />
     </ThemeProvider>
+
   );
 };
 
