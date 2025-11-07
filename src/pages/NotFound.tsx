@@ -109,7 +109,8 @@ const App = () => {
             Contact Support
           </a>
           <a
-            href="https://m4milaad.github.io/Resume"
+            href="https://m4milaad.github.io"
+            target={"_blank"}
             className="text-sm font-medium text-indigo-700 transition-colors duration-300 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
           >
             Developer Portfolio
