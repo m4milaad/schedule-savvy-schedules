@@ -1,1 +1,9 @@
-project_id = "hhhcesxsxtuqnnmaspdc"
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+template_invite = "./supabase/templates/invite.html"
+template_confirmation = "./supabase/templates/confirmation.html"
+template_email_change = "./supabase/templates/email_change.html"
+template_magic_link = "./supabase/templates/magic_link.html"
+template_recovery = "./supabase/templates/recovery.html"

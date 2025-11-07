@@ -28,6 +28,7 @@ import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmentCard";
+import { Footer } from "@/components/Footer";
 
 export default function Index() {
   // State management for various scheduling parameters and data
@@ -909,6 +910,7 @@ export default function Index() {
           )}
         </div>
       </div>
+      <Footer />
     </TooltipProvider>
   );
 }
