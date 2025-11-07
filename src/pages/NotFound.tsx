@@ -24,23 +24,21 @@ const App = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-slate-900 dark:to-slate-800 p-4 transition-colors duration-500">
       <div className="absolute inset-0 z-0">
         <FaultyTerminal
-          scale={1.5}
-          gridMul={[2, 1]}
+          scale={1.8}
+          // gridMul={[2, 1]}
           digitSize={1.2}
           timeScale={1}
           pause={false}
-          scanlineIntensity={1}
+          scanlineIntensity={0.5}
           glitchAmount={1}
           flickerAmount={1}
           noiseAmp={1}
-          chromaticAberration={0}
-          dither={0}
-          curvature={0}
+          curvature={0.1}
           tint="#a7ef9e"
           mouseReact={true}
           mouseStrength={0.5}
-          pageLoadAnimation={false}
-          brightness={1}
+          pageLoadAnimation={true}
+          brightness={0.6}
         />
       </div>
       <div className="absolute top-4 right-4">
