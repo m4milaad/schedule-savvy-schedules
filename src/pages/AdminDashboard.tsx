@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, X, Shield, User } from 'lucide-react';
+import { Home, Menu, Shield, User, List } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -20,479 +19,385 @@ import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 
-const AdminDashboard = () => {
-  const [schools, setSchools] = useState<School[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'department_admin' | null>(null);
-  const [profileData, setProfileData] = useState<any>(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const isMobile = useIsMobile();
+const AdminDashboard: React.FC = () => {
+    const [schools, setSchools] = useState<School[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [venues, setVenues] = useState<Venue[]>([]);
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [holidays, setHolidays] = useState<Holiday[]>([]);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
+    const [profileData, setProfileData] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<string>("courses"); // safe default
 
-  useEffect(() => {
-    // Authentication is now handled by AdminProtectedRoute
-    checkUserRole();
-  }, []);
+    const navigate = useNavigate();
+    const { toast } = useToast();
+    const isMobile = useIsMobile();
 
-  const checkUserRole = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    useEffect(() => {
+        checkUserRole();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-      // Check user roles
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
+    // Ensure activeTab updates sensibly after userRole known
+    useEffect(() => {
+        if (!userRole) return;
+        // Prefer "schools" for admin, otherwise "courses"
+        setActiveTab(userRole === "admin" ? "schools" : "courses");
+    }, [userRole]);
 
-      // Get profile for department info
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+    const checkUserRole = async () => {
+        try {
+            const { data } = await supabase.auth.getUser();
+            const user = data?.user;
+            if (!user) {
+                // not signed in, redirect
+                navigate("/auth");
+                return;
+            }
 
-      setProfileData(profile);
+            const { data: roles } = await supabase
+                .from("user_roles")
+                .select("role")
+                .eq("user_id", user.id);
 
-      if (roles && roles.length > 0) {
-        const role = roles[0].role;
-        setUserRole(role as 'admin' | 'department_admin');
-        
-        // Check if department admin is approved
-        if (role === 'department_admin' && profile && !profile.is_approved) {
-          toast({
-            title: "Pending Approval",
-            description: "Your account is pending approval by a super administrator.",
-            variant: "destructive",
-          });
-          await supabase.auth.signOut();
-          navigate('/auth');
-          return;
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("user_id", user.id)
+                .single();
+
+            setProfileData(profile || null);
+
+            if (roles && roles.length > 0) {
+                const role = roles[0].role;
+                setUserRole(role as "admin" | "department_admin");
+
+                if (role === "department_admin" && profile && !profile.is_approved) {
+                    toast({
+                        title: "Pending Approval",
+                        description: "Your account is pending approval by a super administrator.",
+                        variant: "destructive",
+                    });
+                    await supabase.auth.signOut();
+                    navigate("/auth");
+                    return;
+                }
+            } else {
+                // no roles - sign out for safety
+                await supabase.auth.signOut();
+                navigate("/auth");
+                return;
+            }
+
+            await loadAllData();
+        } catch (err) {
+            console.error("Error checking user role:", err);
+            toast({
+                title: "Error",
+                description: "Unable to verify user role.",
+                variant: "destructive",
+            });
+            navigate("/auth");
         }
-      }
-      
-      loadAllData();
-    } catch (error) {
-      console.error('Error checking user role:', error);
-    }
-  };
+    };
 
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        loadSchools(),
-        loadDepartments(),
-        loadCourses(),
-        loadTeachers(),
-        loadVenues(),
-        loadSessions(),
-        loadHolidays(),
-        loadStudents()
-      ]);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Error",
-        description: 'Failed to load some data',
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadAllData = async () => {
+        try {
+            setLoading(true);
+            await Promise.all([
+                loadSchools(),
+                loadDepartments(),
+                loadCourses(),
+                loadTeachers(),
+                loadVenues(),
+                loadSessions(),
+                loadHolidays(),
+                loadStudents(),
+            ]);
+        } catch (err) {
+            console.error("Error loading data:", err);
+            toast({
+                title: "Error",
+                description: "Failed to load some data",
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Success",
-      description: "Logged out successfully",
-    });
-    navigate('/auth');
-  };
-  const loadSchools = async () => {
-    const { data, error } = await supabase
-      .from('schools')
-      .select('*')
-      .order('school_name');
-    
-    if (error) throw error;
-    setSchools(data || []);
-  };
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        toast({ title: "Success", description: "Logged out successfully" });
+        navigate("/auth");
+    };
 
-  const loadDepartments = async () => {
-    const { data, error } = await supabase
-      .from('departments')
-      .select('*')
-      .order('dept_name');
-    
-    if (error) throw error;
-    setDepartments(data || []);
-  };
-
-  const loadCourses = async () => {
-    let query = supabase.from('courses').select('*');
-    
-    // Filter by department for department admins
-    if (userRole === 'department_admin' && profileData?.dept_id) {
-      query = query.eq('dept_id', profileData.dept_id);
-    }
-    
-    const { data, error } = await query.order('course_name');
-    
-    if (error) throw error;
-    setCourses(data || []);
-  };
-
-  const loadTeachers = async () => {
-    let query = supabase.from('teachers').select('*');
-    
-    // Filter by department for department admins
-    if (userRole === 'department_admin' && profileData?.dept_id) {
-      query = query.eq('dept_id', profileData.dept_id);
-    }
-    
-    const { data, error } = await query.order('teacher_name');
-    
-    if (error) throw error;
-    setTeachers(data || []);
-  };
-
-  const loadVenues = async () => {
-    const { data, error } = await supabase
-      .from('venues')
-      .select('*')
-      .order('venue_name');
-    
-    if (error) throw error;
-    setVenues(data || []);
-  };
-
-  const loadSessions = async () => {
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .order('session_year', { ascending: false });
-    
-    if (error) throw error;
-    setSessions(data || []);
-  };
-
-  const loadHolidays = async () => {
-    const { data, error } = await supabase
-      .from('holidays')
-      .select('*')
-      .order('holiday_date');
-    
-    if (error) throw error;
-    const transformedHolidays = (data || []).map(holiday => ({
-      id: holiday.holiday_id,
-      holiday_date: holiday.holiday_date,
-      holiday_name: holiday.holiday_name,
-      description: holiday.holiday_description,
-      is_recurring: holiday.is_recurring
-    }));
-    setHolidays(transformedHolidays);
-  };
-
-  const loadStudents = async () => {
-    try {
-      console.log('Loading students from database...');
-      
-      let studentsQuery = supabase.from('students').select('*');
-      let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
-      
-      // Filter by department for department admins
-      if (userRole === 'department_admin' && profileData?.dept_id) {
-        studentsQuery = studentsQuery.eq('dept_id', profileData.dept_id);
-        profilesQuery = profilesQuery.eq('dept_id', profileData.dept_id);
-      }
-      
-      // Get all students from students table
-      const { data: studentsData, error: studentsError } = await studentsQuery.order('student_name');
-    
-      if (studentsError) {
-        console.error('Error loading students:', studentsError);
-        throw studentsError;
-      }
-      
-      // Also get profiles that are students but don't have student records
-      const { data: profilesData, error: profilesError } = await profilesQuery;
-        
-      if (profilesError) {
-        console.error('Error loading profiles:', profilesError);
-      }
-      
-      // Create a set of student IDs we already have in students table
-      const existingStudentIds = new Set(studentsData?.map((s: any) => s.student_id) || []);
-      
-      // Add profile-only students to the list
-      const profileOnlyStudents = (profilesData || [])
-        .filter((p: any) => !existingStudentIds.has(p.id))
-        .map((p: any) => ({
-          student_id: p.id,
-          student_name: p.full_name || 'Unknown',
-          student_enrollment_no: p.student_enrollment_no || `PENDING-${p.id}`,
-          student_email: p.email,
-          student_address: p.address,
-          dept_id: p.dept_id,
-          student_year: 1,
-          semester: p.semester || 1,
-          abc_id: p.abc_id,
-          created_at: p.created_at,
-          updated_at: p.updated_at
+    // Data loaders (kept defensive)
+    const loadSchools = async () => {
+        const { data, error } = await supabase.from("schools").select("*").order("school_name");
+        if (error) throw error;
+        setSchools(data || []);
+    };
+    const loadDepartments = async () => {
+        const { data, error } = await supabase.from("departments").select("*").order("dept_name");
+        if (error) throw error;
+        setDepartments(data || []);
+    };
+    const loadCourses = async () => {
+        let q = supabase.from("courses").select("*");
+        if (userRole === "department_admin" && profileData?.dept_id) q = q.eq("dept_id", profileData.dept_id);
+        const { data, error } = await q.order("course_name");
+        if (error) throw error;
+        setCourses(data || []);
+    };
+    const loadTeachers = async () => {
+        let q = supabase.from("teachers").select("*");
+        if (userRole === "department_admin" && profileData?.dept_id) q = q.eq("dept_id", profileData.dept_id);
+        const { data, error } = await q.order("teacher_name");
+        if (error) throw error;
+        setTeachers(data || []);
+    };
+    const loadVenues = async () => {
+        const { data, error } = await supabase.from("venues").select("*").order("venue_name");
+        if (error) throw error;
+        setVenues(data || []);
+    };
+    const loadSessions = async () => {
+        const { data, error } = await supabase.from("sessions").select("*").order("session_year", { ascending: false });
+        if (error) throw error;
+        setSessions(data || []);
+    };
+    const loadHolidays = async () => {
+        const { data, error } = await supabase.from("holidays").select("*").order("holiday_date");
+        if (error) throw error;
+        const transformed = (data || []).map((h: any) => ({
+            id: h.holiday_id,
+            holiday_date: h.holiday_date,
+            holiday_name: h.holiday_name,
+            description: h.holiday_description,
+            is_recurring: h.is_recurring,
         }));
-      
-      const allStudents = [...(studentsData || []), ...profileOnlyStudents];
-      console.log('Students loaded:', allStudents.length);
-      setStudents(allStudents);
-    } catch (error) {
-      console.error('Failed to load students:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load students data",
-        variant: "destructive",
-      });
-    }
-  };
+        setHolidays(transformed);
+    };
+    const loadStudents = async () => {
+        try {
+            console.log('Loading students from database...');
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading admin dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+            let studentsQuery = supabase.from('students').select('*');
+            let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
 
-  // Navigation menu items
-  const navigationButtons = (
-    <div className="flex flex-col md:flex-row gap-2">
-      <ThemeToggle />
-      {userRole === 'admin' && (
-        <>
-          <Button
-            onClick={() => navigate('/manage-admins')}
-            variant="outline"
-            className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            <Shield className="w-4 h-4" />
-            Manage Admins
-          </Button>
-          <Button
-            onClick={() => navigate('/schedule-generator')}
-            variant="outline"
-            className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          >
-            <Home className="w-4 h-4" />
-            Schedule Generator
-          </Button>
-        </>
-      )}
-      {userRole === 'department_admin' && (
-        <Button
-          onClick={() => navigate('/department-admin-profile')}
-          variant="outline"
-          className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-        >
-          <User className="w-4 h-4" />
-          My Profile
-        </Button>
-      )}
-      <Button
-        onClick={handleLogout}
-        variant="outline"
-        className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-      >
-        <Home className="w-4 h-4" />
-        Logout
-      </Button>
-    </div>
-  );
+            // Filter by department for department admins
+            if (userRole === 'department_admin' && profileData?.dept_id) {
+                studentsQuery = studentsQuery.eq('dept_id', profileData.dept_id);
+                profilesQuery = profilesQuery.eq('dept_id', profileData.dept_id);
+            }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col transition-colors duration-500">
-      <div className="max-w-6xl mx-auto p-4 md:p-6 flex-1">
-        {/* Header with responsive navigation */}
-        <div className="flex justify-between items-center mb-8 animate-fade-in">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <img 
-                src="/favicon.ico" 
-                alt="CUK Logo" 
-                className="w-8 h-8 md:w-10 md:h-10 transition-transform duration-300 hover:scale-110"
-              />
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground transition-colors duration-300">
-                Admin Dashboard
-              </h1>
-            </div>
-            <p className="text-muted-foreground transition-colors duration-300 text-sm md:text-base">
-              Manage university data and settings
-            </p>
-          </div>
-          
-          {/* Desktop Navigation */}
-          {!isMobile && navigationButtons}
-          
-          {/* Mobile Navigation */}
-          {isMobile && (
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Menu className="w-4 h-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-72">
-                <div className="flex flex-col gap-4 mt-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <img 
-                      src="/favicon.ico" 
-                      alt="CUK Logo" 
-                      className="w-8 h-8"
-                    />
-                    <span className="font-semibold">Admin Menu</span>
-                  </div>
-                  {navigationButtons}
+            // Get all students from students table
+            const { data: studentsData, error: studentsError } = await studentsQuery.order('student_name');
+
+            if (studentsError) {
+                console.error('Error loading students:', studentsError);
+                throw studentsError;
+            }
+
+            // Also get profiles that are students but don't have student records
+            const { data: profilesData, error: profilesError } = await profilesQuery;
+
+            if (profilesError) {
+                console.error('Error loading profiles:', profilesError);
+            }
+
+            // Create a set of student IDs we already have in students table
+            const existingStudentIds = new Set(studentsData?.map((s: any) => s.student_id) || []);
+
+            // Add profile-only students to the list
+            const profileOnlyStudents = (profilesData || [])
+                .filter((p: any) => !existingStudentIds.has(p.id))
+                .map((p: any) => ({
+                    student_id: p.id,
+                    student_name: p.full_name || 'Unknown',
+                    student_enrollment_no: p.student_enrollment_no || `PENDING-${p.id}`,
+                    student_email: p.email,
+                    student_address: p.address,
+                    dept_id: p.dept_id,
+                    student_year: 1,
+                    semester: p.semester || 1,
+                    abc_id: p.abc_id,
+                    created_at: p.created_at,
+                    updated_at: p.updated_at
+                }));
+
+            const allStudents = [...(studentsData || []), ...profileOnlyStudents];
+            console.log('Students loaded:', allStudents.length);
+            setStudents(allStudents);
+        } catch (error) {
+            console.error('Failed to load students:', error);
+            toast({
+                title: "Error",
+                description: "Failed to load students data",
+                variant: "destructive",
+            });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+                    <p>Loading admin dashboard...</p>
                 </div>
-              </SheetContent>
-            </Sheet>
-          )}
-        </div>
+            </div>
+        );
+    }
 
-        <Tabs defaultValue={userRole === 'admin' ? "schools" : "courses"} className="space-y-6 animate-fade-in">
-          <TabsList className={`grid w-full transition-all duration-300 ${
-            isMobile 
-              ? 'grid-cols-4 gap-1' 
-              : userRole === 'admin' 
-                ? 'grid-cols-8' 
-                : 'grid-cols-4'
-          }`}>
-            {userRole === 'admin' && (
-              <>
-                <TabsTrigger value="schools" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Schools
-                </TabsTrigger>
-                <TabsTrigger value="departments" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  {isMobile ? 'Depts' : 'Departments'}
-                </TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-              Courses
-            </TabsTrigger>
-            <TabsTrigger value="teachers" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-              Teachers
-            </TabsTrigger>
-            {!isMobile && (
-              <>
-                <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Venues
-                </TabsTrigger>
-                {userRole === 'admin' && (
-                  <>
-                    <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                      Sessions
-                    </TabsTrigger>
-                    <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                      Holidays
-                    </TabsTrigger>
-                  </>
-                )}
-              <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                Students
-              </TabsTrigger>
-              {userRole === 'admin' && (
-                <TabsTrigger value="logs" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Logs
-                </TabsTrigger>
-              )}
-              </>
-            )}
-          </TabsList>
-          
-          {/* Mobile: Additional tabs in a second row */}
-          {isMobile && (
-            <TabsList className="grid w-full grid-cols-4 gap-1 mt-2">
-              <TabsTrigger value="venues" className="transition-all duration-300 hover:scale-105 text-xs">
-                Venues
-              </TabsTrigger>
-              {userRole === 'admin' && (
+    // top nav buttons (responsive)
+    const navigationButtons = (
+        <div className="flex flex-wrap justify-center md:justify-end gap-2 md:gap-3">
+            <ThemeToggle />
+            {userRole === "admin" && (
                 <>
-                  <TabsTrigger value="sessions" className="transition-all duration-300 hover:scale-105 text-xs">
-                    Sessions
-                  </TabsTrigger>
-                  <TabsTrigger value="holidays" className="transition-all duration-300 hover:scale-105 text-xs">
-                    Holidays
-                  </TabsTrigger>
+                    <Button onClick={() => navigate("/manage-admins")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                        <Shield className="w-4 h-4" />
+                        Manage Admins
+                    </Button>
+                    <Button onClick={() => navigate("/schedule-generator")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                        <Home className="w-4 h-4" />
+                        Schedule Generator
+                    </Button>
+                    <Button onClick={() => navigate("/admin-logs")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                        <List className="w-4 h-4" />
+                        View Logs
+                    </Button>
                 </>
-              )}
-              <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs">
-                Students
-              </TabsTrigger>
-            </TabsList>
-          )}
+            )}
+            {userRole === "department_admin" && (
+                <Button onClick={() => navigate("/department-admin-profile")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                    <User className="w-4 h-4" />
+                    My Profile
+                </Button>
+            )}
+            <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                <Home className="w-4 h-4" />
+                Logout
+            </Button>
+        </div>
+    );
 
-          {userRole === 'admin' && (
-            <>
-              <TabsContent value="schools" className="animate-fade-in">
-                <SchoolsTab schools={schools} onRefresh={loadSchools} />
-              </TabsContent>
+    return (
+        <div className="min-h-screen bg-background flex flex-col transition-colors duration-500">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+                    <div className="text-center md:text-left">
+                        <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
+                            <img src="/favicon.ico" alt="CUK Logo" className="w-10 h-10 transition-transform hover:scale-110" />
+                            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                        </div>
+                        <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>
+                    </div>
 
-              <TabsContent value="departments" className="animate-fade-in">
-                <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />
-              </TabsContent>
-            </>
-          )}
+                    {/* Desktop navigation */}
+                    {!isMobile && navigationButtons}
 
-          <TabsContent value="courses" className="animate-fade-in">
-            <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />
-          </TabsContent>
+                    {/* Mobile sheet */}
+                    {isMobile && (
+                        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Menu className="w-4 h-4" />
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent side="right" className="w-72">
+                                <div className="flex flex-col gap-4 mt-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <img src="/favicon.ico" alt="CUK Logo" className="w-8 h-8" />
+                                        <span className="font-semibold">Admin Menu</span>
+                                    </div>
+                                    {navigationButtons}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
+                    )}
+                </div>
 
-          <TabsContent value="teachers" className="animate-fade-in">
-            <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />
-          </TabsContent>
+                {/* Tabs area: desktop uses Tabs component (controlled), mobile uses Select dropdown */}
+                {isMobile ? (
+                    <div className="mb-4">
+                        <Select value={activeTab} onValueChange={(val) => setActiveTab(val)}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select a section" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {userRole === "admin" && (
+                                    <>
+                                        <SelectItem value="schools">Schools</SelectItem>
+                                        <SelectItem value="departments">Departments</SelectItem>
+                                    </>
+                                )}
+                                <SelectItem value="courses">Courses</SelectItem>
+                                <SelectItem value="teachers">Teachers</SelectItem>
+                                <SelectItem value="venues">Venues</SelectItem>
+                                <SelectItem value="sessions">Sessions</SelectItem>
+                                <SelectItem value="holidays">Holidays</SelectItem>
+                                <SelectItem value="students">Students</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                ) : (
+                    // Controlled Tabs (activeTab drives which content is visible)
+                    <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)}>
+                        <TabsList className="flex flex-wrap justify-center gap-2 overflow-x-auto p-1 rounded-lg bg-background/50 backdrop-blur-sm mb-4">
+                            {userRole === "admin" && (
+                                <>
+                                    <TabsTrigger value="schools">Schools</TabsTrigger>
+                                    <TabsTrigger value="departments">Departments</TabsTrigger>
+                                </>
+                            )}
+                            <TabsTrigger value="courses">Courses</TabsTrigger>
+                            <TabsTrigger value="teachers">Teachers</TabsTrigger>
+                            <TabsTrigger value="venues">Venues</TabsTrigger>
+                            {userRole === "admin" && (
+                                <>
+                                    <TabsTrigger value="sessions">Sessions</TabsTrigger>
+                                    <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                                </>
+                            )}
+                            <TabsTrigger value="students">Students</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                )}
 
-          <TabsContent value="venues" className="animate-fade-in">
-            <VenuesTab venues={venues} onRefresh={loadVenues} />
-          </TabsContent>
+                <div className="mt-4">
+                    {/* Render content based on activeTab */}
+                    {activeTab === "schools" && <SchoolsTab schools={schools} onRefresh={loadSchools} />}
+                    {activeTab === "departments" && <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />}
+                    {activeTab === "courses" && <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />}
+                    {activeTab === "teachers" && <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />}
+                    {activeTab === "venues" && <VenuesTab venues={venues} onRefresh={loadVenues} />}
+                    {activeTab === "sessions" && <SessionsTab sessions={sessions} onRefresh={loadSessions} />}
+                    {activeTab === "holidays" && <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />}
+                    {activeTab === "students" && <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />}
 
-          {userRole === 'admin' && (
-            <>
-              <TabsContent value="sessions" className="animate-fade-in">
-                <SessionsTab sessions={sessions} onRefresh={loadSessions} />
-              </TabsContent>
+                    {/* If you still want an inline logs panel (optional) you can show it on the page (not as a tab). */}
+                </div>
+            </div>
 
-              <TabsContent value="holidays" className="animate-fade-in">
-                <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />
-              </TabsContent>
-            </>
-          )}
-
-          <TabsContent value="students" className="animate-fade-in">
-            <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />
-          </TabsContent>
-
-          {userRole === 'admin' && (
-            <TabsContent value="logs" className="animate-fade-in">
-              <AuditLogsTab />
-            </TabsContent>
-          )}
-        </Tabs>
-      </div>
-      <Footer />
-    </div>
-  );
+            <Footer />
+        </div>
+    );
 };
 
 export default AdminDashboard;

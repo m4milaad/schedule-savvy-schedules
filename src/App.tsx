@@ -17,13 +17,14 @@ import ResetPassword from "./pages/ResetPassword";
 import DepartmentAdminProfile from "./pages/DepartmentAdminProfile";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
-
+import { AuditLogsTab } from "@/components/admin/AuditLogsTab.tsx";
+import { AuditLogsPage } from "@/pages/AuditLogsPage";
 const queryClient = new QueryClient();
 
 const App = () => {
   // Check if running in Capacitor (mobile app)
-  const isCapacitor = window.location.protocol === 'capacitor:' || 
-                     (window.location.hostname === 'localhost' && window.location.port === '');
+  const isCapacitor = window.location.protocol === 'capacitor:' ||
+    (window.location.hostname === 'localhost' && window.location.port === '');
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
@@ -33,48 +34,54 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route 
-                path="/" 
+              <Route
+                path="/"
                 element={
-                  isCapacitor ? <Navigate to="/mobile-schedule" replace /> : 
-                  <ProtectedRoute allowedRoles={['student']}>
-                    <StudentDashboard />
-                  </ProtectedRoute>
-                } 
+                  isCapacitor ? <Navigate to="/mobile-schedule" replace /> :
+                    <ProtectedRoute allowedRoles={['student']}>
+                      <StudentDashboard />
+                    </ProtectedRoute>
+                }
               />
               <Route path="/auth" element={<Auth />} />
               <Route path="/email-verified" element={<EmailVerified />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route 
-                path="/schedule-generator" 
+              <Route
+                path="/schedule-generator"
                 element={
                   <AdminProtectedRoute>
                     <Index />
                   </AdminProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/admin-dashboard" 
+              <Route
+                path="/admin-dashboard"
                 element={
                   <AdminProtectedRoute>
                     <AdminDashboard />
                   </AdminProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/manage-admins" 
+              <Route
+                path="/manage-admins"
                 element={
                   <AdminProtectedRoute>
                     <ManageAdmins />
                   </AdminProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/department-admin-profile" 
+              <Route
+                path="/department-admin-profile"
                 element={
                   <AdminProtectedRoute>
                     <DepartmentAdminProfile />
                   </AdminProtectedRoute>
+                }
+              />
+              <Route path="/admin-logs" element={
+                <AdminProtectedRoute>
+                <AuditLogsPage />
+                </AdminProtectedRoute>
                 } 
               />
               <Route path="/mobile-schedule" element={<MobileSchedule />} />
