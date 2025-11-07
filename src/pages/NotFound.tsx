@@ -3,7 +3,7 @@ import FaultyTerminal from '@/components/Faultyterminal'
 // Lucide-react is used for icons. Assuming it's available in the environment.
 // If not, you might need to use inline SVGs or another icon library.
 // For this example, we'll use a simple SVG fallback if lucide-react isn't directly available.
-
+import FuzzyText from '@/components/ui/FuzzyText';
 // A simple SVG icon for demonstration if lucide-react is not directly importable
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -39,7 +39,7 @@ const App = () => {
           mouseStrength={0.5}
           pageLoadAnimation={true}
           brightness={0.6}
-        />
+        /> 
       </div>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
@@ -57,13 +57,17 @@ const App = () => {
         </div>
 
         {/* 404 Title - Modern Gradient Text */}
-        <h1
-          className="mb-4 text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500 animate-fade-in"
-          style={{ animationDelay: '0.4s' }}
-        >
-          404
-        </h1>
 
+        <div className='flex justify-center items-center'>
+          <FuzzyText
+            baseIntensity={0.2}
+            hoverIntensity={0.5}
+            enableHover={true}
+
+          >
+            404
+          </FuzzyText>
+        </div>
         {/* Subtitle */}
         <p
           className="mb-4 text-3xl font-bold text-slate-900 dark:text-slate-100 animate-fade-in"
