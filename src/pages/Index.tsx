@@ -802,7 +802,7 @@ export default function Index() {
                 <span className="sm:hidden">Reload</span>
               </Button>
               <Button
-                onClick={() => navigate("/admin-login")}
+                onClick={() => navigate("/auth")}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2 shadow-sm"
