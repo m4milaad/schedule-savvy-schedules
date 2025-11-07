@@ -146,7 +146,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         try {
             const submitData = {
                 ...formData,
-                abc_id: formData.abc_id || null
+                abc_id: formData.abc_id || null,
+                dept_id: formData.dept_id || null  // Allow null department
             };
 
             if (editingStudent) {

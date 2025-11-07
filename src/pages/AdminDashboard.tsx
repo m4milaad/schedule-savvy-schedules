@@ -19,6 +19,7 @@ import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
 import { Footer } from "@/components/Footer";
+import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 
 const AdminDashboard = () => {
   const [schools, setSchools] = useState<School[]>([]);
@@ -139,20 +140,28 @@ const AdminDashboard = () => {
   };
 
   const loadCourses = async () => {
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .order('course_name');
+    let query = supabase.from('courses').select('*');
+    
+    // Filter by department for department admins
+    if (userRole === 'department_admin' && profileData?.dept_id) {
+      query = query.eq('dept_id', profileData.dept_id);
+    }
+    
+    const { data, error } = await query.order('course_name');
     
     if (error) throw error;
     setCourses(data || []);
   };
 
   const loadTeachers = async () => {
-    const { data, error } = await supabase
-      .from('teachers')
-      .select('*')
-      .order('teacher_name');
+    let query = supabase.from('teachers').select('*');
+    
+    // Filter by department for department admins
+    if (userRole === 'department_admin' && profileData?.dept_id) {
+      query = query.eq('dept_id', profileData.dept_id);
+    }
+    
+    const { data, error } = await query.order('teacher_name');
     
     if (error) throw error;
     setTeachers(data || []);
@@ -198,11 +207,18 @@ const AdminDashboard = () => {
   const loadStudents = async () => {
     try {
       console.log('Loading students from database...');
+      
+      let studentsQuery = supabase.from('students').select('*');
+      let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
+      
+      // Filter by department for department admins
+      if (userRole === 'department_admin' && profileData?.dept_id) {
+        studentsQuery = studentsQuery.eq('dept_id', profileData.dept_id);
+        profilesQuery = profilesQuery.eq('dept_id', profileData.dept_id);
+      }
+      
       // Get all students from students table
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
-        .select('*')
-        .order('student_name');
+      const { data: studentsData, error: studentsError } = await studentsQuery.order('student_name');
     
       if (studentsError) {
         console.error('Error loading students:', studentsError);
@@ -210,10 +226,7 @@ const AdminDashboard = () => {
       }
       
       // Also get profiles that are students but don't have student records
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', 'student');
+      const { data: profilesData, error: profilesError } = await profilesQuery;
         
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
@@ -396,9 +409,14 @@ const AdminDashboard = () => {
                     </TabsTrigger>
                   </>
                 )}
-                <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
-                  Students
+              <TabsTrigger value="students" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                Students
+              </TabsTrigger>
+              {userRole === 'admin' && (
+                <TabsTrigger value="logs" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm">
+                  Logs
                 </TabsTrigger>
+              )}
               </>
             )}
           </TabsList>
@@ -464,6 +482,12 @@ const AdminDashboard = () => {
           <TabsContent value="students" className="animate-fade-in">
             <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />
           </TabsContent>
+
+          {userRole === 'admin' && (
+            <TabsContent value="logs" className="animate-fade-in">
+              <AuditLogsTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
       <Footer />
