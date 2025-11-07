@@ -103,7 +103,10 @@ export const useAuth = () => {
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/email-verified`,
-          data: userData
+          data: {
+            ...userData,
+            student_enrollment_no: userData.student_enrollment_no || null,
+          }
         }
       });
 

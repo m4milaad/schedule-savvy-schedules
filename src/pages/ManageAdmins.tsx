@@ -17,6 +17,9 @@ interface AdminUser {
   role: string;
   created_at: string;
   user_id: string;
+  is_approved?: boolean;
+  dept_id?: string;
+  dept_name?: string;
 }
 
 const ManageAdmins = () => {
@@ -68,10 +71,17 @@ const ManageAdmins = () => {
         return;
       }
 
-      // Get profile info for these users
+      // Get profile info for these users with department
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, email')
+        .select(`
+          user_id, 
+          full_name, 
+          email, 
+          is_approved, 
+          dept_id,
+          departments:dept_id (dept_name)
+        `)
         .in('user_id', roleData.map(r => r.user_id));
 
       if (profileError) throw profileError;
@@ -84,7 +94,10 @@ const ManageAdmins = () => {
           role: role.role,
           email: profile?.email || 'N/A',
           full_name: profile?.full_name || 'N/A',
-          created_at: new Date().toISOString(), // Placeholder
+          created_at: new Date().toISOString(),
+          is_approved: profile?.is_approved ?? true,
+          dept_id: profile?.dept_id,
+          dept_name: (profile as any)?.departments?.dept_name || 'N/A',
         };
       });
 
@@ -177,6 +190,31 @@ const ManageAdmins = () => {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const approveAdmin = async (userId: string, email: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_approved: true })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${email} has been approved as department admin`,
+      });
+
+      loadAdmins();
+    } catch (error: any) {
+      console.error('Error approving admin:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve admin",
+        variant: "destructive",
+      });
     }
   };
 
@@ -353,18 +391,42 @@ const ManageAdmins = () => {
                       <div className="flex-1">
                         <div className="font-medium">{admin.full_name}</div>
                         <div className="text-sm text-muted-foreground">{admin.email}</div>
-                        <Badge variant="secondary" className="mt-1">
-                          {admin.role === 'admin' ? 'Super Admin' : 'Department Admin'}
-                        </Badge>
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          <Badge variant="secondary">
+                            {admin.role === 'admin' ? 'Super Admin' : 'Department Admin'}
+                          </Badge>
+                          {admin.role === 'department_admin' && (
+                            <>
+                              <Badge variant="outline">{admin.dept_name}</Badge>
+                              {admin.is_approved ? (
+                                <Badge variant="default" className="bg-green-600">Approved</Badge>
+                              ) : (
+                                <Badge variant="destructive">Pending</Badge>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeAdmin(admin.user_id, admin.email)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        {admin.role === 'department_admin' && !admin.is_approved && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => approveAdmin(admin.user_id, admin.email)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Approve
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAdmin(admin.user_id, admin.email)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

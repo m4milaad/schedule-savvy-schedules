@@ -41,12 +41,16 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
     address: ''
   });
 
-  // Load student data on mount if user is a student
+  // Load student data and populate enrollment number from signup if available
   React.useEffect(() => {
     if (profile.user_type === 'student' && profile.id) {
       loadStudentData();
     }
-  }, [profile.id, profile.user_type]);
+    // Pre-fill enrollment number from profile if it exists
+    if (profile.student_enrollment_no && !profile.student_enrollment_no.startsWith('PENDING-')) {
+      setFormData(prev => ({ ...prev, student_enrollment_no: profile.student_enrollment_no || '' }));
+    }
+  }, [profile.id, profile.user_type, profile.student_enrollment_no]);
 
   const loadStudentData = async () => {
     try {
