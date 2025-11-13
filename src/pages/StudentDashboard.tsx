@@ -378,66 +378,78 @@ const StudentDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-500 flex flex-col">
-      <div className="flex-1 p-4 md:p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8 animate-fade-in">
-            <div className="flex items-start gap-3">
-              <img 
-                src="/favicon.ico" 
-                alt="CUK Logo" 
-                className="w-10 h-10 flex-shrink-0 transition-transform duration-300 hover:scale-110 animate-scale-in"
-              />
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl md:text-3xl font-bold text-foreground flex items-center gap-2 transition-colors duration-300">
-                  <GraduationCap className="w-6 h-6 md:w-8 md:h-8 text-blue-600 dark:text-blue-400" />
-                  <span className="truncate">Student Dashboard</span>
-                </h1>
-                <p className="text-sm md:text-base text-muted-foreground transition-colors duration-300 truncate mt-1">
-                  Welcome, {profile?.full_name}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {profile?.dept_id && (
-                    <div className="flex items-center gap-1">
-                      <Building className="w-3 h-3 md:w-4 md:h-4 text-blue-600 dark:text-blue-400" />
-                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
-                        {getDepartmentName(profile.dept_id)}
-                      </Badge>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-background text-foreground transition-colors duration-500 flex flex-col">
+      <div className="flex-1 p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Enhanced Header with Card */}
+          <Card className="mb-6 md:mb-8 animate-fade-in shadow-lg border-2">
+            <CardContent className="p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div className="flex items-start gap-3 md:gap-4">
+                  <div className="relative hidden md:block">
+                    <img 
+                      src="/favicon.ico" 
+                      alt="CUK Logo" 
+                      className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 transition-transform duration-300 hover:scale-110 animate-scale-in rounded-lg shadow-md"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="mb-1">
+                      <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-foreground transition-colors duration-300">
+                        Student Dashboard
+                      </h1>
                     </div>
-                  )}
-                  {profile?.semester && (
-                    <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
-                      Sem {profile.semester}
-                    </Badge>
-                  )}
+                    <p className="text-sm md:text-lg font-semibold text-primary mb-2">
+                      {profile?.full_name}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {profile?.dept_id && (
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 flex items-center gap-1">
+                          <Building className="w-3 h-3" />
+                          {getDepartmentName(profile.dept_id)}
+                        </Badge>
+                      )}
+                      {profile?.semester && (
+                        <Badge className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
+                          Semester {profile.semester}
+                        </Badge>
+                      )}
+                      {enrollments.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          <BookOpen className="w-3 h-3 mr-1" />
+                          {enrollments.length} Course{enrollments.length !== 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap md:flex-nowrap">
+                  <ThemeToggle />
+                  <Button 
+                    onClick={() => setShowProfileDialog(true)}
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm"
+                  >
+                    <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Edit Profile</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Button>
+                  <Button 
+                    onClick={signOut} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Sign Out</span>
+                    <span className="sm:hidden">Logout</span>
+                  </Button>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2 flex-wrap md:flex-nowrap">
-              <ThemeToggle />
-              <Button 
-                onClick={() => setShowProfileDialog(true)}
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg text-xs md:text-sm"
-              >
-                <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                <span className="hidden sm:inline">Edit Profile</span>
-                <span className="sm:hidden">Edit</span>
-              </Button>
-              <Button 
-                onClick={signOut} 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-lg text-xs md:text-sm"
-              >
-                <LogOut className="w-3 h-3 md:w-4 md:h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-                <span className="sm:hidden">Logout</span>
-              </Button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
         {/* Profile Completion Banner */}
         {!isProfileComplete() && showCompletionBanner && (
@@ -449,16 +461,28 @@ const StudentDashboard = () => {
         )}
 
           <Tabs defaultValue="courses" className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-3 transition-all duration-300 h-auto">
-              <TabsTrigger value="courses" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+            <TabsList className="grid w-full grid-cols-3 transition-all duration-300 h-auto bg-muted/50 p-1 rounded-xl shadow-sm">
+              <TabsTrigger 
+                value="courses" 
+                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">My Courses</span>
                 <span className="sm:hidden">Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="enroll" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+              <TabsTrigger 
+                value="enroll" 
+                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Enroll</span>
                 <span className="sm:hidden">Enroll</span>
               </TabsTrigger>
-              <TabsTrigger value="schedule" className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-2">
+              <TabsTrigger 
+                value="schedule" 
+                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+              >
+                <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Exam Schedule</span>
                 <span className="sm:hidden">Exams</span>
               </TabsTrigger>
