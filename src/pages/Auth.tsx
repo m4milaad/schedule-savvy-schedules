@@ -13,7 +13,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import {Footer} from "@/components/Footer.tsx";
 
 interface Department {
   dept_id: string;
@@ -227,7 +226,7 @@ const Auth = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      <div className="absolute inset-0 z-0">
+      <div className="fixed inset-0 z-0">
         <Squares
           speed={0.5}
           squareSize={40}
@@ -486,9 +485,6 @@ const Auth = () => {
           </TabsContent>
         </Tabs>
       </div>
-        <div className="z-10 w-full mt-auto">
-            <Footer />
-        </div>
       {/* Forgot Password Dialog */}
       {showForgotPassword && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fade-in">
