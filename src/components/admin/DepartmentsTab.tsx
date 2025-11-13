@@ -197,7 +197,7 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
                     departments.map((dept) => (
                         <div
                             key={dept.dept_id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
                         >
                             <div>
                                 <div className="font-medium">{dept.dept_name}</div>

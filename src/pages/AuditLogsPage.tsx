@@ -52,7 +52,7 @@ export const AuditLogsPage: React.FC = () => {
               <img
                 src="/favicon.ico"
                 alt="CUK Logo"
-                className="w-10 h-10 transition-transform hover:scale-110"
+                className="hidden md:block w-10 h-10 transition-transform hover:scale-110"
               />
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 System Audit Logs
@@ -77,7 +77,7 @@ export const AuditLogsPage: React.FC = () => {
               <SheetContent side="right" className="w-72">
                 <div className="flex flex-col gap-4 mt-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <img src="/favicon.ico" alt="CUK Logo" className="w-8 h-8" />
+                    <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-8 h-8" />
                     <span className="font-semibold">Menu</span>
                   </div>
                   {navigationButtons}

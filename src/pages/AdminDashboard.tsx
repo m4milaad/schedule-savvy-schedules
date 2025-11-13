@@ -194,8 +194,6 @@ const AdminDashboard: React.FC = () => {
     };
     const loadStudents = async () => {
         try {
-            console.log('Loading students from database...');
-
             let studentsQuery = supabase.from('students').select('*');
             let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
 
@@ -241,7 +239,6 @@ const AdminDashboard: React.FC = () => {
                 }));
 
             const allStudents = [...(studentsData || []), ...profileOnlyStudents];
-            console.log('Students loaded:', allStudents.length);
             setStudents(allStudents);
         } catch (error) {
             console.error('Failed to load students:', error);
@@ -303,7 +300,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                     <div className="text-center md:text-left">
                         <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
-                            <img src="/favicon.ico" alt="CUK Logo" className="w-10 h-10 transition-transform hover:scale-110" />
+                            <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10 transition-transform hover:scale-110" />
                             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>
@@ -323,7 +320,7 @@ const AdminDashboard: React.FC = () => {
                             <SheetContent side="right" className="w-72">
                                 <div className="flex flex-col gap-4 mt-6">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <img src="/favicon.ico" alt="CUK Logo" className="w-8 h-8" />
+                                        <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-8 h-8" />
                                         <span className="font-semibold">Admin Menu</span>
                                     </div>
                                     {navigationButtons}
