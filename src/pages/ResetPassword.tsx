@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +17,66 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const hydrateSession = async () => {
+      try {
+        const url = typeof window !== 'undefined' ? window.location.href : '';
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+        const hasRecoveryParams =
+          hash.includes('type=recovery') ||
+          hash.includes('access_token') ||
+          url.includes('code=');
+
+        if (hasRecoveryParams) {
+          const { error } = await supabase.auth.exchangeCodeForSession(url);
+          if (error) {
+            console.error('Password reset session exchange failed:', error);
+            toast({
+              title: "Session Error",
+              description: error.message || "We couldn't validate your reset link. Please request a new one.",
+              variant: "destructive",
+            });
+            return;
+          }
+        } else {
+          console.warn('Reset password page opened without recovery parameters.');
+          toast({
+            title: "Link Required",
+            description: "Please use the password reset link sent to your email.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setIsSessionReady(true);
+      } catch (error: any) {
+        console.error('Unexpected session error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Something went wrong while preparing the reset form.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    hydrateSession();
+  }, [toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isSessionReady) {
+      toast({
+        title: "Session Not Ready",
+        description: "Please wait for the reset link to be validated.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (password !== confirmPassword) {
       toast({
@@ -171,9 +226,9 @@ const ResetPassword = () => {
               <Button
                 type="submit"
                 className="w-full transition-all duration-300 hover:scale-105"
-                disabled={loading}
+                disabled={loading || !isSessionReady}
               >
-                {loading ? "Updating..." : "Update Password"}
+                {loading ? "Updating..." : isSessionReady ? "Update Password" : "Validating link..."}
               </Button>
             </form>
           </CardContent>
