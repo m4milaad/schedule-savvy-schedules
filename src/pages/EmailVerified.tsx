@@ -15,18 +15,36 @@ const EmailVerified = () => {
   useEffect(() => {
     const exchangeSession = async () => {
       try {
-        const hasCodeInUrl =
-          typeof window !== 'undefined' &&
-          (window.location.hash.includes('access_token') ||
-            window.location.hash.includes('code=') ||
-            window.location.search.includes('code='));
+        if (typeof window === 'undefined') {
+          setIsProcessing(false);
+          return;
+        }
 
-        if (hasCodeInUrl) {
-          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        const url = window.location.href;
+        const hash = window.location.hash;
+        const hasAccessToken =
+          hash.includes('access_token') || hash.includes('refresh_token');
+        const hasCodeParam =
+          hash.includes('code=') || window.location.search.includes('code=');
+
+        if (hasAccessToken) {
+          const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+          if (error) {
+            console.error('Email verification token exchange failed:', error);
+            setErrorMessage(error.message || 'Verification completed, but we could not establish a session. Please sign in manually.');
+          } else {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } else if (hasCodeParam) {
+          const { error } = await supabase.auth.exchangeCodeForSession(url);
           if (error) {
             console.error('Email verification session exchange failed:', error);
             setErrorMessage(error.message || 'Verification completed, but we could not establish a session. Please sign in manually.');
+          } else {
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
+        } else {
+          setErrorMessage('Verification link is missing required parameters. Please try again from your email.');
         }
       } catch (error: any) {
         console.error('Unexpected verification error:', error);

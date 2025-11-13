@@ -24,14 +24,41 @@ const ResetPassword = () => {
   useEffect(() => {
     const hydrateSession = async () => {
       try {
-        const url = typeof window !== 'undefined' ? window.location.href : '';
-        const hash = typeof window !== 'undefined' ? window.location.hash : '';
+        if (typeof window === 'undefined') {
+          return;
+        }
+
+        const url = window.location.href;
+        const hash = window.location.hash;
         const hasRecoveryParams =
           hash.includes('type=recovery') ||
           hash.includes('access_token') ||
+          hash.includes('refresh_token') ||
           url.includes('code=');
 
-        if (hasRecoveryParams) {
+        if (!hasRecoveryParams) {
+          console.warn('Reset password page opened without recovery parameters.');
+          toast({
+            title: "Link Required",
+            description: "Please use the password reset link sent to your email.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (hash.includes('access_token') || hash.includes('refresh_token')) {
+          const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+          if (error) {
+            console.error('Password reset token exchange failed:', error);
+            toast({
+              title: "Session Error",
+              description: error.message || "We couldn't validate your reset link. Please request a new one.",
+              variant: "destructive",
+            });
+            return;
+          }
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        } else {
           const { error } = await supabase.auth.exchangeCodeForSession(url);
           if (error) {
             console.error('Password reset session exchange failed:', error);
@@ -42,14 +69,7 @@ const ResetPassword = () => {
             });
             return;
           }
-        } else {
-          console.warn('Reset password page opened without recovery parameters.');
-          toast({
-            title: "Link Required",
-            description: "Please use the password reset link sent to your email.",
-            variant: "destructive",
-          });
-          return;
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
         }
 
         setIsSessionReady(true);
