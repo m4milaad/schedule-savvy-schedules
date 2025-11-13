@@ -1,13 +1,43 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from 'lucide-react';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Squares from "@/components/Squares";
+import { supabase } from '@/integrations/supabase/client';
 
 const EmailVerified = () => {
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const exchangeSession = async () => {
+      try {
+        const hasCodeInUrl =
+          typeof window !== 'undefined' &&
+          (window.location.hash.includes('access_token') ||
+            window.location.hash.includes('code=') ||
+            window.location.search.includes('code='));
+
+        if (hasCodeInUrl) {
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+          if (error) {
+            console.error('Email verification session exchange failed:', error);
+            setErrorMessage(error.message || 'Verification completed, but we could not establish a session. Please sign in manually.');
+          }
+        }
+      } catch (error: any) {
+        console.error('Unexpected verification error:', error);
+        setErrorMessage(error.message || 'Something went wrong while verifying your email.');
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    exchangeSession();
+  }, []);
 
   useEffect(() => {
     // Auto redirect after 5 seconds
@@ -48,6 +78,16 @@ const EmailVerified = () => {
             <p className="text-muted-foreground">
               Your email has been successfully verified. You can now access the CUK Exam System.
             </p>
+            {isProcessing && (
+              <p className="text-sm text-muted-foreground">
+                Finalizing your session...
+              </p>
+            )}
+            {errorMessage && (
+              <p className="text-sm text-destructive">
+                {errorMessage}
+              </p>
+            )}
             <div className="space-y-3">
               <Button 
                 onClick={() => navigate('/auth')} 
