@@ -7,8 +7,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Settings, RefreshCw } from "lucide-react";
+import { Settings, RefreshCw, Calendar, FileSpreadsheet, Save, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -40,6 +41,7 @@ export default function Index() {
   const [tempGapValue, setTempGapValue] = useState<number>(0);
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
+  const [activeTab, setActiveTab] = useState<string>("selection");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -66,6 +68,72 @@ export default function Index() {
       loadEnrollmentCounts();
     }
   }, [courseTeachers]);
+
+  /**
+   * Calculate minimum days needed without requiring end date
+   */
+  const calculateMinimumDaysForEndDate = () => {
+    const allSelectedCourses = courseTeachers.filter((ct) =>
+      selectedCourseTeachers.includes(ct.id)
+    );
+
+    if (allSelectedCourses.length === 0) {
+      // Default to 30 days if no courses selected
+      return 30;
+    }
+
+    // Group courses by normalized code to handle BT/BTCS merging
+    const uniqueCourses = new Map<string, CourseTeacher>();
+    allSelectedCourses.forEach(course => {
+      const normalizedCode = normalizeCourseCode(course.course_code);
+      if (!uniqueCourses.has(normalizedCode)) {
+        uniqueCourses.set(normalizedCode, course);
+      }
+    });
+
+    const mergedCourses = Array.from(uniqueCourses.values());
+
+    // Group courses by semester
+    const coursesBySemester = mergedCourses.reduce((acc, course) => {
+      if (!acc[course.semester]) {
+        acc[course.semester] = [];
+      }
+      acc[course.semester].push(course);
+      return acc;
+    }, {} as Record<number, CourseTeacher[]>);
+
+    // Calculate minimum days for each semester
+    const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
+      const semesterCourses = coursesBySemester[semester];
+      if (semesterCourses.length === 0) return 0;
+
+      const maxGap = Math.max(...semesterCourses.map(c => c.gap_days || 2));
+      const minDays = Math.max(
+        semesterCourses.length,
+        (semesterCourses.length - 1) * maxGap + 1
+      );
+
+      return minDays;
+    });
+
+    const maxSemesterRequirement = Math.max(...semesterRequirements);
+    return maxSemesterRequirement;
+  };
+
+  /**
+   * Effect to auto-calculate end date when start date changes
+   */
+  useEffect(() => {
+    if (startDate && !endDate) {
+      const minimumDays = calculateMinimumDaysForEndDate();
+      // Calculate end date by adding required working days plus buffer for weekends/holidays
+      const bufferMultiplier = 1.5; // Add 50% buffer for weekends and holidays
+      const estimatedTotalDays = Math.ceil(minimumDays * bufferMultiplier);
+      const calculatedEndDate = new Date(startDate);
+      calculatedEndDate.setDate(calculatedEndDate.getDate() + estimatedTotalDays);
+      setEndDate(calculatedEndDate);
+    }
+  }, [startDate, selectedCourseTeachers]);
 
   const loadEnrollmentCounts = async () => {
     try {
@@ -157,7 +225,7 @@ export default function Index() {
 
   /**
    * Calculates the minimum number of working days required to schedule all selected courses
-   * based on their individual gap requirements and student enrollment conflicts.
+   * based on student enrollments and gap requirements.
    * @returns {object | null} Minimum day requirements or null if no courses are selected.
    */
   const calculateMinimumRequiredDays = () => {
@@ -180,45 +248,30 @@ export default function Index() {
 
     const mergedCourses = Array.from(uniqueCourses.values());
 
-    // Group courses by semester
-    const coursesBySemester = mergedCourses.reduce((acc, course) => {
-      if (!acc[course.semester]) {
-        acc[course.semester] = [];
-      }
-      acc[course.semester].push(course);
-      return acc;
-    }, {} as Record<number, CourseTeacher[]>);
-
-    // Calculate minimum days for each semester considering efficient scheduling
-    const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
-      const semesterCourses = coursesBySemester[semester];
-      if (semesterCourses.length === 0) return { semester: parseInt(semester), courseCount: 0, totalGapDays: 0 };
-
-      // Get the maximum gap requirement among courses
-      const maxGap = Math.max(...semesterCourses.map(c => c.gap_days || 2));
-
-      // Calculate minimum days: (courses - 1) * gap + 1
-      // This assumes optimal packing where we can schedule one exam per gap period
-      const minDays = Math.max(
-        semesterCourses.length, // At minimum, need one day per course
-        (semesterCourses.length - 1) * maxGap + 1 // Ideal case with maximum gap
-      );
-
+    // Calculate based on student enrollments
+    const studentBreakdown = mergedCourses.map(course => {
+      const enrollmentCount = courseEnrollmentCounts[course.id] || 0;
       return {
-        semester: parseInt(semester),
-        courseCount: semesterCourses.length,
-        totalGapDays: minDays
+        courseCode: course.course_code,
+        studentCount: enrollmentCount,
+        gapDays: course.gap_days || 2
       };
     });
 
-    // Since different semesters can have exams on the same day (no student conflicts),
-    // we need to consider the maximum requirement across semesters, not the sum
-    const maxSemesterRequirement = Math.max(...semesterRequirements.map(req => req.totalGapDays));
+    // Calculate minimum days needed
+    // For accurate calculation: we need 1 day per course + gap days between them
+    const totalCourses = mergedCourses.length;
+    const avgGap = mergedCourses.reduce((sum, c) => sum + (c.gap_days || 2), 0) / totalCourses;
+    
+    // More realistic calculation: courses + (average gap * (courses - 1))
+    const minimumDays = totalCourses === 1 
+      ? 1 
+      : Math.ceil(totalCourses + (avgGap * (totalCourses - 1)) / 2);
 
     return {
       totalCourses: mergedCourses.length,
-      minimumDays: maxSemesterRequirement,
-      semesterBreakdown: semesterRequirements
+      minimumDays: minimumDays,
+      studentBreakdown: studentBreakdown
     };
   };
 
@@ -402,6 +455,7 @@ export default function Index() {
 
       setGeneratedSchedule(schedule);
       setIsScheduleGenerated(true);
+      setActiveTab("schedule"); // Switch to schedule tab after generation
 
       toast({
         title: "Success",
@@ -529,7 +583,7 @@ export default function Index() {
           <Button
             variant="outline"
             size="sm"
-            className="text-black hover:text-red-600"
+            className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
             onClick={() => performMove(draggableId, targetDate)}
           >
             Override
@@ -548,8 +602,8 @@ export default function Index() {
         action: (
           <Button
             variant="outline"
-            className="text-black hover:text-red-600"
             size="sm"
+            className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
             onClick={() => performMove(draggableId, targetDate)}
           >
             Override
@@ -605,7 +659,7 @@ export default function Index() {
             <Button
               variant="outline"
               size="sm"
-              className="text-black hover:text-red-600"
+              className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
               onClick={() => performMove(draggableId, targetDate)}
             >
               Override
@@ -747,6 +801,16 @@ export default function Index() {
     setSelectedCourseTeachers([]);
   };
 
+  /**
+   * Selects only courses with enrolled students
+   */
+  const selectEnrolledCourses = () => {
+    const coursesWithStudents = courseTeachers
+      .filter((ct) => (courseEnrollmentCounts[ct.id] || 0) > 0)
+      .map((ct) => ct.id);
+    setSelectedCourseTeachers(coursesWithStudents);
+  };
+
   const dateRangeInfo = getDateRangeInfo();
   const minimumDaysInfo = calculateMinimumRequiredDays();
 
@@ -760,7 +824,7 @@ export default function Index() {
               <img
                 src="/favicon.ico"
                 alt="CUK Logo"
-                className="w-12 h-12 md:w-16 md:h-16 transition-transform duration-300 hover:scale-110"
+                className="hidden md:block w-12 h-12 md:w-16 md:h-16 transition-transform duration-300 hover:scale-110"
               />
               <div className="space-y-1">
                 <h1 className="text-xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -814,100 +878,147 @@ export default function Index() {
             </div>
           </div>
 
-          {isScheduleGenerated && (
-            <div className="animate-fade-in">
-              <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
-            </div>
-          )}
+          {/* Tabbed Interface */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
+              <TabsTrigger value="selection" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Course Selection
+              </TabsTrigger>
+              <TabsTrigger 
+                value="schedule" 
+                className="flex items-center gap-2"
+                disabled={!isScheduleGenerated}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Generated Schedule
+                {isScheduleGenerated && (
+                  <span className="ml-1 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+                    {generatedSchedule.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Course selection summary */}
-          <Card className="mb-6 transition-all duration-300 hover:shadow-lg animate-fade-in">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <CardTitle className="dark:text-gray-100 transition-colors duration-300 text-lg md:text-xl">
-                    Course Selection
-                  </CardTitle>
-                  <CardDescription className="dark:text-gray-400 transition-colors duration-300 text-xs md:text-sm">
-                    {selectedCourseTeachers.length} of {courseTeachers.length} courses • {getTotalEnrolledStudents()} students
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={selectAllCourses}
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={deselectAllCourses}
-                  >
-                    Clear All
-                  </Button>
+            {/* Course Selection Tab */}
+            <TabsContent value="selection" className="space-y-6 animate-fade-in">
+              {/* Course selection summary */}
+              <Card className="transition-all duration-300 hover:shadow-lg">
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                      <CardTitle className="dark:text-gray-100 transition-colors duration-300 text-lg md:text-xl">
+                        Course Selection
+                      </CardTitle>
+                      <CardDescription className="dark:text-gray-400 transition-colors duration-300 text-xs md:text-sm">
+                        {selectedCourseTeachers.length} of {courseTeachers.length} courses • {getTotalEnrolledStudents()} students
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={selectEnrolledCourses}
+                        className="flex items-center gap-1"
+                      >
+                        <span className="hidden sm:inline">Select Enrolled</span>
+                        <span className="sm:hidden">Enrolled</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={selectAllCourses}
+                      >
+                        <span className="hidden sm:inline">Select All</span>
+                        <span className="sm:hidden">All</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={deselectAllCourses}
+                      >
+                        <span className="hidden sm:inline">Clear All</span>
+                        <span className="sm:hidden">Clear</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Main content grid for schedule settings and course cards */}
+              <div className="grid lg:grid-cols-4 gap-4 md:gap-6">
+                <ScheduleSettings
+                  startDate={startDate}
+                  endDate={endDate}
+                  holidays={holidays}
+                  dateRangeInfo={dateRangeInfo}
+                  minimumDaysInfo={minimumDaysInfo}
+                  isScheduleGenerated={isScheduleGenerated}
+                  loading={loading}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  onGenerateSchedule={generateSchedule}
+                  onSaveSchedule={handleSaveSchedule}
+                  onDownloadExcel={handleDownloadExcel}
+                />
+
+                {/* Course selection by course code */}
+                <div className="lg:col-span-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                    {getAllAvailableCourses().map((courseTeacher) => (
+                      <CourseEnrollmentCard
+                        key={courseTeacher.id}
+                        courseTeacher={courseTeacher}
+                        isSelected={selectedCourseTeachers.includes(courseTeacher.id)}
+                        onToggle={() => toggleCourseTeacher(courseTeacher.id)}
+                        editingGap={editingGap}
+                        tempGapValue={tempGapValue}
+                        onEditGap={handleEditGap}
+                        onSaveGap={handleSaveGap}
+                        onCancelGap={handleCancelGap}
+                        onTempGapChange={setTempGapValue}
+                        enrollmentCount={courseEnrollmentCounts[courseTeacher.id] || 0}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-          </Card>
+            </TabsContent>
 
-          {/* Main content grid for schedule settings and course cards */}
-          <div className="grid lg:grid-cols-4 gap-4 md:gap-6 animate-fade-in">
-            <ScheduleSettings
-              startDate={startDate}
-              endDate={endDate}
-              holidays={holidays}
-              dateRangeInfo={dateRangeInfo}
-              minimumDaysInfo={minimumDaysInfo}
-              isScheduleGenerated={isScheduleGenerated}
-              loading={loading}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-              onGenerateSchedule={generateSchedule}
-              onSaveSchedule={handleSaveSchedule}
-              onDownloadExcel={handleDownloadExcel}
-            />
-
-            {/* Course selection by course code */}
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-                {getAllAvailableCourses()
-                  .sort((a, b) => {
-                    const aSelected = selectedCourseTeachers.includes(a.id);
-                    const bSelected = selectedCourseTeachers.includes(b.id);
-                    if (aSelected && !bSelected) return -1;
-                    if (!aSelected && bSelected) return 1;
-                    return 0;
-                  })
-                  .map((courseTeacher) => (
-                  <CourseEnrollmentCard
-                    key={courseTeacher.id}
-                    courseTeacher={courseTeacher}
-                    isSelected={selectedCourseTeachers.includes(courseTeacher.id)}
-                    onToggle={() => toggleCourseTeacher(courseTeacher.id)}
-                    editingGap={editingGap}
-                    tempGapValue={tempGapValue}
-                    onEditGap={handleEditGap}
-                    onSaveGap={handleSaveGap}
-                    onCancelGap={handleCancelGap}
-                    onTempGapChange={setTempGapValue}
-                    enrollmentCount={courseEnrollmentCounts[courseTeacher.id] || 0}
+            {/* Generated Schedule Tab */}
+            <TabsContent value="schedule" className="space-y-6 animate-fade-in">
+              {isScheduleGenerated && (
+                <>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                      <Button
+                        onClick={handleSaveSchedule}
+                        variant="default"
+                        className="flex-1 sm:flex-none"
+                        disabled={loading}
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Schedule
+                      </Button>
+                      <Button
+                        onClick={handleDownloadExcel}
+                        variant="outline"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Excel
+                      </Button>
+                    </div>
+                  </div>
+                  <ScheduleTable
+                    generatedSchedule={generatedSchedule}
+                    onDragEnd={onDragEnd}
                   />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Display generated schedule table if available */}
-          {isScheduleGenerated && (
-            <div className="animate-fade-in">
-              <ScheduleTable
-                generatedSchedule={generatedSchedule}
-                onDragEnd={onDragEnd}
-              />
-            </div>
-          )}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
       <Footer />

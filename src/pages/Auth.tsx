@@ -80,7 +80,6 @@ const Auth = () => {
         });
         setDepartments([]);
       } else {
-        console.log('Departments loaded:', data);
         setDepartments(data || []);
       }
     } catch (error) {

@@ -227,44 +227,67 @@ export const CourseEnrollmentCard = ({
       </CardHeader>
       
       {showStudents && enrolledStudents.length > 0 && (
-        <CardContent className="pt-0 pb-4">
+        <CardContent className="pt-0 pb-4 animate-fade-in">
           <div 
-            className="p-3 sm:p-4 bg-gradient-to-br from-muted/20 to-muted/40 rounded-lg border"
+            className="space-y-3"
             id={`students-${courseTeacher.id}`}
             role="region"
             aria-label="Enrolled students"
           >
+            {/* Header with count */}
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  Enrolled Students
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {enrolledStudents.length}
+                </Badge>
+              </div>
+            </div>
+
             {loading ? (
-              <div className="text-center text-sm text-muted-foreground py-4" role="status" aria-live="polite">
+              <div className="text-center text-sm text-muted-foreground py-8" role="status" aria-live="polite">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2" />
                 Loading students...
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="max-h-[400px] overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
                 {enrolledStudents.map((student, index) => (
                   <div
                     key={student.student_id}
-                    className="p-3 bg-background/80 backdrop-blur-sm rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200"
+                    className="group p-3 bg-gradient-to-r from-muted/30 to-muted/10 hover:from-muted/50 hover:to-muted/30 rounded-lg border border-border/50 hover:border-primary/30 transition-all duration-200 hover:shadow-sm"
                     role="article"
                     aria-label={`Student ${index + 1} of ${enrolledStudents.length}`}
                   >
-                    <div className="font-semibold text-primary text-sm truncate" title={student.student_name}>
-                      {student.student_name}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1.5 space-y-1">
-                      <div className="flex items-center gap-1">
-                        <span className="text-muted-foreground">Enrollment:</span>
-                        <span className="truncate" title={student.student_enrollment_no}>
-                          {student.student_enrollment_no}
-                        </span>
-                      </div>
-                      {student.abc_id && (
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">ABC ID:</span>
-                          <span className="truncate" title={student.abc_id}>
-                            {student.abc_id}
-                          </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <div className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors" title={student.student_name}>
+                            {student.student_name}
+                          </div>
                         </div>
-                      )}
+                        <div className="ml-8 space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-muted-foreground font-medium min-w-[70px]">Enrollment:</span>
+                            <span className="text-foreground font-mono truncate" title={student.student_enrollment_no}>
+                              {student.student_enrollment_no}
+                            </span>
+                          </div>
+                          {student.abc_id && (
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span className="text-muted-foreground font-medium min-w-[70px]">ABC ID:</span>
+                              <Badge variant="outline" className="text-xs font-mono h-5 px-1.5">
+                                {student.abc_id}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

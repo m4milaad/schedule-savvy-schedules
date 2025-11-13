@@ -24,10 +24,10 @@ interface DateRangeInfo {
 interface MinimumDaysInfo {
   totalCourses: number;
   minimumDays: number;
-  semesterBreakdown: Array<{
-    semester: number;
-    courseCount: number;
-    totalGapDays: number;
+  studentBreakdown: Array<{
+    courseCode: string;
+    studentCount: number;
+    gapDays: number;
   }>;
 }
 
@@ -203,20 +203,6 @@ export const ScheduleSettings = ({
                   <div>Need {minimumDaysInfo.minimumDays - dateRangeInfo.workingDays} more working days</div>
                 </div>
               )}
-
-              {minimumDaysInfo.semesterBreakdown.length > 0 && (
-                <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">By Semester:</div>
-                  <div className="max-h-20 overflow-y-auto space-y-1">
-                    {minimumDaysInfo.semesterBreakdown.map((sem, index) => (
-                      <div key={index} className="text-xs bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-700 flex justify-between">
-                        <span className="dark:text-gray-200">Sem {sem.semester}: {sem.courseCount} courses</span>
-                        <span className="text-gray-600 dark:text-gray-400">{sem.totalGapDays} days</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -229,61 +215,7 @@ export const ScheduleSettings = ({
           Generate New Schedule
         </Button>
 
-        {isScheduleGenerated && (
-          <div className="space-y-2">
-            <Button
-              onClick={onSaveSchedule}
-              variant="outline"
-              className="w-full"
-              disabled={loading}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save Schedule
-            </Button>
-            <Button
-              onClick={onDownloadExcel}
-              variant="outline"
-              className="w-full"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Excel
-            </Button>
-          </div>
-        )}
 
-        {/* Holidays Information - Only show when no date range is selected */}
-        {!dateRangeInfo && (
-          <div className="space-y-2 pt-4 border-t">
-            <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-gray-500" />
-              <Label className="text-sm font-medium">Holidays</Label>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {holidays.length > 0 ? (
-                <div>
-                  <p className="mb-2">{holidays.length} holidays configured</p>
-                  <div className="max-h-24 overflow-y-auto space-y-1">
-                    {holidays.slice(0, 3).map((holiday, index) => (
-                      <div key={index} className="text-xs bg-gray-50 dark:bg-gray-800 p-1 rounded dark:text-gray-300">
-                        {holiday.toLocaleDateString()}
-                      </div>
-                    ))}
-                    {holidays.length > 3 && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        ... and {holidays.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <p>No holidays configured</p>
-              )}
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                Holidays are managed in the Admin Panel
-              </p>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

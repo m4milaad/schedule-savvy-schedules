@@ -29,7 +29,7 @@ export const Footer = () => {
                       <img
                           src="/favicon.ico"
                           alt="CUK Logo"
-                          className="w-6 h-6 opacity-60"
+                          className="hidden md:block w-6 h-6 opacity-60"
                       />
                   </div>
               </div>
