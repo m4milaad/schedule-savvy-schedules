@@ -538,7 +538,7 @@ src/
 ## 👨‍💻 Developer
 
 **Milad Ajaz Bhat**
-- 🌐 Portfolio: [m4milaad.github.io/Resume](https://m4milaad.github.io/Resume/)
+- 🌐 Portfolio: [m4milaad.github.io](https://m4milaad.github.io)
 - 📧 Email: mb4milad.bhattt@gmail.com
 - 🎓 Institution: Central University of Kashmir
 - 💼 Role: Full Stack Developer
