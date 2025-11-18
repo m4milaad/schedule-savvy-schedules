@@ -189,21 +189,8 @@ Android Studio (for mobile app)
    ```bash
    npm install
    ```
-
-3. **Configure Supabase**
    
-   Update `src/integrations/supabase/client.ts` with your credentials:
-   ```typescript
-   const SUPABASE_URL = "your_supabase_url";
-   const SUPABASE_PUBLISHABLE_KEY = "your_supabase_key";
-   ```
-
-4. **Set up database**
-   - Import the SQL schema from `supabase/migrations`
-   - Configure Row Level Security policies
-   - Set up authentication providers
-
-5. **Start development server**
+3. **Start development server**
    ```bash
    npm run dev
    ```
