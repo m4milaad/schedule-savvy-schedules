@@ -528,7 +528,7 @@ src/
 - [ ] **iOS App**: Native iOS application
 - [ ] **Real-time Collaboration**: Multiple admins editing simultaneously
 - [ ] **Version Control**: Track schedule changes and rollback
-- [ ] **Audit Logs**: Comprehensive activity logging
+- [x] ~~**Audit Logs**: Comprehensive activity logging~~
 - [ ] **Custom Reports**: Configurable report generation
 - [ ] **Seating Arrangement**: Automated seating plan generation
 - [ ] **Invigilator Assignment**: Automatic invigilator scheduling
