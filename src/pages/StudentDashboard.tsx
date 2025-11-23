@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
 import { ProfileEditDialog } from '@/components/ProfileEditDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Footer } from '@/components/Footer';
+import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -71,6 +72,12 @@ const StudentDashboard = () => {
   const [showIncompleteProfileDialog, setShowIncompleteProfileDialog] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
   const { toast } = useToast();
+  
+  // Ref for search input
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Enable "/" keyboard shortcut to focus search
+  useSearchShortcut(searchInputRef);
 
   useEffect(() => {
     if (profile) {
@@ -610,7 +617,8 @@ const StudentDashboard = () => {
                 <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
                   <div className="flex-1">
                     <Input
-                      placeholder="Search courses..."
+                      ref={searchInputRef}
+                      placeholder="Search courses... (Type / to search)"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full transition-all duration-300 hover:border-blue-400 text-sm"

@@ -1,0 +1,215 @@
+/* Print Styles for Exam Schedules and Reports */
+
+@media print {
+  /* Hide non-essential elements */
+  header,
+  nav,
+  .no-print,
+  button:not(.print-button),
+  .theme-toggle,
+  .sidebar,
+  .footer,
+  .pagination,
+  .search-bar,
+  .filter-controls {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Ensure content fits on page */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th,
+  td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold;
+  }
+
+  /* Cards */
+  .card {
+    border: 1px solid #ddd !important;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+
+  /* Headers */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+    color: black !important;
+  }
+
+  h1 {
+    font-size: 24pt;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 18pt;
+    margin-bottom: 0.75rem;
+  }
+
+  h3 {
+    font-size: 14pt;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Links */
+  a {
+    text-decoration: underline;
+    color: black !important;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+    color: #666;
+  }
+
+  /* Images */
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  /* Logo */
+  .logo {
+    max-width: 100px;
+    height: auto;
+  }
+
+  /* Schedule specific */
+  .exam-schedule-table {
+    font-size: 10pt;
+  }
+
+  .exam-schedule-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .exam-schedule-header h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .exam-schedule-header p {
+    margin: 0.25rem 0;
+  }
+
+  /* Student list */
+  .student-card {
+    border: 1px solid #ddd !important;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    page-break-inside: avoid;
+  }
+
+  /* Badges */
+  .badge {
+    border: 1px solid #ddd !important;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9pt;
+  }
+
+  /* Force page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Watermark */
+  .print-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 72pt;
+    color: rgba(0, 0, 0, 0.05);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Footer for each page */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 9pt;
+    color: #666;
+    padding: 0.5rem;
+    border-top: 1px solid #ddd;
+  }
+
+  /* Date and time */
+  .print-date {
+    text-align: right;
+    font-size: 9pt;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Print button styling (visible on screen) */
+@media screen {
+  .print-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}

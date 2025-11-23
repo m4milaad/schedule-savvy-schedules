@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,12 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Holiday } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
 interface HolidaysTabProps {
     holidays: Holiday[];
@@ -28,6 +29,7 @@ interface HolidaysTabProps {
 }
 
 export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
+    const [searchQuery, setSearchQuery] = useState('');
     const [newHolidayName, setNewHolidayName] = useState('');
     const [newHolidayDate, setNewHolidayDate] = useState('');
     const [newHolidayDescription, setNewHolidayDescription] = useState('');
@@ -40,6 +42,23 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    // Ref for search input
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    
+    // Enable "/" keyboard shortcut to focus search
+    useSearchShortcut(searchInputRef);
+
+    // Filter holidays based on search query
+    const filteredHolidays = holidays.filter(holiday => {
+        const query = searchQuery.toLowerCase();
+        const dateStr = new Date(holiday.holiday_date).toLocaleDateString().toLowerCase();
+        return (
+            holiday.holiday_name.toLowerCase().includes(query) ||
+            dateStr.includes(query) ||
+            (holiday.description && holiday.description.toLowerCase().includes(query))
+        );
+    });
 
     const handleAddHoliday = async () => {
         if (!newHolidayName.trim() || !newHolidayDate) {
@@ -140,11 +159,12 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
 
     return (
         <Card className="w-full shadow-md">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Holidays ({holidays.length})
-                </CardTitle>
-                <div className="flex flex-wrap gap-2">
+            <CardHeader className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <CardTitle className="text-lg font-bold">
+                        Holidays ({filteredHolidays.length} of {holidays.length})
+                    </CardTitle>
+                    <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" /> Bulk Upload
                     </Button>
@@ -201,16 +221,32 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         </DialogContent>
                     </Dialog>
                 </div>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        ref={searchInputRef}
+                        placeholder="Type / to search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                                searchInputRef.current?.blur();
+                            }
+                        }}
+                        className="w-full pl-10"
+                    />
+                </div>
             </CardHeader>
 
             {/* ✅ FIXED: Removed internal scroll */}
             <CardContent className="overflow-visible space-y-2">
-                {holidays.length === 0 ? (
+                {filteredHolidays.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
-                        No holidays added yet. Add one to get started.
+                        {searchQuery ? 'No holidays match your search.' : 'No holidays added yet. Add one to get started.'}
                     </div>
                 ) : (
-                    holidays.map((holiday) => (
+                    filteredHolidays.map((holiday) => (
                         <div
                             key={holiday.id}
                             className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
