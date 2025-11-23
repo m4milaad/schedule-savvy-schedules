@@ -1,3 +1,5 @@
+@import './styles/print.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,51 +8,45 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Enhanced light mode with softer, more refined colors */
+    --background: 210 20% 98%;
+    --foreground: 222.2 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222.2 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222.2 47% 11%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222.2 47% 11%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 100% 97%;
+    --accent-foreground: 221 83% 53%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 214 32% 88%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 221 83% 53%;
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 221 83% 53%;
+    --sidebar-border: 214 32% 88%;
+    --sidebar-ring: 221 83% 53%;
   }
 
   .dark {
@@ -99,6 +95,51 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Subtle background pattern for light mode */
+  :root body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.03;
+    background-image: 
+      radial-gradient(circle at 25px 25px, hsl(221, 83%, 53%) 2%, transparent 0%),
+      radial-gradient(circle at 75px 75px, hsl(221, 83%, 53%) 2%, transparent 0%);
+    background-size: 100px 100px;
+    pointer-events: none;
+  }
+
+  /* Enhanced light mode card shadows */
+  :root .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 3px 0 rgb(0 0 0 / 0.04);
+  }
+
+  :root .shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+  }
+
+  :root .shadow-md {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  }
+
+  :root .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  }
+
+  :root .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+  }
+
+  :root .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
   }
 }
 
@@ -129,7 +170,7 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(156 163 175);
+    background-color: rgb(203 213 225);
     border-radius: 3px;
   }
 
@@ -138,10 +179,31 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: rgb(107 114 128);
+    background-color: rgb(148 163 184);
   }
 
   .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: rgb(55 65 81);
+  }
+
+  /* Light mode gradient backgrounds */
+  .bg-gradient-light {
+    background: linear-gradient(135deg, hsl(210 20% 98%) 0%, hsl(210 40% 96%) 100%);
+  }
+
+  /* Enhanced card styling for light mode */
+  :root .card-enhanced {
+    background: linear-gradient(to bottom, hsl(0 0% 100%), hsl(210 40% 99%));
+    border: 1px solid hsl(214 32% 88%);
+  }
+
+  /* Subtle hover effects for light mode */
+  :root .hover-lift {
+    transition: all 0.2s ease-in-out;
+  }
+
+  :root .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -5px rgb(0 0 0 / 0.1), 0 6px 8px -6px rgb(0 0 0 / 0.08);
   }
 }

@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Enhanced light mode styling */
+:root {
+  --gradient-start: hsl(210, 20%, 98%);
+  --gradient-mid: hsl(210, 40%, 97%);
+  --gradient-end: hsl(210, 30%, 96%);
+}
+
+.dark {
+  --gradient-start: hsl(222.2, 84%, 4.9%);
+  --gradient-mid: hsl(217.2, 32.6%, 17.5%);
+  --gradient-end: hsl(222.2, 84%, 4.9%);
+}

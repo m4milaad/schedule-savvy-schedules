@@ -1,26 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit2, Trash2, Upload, BookOpen, Grid, List, KeyRound } from 'lucide-react';
+
+import { Plus, Search, Edit2, Trash2, Upload, KeyRound, BookOpen } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
-import { StudentCardView } from "./StudentCardView";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
 interface Student {
     student_id: string;
     student_name: string;
-    student_enrollment_no: string;
+    student_enrollment_no: string; 
     student_email: string | null;
     student_address: string | null;
+    contact_no: string | null;
     dept_id: string | null;
     student_year: number;
     semester: number;
@@ -51,7 +52,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [searchTerm, setSearchTerm] = useState('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [studentEnrollments, setStudentEnrollments] = useState<Record<string, StudentEnrollment[]>>({});
-    const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+    const [hoveredStudentId, setHoveredStudentId] = useState<string | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    
+    useSearchShortcut(searchInputRef);
+    
     const [formData, setFormData] = useState({
         student_name: '',
         student_enrollment_no: '',
@@ -63,7 +68,6 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         abc_id: ''
     });
     const { toast } = useToast();
-    const isMobile = useIsMobile();
 
     // Load enrolled subjects for all students
     React.useEffect(() => {
@@ -73,7 +77,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const loadStudentEnrollments = async () => {
         try {
             // Get all student enrollments with course details
-            const { data: enrollmentsData, error: enrollmentsError } = await supabase
+            const { data: enrollmentsData, error: enrollmentsError} = await supabase
                 .from('student_enrollments')
                 .select(`
                     student_id,
@@ -114,10 +118,17 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         }
     };
 
+    const getDepartmentName = (deptId: string | null) => {
+        if (!deptId) return 'N/A';
+        const dept = departments.find(d => d.dept_id === deptId);
+        return dept ? dept.dept_name : 'Unknown';
+    };
+
     const filteredStudents = students.filter(student =>
         student.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.student_enrollment_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (student.student_email && student.student_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (student.contact_no && student.contact_no.includes(searchTerm)) ||
         (student.abc_id && student.abc_id.includes(searchTerm))
     );
 
@@ -261,12 +272,6 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         setIsDialogOpen(false);
     };
 
-    const getDepartmentName = (deptId: string | null) => {
-        if (!deptId) return 'N/A';
-        const dept = departments.find(d => d.dept_id === deptId);
-        return dept ? dept.dept_name : 'Unknown';
-    };
-
     const handleAbcIdChange = (value: string) => {
         // Only allow numeric input
         const numericValue = value.replace(/\D/g, '');
@@ -281,26 +286,6 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         Students ({students.length})
                     </CardTitle>
                     <div className="flex flex-wrap gap-2">
-                        {!isMobile && (
-                            <div className="flex gap-1 border rounded-md p-1">
-                                <Button 
-                                    variant={viewMode === 'table' ? 'default' : 'ghost'} 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => setViewMode('table')}
-                                >
-                                    <List className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                    variant={viewMode === 'cards' ? 'default' : 'ghost'} 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => setViewMode('cards')}
-                                >
-                                    <Grid className="w-4 h-4" />
-                                </Button>
-                            </div>
-                        )}
                         <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
                             <Upload className="w-4 h-4 mr-2" />
                             <span className="hidden sm:inline">Bulk Upload</span>
@@ -323,176 +308,175 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 transition-colors duration-300" />
                         <Input
-                            placeholder="Search students..."
+                            ref={searchInputRef}
+                            placeholder="Type / to search"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    searchInputRef.current?.blur();
+                                }
+                            }}
                             className="pl-10 transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
                         />
                     </div>
                 </div>
 
-                {(isMobile || viewMode === 'cards') ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {filteredStudents.map((student) => (
-                            <StudentCardView
-                                key={student.student_id}
-                                student={student}
-                                departmentName={getDepartmentName(student.dept_id)}
-                                enrollments={studentEnrollments[student.student_id] || []}
-                                onEdit={() => handleEdit(student)}
-                                onDelete={() => handleDelete(student.student_id)}
-                            />
-                        ))}
-                        {filteredStudents.length === 0 && (
-                            <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-8">
-                                {searchTerm ? 'No students found matching your search.' : 'No students found.'}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto rounded-lg border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px]">Name</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px]">Enrollment No</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">ABC ID</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden md:table-cell">Email</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px] hidden lg:table-cell">Contact</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[120px] hidden lg:table-cell">Department</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">Year/Sem</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[150px] hidden xl:table-cell">Enrolled Subjects</TableHead>
-                                <TableHead className="dark:text-gray-300 transition-colors duration-300 min-w-[100px]">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredStudents.map((student, index) => (
-                                <TableRow
-                                    key={student.student_id}
-                                    className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                                    style={{ animationDelay: `${index * 0.05}s` }}
-                                >
-                                    <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">{student.student_name}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">{student.student_enrollment_no}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
-                                        {student.abc_id ? (
-                                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                                {student.abc_id}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-gray-400 text-xs">N/A</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden md:table-cell">{student.student_email || 'N/A'}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden lg:table-cell">{(student as any).contact_no || 'N/A'}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden lg:table-cell">{getDepartmentName(student.dept_id)}</TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300">
-                                        <div className="flex flex-col gap-1">
-                                            <Badge variant="secondary" className="text-xs">Y{student.student_year}</Badge>
-                                            <Badge variant="outline" className="text-xs">S{student.semester || 1}</Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="dark:text-gray-300 transition-colors duration-300 hidden xl:table-cell">
-                                        <div className="flex flex-wrap gap-1 max-w-48">
-                                            {studentEnrollments[student.student_id]?.length > 0 ? (
-                                                studentEnrollments[student.student_id].map((enrollment, idx) => (
-                                                    <Badge key={idx} variant="outline" className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
-                                                        {enrollment.course_code}
-                                                    </Badge>
-                                                ))
-                                            ) : (
-                                                <span className="text-gray-400 text-xs flex items-center gap-1">
-                                                    <BookOpen className="w-3 h-3" />
-                                                    None
-                                                </span>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="text-left p-2 font-medium">Name</th>
+                                    <th className="text-left p-2 font-medium">Enrollment</th>
+                                    <th className="text-left p-2 font-medium hidden sm:table-cell">Email</th>
+                                    <th className="text-left p-2 font-medium hidden md:table-cell">Contact</th>
+                                    <th className="text-left p-2 font-medium hidden lg:table-cell">Department</th>
+                                    <th className="text-left p-2 font-medium">Year/Sem</th>
+                                    <th className="text-left p-2 font-medium hidden xl:table-cell">Courses</th>
+                                    <th className="text-right p-2 font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredStudents.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} className="text-center p-8 text-muted-foreground">
+                                            {searchTerm ? 'No students match your search.' : 'No students available. Add one to get started.'}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredStudents.map((student) => (
+                                    <tr key={student.student_id} className="border-b hover:bg-muted/50">
+                                        <td className="p-2">
+                                            <div className="font-medium">{student.student_name}</div>
+                                            {student.abc_id && (
+                                                <Badge variant="outline" className="text-xs mt-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400">
+                                                    ABC: {student.abc_id}
+                                                </Badge>
                                             )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleEdit(student)}
-                                                className="transition-all duration-300 hover:scale-110 hover:shadow-md h-8 w-8 p-0"
-                                                title="Edit Student"
-                                            >
-                                                <Edit2 className="w-3 h-3" />
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={async () => {
-                                                  if (student.student_email) {
-                                                    try {
-                                                      const { error } = await supabase.auth.resetPasswordForEmail(student.student_email, {
-                                                        redirectTo: `${window.location.origin}/reset-password`,
-                                                      });
-                                                      if (error) throw error;
-                                                      toast({
-                                                        title: "Success",
-                                                        description: `Password reset email sent to ${student.student_email}`,
-                                                      });
-                                                    } catch (error: any) {
-                                                      toast({
-                                                        title: "Error",
-                                                        description: error.message || "Failed to send reset email",
-                                                        variant: "destructive",
-                                                      });
-                                                    }
-                                                  } else {
-                                                    toast({
-                                                      title: "Error",
-                                                      description: "Student has no email address",
-                                                      variant: "destructive",
-                                                    });
-                                                  }
-                                                }}
-                                                className="transition-all duration-300 hover:scale-110 hover:shadow-md h-8 w-8 p-0"
-                                                title="Reset Password"
-                                            >
-                                                <KeyRound className="w-3 h-3" />
-                                            </Button>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="transition-all duration-300 hover:scale-110 hover:shadow-md text-destructive hover:text-destructive h-8 w-8 p-0"
-                                                    >
-                                                        <Trash2 className="w-3 h-3" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Delete Student</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Are you sure you want to delete "{student.student_name}"? This action cannot be undone.
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(student.student_id)}>
-                                                            Delete
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {filteredStudents.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-gray-500 dark:text-gray-400 py-8 transition-colors duration-300">
-                                        {searchTerm ? 'No students found matching your search.' : 'No students found. Click "Add Student" to create the first student record.'}
-                                    </TableCell>
-                                </TableRow>
+                                        </td>
+                                        <td className="p-2 text-sm">{student.student_enrollment_no}</td>
+                                        <td className="p-2 text-sm hidden sm:table-cell">{student.student_email || 'N/A'}</td>
+                                        <td className="p-2 text-sm hidden md:table-cell">{student.contact_no || 'N/A'}</td>
+                                        <td className="p-2 text-sm hidden lg:table-cell">{getDepartmentName(student.dept_id)}</td>
+                                        <td className="p-2">
+                                            <div className="flex gap-1">
+                                                <Badge variant="secondary" className="text-xs">Y{student.student_year}</Badge>
+                                                <Badge variant="outline" className="text-xs">S{student.semester || 1}</Badge>
+                                            </div>
+                                        </td>
+                                        <td className="p-2 hidden xl:table-cell">
+                                            {studentEnrollments[student.student_id]?.length > 0 ? (
+                                                <div 
+                                                    className="inline-block"
+                                                    onMouseEnter={() => setHoveredStudentId(student.student_id)}
+                                                    onMouseLeave={() => setHoveredStudentId(null)}
+                                                >
+                                                    <Badge variant="outline" className="cursor-help bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">
+                                                        <BookOpen className="w-3 h-3 mr-1" />
+                                                        {studentEnrollments[student.student_id].length}
+                                                    </Badge>
+                                                    {hoveredStudentId === student.student_id && createPortal(
+                                                        <div 
+                                                            className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[280px] max-w-[400px] animate-in fade-in-0 zoom-in-95 duration-200"
+                                                            style={{
+                                                                top: '50%',
+                                                                left: '50%',
+                                                                transform: 'translate(-50%, -50%)'
+                                                            }}
+                                                            onMouseEnter={() => setHoveredStudentId(student.student_id)}
+                                                            onMouseLeave={() => setHoveredStudentId(null)}
+                                                        >
+                                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
+                                                                <BookOpen className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                                                <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">Enrolled Courses</div>
+                                                            </div>
+                                                            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                                                {studentEnrollments[student.student_id].map((enrollment, idx) => (
+                                                                    <div key={idx} className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                                                        <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5"></div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{enrollment.course_code}</div>
+                                                                            <div className="text-xs text-gray-600 dark:text-gray-400">{enrollment.course_name}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>,
+                                                        document.body
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">None</span>
+                                            )}
+                                        </td>
+                                        <td className="p-2">
+                                            <div className="flex gap-1 justify-end">
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(student)} className="h-8 w-8 p-0" title="Edit">
+                                                    <Edit2 className="w-3 h-3" />
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={async () => {
+                                                        if (student.student_email) {
+                                                            try {
+                                                                const { error } = await supabase.auth.resetPasswordForEmail(student.student_email, {
+                                                                    redirectTo: `${window.location.origin}/reset-password`,
+                                                                });
+                                                                if (error) throw error;
+                                                                toast({
+                                                                    title: "Success",
+                                                                    description: `Password reset email sent to ${student.student_email}`,
+                                                                });
+                                                            } catch (error: any) {
+                                                                toast({
+                                                                    title: "Error",
+                                                                    description: error.message || "Failed to send reset email",
+                                                                    variant: "destructive",
+                                                                });
+                                                            }
+                                                        } else {
+                                                            toast({
+                                                                title: "Error",
+                                                                description: "Student has no email address",
+                                                                variant: "destructive",
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="h-8 w-8 p-0"
+                                                    title="Reset Password"
+                                                >
+                                                    <KeyRound className="w-3 h-3" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 h-8 w-8 p-0">
+                                                            <Trash2 className="w-3 h-3" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Student</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{student.student_name}"? This action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDelete(student.student_id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
-                        </TableBody>
-                    </Table>
+                        </tbody>
+                    </table>
                 </div>
-                )}
             </CardContent>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

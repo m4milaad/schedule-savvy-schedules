@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,12 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Course, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
 interface CoursesTabProps {
     courses: Course[];
@@ -29,6 +30,7 @@ interface CoursesTabProps {
 }
 
 export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps) => {
+    const [searchQuery, setSearchQuery] = useState('');
     const [newCourseName, setNewCourseName] = useState('');
     const [newCourseCode, setNewCourseCode] = useState('');
     const [newCourseCredits, setNewCourseCredits] = useState('3');
@@ -43,6 +45,29 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    // Ref for search input
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    
+    // Enable "/" keyboard shortcut to focus search
+    useSearchShortcut(searchInputRef);
+
+    const getDepartmentName = (deptId: string) => {
+        const dept = departments.find(d => d.dept_id === deptId);
+        return dept ? dept.dept_name : 'Unknown Department';
+    };
+
+    // Filter courses based on search query
+    const filteredCourses = courses.filter(course => {
+        const query = searchQuery.toLowerCase();
+        const deptName = getDepartmentName(course.dept_id).toLowerCase();
+        return (
+            course.course_name.toLowerCase().includes(query) ||
+            course.course_code.toLowerCase().includes(query) ||
+            course.course_type.toLowerCase().includes(query) ||
+            deptName.includes(query)
+        );
+    });
 
     const handleAddCourse = async () => {
         if (!newCourseName.trim() || !newCourseCode.trim() || !newCourseDeptId) {
@@ -145,18 +170,14 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
         setIsEditDialogOpen(true);
     };
 
-    const getDepartmentName = (deptId: string) => {
-        const dept = departments.find(d => d.dept_id === deptId);
-        return dept ? dept.dept_name : 'Unknown Department';
-    };
-
     return (
         <Card className="w-full shadow-md">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Courses ({courses.length})
-                </CardTitle>
-                <div className="flex flex-wrap gap-2">
+            <CardHeader className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <CardTitle className="text-lg font-bold">
+                        Courses ({filteredCourses.length} of {courses.length})
+                    </CardTitle>
+                    <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
                         Bulk Upload
@@ -237,16 +258,32 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                         </DialogContent>
                     </Dialog>
                 </div>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        ref={searchInputRef}
+                        placeholder="Type / to search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                                searchInputRef.current?.blur();
+                            }
+                        }}
+                        className="w-full pl-10"
+                    />
+                </div>
             </CardHeader>
 
             {/* ✅ FIXED: No internal scroll, full expansion */}
             <CardContent className="overflow-visible space-y-2">
-                {courses.length === 0 ? (
+                {filteredCourses.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
-                        No courses available. Add one to get started.
+                        {searchQuery ? 'No courses match your search.' : 'No courses available. Add one to get started.'}
                     </div>
                 ) : (
-                    courses.map((course) => (
+                    filteredCourses.map((course) => (
                         <div key={course.course_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in">
                             <div>
                                 <div className="font-medium">{course.course_code} - {course.course_name}</div>
