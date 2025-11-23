@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -27,12 +28,13 @@ const App = () => {
     (window.location.hostname === 'localhost' && window.location.port === '');
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               <Route
                 path="/"
@@ -87,13 +89,13 @@ const App = () => {
               <Route path="/mobile-schedule" element={<MobileSchedule />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-      <Analytics />
-      <SpeedInsights/>
-    </ThemeProvider>
-
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+        <Analytics />
+        <SpeedInsights/>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

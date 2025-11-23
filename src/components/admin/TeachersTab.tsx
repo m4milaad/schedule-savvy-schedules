@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,12 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Teacher, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
 interface TeachersTabProps {
     teachers: Teacher[];
@@ -29,6 +30,7 @@ interface TeachersTabProps {
 }
 
 export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabProps) => {
+    const [searchQuery, setSearchQuery] = useState('');
     const [newTeacherName, setNewTeacherName] = useState('');
     const [newTeacherEmail, setNewTeacherEmail] = useState('');
     const [newTeacherContact, setNewTeacherContact] = useState('');
@@ -43,6 +45,30 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    
+    // Ref for search input
+    const searchInputRef = useRef<HTMLInputElement>(null);
+    
+    // Enable "/" keyboard shortcut to focus search
+    useSearchShortcut(searchInputRef);
+
+    const getDepartmentName = (deptId: string) => {
+        const dept = departments.find(d => d.dept_id === deptId);
+        return dept ? dept.dept_name : 'Unknown Department';
+    };
+
+    // Filter teachers based on search query
+    const filteredTeachers = teachers.filter(teacher => {
+        const query = searchQuery.toLowerCase();
+        const deptName = getDepartmentName(teacher.dept_id).toLowerCase();
+        return (
+            teacher.teacher_name.toLowerCase().includes(query) ||
+            (teacher.teacher_email && teacher.teacher_email.toLowerCase().includes(query)) ||
+            (teacher.contact_no && teacher.contact_no.includes(query)) ||
+            (teacher.designation && teacher.designation.toLowerCase().includes(query)) ||
+            deptName.includes(query)
+        );
+    });
 
     const handleAddTeacher = async () => {
         if (!newTeacherName.trim() || !newTeacherDeptId) {
@@ -145,18 +171,14 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         setIsEditDialogOpen(true);
     };
 
-    const getDepartmentName = (deptId: string) => {
-        const dept = departments.find(d => d.dept_id === deptId);
-        return dept ? dept.dept_name : 'Unknown Department';
-    };
-
     return (
         <Card className="w-full shadow-md">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Teachers ({teachers.length})
-                </CardTitle>
-                <div className="flex flex-wrap gap-2">
+            <CardHeader className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <CardTitle className="text-lg font-bold">
+                        Teachers ({filteredTeachers.length} of {teachers.length})
+                    </CardTitle>
+                    <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
                         Bulk Upload
@@ -209,16 +231,32 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         </DialogContent>
                     </Dialog>
                 </div>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        ref={searchInputRef}
+                        placeholder="Type / to search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                                searchInputRef.current?.blur();
+                            }
+                        }}
+                        className="w-full pl-10"
+                    />
+                </div>
             </CardHeader>
 
             {/* ✅ No more internal scroll */}
             <CardContent className="overflow-visible space-y-2">
-                {teachers.length === 0 ? (
+                {filteredTeachers.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
-                        No teachers available. Add one to get started.
+                        {searchQuery ? 'No teachers match your search.' : 'No teachers available. Add one to get started.'}
                     </div>
                 ) : (
-                    teachers.map((teacher) => (
+                    filteredTeachers.map((teacher) => (
                         <div
                             key={teacher.teacher_id}
                             className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
