@@ -47,16 +47,7 @@ const ResetPassword = () => {
         }
 
         if (hash.includes('access_token') || hash.includes('refresh_token')) {
-          const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-          if (error) {
-            console.error('Password reset token exchange failed:', error);
-            toast({
-              title: "Session Error",
-              description: error.message || "We couldn't validate your reset link. Please request a new one.",
-              variant: "destructive",
-            });
-            return;
-          }
+          // Session already set from hash parameters, just clean up URL
           window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
         } else {
           const { error } = await supabase.auth.exchangeCodeForSession(url);
