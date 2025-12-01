@@ -109,6 +109,7 @@ export interface Student {
   student_year: number;
   semester: number;
   abc_id: string | null;
+  contact_no: string | null;
   created_at: string;
   updated_at: string;
 }
