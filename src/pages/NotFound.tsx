@@ -1,10 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import FaultyTerminal from '@/components/Faultyterminal'
-// Lucide-react is used for icons. Assuming it's available in the environment.
-// If not, you might need to use inline SVGs or another icon library.
-// For this example, we'll use a simple SVG fallback if lucide-react isn't directly available.
 import FuzzyText from '@/components/ui/FuzzyText';
-// A simple SVG icon for demonstration if lucide-react is not directly importable
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const App = () => {
@@ -91,12 +88,12 @@ const App = () => {
           style={{ animationDelay: '1.0s' }}
         >
           {/* Primary Action Button (Home) */}
-          <a
-            href="/"
+          <Link
+            to="/"
             className="inline-block w-full transform rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl"
           >
             Return to Home
-          </a>
+          </Link>
         </div>
 
         {/* Secondary Links */}
