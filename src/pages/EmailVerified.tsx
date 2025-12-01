@@ -28,13 +28,8 @@ const EmailVerified = () => {
           hash.includes('code=') || window.location.search.includes('code=');
 
         if (hasAccessToken) {
-          const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
-          if (error) {
-            console.error('Email verification token exchange failed:', error);
-            setErrorMessage(error.message || 'Verification completed, but we could not establish a session. Please sign in manually.');
-          } else {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
+          // Session already set from hash parameters, just clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
         } else if (hasCodeParam) {
           const { error } = await supabase.auth.exchangeCodeForSession(url);
           if (error) {
