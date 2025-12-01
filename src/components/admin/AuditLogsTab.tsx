@@ -35,21 +35,41 @@ export const AuditLogsTab = () => {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch audit logs
+      const { data: logsData, error: logsError } = await supabase
         .from('audit_logs')
-        .select(`
-          *,
-          profiles!audit_logs_user_id_fkey (
-            full_name,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (logsError) throw logsError;
 
-      setLogs(data as any || []);
+      if (!logsData || logsData.length === 0) {
+        setLogs([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(logsData.map(log => log.user_id))];
+      
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.warn('Could not load profile data:', profilesError);
+      }
+
+      // Merge profile data with logs
+      const logsWithProfiles = logsData.map(log => ({
+        ...log,
+        profiles: profilesData?.find(p => p.user_id === log.user_id) || null
+      }));
+
+      setLogs(logsWithProfiles as any);
     } catch (error: any) {
       console.error('Error loading audit logs:', error);
       toast({
