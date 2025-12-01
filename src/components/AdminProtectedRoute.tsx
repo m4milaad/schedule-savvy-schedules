@@ -52,7 +52,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   }
 
   if (!isAdmin) {
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

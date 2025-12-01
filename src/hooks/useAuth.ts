@@ -159,8 +159,21 @@ export const useAuth = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Force page reload for clean state
-        window.location.href = '/';
+        // Load profile to determine redirect
+        const { data: profileData } = await (supabase as any)
+          .from('profiles')
+          .select('user_type')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        // Redirect based on user type
+        if (profileData?.user_type === 'student') {
+          window.location.href = '/';
+        } else if (['admin', 'department_admin'].includes(profileData?.user_type)) {
+          window.location.href = '/admin-dashboard';
+        } else {
+          window.location.href = '/';
+        }
       }
 
       return { data, error: null };
