@@ -37,29 +37,19 @@ export const AuditLogsTab = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('audit_logs')
-        .select('*')
+        .select(`
+          *,
+          profiles!audit_logs_user_id_fkey (
+            full_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
 
-      // Fetch user profiles separately
-      if (data && data.length > 0) {
-        const userIds = [...new Set(data.map(log => log.user_id))];
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email')
-          .in('user_id', userIds);
-
-        // Merge profile data with logs
-        const logsWithProfiles = data.map(log => ({
-          ...log,
-          profiles: profilesData?.find(p => p.user_id === log.user_id) || null
-        }));
-        setLogs(logsWithProfiles as any);
-      } else {
-        setLogs([]);
-      }
+      setLogs(data as any || []);
     } catch (error: any) {
       console.error('Error loading audit logs:', error);
       toast({
@@ -67,6 +57,7 @@ export const AuditLogsTab = () => {
         description: "Failed to load audit logs",
         variant: "destructive",
       });
+      setLogs([]);
     } finally {
       setLoading(false);
     }
