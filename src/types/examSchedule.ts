@@ -1,6 +1,6 @@
 
 export interface CourseTeacher {
-  id: string;
+  id: string; // Composite key: course_id-teacher_id
   course_code: string;
   course_name: string | null;
   teacher_name: string | null;
@@ -8,6 +8,8 @@ export interface CourseTeacher {
   semester: number;
   program_type: string;
   gap_days: number;
+  course_id: string; // Original course ID for database operations
+  teacher_id: string; // Original teacher ID for database operations
 }
 
 export interface ExamScheduleItem {
