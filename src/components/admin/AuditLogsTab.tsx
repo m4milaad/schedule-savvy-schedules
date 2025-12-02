@@ -160,8 +160,16 @@ export const AuditLogsTab = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{log.profiles?.full_name || 'Unknown'}</span>
-                        <span className="text-xs text-muted-foreground">{log.profiles?.email}</span>
+                        <span className="font-medium">
+                          {log.profiles?.full_name || (
+                            <span className="text-muted-foreground italic">
+                              {log.action === 'DELETE' ? 'Deleted User' : 'Unknown User'}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {log.profiles?.email || log.user_id.substring(0, 8) + '...'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
