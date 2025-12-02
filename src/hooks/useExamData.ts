@@ -240,28 +240,34 @@ export const useExamData = () => {
 
       // Prepare all inserts
       const datasheetInserts = [];
+      const skippedCourses = [];
       
       for (const exam of schedule) {
         // Get course_id from course_code
         const { data: courseData, error: courseError } = await supabase
           .from('courses')
-          .select('course_id')
+          .select('course_id, course_code')
           .eq('course_code', exam.course_code)
           .maybeSingle();
 
         if (courseError) {
           console.error(`Error finding course ${exam.course_code}:`, courseError);
+          skippedCourses.push(`${exam.course_code} (database error)`);
           continue;
         }
 
-        if (courseData) {
-          datasheetInserts.push({
-            session_id: sessionData.session_id,
-            exam_date: exam.exam_date,
-            course_id: courseData.course_id,
-            venue_assigned: venueData.venue_id
-          });
+        if (!courseData) {
+          console.warn(`Course ${exam.course_code} not found in database`);
+          skippedCourses.push(`${exam.course_code} (not found in database)`);
+          continue;
         }
+
+        datasheetInserts.push({
+          session_id: sessionData.session_id,
+          exam_date: exam.exam_date,
+          course_id: courseData.course_id,
+          venue_assigned: venueData.venue_id
+        });
       }
 
       // Insert all datesheets at once
@@ -276,10 +282,18 @@ export const useExamData = () => {
         }
       }
 
-      toast({
-        title: "Success",
-        description: `Exam schedule saved successfully! ${datasheetInserts.length} exams scheduled.`,
-      });
+      if (skippedCourses.length > 0) {
+        toast({
+          title: "Partial Success",
+          description: `${datasheetInserts.length} exams scheduled. ${skippedCourses.length} courses skipped: ${skippedCourses.join(', ')}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: `Exam schedule saved successfully! ${datasheetInserts.length} exams scheduled.`,
+        });
+      }
     } catch (error) {
       console.error("Error saving schedule:", error);
       toast({
