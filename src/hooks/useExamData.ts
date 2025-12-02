@@ -49,14 +49,16 @@ export const useExamData = () => {
           teachersData.forEach(teacher => {
             if (course.departments?.dept_name === teacher.departments?.dept_name) {
               transformedData.push({
-                id: course.course_id, // Use course_id directly instead of concatenation
+                id: `${course.course_id}-${teacher.teacher_id}`, // Create unique composite key
                 course_code: course.course_code,
                 course_name: course.course_name,
                 teacher_name: teacher.teacher_name,
                 dept_name: course.departments?.dept_name || 'Unknown',
                 semester: 1, // Default semester
                 program_type: 'B.Tech', // Default program type
-                gap_days: 2 // Default gap days
+                gap_days: 2, // Default gap days
+                course_id: course.course_id, // Store original course_id for database operations
+                teacher_id: teacher.teacher_id // Store original teacher_id for database operations
               });
             }
           });
