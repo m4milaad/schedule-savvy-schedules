@@ -1,15 +1,15 @@
 
 export interface CourseTeacher {
-  id: string; // Composite key: course_id-teacher_id
+  id: string; // Course ID (used as unique key)
   course_code: string;
   course_name: string | null;
-  teacher_name: string | null;
+  teacher_name: string | null; // Optional - course can exist without teacher
   dept_name: string;
   semester: number;
   program_type: string;
   gap_days: number;
   course_id: string; // Original course ID for database operations
-  teacher_id: string; // Original teacher ID for database operations
+  teacher_id: string; // Teacher ID if assigned, empty string otherwise
 }
 
 export interface ExamScheduleItem {
