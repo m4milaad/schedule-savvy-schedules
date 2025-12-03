@@ -114,23 +114,86 @@ export const useExamData = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const scheduleItems: ExamScheduleItem[] = data.map((item, index) => ({
-          id: `exam-${index}`,
-          course_code: item.course_code,
-          teacher_name: "TBD", // Will need to be populated from course-teacher mapping
-          exam_date: item.exam_date,
-          day_of_week: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
-          time_slot: "9:00 AM - 12:00 PM", // Default time slot
-          semester: 1, // Default semester
-          program_type: "B.Tech", // Default program type
-          date: new Date(item.exam_date),
-          courseCode: item.course_code,
-          dayOfWeek: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
-          timeSlot: "9:00 AM - 12:00 PM",
-          gap_days: 2,
-          is_first_paper: false,
-          venue_name: item.venue_name,
-        }));
+        // Get all course codes to fetch enrollments
+        const courseCodes = data.map(item => item.course_code);
+        
+        // Fetch courses with their IDs
+        const { data: coursesData } = await supabase
+          .from('courses')
+          .select('course_id, course_code')
+          .in('course_code', courseCodes);
+
+        // Create a map of course_code to course_id
+        const courseCodeToId = new Map(
+          (coursesData || []).map(c => [c.course_code, c.course_id])
+        );
+
+        // Get all course IDs
+        const courseIds = Array.from(courseCodeToId.values());
+
+        // Fetch all enrollments for these courses
+        const { data: enrollmentsData } = await supabase
+          .from('student_enrollments')
+          .select('course_id, student_id')
+          .in('course_id', courseIds)
+          .eq('is_active', true);
+
+        // Get unique student IDs
+        const studentIds = [...new Set((enrollmentsData || []).map(e => e.student_id).filter(Boolean))];
+
+        // Fetch student details
+        const { data: studentsData } = await supabase
+          .from('students')
+          .select('student_id, student_name, student_enrollment_no, abc_id')
+          .in('student_id', studentIds);
+
+        // Create student lookup map
+        const studentMap = new Map(
+          (studentsData || []).map(s => [s.student_id, s])
+        );
+
+        // Group enrollments by course_id with student details
+        const enrollmentsByCourse = new Map<string, any[]>();
+        (enrollmentsData || []).forEach(enrollment => {
+          const courseId = enrollment.course_id;
+          const student = studentMap.get(enrollment.student_id);
+          if (!enrollmentsByCourse.has(courseId)) {
+            enrollmentsByCourse.set(courseId, []);
+          }
+          if (student) {
+            enrollmentsByCourse.get(courseId)!.push({
+              student_id: student.student_id,
+              student_name: student.student_name,
+              student_enrollment_no: student.student_enrollment_no,
+              abc_id: student.abc_id
+            });
+          }
+        });
+
+        const scheduleItems: ExamScheduleItem[] = data.map((item, index) => {
+          const courseId = courseCodeToId.get(item.course_code);
+          const enrolledStudents = courseId ? enrollmentsByCourse.get(courseId) || [] : [];
+          
+          return {
+            id: `exam-${index}`,
+            course_code: item.course_code,
+            teacher_name: "TBD",
+            exam_date: item.exam_date,
+            day_of_week: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
+            time_slot: "9:00 AM - 12:00 PM",
+            semester: 1,
+            program_type: "B.Tech",
+            date: new Date(item.exam_date),
+            courseCode: item.course_code,
+            dayOfWeek: new Date(item.exam_date).toLocaleDateString("en-US", { weekday: "long" }),
+            timeSlot: "9:00 AM - 12:00 PM",
+            gap_days: 2,
+            is_first_paper: false,
+            venue_name: item.venue_name,
+            enrolled_students: enrolledStudents,
+            enrolled_students_count: enrolledStudents.length
+          };
+        });
 
         scheduleItems.sort((a, b) => a.date.getTime() - b.date.getTime());
         
