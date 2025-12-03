@@ -326,8 +326,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     <table className="w-full">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="text-left p-2 font-medium">Name</th>
-                                    <th className="text-left p-2 font-medium">Enrollment</th>
+                                    <th className="text-left p-2 font-medium">Name / Enrollment</th>
+                                    <th className="text-left p-2 font-medium">ABC ID</th>
                                     <th className="text-left p-2 font-medium hidden sm:table-cell">Email</th>
                                     <th className="text-left p-2 font-medium hidden md:table-cell">Contact</th>
                                     <th className="text-left p-2 font-medium hidden lg:table-cell">Department</th>
@@ -347,14 +347,18 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                     filteredStudents.map((student) => (
                                     <tr key={student.student_id} className="border-b hover:bg-muted/50">
                                         <td className="p-2">
-                                            <div className="font-medium">{student.student_name}</div>
-                                            {student.abc_id && (
-                                                <Badge variant="outline" className="text-xs mt-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400">
-                                                    ABC: {student.abc_id}
-                                                </Badge>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">{student.student_name}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {student.student_enrollment_no}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="p-2 text-sm">
+                                            {student.abc_id || (
+                                                <span className="text-muted-foreground italic">N/A</span>
                                             )}
                                         </td>
-                                        <td className="p-2 text-sm">{student.student_enrollment_no}</td>
                                         <td className="p-2 text-sm hidden sm:table-cell">{student.student_email || 'N/A'}</td>
                                         <td className="p-2 text-sm hidden md:table-cell">{student.contact_no || 'N/A'}</td>
                                         <td className="p-2 text-sm hidden lg:table-cell">{getDepartmentName(student.dept_id)}</td>
