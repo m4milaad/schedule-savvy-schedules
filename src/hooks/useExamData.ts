@@ -15,7 +15,7 @@ export const useExamData = () => {
 
   const loadCourseTeachers = async () => {
     try {
-      // Get courses and teachers data from separate tables
+      // Get courses data - courses are independent, teachers are optional
       const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
         .select(`
@@ -23,54 +23,36 @@ export const useExamData = () => {
           course_code,
           course_name,
           course_type,
-          departments (
-            dept_name
-          )
-        `);
-
-      const { data: teachersData, error: teachersError } = await supabase
-        .from('teachers')
-        .select(`
-          teacher_id,
-          teacher_name,
+          semester,
+          program_type,
+          gap_days,
           departments (
             dept_name
           )
         `);
 
       if (coursesError) throw coursesError;
-      if (teachersError) throw teachersError;
 
-      // Transform the data to match the expected interface
-      const transformedData: CourseTeacher[] = [];
-      
-      if (coursesData && teachersData) {
-        coursesData.forEach(course => {
-          teachersData.forEach(teacher => {
-            if (course.departments?.dept_name === teacher.departments?.dept_name) {
-              transformedData.push({
-                id: `${course.course_id}-${teacher.teacher_id}`, // Create unique composite key
-                course_code: course.course_code,
-                course_name: course.course_name,
-                teacher_name: teacher.teacher_name,
-                dept_name: course.departments?.dept_name || 'Unknown',
-                semester: 1, // Default semester
-                program_type: 'B.Tech', // Default program type
-                gap_days: 2, // Default gap days
-                course_id: course.course_id, // Store original course_id for database operations
-                teacher_id: teacher.teacher_id // Store original teacher_id for database operations
-              });
-            }
-          });
-        });
-      }
+      // Transform courses - each course appears once, teacher is optional
+      const transformedData: CourseTeacher[] = (coursesData || []).map(course => ({
+        id: course.course_id, // Use actual course_id as the unique key
+        course_code: course.course_code,
+        course_name: course.course_name,
+        teacher_name: null, // Teacher is optional - can be assigned later
+        dept_name: course.departments?.dept_name || 'Unknown',
+        semester: course.semester || 1,
+        program_type: course.program_type || 'B.Tech',
+        gap_days: course.gap_days || 2,
+        course_id: course.course_id,
+        teacher_id: '' // No teacher assigned yet
+      }));
 
       setCourseTeachers(transformedData);
     } catch (error) {
       console.error("Error loading course teachers:", error);
       toast({
         title: "Error",
-        description: "Failed to load course and teacher data",
+        description: "Failed to load course data",
         variant: "destructive",
       });
     }
@@ -308,12 +290,27 @@ export const useExamData = () => {
       const skippedCourses = [];
       
       for (const exam of schedule) {
-        // Get course_id from course_code
-        const { data: courseData, error: courseError } = await supabase
+        // Get course_id from course_code - try exact match first, then normalized match
+        let { data: courseData, error: courseError } = await supabase
           .from('courses')
           .select('course_id, course_code')
           .eq('course_code', exam.course_code)
           .maybeSingle();
+
+        // If not found with exact match, try finding original code for normalized codes
+        if (!courseData && !courseError) {
+          // Check if this is a normalized code (BT-XXX) that might be BTCS-XXX in DB
+          const possibleOriginalCode = exam.course_code.replace('BT-', 'BTCS-');
+          const { data: altCourseData, error: altError } = await supabase
+            .from('courses')
+            .select('course_id, course_code')
+            .eq('course_code', possibleOriginalCode)
+            .maybeSingle();
+          
+          if (altCourseData && !altError) {
+            courseData = altCourseData;
+          }
+        }
 
         if (courseError) {
           console.error(`Error finding course ${exam.course_code}:`, courseError);
