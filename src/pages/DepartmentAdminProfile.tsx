@@ -134,9 +134,10 @@ const DepartmentAdminProfile = () => {
     );
   }
 
-  const getDepartmentName = (deptId: string) => {
+  const getDepartmentName = (deptId: string | null | undefined) => {
+    if (!deptId) return 'N/A (Super Admin)';
     const dept = departments.find(d => d.dept_id === deptId);
-    return dept ? dept.dept_name : 'Unknown';
+    return dept ? dept.dept_name : 'Not Assigned';
   };
 
   return (
