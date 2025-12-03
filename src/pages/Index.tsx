@@ -161,9 +161,9 @@ export default function Index() {
 
       setCourseEnrollmentCounts(countNumbers);
 
-      // Auto-select only courses with enrolled students
+      // Auto-select only courses with enrolled students (use course_id for lookup)
       const coursesWithStudents = courseTeachers
-        .filter((ct) => countNumbers[ct.id] > 0)
+        .filter((ct) => countNumbers[ct.course_id] > 0)
         .map((ct) => ct.id);
       
       setSelectedCourseTeachers(coursesWithStudents);
@@ -250,7 +250,7 @@ export default function Index() {
 
     // Calculate based on student enrollments
     const studentBreakdown = mergedCourses.map(course => {
-      const enrollmentCount = courseEnrollmentCounts[course.id] || 0;
+      const enrollmentCount = courseEnrollmentCounts[course.course_id] || 0;
       return {
         courseCode: course.course_code,
         studentCount: enrollmentCount,
@@ -290,8 +290,8 @@ export default function Index() {
       }
       
       // Then sort by enrollment count descending (courses with students first)
-      const aCount = courseEnrollmentCounts[a.id] || 0;
-      const bCount = courseEnrollmentCounts[b.id] || 0;
+      const aCount = courseEnrollmentCounts[a.course_id] || 0;
+      const bCount = courseEnrollmentCounts[b.course_id] || 0;
       return bCount - aCount;
     });
   };
@@ -422,8 +422,8 @@ export default function Index() {
         });
       }
 
-      // Build a map of course_id -> course_code from loaded courseTeachers
-      const courseCodeById = new Map(courseTeachers.map(ct => [ct.id, ct.course_code]));
+      // Build a map of actual course_id -> course_code from loaded courseTeachers
+      const courseCodeById = new Map(courseTeachers.map(ct => [ct.course_id, ct.course_code]));
 
       // Create student-course mapping for overlap detection
       const newStudentCourseMap: Record<string, string[]> = {};
@@ -806,7 +806,7 @@ export default function Index() {
    */
   const selectEnrolledCourses = () => {
     const coursesWithStudents = courseTeachers
-      .filter((ct) => (courseEnrollmentCounts[ct.id] || 0) > 0)
+      .filter((ct) => (courseEnrollmentCounts[ct.course_id] || 0) > 0)
       .map((ct) => ct.id);
     setSelectedCourseTeachers(coursesWithStudents);
   };
@@ -977,7 +977,7 @@ export default function Index() {
                         onSaveGap={handleSaveGap}
                         onCancelGap={handleCancelGap}
                         onTempGapChange={setTempGapValue}
-                        enrollmentCount={courseEnrollmentCounts[courseTeacher.id] || 0}
+                        enrollmentCount={courseEnrollmentCounts[courseTeacher.course_id] || 0}
                       />
                     ))}
                   </div>
