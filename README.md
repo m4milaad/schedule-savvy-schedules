@@ -1,9 +1,9 @@
-# 🎓 Central University of Kashmir - Exam Scheduling System
+# <img src="./public/CUKLogo.ico" alt="icon" width="25"> Central University of Kashmir - Exam Scheduling System
 
 > A comprehensive, production-ready exam scheduling system with intelligent constraint handling, real-time collaboration, and modern UI/UX design.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://ds-cuk.vercel.app/)
-[![Version](https://img.shields.io/badge/version-4.0.0-blue)]()
+[![Version](https://img.shields.io/badge/version-4.0.20-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)]()
 [![React](https://img.shields.io/badge/React-18.3-blue)]()
@@ -680,6 +680,8 @@ For technical support, feature requests, or bug reports:
 ---
 
 <div align="center">
+
+<img src="./public/CUKLogo.ico" alt="University logo" width="100"/>
 
 **Central University of Kashmir**
 </div>
