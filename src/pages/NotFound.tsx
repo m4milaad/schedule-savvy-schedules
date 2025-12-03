@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import FaultyTerminal from '@/components/Faultyterminal'
 import FuzzyText from '@/components/ui/FuzzyText';
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AppResetDialog } from '@/components/AppResetDialog';
 
 const App = () => {
   // In a real application with react-router-dom, you would use useLocation here.
@@ -36,7 +37,7 @@ const App = () => {
           mouseStrength={0.5}
           pageLoadAnimation={true}
           brightness={0.6}
-        /> 
+        />
       </div>
       <div className="absolute top-4 right-4">
         <ThemeToggle />
@@ -75,18 +76,39 @@ const App = () => {
 
         {/* Description */}
         <p
-          className="mb-8 text-slate-700 dark:text-slate-300 animate-fade-in"
+          className="mb-4 text-slate-700 dark:text-slate-300 animate-fade-in"
           style={{ animationDelay: '0.8s' }}
         >
           Oops! It looks like the page you're looking for doesn't exist or has
           been moved.
         </p>
 
+        {/* Info Box for Cache Issues */}
+        <div
+          className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50/80 p-3 text-sm text-yellow-800 dark:border-yellow-800/30 dark:bg-yellow-900/20 dark:text-yellow-200 animate-fade-in"
+          style={{ animationDelay: '0.9s' }}
+        >
+          <p className="font-medium">Seeing this page repeatedly?</p>
+          <p className="text-xs mt-1">
+            Try clearing cached data to fix offline or loading issues.
+          </p>
+        </div>
+
         {/* Button Container */}
         <div
-          className="space-y-4 animate-fade-in"
+          className="space-y-3 animate-fade-in"
           style={{ animationDelay: '1.0s' }}
         >
+
+
+          {/* App Reset Button */}
+          <AppResetDialog
+            trigger={
+              <button className="inline-block w-full transform rounded-lg border-2 border-slate-300 bg-white/50 px-6 py-3 font-semibold text-slate-700 shadow-md backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 hover:border-slate-400 hover:bg-white/70 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800/70">
+                Clear App Data
+              </button>
+            }
+          />
           {/* Primary Action Button (Home) */}
           <Link
             to="/"
