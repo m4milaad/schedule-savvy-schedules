@@ -47,16 +47,16 @@ export const CourseEnrollmentCard = ({
 
   useEffect(() => {
     loadEnrolledStudents();
-  }, [courseTeacher.id]);
+  }, [courseTeacher.course_id]);
 
   const loadEnrolledStudents = async () => {
     setLoading(true);
     try {
-      // Step 1: Fetch enrollments for this course
+      // Step 1: Fetch enrollments for this course using actual course_id (not composite id)
       const { data: enrollments, error: enrollErr } = await supabase
         .from('student_enrollments')
         .select('student_id')
-        .eq('course_id', courseTeacher.id)
+        .eq('course_id', courseTeacher.course_id)
         .eq('is_active', true);
 
       if (enrollErr) {
