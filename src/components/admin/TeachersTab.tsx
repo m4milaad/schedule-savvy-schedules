@@ -17,10 +17,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Upload, Search, BookOpen } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Search, BookOpen, X } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Teacher, Department, Course } from "@/types/examSchedule";
+import { Teacher, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 
@@ -31,6 +31,7 @@ interface TeachersTabProps {
 }
 
 interface TeacherCourse {
+    id: string;
     course_id: string;
     course_code: string;
     course_name: string;
@@ -73,7 +74,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     // Enable "/" keyboard shortcut to focus search
     useSearchShortcut(searchInputRef);
 
-    // Load teacher courses on mount
+    // Load teacher courses on mount and when teachers change
     useEffect(() => {
         loadTeacherCourses();
         loadAvailableCourses();
@@ -95,22 +96,45 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     const loadTeacherCourses = async () => {
         try {
-            // Get courses assigned to teachers via exam_teachers table
-            const { data, error } = await supabase
-                .from('exam_teachers')
+            // Get all teacher-course assignments with course details
+            const { data, error } = await (supabase as any)
+                .from('teacher_courses')
                 .select(`
+                    id,
                     teacher_id,
-                    venues (venue_id, venue_name),
-                    sessions (session_id, session_name)
+                    course_id,
+                    courses (
+                        course_code,
+                        course_name
+                    )
                 `);
             
             if (error) {
                 console.error('Error loading teacher courses:', error);
+                return;
             }
+
+            // Build map by teacher_id
+            const coursesMap: Record<string, TeacherCourse[]> = {};
             
-            // For now, we'll use a simple mapping - in a real app you might have a teacher_courses junction table
-            // This is a placeholder until we create proper course assignments
-            setTeacherCourses({});
+            (data || []).forEach((item: any) => {
+                const teacherId = item.teacher_id;
+                
+                if (!coursesMap[teacherId]) {
+                    coursesMap[teacherId] = [];
+                }
+                
+                if (item.courses) {
+                    coursesMap[teacherId].push({
+                        id: item.id,
+                        course_id: item.course_id,
+                        course_code: item.courses.course_code,
+                        course_name: item.courses.course_name
+                    });
+                }
+            });
+            
+            setTeacherCourses(coursesMap);
         } catch (error) {
             console.error('Error in loadTeacherCourses:', error);
         }
@@ -136,7 +160,10 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     // Filter courses by teacher's department
     const getCoursesForTeacher = (teacher: Teacher): SimpleCourse[] => {
-        return availableCourses.filter(c => c.dept_id === teacher.dept_id);
+        const assignedIds = teacherCourses[teacher.teacher_id]?.map(tc => tc.course_id) || [];
+        return availableCourses.filter(c => 
+            c.dept_id === teacher.dept_id && !assignedIds.includes(c.course_id)
+        );
     };
 
     const handleAddTeacher = async () => {
@@ -253,53 +280,42 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         }
 
         try {
-            // Get current session
-            const { data: sessionData } = await supabase
-                .from('sessions')
-                .select('session_id')
-                .order('session_year', { ascending: false })
-                .limit(1)
-                .single();
-
-            if (!sessionData) {
-                toast.error('No active session found. Please create a session first.');
-                return;
-            }
-
-            // Get a venue (default to first available)
-            const { data: venueData } = await supabase
-                .from('venues')
-                .select('venue_id')
-                .limit(1)
-                .single();
-
-            if (!venueData) {
-                toast.error('No venue found. Please create a venue first.');
-                return;
-            }
-
-            // Create exam_teacher entry
-            const { error } = await supabase
-                .from('exam_teachers')
+            const { error } = await (supabase as any)
+                .from('teacher_courses')
                 .insert({
                     teacher_id: selectedTeacher.teacher_id,
-                    session_id: sessionData.session_id,
-                    venue_id: venueData.venue_id
+                    course_id: selectedCourseId
                 });
 
             if (error) throw error;
 
             toast.success(`Course assigned to ${selectedTeacher.teacher_name}`);
-            setIsCourseDialogOpen(false);
             setSelectedCourseId('');
             loadTeacherCourses();
         } catch (error: any) {
             console.error('Error assigning course:', error);
             if (error.code === '23505') {
-                toast.error('This teacher is already assigned to this session');
+                toast.error('This course is already assigned to this teacher');
             } else {
                 toast.error('Failed to assign course');
             }
+        }
+    };
+
+    const handleRemoveCourse = async (assignmentId: string, courseName: string) => {
+        try {
+            const { error } = await (supabase as any)
+                .from('teacher_courses')
+                .delete()
+                .eq('id', assignmentId);
+
+            if (error) throw error;
+
+            toast.success(`Removed ${courseName}`);
+            loadTeacherCourses();
+        } catch (error) {
+            console.error('Error removing course:', error);
+            toast.error('Failed to remove course');
         }
     };
 
@@ -381,7 +397,6 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                 </div>
             </CardHeader>
 
-            {/* ✅ No more internal scroll */}
             <CardContent className="overflow-visible space-y-2">
                 {filteredTeachers.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
@@ -405,13 +420,19 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                 {teacher.contact_no && (
                                     <div className="text-sm text-gray-500">{teacher.contact_no}</div>
                                 )}
-                                {/* Show assigned courses count */}
+                                {/* Show assigned courses */}
                                 {teacherCourses[teacher.teacher_id]?.length > 0 && (
-                                    <div className="mt-1">
-                                        <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400">
-                                            <BookOpen className="w-3 h-3 mr-1" />
-                                            {teacherCourses[teacher.teacher_id].length} course(s)
-                                        </Badge>
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                        {teacherCourses[teacher.teacher_id].map((tc) => (
+                                            <Badge 
+                                                key={tc.id} 
+                                                variant="secondary" 
+                                                className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
+                                            >
+                                                <BookOpen className="w-3 h-3 mr-1" />
+                                                {tc.course_code}
+                                            </Badge>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -461,27 +482,37 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         <DialogTitle>Edit Teacher</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <Label>Teacher Name *</Label>
-                        <Input value={editTeacherName} onChange={(e) => setEditTeacherName(e.target.value)} />
-                        <Label>Email</Label>
-                        <Input value={editTeacherEmail} onChange={(e) => setEditTeacherEmail(e.target.value)} />
-                        <Label>Contact</Label>
-                        <Input value={editTeacherContact} onChange={(e) => setEditTeacherContact(e.target.value)} />
-                        <Label>Designation</Label>
-                        <Input value={editTeacherDesignation} onChange={(e) => setEditTeacherDesignation(e.target.value)} />
-                        <Label>Department *</Label>
-                        <Select value={editTeacherDeptId} onValueChange={setEditTeacherDeptId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {departments.map((dept) => (
-                                    <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                                        {dept.dept_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div>
+                            <Label>Teacher Name *</Label>
+                            <Input value={editTeacherName} onChange={(e) => setEditTeacherName(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Email</Label>
+                            <Input value={editTeacherEmail} onChange={(e) => setEditTeacherEmail(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Contact</Label>
+                            <Input value={editTeacherContact} onChange={(e) => setEditTeacherContact(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Designation</Label>
+                            <Input value={editTeacherDesignation} onChange={(e) => setEditTeacherDesignation(e.target.value)} />
+                        </div>
+                        <div>
+                            <Label>Department *</Label>
+                            <Select value={editTeacherDeptId} onValueChange={setEditTeacherDeptId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select department" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {departments.map((dept) => (
+                                        <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                            {dept.dept_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="flex gap-2">
                             <Button onClick={handleEditTeacher} className="flex-1">Update</Button>
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">Cancel</Button>
@@ -492,54 +523,67 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
             {/* Assign Course Dialog */}
             <Dialog open={isCourseDialogOpen} onOpenChange={setIsCourseDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Assign Course to {selectedTeacher?.teacher_name}</DialogTitle>
+                        <DialogTitle>Manage Courses for {selectedTeacher?.teacher_name}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <div>
-                            <Label>Select Course</Label>
-                            <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a course" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {selectedTeacher && getCoursesForTeacher(selectedTeacher).map((course) => (
-                                        <SelectItem key={course.course_id} value={course.course_id}>
-                                            {course.course_code} - {course.course_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {selectedTeacher && getCoursesForTeacher(selectedTeacher).length === 0 && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    No courses available for {getDepartmentName(selectedTeacher.dept_id)}. Please add courses first.
-                                </p>
-                            )}
-                        </div>
-                        
-                        {/* Show currently assigned courses */}
+                        {/* Currently assigned courses */}
                         {selectedTeacher && teacherCourses[selectedTeacher.teacher_id]?.length > 0 && (
                             <div>
-                                <Label className="text-sm text-muted-foreground">Currently Assigned:</Label>
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <Label className="text-sm font-medium">Assigned Courses:</Label>
+                                <div className="flex flex-wrap gap-2 mt-2">
                                     {teacherCourses[selectedTeacher.teacher_id].map((tc) => (
-                                        <Badge key={tc.course_id} variant="secondary" className="text-xs">
-                                            {tc.course_code}
+                                        <Badge 
+                                            key={tc.id} 
+                                            variant="secondary" 
+                                            className="flex items-center gap-1 pr-1"
+                                        >
+                                            {tc.course_code} - {tc.course_name}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-4 w-4 p-0 ml-1 hover:bg-destructive/20"
+                                                onClick={() => handleRemoveCourse(tc.id, tc.course_code)}
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
                                         </Badge>
                                     ))}
                                 </div>
                             </div>
                         )}
                         
-                        <div className="flex gap-2">
-                            <Button onClick={handleAssignCourse} className="flex-1" disabled={!selectedCourseId}>
-                                Assign Course
-                            </Button>
-                            <Button variant="outline" onClick={() => setIsCourseDialogOpen(false)} className="flex-1">
-                                Cancel
-                            </Button>
+                        {/* Add new course */}
+                        <div>
+                            <Label>Add Course</Label>
+                            <div className="flex gap-2 mt-1">
+                                <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                                    <SelectTrigger className="flex-1">
+                                        <SelectValue placeholder="Select a course" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {selectedTeacher && getCoursesForTeacher(selectedTeacher).map((course) => (
+                                            <SelectItem key={course.course_id} value={course.course_id}>
+                                                {course.course_code} - {course.course_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button onClick={handleAssignCourse} disabled={!selectedCourseId}>
+                                    <Plus className="w-4 h-4" />
+                                </Button>
+                            </div>
+                            {selectedTeacher && getCoursesForTeacher(selectedTeacher).length === 0 && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    No more courses available for {getDepartmentName(selectedTeacher.dept_id)}.
+                                </p>
+                            )}
                         </div>
+                        
+                        <Button variant="outline" onClick={() => setIsCourseDialogOpen(false)} className="w-full">
+                            Done
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>
