@@ -82,8 +82,8 @@ const AdminDashboard: React.FC = () => {
             setProfileData(profile || null);
 
             if (roles && roles.length > 0) {
-                const role = roles[0].role;
-                setUserRole(role as "admin" | "department_admin");
+                const role = roles[0].role as "admin" | "department_admin";
+                setUserRole(role);
 
                 if (role === "department_admin" && profile && !profile.is_approved) {
                     toast({
@@ -95,14 +95,15 @@ const AdminDashboard: React.FC = () => {
                     navigate("/auth");
                     return;
                 }
+                
+                // Pass role and profile directly to avoid state timing issues
+                await loadAllData(role, profile);
             } else {
                 // no roles - sign out for safety
                 await supabase.auth.signOut();
                 navigate("/auth");
                 return;
             }
-
-            await loadAllData();
         } catch (err) {
             console.error("Error checking user role:", err);
             toast({
@@ -114,18 +115,21 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const loadAllData = async () => {
+    const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+        const currentRole = role ?? userRole;
+        const currentProfile = profile ?? profileData;
+        
         try {
             setLoading(true);
             await Promise.all([
                 loadSchools(),
                 loadDepartments(),
-                loadCourses(),
-                loadTeachers(),
+                loadCourses(currentRole, currentProfile),
+                loadTeachers(currentRole, currentProfile),
                 loadVenues(),
                 loadSessions(),
                 loadHolidays(),
-                loadStudents(),
+                loadStudents(currentRole, currentProfile),
             ]);
         } catch (err) {
             console.error("Error loading data:", err);
@@ -156,16 +160,24 @@ const AdminDashboard: React.FC = () => {
         if (error) throw error;
         setDepartments(data || []);
     };
-    const loadCourses = async () => {
+    const loadCourses = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+        const currentRole = role ?? userRole;
+        const currentProfile = profile ?? profileData;
         let q = supabase.from("courses").select("*");
-        if (userRole === "department_admin" && profileData?.dept_id) q = q.eq("dept_id", profileData.dept_id);
+        if (currentRole === "department_admin" && currentProfile?.dept_id) {
+            q = q.eq("dept_id", currentProfile.dept_id);
+        }
         const { data, error } = await q.order("course_name");
         if (error) throw error;
         setCourses(data || []);
     };
-    const loadTeachers = async () => {
+    const loadTeachers = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+        const currentRole = role ?? userRole;
+        const currentProfile = profile ?? profileData;
         let q = supabase.from("teachers").select("*");
-        if (userRole === "department_admin" && profileData?.dept_id) q = q.eq("dept_id", profileData.dept_id);
+        if (currentRole === "department_admin" && currentProfile?.dept_id) {
+            q = q.eq("dept_id", currentProfile.dept_id);
+        }
         const { data, error } = await q.order("teacher_name");
         if (error) throw error;
         setTeachers(data || []);
@@ -192,15 +204,17 @@ const AdminDashboard: React.FC = () => {
         }));
         setHolidays(transformed);
     };
-    const loadStudents = async () => {
+    const loadStudents = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+        const currentRole = role ?? userRole;
+        const currentProfile = profile ?? profileData;
         try {
             let studentsQuery = supabase.from('students').select('*');
             let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
 
             // Filter by department for department admins
-            if (userRole === 'department_admin' && profileData?.dept_id) {
-                studentsQuery = studentsQuery.eq('dept_id', profileData.dept_id);
-                profilesQuery = profilesQuery.eq('dept_id', profileData.dept_id);
+            if (currentRole === 'department_admin' && currentProfile?.dept_id) {
+                studentsQuery = studentsQuery.eq('dept_id', currentProfile.dept_id);
+                profilesQuery = profilesQuery.eq('dept_id', currentProfile.dept_id);
             }
 
             // Get all students from students table
