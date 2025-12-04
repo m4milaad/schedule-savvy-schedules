@@ -193,7 +193,7 @@ const ManageAdmins = () => {
     }
   };
 
-  const approveAdmin = async (userId: string, email: string) => {
+  const approveAdmin = async (userId: string, full_name: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -204,7 +204,7 @@ const ManageAdmins = () => {
 
       toast({
         title: "Success",
-        description: `${email} has been approved as department admin`,
+        description: `${full_name} has been approved as department admin`,
       });
 
       loadAdmins();
@@ -412,7 +412,7 @@ const ManageAdmins = () => {
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => approveAdmin(admin.user_id, admin.email)}
+                            onClick={() => approveAdmin(admin.user_id, admin.full_name)}
                             className="bg-green-600 hover:bg-green-700"
                           >
                             Approve
@@ -446,12 +446,6 @@ const ManageAdmins = () => {
             </p>
             <p>
               <strong>Department Admin:</strong> Department-specific admin access
-            </p>
-            <p className="text-muted-foreground">
-              Note: New admin users will receive an email confirmation. Make sure email settings are configured in Supabase.
-            </p>
-            <p className="text-muted-foreground">
-              For testing, you can disable email confirmation in Supabase Auth settings.
             </p>
           </CardContent>
         </Card>
