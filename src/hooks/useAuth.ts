@@ -162,9 +162,16 @@ export const useAuth = () => {
         // Load profile to determine redirect
         const { data: profileData } = await (supabase as any)
           .from('profiles')
-          .select('user_type')
+          .select('user_type, is_approved')
           .eq('user_id', data.user.id)
           .single();
+        
+        // Check if department_admin is approved
+        if (profileData?.user_type === 'department_admin' && !profileData?.is_approved) {
+          // Sign out the unapproved user
+          await supabase.auth.signOut();
+          throw new Error('Your account is pending approval by a super administrator. Please wait for approval before logging in.');
+        }
         
         // Redirect based on user type
         if (profileData?.user_type === 'student') {
