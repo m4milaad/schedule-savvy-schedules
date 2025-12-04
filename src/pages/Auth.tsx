@@ -212,6 +212,15 @@ const Auth = () => {
         };
 
         await signUp(email, password, userData);
+        
+        // Show special message for department admins
+        if (userType === 'department_admin') {
+          toast({
+            title: "Account Created - Pending Approval",
+            description: "Your department admin account has been created but requires approval from a super administrator before you can log in.",
+            duration: 10000,
+          });
+        }
       } else {
         // Sign in
         await signIn(email, password);
