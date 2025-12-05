@@ -218,6 +218,31 @@ const ManageAdmins = () => {
     }
   };
 
+  const revokeAdmin = async (userId: string, full_name: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_approved: false })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${full_name}'s approval has been revoked`,
+      });
+
+      loadAdmins();
+    } catch (error: any) {
+      console.error('Error revoking admin:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to revoke admin",
+        variant: "destructive",
+      });
+    }
+  };
+
   const removeAdmin = async (userId: string, email: string) => {
     if (!confirm(`Are you sure you want to remove admin access from ${email}?`)) {
       return;
@@ -416,6 +441,16 @@ const ManageAdmins = () => {
                             className="bg-green-600 hover:bg-green-700"
                           >
                             Approve
+                          </Button>
+                        )}
+                        {admin.role === 'department_admin' && admin.is_approved && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => revokeAdmin(admin.user_id, admin.full_name)}
+                            className="text-orange-600 hover:text-orange-700 border-orange-300"
+                          >
+                            Revoke
                           </Button>
                         )}
                         <Button
