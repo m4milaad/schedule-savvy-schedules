@@ -16,12 +16,15 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Course, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 
 interface CoursesTabProps {
     courses: Course[];
@@ -45,12 +48,52 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+    
+    // Bulk selection
+    const {
+        selectedItems,
+        isSelected,
+        toggleSelection,
+        selectAll,
+        clearSelection,
+        selectedCount,
+    } = useBulkSelection<string>();
     
     // Ref for search input
     const searchInputRef = useRef<HTMLInputElement>(null);
     
     // Enable "/" keyboard shortcut to focus search
     useSearchShortcut(searchInputRef);
+    
+    const handleSelectAll = () => {
+        if (selectedCount === filteredCourses.length) {
+            clearSelection();
+        } else {
+            selectAll(filteredCourses.map(c => c.course_id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedCount === 0) return;
+        
+        try {
+            const selectedIds = Array.from(selectedItems);
+            const { error } = await supabase
+                .from('courses')
+                .delete()
+                .in('course_id', selectedIds);
+
+            if (error) throw error;
+
+            toast.success(`${selectedCount} course(s) deleted successfully`);
+            clearSelection();
+            onRefresh();
+        } catch (error: any) {
+            console.error('Error bulk deleting courses:', error);
+            toast.error(error.message || 'Failed to delete courses');
+        }
+    };
 
     const getDepartmentName = (deptId: string) => {
         const dept = departments.find(d => d.dept_id === deptId);
@@ -278,20 +321,36 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
 
             {/* ✅ FIXED: No internal scroll, full expansion */}
             <CardContent className="overflow-visible space-y-2">
+                {filteredCourses.length > 0 && (
+                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
+                        <Checkbox
+                            checked={filteredCourses.length > 0 && selectedCount === filteredCourses.length}
+                            onCheckedChange={handleSelectAll}
+                        />
+                        <span className="text-sm text-muted-foreground">Select all</span>
+                    </div>
+                )}
                 {filteredCourses.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
                         {searchQuery ? 'No courses match your search.' : 'No courses available. Add one to get started.'}
                     </div>
                 ) : (
                     filteredCourses.map((course) => (
-                        <div key={course.course_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in">
-                            <div>
-                                <div className="font-medium">{course.course_code} - {course.course_name}</div>
-                                <div className="text-sm text-gray-500">
-                                    {course.course_credits} credits • {course.course_type}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                    Department: {getDepartmentName(course.dept_id)}
+                        <div key={course.course_id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(course.course_id) ? 'bg-primary/5' : ''}`}>
+                            <div className="flex items-start gap-3">
+                                <Checkbox
+                                    checked={isSelected(course.course_id)}
+                                    onCheckedChange={() => toggleSelection(course.course_id)}
+                                    className="mt-1"
+                                />
+                                <div>
+                                    <div className="font-medium">{course.course_code} - {course.course_name}</div>
+                                    <div className="text-sm text-gray-500">
+                                        {course.course_credits} credits • {course.course_type}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        Department: {getDepartmentName(course.dept_id)}
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -401,6 +460,32 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                 type="courses"
                 onUpload={handleBulkUpload}
             />
+
+            <BulkActionsBar
+                selectedCount={selectedCount}
+                onClear={clearSelection}
+                onDelete={() => setShowBulkDeleteConfirm(true)}
+            />
+
+            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedCount} Course(s)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedCount} selected course(s)? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            handleBulkDelete();
+                            setShowBulkDeleteConfirm(false);
+                        }} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 };

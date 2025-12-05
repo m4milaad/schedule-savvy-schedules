@@ -17,12 +17,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit2, Trash2, Upload, Search, BookOpen, X } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Teacher, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 
 interface TeachersTabProps {
     teachers: Teacher[];
@@ -60,6 +63,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     
     // Course assignment state
     const [isCourseDialogOpen, setIsCourseDialogOpen] = useState(false);
@@ -68,11 +72,50 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const [teacherCourses, setTeacherCourses] = useState<Record<string, TeacherCourse[]>>({});
     const [selectedCourseId, setSelectedCourseId] = useState('');
     
+    // Bulk selection
+    const {
+        selectedItems,
+        isSelected,
+        toggleSelection,
+        selectAll,
+        clearSelection,
+        selectedCount,
+    } = useBulkSelection<string>();
+    
     // Ref for search input
     const searchInputRef = useRef<HTMLInputElement>(null);
     
     // Enable "/" keyboard shortcut to focus search
     useSearchShortcut(searchInputRef);
+
+    const handleSelectAll = () => {
+        if (selectedCount === filteredTeachers.length) {
+            clearSelection();
+        } else {
+            selectAll(filteredTeachers.map(t => t.teacher_id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedCount === 0) return;
+        
+        try {
+            const selectedIds = Array.from(selectedItems);
+            const { error } = await supabase
+                .from('teachers')
+                .delete()
+                .in('teacher_id', selectedIds);
+
+            if (error) throw error;
+
+            toast.success(`${selectedCount} teacher(s) deleted successfully`);
+            clearSelection();
+            onRefresh();
+        } catch (error: any) {
+            console.error('Error bulk deleting teachers:', error);
+            toast.error(error.message || 'Failed to delete teachers');
+        }
+    };
 
     // Load teacher courses on mount and when teachers change
     useEffect(() => {
@@ -398,6 +441,15 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             </CardHeader>
 
             <CardContent className="overflow-visible space-y-2">
+                {filteredTeachers.length > 0 && (
+                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
+                        <Checkbox
+                            checked={filteredTeachers.length > 0 && selectedCount === filteredTeachers.length}
+                            onCheckedChange={handleSelectAll}
+                        />
+                        <span className="text-sm text-muted-foreground">Select all</span>
+                    </div>
+                )}
                 {filteredTeachers.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
                         {searchQuery ? 'No teachers match your search.' : 'No teachers available. Add one to get started.'}
@@ -406,35 +458,42 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                     filteredTeachers.map((teacher) => (
                         <div
                             key={teacher.teacher_id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(teacher.teacher_id) ? 'bg-primary/5' : ''}`}
                         >
-                            <div className="flex-1">
-                                <div className="font-medium">{teacher.teacher_name}</div>
-                                <div className="text-sm text-gray-500">
-                                    {teacher.designation && `${teacher.designation} • `}
-                                    {getDepartmentName(teacher.dept_id)}
-                                </div>
-                                {teacher.teacher_email && (
-                                    <div className="text-sm text-gray-500">{teacher.teacher_email}</div>
-                                )}
-                                {teacher.contact_no && (
-                                    <div className="text-sm text-gray-500">{teacher.contact_no}</div>
-                                )}
-                                {/* Show assigned courses */}
-                                {teacherCourses[teacher.teacher_id]?.length > 0 && (
-                                    <div className="mt-2 flex flex-wrap gap-1">
-                                        {teacherCourses[teacher.teacher_id].map((tc) => (
-                                            <Badge 
-                                                key={tc.id} 
-                                                variant="secondary" 
-                                                className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
-                                            >
-                                                <BookOpen className="w-3 h-3 mr-1" />
-                                                {tc.course_code}
-                                            </Badge>
-                                        ))}
+                            <div className="flex items-start gap-3">
+                                <Checkbox
+                                    checked={isSelected(teacher.teacher_id)}
+                                    onCheckedChange={() => toggleSelection(teacher.teacher_id)}
+                                    className="mt-1"
+                                />
+                                <div className="flex-1">
+                                    <div className="font-medium">{teacher.teacher_name}</div>
+                                    <div className="text-sm text-gray-500">
+                                        {teacher.designation && `${teacher.designation} • `}
+                                        {getDepartmentName(teacher.dept_id)}
                                     </div>
-                                )}
+                                    {teacher.teacher_email && (
+                                        <div className="text-sm text-gray-500">{teacher.teacher_email}</div>
+                                    )}
+                                    {teacher.contact_no && (
+                                        <div className="text-sm text-gray-500">{teacher.contact_no}</div>
+                                    )}
+                                    {/* Show assigned courses */}
+                                    {teacherCourses[teacher.teacher_id]?.length > 0 && (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {teacherCourses[teacher.teacher_id].map((tc) => (
+                                                <Badge
+                                                    key={tc.id} 
+                                                    variant="secondary" 
+                                                    className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
+                                                >
+                                                    <BookOpen className="w-3 h-3 mr-1" />
+                                                    {tc.course_code}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex gap-2">
                                 <Button 
@@ -594,6 +653,32 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                 type="teachers"
                 onUpload={handleBulkUpload}
             />
+
+            <BulkActionsBar
+                selectedCount={selectedCount}
+                onClear={clearSelection}
+                onDelete={() => setShowBulkDeleteConfirm(true)}
+            />
+
+            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedCount} Teacher(s)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedCount} selected teacher(s)? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            handleBulkDelete();
+                            setShowBulkDeleteConfirm(false);
+                        }} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 };
