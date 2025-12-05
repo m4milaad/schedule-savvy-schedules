@@ -15,11 +15,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 
 interface VenuesTabProps {
     venues: Venue[];
@@ -37,6 +40,46 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+    // Bulk selection
+    const {
+        selectedItems,
+        isSelected,
+        toggleSelection,
+        selectAll,
+        clearSelection,
+        selectedCount,
+    } = useBulkSelection<string>();
+
+    const handleSelectAll = () => {
+        if (selectedCount === venues.length) {
+            clearSelection();
+        } else {
+            selectAll(venues.map(v => v.venue_id));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedCount === 0) return;
+        
+        try {
+            const selectedIds = Array.from(selectedItems);
+            const { error } = await supabase
+                .from('venues')
+                .delete()
+                .in('venue_id', selectedIds);
+
+            if (error) throw error;
+
+            toast.success(`${selectedCount} venue(s) deleted successfully`);
+            clearSelection();
+            onRefresh();
+        } catch (error: any) {
+            console.error('Error bulk deleting venues:', error);
+            toast.error(error.message || 'Failed to delete venues');
+        }
+    };
 
     const handleAddVenue = async () => {
         if (!newVenueName.trim()) {
@@ -189,8 +232,16 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                 </div>
             </CardHeader>
 
-            {/* ✅ FIXED: No more internal scroll, full expansion */}
             <CardContent className="overflow-visible space-y-2">
+                {venues.length > 0 && (
+                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
+                        <Checkbox
+                            checked={venues.length > 0 && selectedCount === venues.length}
+                            onCheckedChange={handleSelectAll}
+                        />
+                        <span className="text-sm text-muted-foreground">Select all</span>
+                    </div>
+                )}
                 {venues.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
                         No venues available. Add one to get started.
@@ -199,16 +250,23 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                     venues.map((venue) => (
                         <div
                             key={venue.venue_id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
+                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}
                         >
-                            <div>
-                                <div className="font-medium">{venue.venue_name}</div>
-                                <div className="text-sm text-gray-500">
-                                    Capacity: {venue.venue_capacity} students
+                            <div className="flex items-start gap-3">
+                                <Checkbox
+                                    checked={isSelected(venue.venue_id)}
+                                    onCheckedChange={() => toggleSelection(venue.venue_id)}
+                                    className="mt-1"
+                                />
+                                <div>
+                                    <div className="font-medium">{venue.venue_name}</div>
+                                    <div className="text-sm text-gray-500">
+                                        Capacity: {venue.venue_capacity} students
+                                    </div>
+                                    {venue.venue_address && (
+                                        <div className="text-sm text-gray-500">{venue.venue_address}</div>
+                                    )}
                                 </div>
-                                {venue.venue_address && (
-                                    <div className="text-sm text-gray-500">{venue.venue_address}</div>
-                                )}
                             </div>
                             <div className="flex gap-2">
                                 <Button
@@ -294,6 +352,32 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                 type="venues"
                 onUpload={handleBulkUpload}
             />
+
+            <BulkActionsBar
+                selectedCount={selectedCount}
+                onClear={clearSelection}
+                onDelete={() => setShowBulkDeleteConfirm(true)}
+            />
+
+            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedCount} Venue(s)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedCount} selected venue(s)? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            handleBulkDelete();
+                            setShowBulkDeleteConfirm(false);
+                        }} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 };
