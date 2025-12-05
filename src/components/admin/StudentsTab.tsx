@@ -8,12 +8,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Plus, Search, Edit2, Trash2, Upload, KeyRound, BookOpen } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 
 interface Student {
     student_id: string;
@@ -53,7 +56,19 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [studentEnrollments, setStudentEnrollments] = useState<Record<string, StudentEnrollment[]>>({});
     const [hoveredStudentId, setHoveredStudentId] = useState<string | null>(null);
+    const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    
+    // Bulk selection
+    const {
+        selectedItems,
+        isSelected,
+        toggleSelection,
+        selectAll,
+        clearSelection,
+        selectedCount,
+        hasSelection
+    } = useBulkSelection<string>();
     
     useSearchShortcut(searchInputRef);
     
@@ -237,6 +252,42 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedCount === 0) return;
+        
+        try {
+            const selectedIds = Array.from(selectedItems);
+            const { error } = await supabase
+                .from('students')
+                .delete()
+                .in('student_id', selectedIds);
+
+            if (error) throw error;
+
+            toast({
+                title: "Success",
+                description: `${selectedCount} student(s) deleted successfully`,
+            });
+            clearSelection();
+            onRefresh();
+        } catch (error: any) {
+            console.error('Error bulk deleting students:', error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to delete students",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleSelectAll = () => {
+        if (selectedCount === filteredStudents.length) {
+            clearSelection();
+        } else {
+            selectAll(filteredStudents.map(s => s.student_id));
+        }
+    };
+
     const handleBulkUpload = async (data: any[]) => {
         try {
             // Validate ABC IDs are numeric
@@ -326,6 +377,12 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     <table className="w-full">
                             <thead>
                                 <tr className="border-b">
+                                    <th className="text-left p-2 font-medium w-10">
+                                        <Checkbox 
+                                            checked={filteredStudents.length > 0 && selectedCount === filteredStudents.length}
+                                            onCheckedChange={handleSelectAll}
+                                        />
+                                    </th>
                                     <th className="text-left p-2 font-medium">Name / Enrollment</th>
                                     <th className="text-left p-2 font-medium">ABC ID</th>
                                     <th className="text-left p-2 font-medium hidden sm:table-cell">Email</th>
@@ -339,13 +396,19 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                             <tbody>
                                 {filteredStudents.length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="text-center p-8 text-muted-foreground">
+                                        <td colSpan={9} className="text-center p-8 text-muted-foreground">
                                             {searchTerm ? 'No students match your search.' : 'No students available. Add one to get started.'}
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredStudents.map((student) => (
-                                    <tr key={student.student_id} className="border-b hover:bg-muted/50">
+                                    <tr key={student.student_id} className={`border-b hover:bg-muted/50 ${isSelected(student.student_id) ? 'bg-primary/5' : ''}`}>
+                                        <td className="p-2">
+                                            <Checkbox 
+                                                checked={isSelected(student.student_id)}
+                                                onCheckedChange={() => toggleSelection(student.student_id)}
+                                            />
+                                        </td>
                                         <td className="p-2">
                                             <div className="flex flex-col">
                                                 <span className="font-medium">{student.student_name}</span>
@@ -610,6 +673,32 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 type="students"
                 onUpload={handleBulkUpload}
             />
+
+            <BulkActionsBar
+                selectedCount={selectedCount}
+                onClear={clearSelection}
+                onDelete={() => setShowBulkDeleteConfirm(true)}
+            />
+
+            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedCount} Student(s)</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete {selectedCount} selected student(s)? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            handleBulkDelete();
+                            setShowBulkDeleteConfirm(false);
+                        }} className="bg-red-600 hover:bg-red-700">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Card>
     );
 };
