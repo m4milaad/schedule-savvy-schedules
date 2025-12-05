@@ -84,7 +84,7 @@ export const ScheduleTable = ({
                   return (
                     <TableRow key={dateString}>
                       <TableCell className="font-medium">
-                        {date.toLocaleDateString()}
+                        {date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-')}
                       </TableCell>
                       <TableCell>
                         {date.toLocaleDateString('en-US', { weekday: 'long' })}
