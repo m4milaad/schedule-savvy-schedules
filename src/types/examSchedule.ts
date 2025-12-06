@@ -88,6 +88,10 @@ export interface Venue {
   venue_name: string;
   venue_address: string | null;
   venue_capacity: number;
+  dept_id: string | null;
+  rows_count?: number;
+  columns_count?: number;
+  joined_rows?: number[];
   created_at: string;
   updated_at: string;
 }

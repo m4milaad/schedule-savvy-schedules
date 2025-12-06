@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,10 +17,11 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload, Grid3X3 } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit2, Trash2, Upload, Grid3X3, Building2 } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Venue } from "@/types/examSchedule";
+import { Venue, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
@@ -32,18 +34,39 @@ interface VenuesTabProps {
 }
 
 export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [newVenueName, setNewVenueName] = useState('');
     const [newVenueAddress, setNewVenueAddress] = useState('');
     const [newVenueCapacity, setNewVenueCapacity] = useState('50');
+    const [newVenueDeptId, setNewVenueDeptId] = useState<string>('');
     const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
     const [editVenueName, setEditVenueName] = useState('');
     const [editVenueAddress, setEditVenueAddress] = useState('');
     const [editVenueCapacity, setEditVenueCapacity] = useState('');
+    const [editVenueDeptId, setEditVenueDeptId] = useState<string>('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const [layoutEditorVenue, setLayoutEditorVenue] = useState<Venue | null>(null);
+
+    // Load departments on mount
+    useEffect(() => {
+        const loadDepartments = async () => {
+            const { data, error } = await supabase
+                .from('departments')
+                .select('*')
+                .order('dept_name');
+            
+            if (!error && data) {
+                setDepartments(data);
+            }
+        };
+        loadDepartments();
+    }, []);
+
+    // Create a map of dept_id to dept_name for display
+    const deptMap = new Map(departments.map(d => [d.dept_id, d.dept_name]));
 
     // Bulk selection
     const {
@@ -96,7 +119,8 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                 .insert({
                     venue_name: newVenueName.trim(),
                     venue_address: newVenueAddress.trim() || null,
-                    venue_capacity: parseInt(newVenueCapacity) || 50
+                    venue_capacity: parseInt(newVenueCapacity) || 50,
+                    dept_id: newVenueDeptId || null
                 });
 
             if (error) throw error;
@@ -105,6 +129,7 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
             setNewVenueName('');
             setNewVenueAddress('');
             setNewVenueCapacity('50');
+            setNewVenueDeptId('');
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
@@ -125,7 +150,8 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                 .update({
                     venue_name: editVenueName.trim(),
                     venue_address: editVenueAddress.trim() || null,
-                    venue_capacity: parseInt(editVenueCapacity) || 50
+                    venue_capacity: parseInt(editVenueCapacity) || 50,
+                    dept_id: editVenueDeptId || null
                 })
                 .eq('venue_id', editingVenue.venue_id);
 
@@ -174,6 +200,7 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
         setEditVenueName(venue.venue_name);
         setEditVenueAddress(venue.venue_address || '');
         setEditVenueCapacity(venue.venue_capacity.toString());
+        setEditVenueDeptId(venue.dept_id || '');
         setIsEditDialogOpen(true);
     };
 
@@ -210,6 +237,25 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                                         onChange={(e) => setNewVenueName(e.target.value)}
                                         placeholder="Enter venue name"
                                     />
+                                </div>
+                                <div>
+                                    <Label htmlFor="venue-dept">Department</Label>
+                                    <Select value={newVenueDeptId} onValueChange={setNewVenueDeptId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select department (optional)" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="">No Department (All students)</SelectItem>
+                                            {departments.map(dept => (
+                                                <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                                    {dept.dept_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Students will be assigned to venues in their department
+                                    </p>
                                 </div>
                                 <div>
                                     <Label htmlFor="venue-address">Address</Label>
@@ -264,9 +310,20 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                                     className="mt-1"
                                 />
                                 <div>
-                                    <div className="font-medium">{venue.venue_name}</div>
+                                    <div className="font-medium flex items-center gap-2">
+                                        {venue.venue_name}
+                                        {venue.dept_id && deptMap.get(venue.dept_id) && (
+                                            <Badge variant="outline" className="text-xs">
+                                                <Building2 className="w-3 h-3 mr-1" />
+                                                {deptMap.get(venue.dept_id)}
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <div className="text-sm text-gray-500">
                                         Capacity: {venue.venue_capacity} students
+                                        {venue.rows_count && venue.columns_count && (
+                                            <span className="ml-2">• {venue.rows_count}×{venue.columns_count} layout</span>
+                                        )}
                                     </div>
                                     {venue.venue_address && (
                                         <div className="text-sm text-gray-500">{venue.venue_address}</div>
@@ -327,28 +384,53 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                         <DialogTitle>Edit Venue</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                        <Label htmlFor="edit-venue-name">Venue Name *</Label>
-                        <Input
-                            id="edit-venue-name"
-                            value={editVenueName}
-                            onChange={(e) => setEditVenueName(e.target.value)}
-                            placeholder="Enter venue name"
-                        />
-                        <Label htmlFor="edit-venue-address">Address</Label>
-                        <Input
-                            id="edit-venue-address"
-                            value={editVenueAddress}
-                            onChange={(e) => setEditVenueAddress(e.target.value)}
-                            placeholder="Enter venue address"
-                        />
-                        <Label htmlFor="edit-venue-capacity">Capacity</Label>
-                        <Input
-                            id="edit-venue-capacity"
-                            type="number"
-                            value={editVenueCapacity}
-                            onChange={(e) => setEditVenueCapacity(e.target.value)}
-                            placeholder="Enter venue capacity"
-                        />
+                        <div>
+                            <Label htmlFor="edit-venue-name">Venue Name *</Label>
+                            <Input
+                                id="edit-venue-name"
+                                value={editVenueName}
+                                onChange={(e) => setEditVenueName(e.target.value)}
+                                placeholder="Enter venue name"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-venue-dept">Department</Label>
+                            <Select value={editVenueDeptId} onValueChange={setEditVenueDeptId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select department (optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="">No Department (All students)</SelectItem>
+                                    {departments.map(dept => (
+                                        <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                            {dept.dept_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Students will be assigned to venues in their department
+                            </p>
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-venue-address">Address</Label>
+                            <Input
+                                id="edit-venue-address"
+                                value={editVenueAddress}
+                                onChange={(e) => setEditVenueAddress(e.target.value)}
+                                placeholder="Enter venue address"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-venue-capacity">Capacity</Label>
+                            <Input
+                                id="edit-venue-capacity"
+                                type="number"
+                                value={editVenueCapacity}
+                                onChange={(e) => setEditVenueCapacity(e.target.value)}
+                                placeholder="Enter venue capacity"
+                            />
+                        </div>
                         <div className="flex gap-2">
                             <Button onClick={handleEditVenue} className="flex-1">Update Venue</Button>
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
@@ -400,9 +482,9 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                             venue={{
                                 venue_id: layoutEditorVenue.venue_id,
                                 venue_name: layoutEditorVenue.venue_name,
-                                rows_count: (layoutEditorVenue as any).rows_count || 6,
-                                columns_count: (layoutEditorVenue as any).columns_count || 4,
-                                joined_columns: (layoutEditorVenue as any).joined_rows || []
+                                rows_count: layoutEditorVenue.rows_count || 6,
+                                columns_count: layoutEditorVenue.columns_count || 4,
+                                joined_columns: layoutEditorVenue.joined_rows || []
                             }}
                             onSave={() => {
                                 setLayoutEditorVenue(null);
