@@ -293,6 +293,7 @@ export type Database = {
           id: string
           is_approved: boolean | null
           semester: number | null
+          theme_color: string | null
           updated_at: string | null
           user_id: string | null
           user_type: string
@@ -305,6 +306,7 @@ export type Database = {
           id?: string
           is_approved?: boolean | null
           semester?: number | null
+          theme_color?: string | null
           updated_at?: string | null
           user_id?: string | null
           user_type: string
@@ -317,6 +319,7 @@ export type Database = {
           id?: string
           is_approved?: boolean | null
           semester?: number | null
+          theme_color?: string | null
           updated_at?: string | null
           user_id?: string | null
           user_type?: string
