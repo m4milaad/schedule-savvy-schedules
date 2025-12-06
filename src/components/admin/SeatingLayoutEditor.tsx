@@ -15,32 +15,32 @@ interface SeatingLayoutEditorProps {
     venue_name: string;
     rows_count: number;
     columns_count: number;
-    joined_rows: number[];
+    joined_columns: number[];  // Columns that are joined with the next column
   };
   onSave: () => void;
 }
 
 export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue, onSave }) => {
-  const [rowsCount, setRowsCount] = useState(venue.rows_count || 4);
-  const [columnsCount, setColumnsCount] = useState(venue.columns_count || 6);
-  const [joinedRows, setJoinedRows] = useState<number[]>(venue.joined_rows || []);
+  const [rowsCount, setRowsCount] = useState(venue.rows_count || 6);
+  const [columnsCount, setColumnsCount] = useState(venue.columns_count || 4);
+  const [joinedColumns, setJoinedColumns] = useState<number[]>(venue.joined_columns || []);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    setRowsCount(venue.rows_count || 4);
-    setColumnsCount(venue.columns_count || 6);
-    setJoinedRows(venue.joined_rows || []);
+    setRowsCount(venue.rows_count || 6);
+    setColumnsCount(venue.columns_count || 4);
+    setJoinedColumns(venue.joined_columns || []);
   }, [venue]);
 
-  const toggleJoinedRow = (rowNumber: number) => {
-    if (rowNumber >= rowsCount) return; // Can't join last row
+  const toggleJoinedColumn = (colNumber: number) => {
+    if (colNumber >= columnsCount) return; // Can't join last column
     
-    setJoinedRows(prev => {
-      if (prev.includes(rowNumber)) {
-        return prev.filter(r => r !== rowNumber);
+    setJoinedColumns(prev => {
+      if (prev.includes(colNumber)) {
+        return prev.filter(c => c !== colNumber);
       } else {
-        return [...prev, rowNumber].sort((a, b) => a - b);
+        return [...prev, colNumber].sort((a, b) => a - b);
       }
     });
   };
@@ -53,7 +53,7 @@ export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue,
         .update({
           rows_count: rowsCount,
           columns_count: columnsCount,
-          joined_rows: joinedRows
+          joined_rows: joinedColumns  // DB field is still joined_rows for compatibility
         })
         .eq('venue_id', venue.venue_id);
 
@@ -75,8 +75,8 @@ export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue,
     }
   };
 
-  const isRowJoined = (row: number) => joinedRows.includes(row);
-  const isRowPartOfJoin = (row: number) => joinedRows.includes(row) || joinedRows.includes(row - 1);
+  const isColumnJoined = (col: number) => joinedColumns.includes(col);
+  const isColumnPartOfJoin = (col: number) => joinedColumns.includes(col) || joinedColumns.includes(col - 1);
 
   return (
     <Card>
@@ -90,55 +90,55 @@ export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue,
         {/* Dimensions */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Number of Rows</Label>
+            <Label>Number of Rows (horizontal positions)</Label>
             <Input
               type="number"
               min={1}
               max={20}
               value={rowsCount}
-              onChange={(e) => {
-                const val = parseInt(e.target.value) || 1;
-                setRowsCount(val);
-                // Remove joined rows that are out of bounds
-                setJoinedRows(prev => prev.filter(r => r < val));
-              }}
+              onChange={(e) => setRowsCount(parseInt(e.target.value) || 1)}
             />
           </div>
           <div className="space-y-2">
-            <Label>Columns per Row</Label>
+            <Label>Number of Columns (vertical benches)</Label>
             <Input
               type="number"
               min={1}
               max={20}
               value={columnsCount}
-              onChange={(e) => setColumnsCount(parseInt(e.target.value) || 1)}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 1;
+                setColumnsCount(val);
+                // Remove joined columns that are out of bounds
+                setJoinedColumns(prev => prev.filter(c => c < val));
+              }}
             />
           </div>
         </div>
 
-        {/* Joined Rows Configuration */}
+        {/* Joined Columns Configuration */}
         <div className="space-y-3">
           <Label className="flex items-center gap-2">
             <Link2 className="w-4 h-4" />
-            Joined Rows (click to join with next row)
+            Joined Columns (click to join with next column)
           </Label>
           <div className="flex flex-wrap gap-2">
-            {Array.from({ length: rowsCount - 1 }, (_, i) => i + 1).map(row => (
+            {Array.from({ length: columnsCount - 1 }, (_, i) => i + 1).map(col => (
               <Button
-                key={row}
-                variant={isRowJoined(row) ? "default" : "outline"}
+                key={col}
+                variant={isColumnJoined(col) ? "default" : "outline"}
                 size="sm"
-                onClick={() => toggleJoinedRow(row)}
+                onClick={() => toggleJoinedColumn(col)}
                 className="gap-1"
               >
-                {isRowJoined(row) ? <Link2 className="w-3 h-3" /> : <Unlink className="w-3 h-3" />}
-                Row {row} + {row + 1}
+                {isColumnJoined(col) ? <Link2 className="w-3 h-3" /> : <Unlink className="w-3 h-3" />}
+                Col {col} + {col + 1}
               </Button>
             ))}
           </div>
-          {joinedRows.length > 0 && (
+          {joinedColumns.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              Joined: {joinedRows.map(r => `Rows ${r}-${r + 1}`).join(', ')}
+              Joined: {joinedColumns.map(c => `Cols ${c}-${c + 1}`).join(', ')}
             </p>
           )}
         </div>
@@ -148,36 +148,47 @@ export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue,
           <Label>Layout Preview</Label>
           <div className="bg-muted/50 rounded-lg p-4 overflow-x-auto">
             <div className="inline-block min-w-max">
+              {/* Column headers */}
+              <div className="flex items-center gap-1 mb-2">
+                <span className="w-16"></span>
+                {Array.from({ length: columnsCount }, (_, colIdx) => {
+                  const colNum = colIdx + 1;
+                  const isJoined = isColumnJoined(colNum);
+                  const isPartOfJoin = isColumnPartOfJoin(colNum);
+                  return (
+                    <div
+                      key={colNum}
+                      className={`w-8 text-center text-xs font-medium ${
+                        isPartOfJoin ? 'text-primary' : 'text-muted-foreground'
+                      }`}
+                    >
+                      C{colNum}
+                      {isJoined && '⟩'}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Rows */}
               {Array.from({ length: rowsCount }, (_, rowIdx) => {
                 const rowNum = rowIdx + 1;
-                const isJoined = isRowJoined(rowNum);
-                const isPartOfJoin = isRowPartOfJoin(rowNum);
-                
                 return (
-                  <div 
-                    key={rowNum} 
-                    className={`flex items-center gap-1 mb-1 ${
-                      isPartOfJoin ? 'bg-primary/10 rounded px-2 py-1' : ''
-                    } ${isJoined ? 'border-b-2 border-dashed border-primary' : ''}`}
-                  >
+                  <div key={rowNum} className="flex items-center gap-1 mb-1">
                     <span className="w-16 text-xs text-muted-foreground">
                       Row {rowNum}
-                      {isJoined && ' ⟨'}
-                      {joinedRows.includes(rowNum - 1) && ' ⟩'}
                     </span>
                     {Array.from({ length: columnsCount }, (_, colIdx) => {
                       const colNum = colIdx + 1;
-                      const isA = colNum % 2 === 1;
+                      const isJoined = isColumnJoined(colNum);
+                      const isPartOfJoin = isColumnPartOfJoin(colNum);
+                      const isA = true; // First position in each bench
                       return (
                         <div
                           key={colNum}
                           className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold ${
-                            isA 
-                              ? 'bg-blue-500/20 text-blue-700 dark:text-blue-300' 
-                              : 'bg-green-500/20 text-green-700 dark:text-green-300'
-                          }`}
+                            isPartOfJoin ? 'ring-1 ring-primary' : ''
+                          } ${isJoined ? 'border-r-2 border-primary' : ''} bg-blue-500/20 text-blue-700 dark:text-blue-300`}
                         >
-                          {isA ? 'A' : 'B'}
+                          A-B
                         </div>
                       );
                     })}
@@ -200,9 +211,9 @@ export const SeatingLayoutEditor: React.FC<SeatingLayoutEditorProps> = ({ venue,
 
         {/* Capacity Info */}
         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-          <span className="text-sm">Total Capacity:</span>
+          <span className="text-sm">Total Capacity (2 students per bench):</span>
           <Badge variant="secondary" className="text-lg px-3">
-            {rowsCount * columnsCount} seats
+            {rowsCount * columnsCount * 2} students
           </Badge>
         </div>
 
