@@ -16,14 +16,14 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Grid3X3 } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
-
+import { SeatingLayoutEditor } from "./SeatingLayoutEditor";
 interface VenuesTabProps {
     venues: Venue[];
     onRefresh: () => void;
@@ -41,6 +41,7 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+    const [layoutEditorVenue, setLayoutEditorVenue] = useState<Venue | null>(null);
 
     // Bulk selection
     const {
@@ -272,6 +273,14 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                                 <Button
                                     variant="outline"
                                     size="sm"
+                                    onClick={() => setLayoutEditorVenue(venue)}
+                                    title="Configure Seating Layout"
+                                >
+                                    <Grid3X3 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
                                     onClick={() => openEditDialog(venue)}
                                 >
                                     <Edit2 className="w-4 h-4" />
@@ -378,6 +387,27 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Seating Layout Editor Dialog */}
+            <Dialog open={!!layoutEditorVenue} onOpenChange={(open) => !open && setLayoutEditorVenue(null)}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    {layoutEditorVenue && (
+                        <SeatingLayoutEditor
+                            venue={{
+                                venue_id: layoutEditorVenue.venue_id,
+                                venue_name: layoutEditorVenue.venue_name,
+                                rows_count: (layoutEditorVenue as any).rows_count || 4,
+                                columns_count: (layoutEditorVenue as any).columns_count || 6,
+                                joined_rows: (layoutEditorVenue as any).joined_rows || []
+                            }}
+                            onSave={() => {
+                                setLayoutEditorVenue(null);
+                                onRefresh();
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </Card>
     );
 };
