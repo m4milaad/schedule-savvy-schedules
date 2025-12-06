@@ -299,17 +299,47 @@ const StudentDashboard = () => {
       return;
     }
 
+    // Check if already enrolled (including inactive enrollments)
+    const isAlreadyEnrolled = enrollments.some(enrollment => enrollment.course_id === courseId);
+    if (isAlreadyEnrolled) {
+      toast({
+        title: "Already Enrolled",
+        description: "You are already enrolled in this course",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setEnrolling(true);
     try {
-      const { error } = await supabase
+      // Check for existing enrollment (active or inactive) and reactivate if exists
+      const { data: existingEnrollment } = await supabase
         .from('student_enrollments')
-        .insert({
-          student_id: profile.id,
-          course_id: courseId,
-          is_active: true
-        });
+        .select('id, is_active')
+        .eq('student_id', profile.id)
+        .eq('course_id', courseId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingEnrollment) {
+        // Reactivate existing enrollment
+        const { error } = await supabase
+          .from('student_enrollments')
+          .update({ is_active: true })
+          .eq('id', existingEnrollment.id);
+
+        if (error) throw error;
+      } else {
+        // Create new enrollment
+        const { error } = await supabase
+          .from('student_enrollments')
+          .insert({
+            student_id: profile.id,
+            course_id: courseId,
+            is_active: true
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Success",
