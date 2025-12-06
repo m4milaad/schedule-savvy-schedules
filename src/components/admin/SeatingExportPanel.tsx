@@ -15,7 +15,7 @@ interface Venue {
   venue_name: string;
   rows_count: number;
   columns_count: number;
-  joined_rows: number[];
+  joined_columns: number[];
 }
 
 interface Datesheet {
@@ -61,7 +61,7 @@ export const SeatingExportPanel: React.FC = () => {
         ...v,
         rows_count: v.rows_count || 4,
         columns_count: v.columns_count || 6,
-        joined_rows: v.joined_rows || []
+        joined_columns: v.joined_rows || []  // DB uses joined_rows, algorithm uses joined_columns
       })));
 
       setDatesheets((datesheetsRes.data || []).map((d: any) => ({
@@ -143,7 +143,7 @@ export const SeatingExportPanel: React.FC = () => {
         venue_name: venue.venue_name,
         rows_count: venue.rows_count,
         columns_count: venue.columns_count,
-        joined_rows: venue.joined_rows
+        joined_columns: venue.joined_columns
       };
 
       const seatingResult = generateSeatingArrangement(venueLayout, students);

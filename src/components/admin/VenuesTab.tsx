@@ -400,9 +400,9 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                             venue={{
                                 venue_id: layoutEditorVenue.venue_id,
                                 venue_name: layoutEditorVenue.venue_name,
-                                rows_count: (layoutEditorVenue as any).rows_count || 4,
-                                columns_count: (layoutEditorVenue as any).columns_count || 6,
-                                joined_rows: (layoutEditorVenue as any).joined_rows || []
+                                rows_count: (layoutEditorVenue as any).rows_count || 6,
+                                columns_count: (layoutEditorVenue as any).columns_count || 4,
+                                joined_columns: (layoutEditorVenue as any).joined_rows || []
                             }}
                             onSave={() => {
                                 setLayoutEditorVenue(null);
