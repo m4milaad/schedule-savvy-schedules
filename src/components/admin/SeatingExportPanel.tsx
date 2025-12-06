@@ -61,7 +61,7 @@ export const SeatingExportPanel: React.FC = () => {
     setLoading(true);
     try {
       const [venuesRes, datesheetsRes] = await Promise.all([
-        supabase.from('venues').select('venue_id, venue_name, rows_count, columns_count, joined_rows'),
+        supabase.from('venues').select('venue_id, venue_name, rows_count, columns_count, joined_rows, dept_id'),
         supabase.from('datesheets').select(`
           exam_date,
           course_id,
@@ -77,7 +77,8 @@ export const SeatingExportPanel: React.FC = () => {
         ...v,
         rows_count: v.rows_count || 4,
         columns_count: v.columns_count || 6,
-        joined_columns: v.joined_rows || []
+        joined_columns: v.joined_rows || [],
+        dept_id: v.dept_id
       })));
 
       setDatesheets((datesheetsRes.data || []).map((d: any) => ({
