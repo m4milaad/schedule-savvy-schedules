@@ -12,6 +12,7 @@ export interface Profile {
   semester?: number;
   abc_id?: string;
   is_approved?: boolean;
+  theme_color?: string;
   created_at: string;
   updated_at: string;
 }

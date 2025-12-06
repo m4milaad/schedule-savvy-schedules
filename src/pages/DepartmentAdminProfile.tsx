@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, User, Lock } from 'lucide-react';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';
 
 interface Department {
   dept_id: string;
@@ -23,7 +23,8 @@ const DepartmentAdminProfile = () => {
     full_name: '',
     email: '',
     dept_id: '',
-    contact_no: ''
+    contact_no: '',
+    theme_color: '#3b82f6'
   });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -68,7 +69,8 @@ const DepartmentAdminProfile = () => {
         full_name: profileData.full_name || '',
         email: profileData.email || user.email || '',
         dept_id: profileData.dept_id || '',
-        contact_no: (profileData as any).contact_no || ''
+        contact_no: (profileData as any).contact_no || '',
+        theme_color: (profileData as any).theme_color || '#3b82f6'
       });
     } catch (error: any) {
       console.error('Error loading profile:', error);
@@ -95,6 +97,7 @@ const DepartmentAdminProfile = () => {
         full_name: formData.full_name,
         email: formData.email,
         contact_no: formData.contact_no || null,
+        theme_color: formData.theme_color,
         updated_at: new Date().toISOString()
       };
 
@@ -209,6 +212,27 @@ const DepartmentAdminProfile = () => {
                     Only super administrators can change your department
                   </p>
                 </div>
+              </div>
+
+              {/* Theme Color Picker */}
+              <div className="pt-2 border-t">
+                <ThemeColorPicker 
+                  color={formData.theme_color} 
+                  onChange={(color) => setFormData({ ...formData, theme_color: color })}
+                />
+              </div>
+
+              {/* Update Password Button */}
+              <div className="pt-2 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => navigate('/update-password')}
+                >
+                  <Lock className="w-4 h-4" />
+                  Update Password
+                </Button>
               </div>
 
               <Button 
