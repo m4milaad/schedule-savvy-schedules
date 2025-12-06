@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from 'react-router-dom';
+import { Lock } from 'lucide-react';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';
 
 interface Department {
   dept_id: string;
@@ -29,11 +32,13 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
   departments,
   onUpdate
 }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     email: profile.email || '',
     dept_id: profile.dept_id || '',
     semester: profile.semester || 1,
+    theme_color: (profile as any).theme_color || '#3b82f6',
     // Student-specific fields (stored in students table)
     student_enrollment_no: '',
     abc_id: '',
@@ -105,12 +110,13 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
 
     setLoading(true);
     try {
-      // Update profile data
-      const profileUpdates = {
+      // Update profile data including theme_color
+      const profileUpdates: any = {
         full_name: formData.full_name,
         email: formData.email,
         dept_id: formData.dept_id,
-        semester: formData.semester
+        semester: formData.semester,
+        theme_color: formData.theme_color
       };
       
       await onUpdate(profileUpdates);
@@ -269,6 +275,30 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
               </Select>
             </div>
           )}
+
+          {/* Theme Color Picker */}
+          <div className="pt-2 border-t">
+            <ThemeColorPicker 
+              color={formData.theme_color} 
+              onChange={(color) => setFormData({ ...formData, theme_color: color })}
+            />
+          </div>
+
+          {/* Update Password Button */}
+          <div className="pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => {
+                onClose();
+                navigate('/update-password');
+              }}
+            >
+              <Lock className="w-4 h-4" />
+              Update Password
+            </Button>
+          </div>
 
           <div className="flex gap-2 pt-4">
             <Button 
