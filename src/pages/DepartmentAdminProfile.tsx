@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock } from 'lucide-react';
-import { ThemeColorPicker } from '@/components/ThemeColorPicker';
+import { ThemeColorPicker, getContrastColor } from '@/components/ThemeColorPicker';
 
 interface Department {
   dept_id: string;
@@ -155,9 +155,18 @@ const DepartmentAdminProfile = () => {
           Back to Dashboard
         </Button>
 
-        <Card className="animate-fade-in">
+        <Card 
+          className="animate-fade-in transition-all duration-300"
+          style={{ 
+            backgroundColor: formData.theme_color || undefined,
+            color: formData.theme_color ? getContrastColor(formData.theme_color) : undefined
+          }}
+        >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle 
+              className="flex items-center gap-2"
+              style={{ color: formData.theme_color ? getContrastColor(formData.theme_color) : undefined }}
+            >
               <User className="w-5 h-5" />
               My Profile
             </CardTitle>
