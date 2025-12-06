@@ -1,21 +1,22 @@
 /**
  * Seating Algorithm for Exam Room Assignment
  * 
- * Terminology (corrected):
+ * Terminology:
  * - Columns: Vertical benches (what students sit at)
  * - Rows: Horizontal positions within each column
  * 
  * Rules:
+ * - Students are assigned to venues in their department
  * - Alternates students from odd semesters (A) and even semesters (B)
- * - For single columns: A-B pattern on each bench
- * - For joined columns (2 columns combined): 3 students per bench section - one middle, one on each edge
+ * - For single columns: A-B pattern on each bench (2 students per bench)
+ * - For joined columns: 3 students per bench section - A on left edge, B in middle (at join), A on right edge
  * 
  * Example Layout (4 columns, cols 2+3 joined):
  * 
- * Col 1    Cols 2+3 (joined)    Col 4
- * A  B     A    B    A    B     A  B
- * A  B     A    B    A    B     A  B
- * A  B     A    B    A    B     A  B
+ * 1st col    2nd+3rd col    4th col
+ * A  B       A    B    A    B  A
+ * A  B       A    B    A    B  A
+ * A  B       A    B    A    B  A
  */
 
 export interface Student {
@@ -23,6 +24,7 @@ export interface Student {
   student_name: string;
   semester: number;
   student_enrollment_no: string;
+  dept_id?: string | null;
 }
 
 export interface SeatAssignment {
@@ -32,6 +34,7 @@ export interface SeatAssignment {
   column_number: number;   // Vertical bench (1 to columns_count)
   seat_label: string;
   semester_group: 'A' | 'B';
+  position_in_bench?: 'left' | 'middle' | 'right'; // For joined benches
 }
 
 export interface VenueLayout {
@@ -40,6 +43,7 @@ export interface VenueLayout {
   rows_count: number;       // Number of horizontal positions per column
   columns_count: number;    // Number of vertical benches
   joined_columns: number[]; // Array of column numbers that are joined with the next column
+  dept_id?: string | null;  // Department this venue belongs to
 }
 
 export interface SeatingResult {
@@ -65,6 +69,17 @@ export function separateStudentsByGroup(students: Student[]): { groupA: Student[
 }
 
 /**
+ * Filters students to only include those from the venue's department
+ */
+export function filterStudentsByDepartment(students: Student[], venueDeptId: string | null | undefined): Student[] {
+  if (!venueDeptId) {
+    // If venue has no department, accept all students
+    return students;
+  }
+  return students.filter(s => s.dept_id === venueDeptId);
+}
+
+/**
  * Checks if a column is part of a joined pair
  */
 export function isJoinedColumn(columnNumber: number, joinedColumns: number[]): boolean {
@@ -87,15 +102,19 @@ export function getJoinedPartnerColumn(columnNumber: number, joinedColumns: numb
 /**
  * Main seating algorithm
  * 
- * For single columns: Alternating A-B pattern across rows
- * For joined columns: 3 students per bench section across the joined columns
- *   - Pattern: A on left edge, B in positions, A on right edge (alternating)
+ * For single columns: Alternating A-B pattern (2 students per bench)
+ * For joined columns: 3 students per bench section
+ *   - Pattern: A on left edge, B in middle (at join point), A on right edge
+ *   - Only ONE student sits at the join point
  */
 export function generateSeatingArrangement(
   venue: VenueLayout,
   students: Student[]
 ): SeatingResult {
-  const { groupA, groupB } = separateStudentsByGroup(students);
+  // Filter students by department first
+  const departmentStudents = filterStudentsByDepartment(students, venue.dept_id);
+  
+  const { groupA, groupB } = separateStudentsByGroup(departmentStudents);
   const assignments: SeatAssignment[] = [];
   
   // Layout: [row][column] = SeatAssignment
@@ -121,80 +140,67 @@ export function generateSeatingArrangement(
     
     if (isJoined && col + 1 <= venue.columns_count) {
       // Handle joined columns (2 columns combined into one bench section)
+      // Pattern per row: A (left edge) - B (middle/join point) - A (right edge) = 3 students
       processedColumns.add(col);
       processedColumns.add(col + 1);
       
-      // For joined columns, we place students across both columns
-      // Pattern for each row: A-B on first column, A-B on second column (6 positions total)
       for (let row = 1; row <= venue.rows_count; row++) {
-        // Left column of joined pair - A on left, B on right
-        const studentLeft1 = groupA[groupAIndex];
-        if (studentLeft1 && groupAIndex < groupA.length) {
+        // Left edge of joined bench - A
+        const studentLeft = groupA[groupAIndex];
+        if (studentLeft && groupAIndex < groupA.length) {
           groupAIndex++;
           const assignment: SeatAssignment = {
-            student_id: studentLeft1.student_id,
-            student_name: studentLeft1.student_name,
+            student_id: studentLeft.student_id,
+            student_name: studentLeft.student_name,
             row_number: row,
             column_number: col,
             seat_label: `R${row}-C${col}`,
-            semester_group: 'A'
+            semester_group: 'A',
+            position_in_bench: 'left'
           };
           assignments.push(assignment);
           layout[row - 1][col - 1] = assignment;
         }
 
-        const studentLeft2 = groupB[groupBIndex];
-        if (studentLeft2 && groupBIndex < groupB.length) {
+        // Middle of joined bench (at join point) - B (only ONE student sits here)
+        const studentMiddle = groupB[groupBIndex];
+        if (studentMiddle && groupBIndex < groupB.length) {
           groupBIndex++;
-          // Add to same column with sub-position (we use a modified seat label)
           const assignment: SeatAssignment = {
-            student_id: studentLeft2.student_id,
-            student_name: studentLeft2.student_name,
+            student_id: studentMiddle.student_id,
+            student_name: studentMiddle.student_name,
             row_number: row,
-            column_number: col,
-            seat_label: `R${row}-C${col}B`,
-            semester_group: 'B'
+            column_number: col, // Use left column number but mark as middle
+            seat_label: `R${row}-C${col}-M`, // M for middle/join
+            semester_group: 'B',
+            position_in_bench: 'middle'
           };
           assignments.push(assignment);
-          // Store in layout at same position (will be overwritten, but OK for visualization)
         }
 
-        // Right column of joined pair - A on left, B on right
-        const studentRight1 = groupA[groupAIndex];
-        if (studentRight1 && groupAIndex < groupA.length) {
+        // Right edge of joined bench - A
+        const studentRight = groupA[groupAIndex];
+        if (studentRight && groupAIndex < groupA.length) {
           groupAIndex++;
           const assignment: SeatAssignment = {
-            student_id: studentRight1.student_id,
-            student_name: studentRight1.student_name,
+            student_id: studentRight.student_id,
+            student_name: studentRight.student_name,
             row_number: row,
             column_number: col + 1,
             seat_label: `R${row}-C${col + 1}`,
-            semester_group: 'A'
+            semester_group: 'A',
+            position_in_bench: 'right'
           };
           assignments.push(assignment);
           layout[row - 1][col] = assignment;
         }
-
-        const studentRight2 = groupB[groupBIndex];
-        if (studentRight2 && groupBIndex < groupB.length) {
-          groupBIndex++;
-          const assignment: SeatAssignment = {
-            student_id: studentRight2.student_id,
-            student_name: studentRight2.student_name,
-            row_number: row,
-            column_number: col + 1,
-            seat_label: `R${row}-C${col + 1}B`,
-            semester_group: 'B'
-          };
-          assignments.push(assignment);
-        }
       }
     } else {
-      // Handle single column - A-B alternating pattern for each row
+      // Handle single column - A-B pattern for each row (2 students per bench)
       processedColumns.add(col);
       
       for (let row = 1; row <= venue.rows_count; row++) {
-        // Each bench in a single column has A and B side by side
+        // Left side of bench - A
         const studentA = groupA[groupAIndex];
         if (studentA && groupAIndex < groupA.length) {
           groupAIndex++;
@@ -204,12 +210,14 @@ export function generateSeatingArrangement(
             row_number: row,
             column_number: col,
             seat_label: `R${row}-C${col}`,
-            semester_group: 'A'
+            semester_group: 'A',
+            position_in_bench: 'left'
           };
           assignments.push(assignment);
           layout[row - 1][col - 1] = assignment;
         }
 
+        // Right side of bench - B
         const studentB = groupB[groupBIndex];
         if (studentB && groupBIndex < groupB.length) {
           groupBIndex++;
@@ -219,7 +227,8 @@ export function generateSeatingArrangement(
             row_number: row,
             column_number: col,
             seat_label: `R${row}-C${col}B`,
-            semester_group: 'B'
+            semester_group: 'B',
+            position_in_bench: 'right'
           };
           assignments.push(assignment);
         }
@@ -237,15 +246,34 @@ export function generateSeatingArrangement(
 
 /**
  * Validates venue capacity against student count
- * For joined columns: each bench section can hold more students
+ * Single columns: 2 students per bench
+ * Joined columns: 3 students per bench section (across 2 columns)
  */
 export function validateVenueCapacity(venue: VenueLayout, studentCount: number): {
   isValid: boolean;
   capacity: number;
   message: string;
 } {
-  // Each row in each column holds 2 students (A and B)
-  const capacity = venue.rows_count * venue.columns_count * 2;
+  let capacity = 0;
+  const processedColumns = new Set<number>();
+
+  for (let col = 1; col <= venue.columns_count; col++) {
+    if (processedColumns.has(col)) continue;
+
+    const isJoined = venue.joined_columns.includes(col);
+    
+    if (isJoined && col + 1 <= venue.columns_count) {
+      // Joined columns: 3 students per row (left-A, middle-B, right-A)
+      capacity += venue.rows_count * 3;
+      processedColumns.add(col);
+      processedColumns.add(col + 1);
+    } else {
+      // Single column: 2 students per row (A and B)
+      capacity += venue.rows_count * 2;
+      processedColumns.add(col);
+    }
+  }
+  
   const isValid = capacity >= studentCount;
   
   return {
@@ -268,7 +296,6 @@ export function getLayoutVisualization(layout: SeatAssignment[][], joinedColumns
     
     for (let c = 0; c < layout[r].length; c++) {
       const seat = layout[r][c];
-      const isJoined = joinedColumns.includes(c + 1) || joinedColumns.includes(c);
       
       if (seat) {
         rowVisual.push(seat.semester_group);
