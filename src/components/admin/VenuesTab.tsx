@@ -24,6 +24,8 @@ import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import { SeatingLayoutEditor } from "./SeatingLayoutEditor";
+import { SeatingExportPanel } from "./SeatingExportPanel";
+
 interface VenuesTabProps {
     venues: Venue[];
     onRefresh: () => void;
@@ -176,6 +178,8 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
     };
 
     return (
+        <div className="space-y-6">
+        <SeatingExportPanel />
         <Card className="w-full shadow-md">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
@@ -409,5 +413,6 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
                 </DialogContent>
             </Dialog>
         </Card>
+        </div>
     );
 };
