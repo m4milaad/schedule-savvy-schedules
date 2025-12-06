@@ -30,6 +30,7 @@ import { ProfileEditDialog } from '@/components/ProfileEditDialog';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Footer } from '@/components/Footer';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
+import { getContrastColor } from '@/components/ThemeColorPicker';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -418,8 +419,14 @@ const StudentDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/10 to-background text-foreground transition-colors duration-500 flex flex-col">
       <div className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Enhanced Header with Card */}
-          <Card className="mb-6 md:mb-8 animate-fade-in shadow-lg border-2">
+          {/* Enhanced Header with Card - Theme Color Applied */}
+          <Card 
+            className="mb-6 md:mb-8 animate-fade-in shadow-lg border-2 transition-all duration-300"
+            style={{ 
+              backgroundColor: (profile as any)?.theme_color || undefined,
+              color: (profile as any)?.theme_color ? getContrastColor((profile as any).theme_color) : undefined
+            }}
+          >
             <CardContent className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -433,27 +440,33 @@ const StudentDashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="mb-1">
-                      <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-foreground transition-colors duration-300">
+                      <h1 
+                        className="text-lg md:text-2xl lg:text-3xl font-bold transition-colors duration-300"
+                        style={{ color: (profile as any)?.theme_color ? getContrastColor((profile as any).theme_color) : undefined }}
+                      >
                         Student Dashboard
                       </h1>
                     </div>
-                    <p className="text-sm md:text-lg font-semibold text-primary mb-2">
+                    <p 
+                      className="text-sm md:text-lg font-semibold mb-2"
+                      style={{ color: (profile as any)?.theme_color ? getContrastColor((profile as any).theme_color) : undefined }}
+                    >
                       {profile?.full_name}
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {profile?.dept_id && (
-                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20 flex items-center gap-1">
+                        <Badge variant="outline" className="text-xs flex items-center gap-1 bg-white/20 border-white/30">
                           <Building className="w-3 h-3" />
                           {getDepartmentName(profile.dept_id)}
                         </Badge>
                       )}
                       {profile?.semester && (
-                        <Badge className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
+                        <Badge className="text-xs bg-white/20 border-0">
                           Semester {profile.semester}
                         </Badge>
                       )}
                       {enrollments.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-white/20">
                           <BookOpen className="w-3 h-3 mr-1" />
                           {enrollments.length} Course{enrollments.length !== 1 ? 's' : ''}
                         </Badge>
@@ -467,7 +480,7 @@ const StudentDashboard = () => {
                     onClick={() => setShowProfileDialog(true)}
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm"
+                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm bg-white/10 border-white/30 hover:bg-white/20"
                   >
                     <Edit className="w-3 h-3 md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Edit Profile</span>
@@ -477,7 +490,7 @@ const StudentDashboard = () => {
                     onClick={signOut} 
                     variant="outline" 
                     size="sm"
-                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm hover:bg-destructive hover:text-destructive-foreground"
+                    className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm bg-white/10 border-white/30 hover:bg-destructive hover:text-destructive-foreground"
                   >
                     <LogOut className="w-3 h-3 md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Sign Out</span>
