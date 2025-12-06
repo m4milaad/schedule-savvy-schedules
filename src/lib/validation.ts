@@ -63,6 +63,7 @@ export const profileUpdateSchema = z.object({
   address: z.string().trim().max(500, 'Address must be less than 500 characters').optional(),
   semester: z.number().int().min(1).max(12).optional(),
   abc_id: z.string().trim().max(50, 'ABC ID must be less than 50 characters').optional(),
+  theme_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Theme color must be a valid hex color').optional(),
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
