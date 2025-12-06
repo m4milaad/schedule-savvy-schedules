@@ -738,6 +738,7 @@ export type Database = {
         Row: {
           columns_count: number | null
           created_at: string | null
+          dept_id: string | null
           joined_rows: number[] | null
           rows_count: number | null
           updated_at: string | null
@@ -749,6 +750,7 @@ export type Database = {
         Insert: {
           columns_count?: number | null
           created_at?: string | null
+          dept_id?: string | null
           joined_rows?: number[] | null
           rows_count?: number | null
           updated_at?: string | null
@@ -760,6 +762,7 @@ export type Database = {
         Update: {
           columns_count?: number | null
           created_at?: string | null
+          dept_id?: string | null
           joined_rows?: number[] | null
           rows_count?: number | null
           updated_at?: string | null
@@ -768,7 +771,15 @@ export type Database = {
           venue_id?: string
           venue_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "venues_dept_id_fkey"
+            columns: ["dept_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["dept_id"]
+          },
+        ]
       }
     }
     Views: {
