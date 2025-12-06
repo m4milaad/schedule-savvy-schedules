@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, Shield, User, List } from "lucide-react";
+import { Home, Menu, Shield, User, List, Lock } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -293,6 +293,10 @@ const AdminDashboard: React.FC = () => {
                     <Button onClick={() => navigate("/admin-logs")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
                         <List className="w-4 h-4" />
                         View Logs
+                    </Button>
+                    <Button onClick={() => navigate("/update-password")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                        <Lock className="w-4 h-4" />
+                        Update Password
                     </Button>
                 </>
             )}

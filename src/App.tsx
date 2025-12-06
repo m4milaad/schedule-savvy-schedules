@@ -17,6 +17,7 @@ import ManageAdmins from "./pages/ManageAdmins";
 import EmailVerified from "./pages/EmailVerified";
 import ResetPassword from "./pages/ResetPassword";
 import DepartmentAdminProfile from "./pages/DepartmentAdminProfile";
+import UpdatePassword from "./pages/UpdatePassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
@@ -85,6 +86,14 @@ const App = () => {
                   <AuditLogsPage />
                 </AdminProtectedRoute>
               }
+              />
+              <Route 
+                path="/update-password" 
+                element={
+                  <ProtectedRoute allowedRoles={['student', 'admin', 'department_admin']}>
+                    <UpdatePassword />
+                  </ProtectedRoute>
+                } 
               />
               <Route path="/mobile-schedule" element={<MobileSchedule />} />
               <Route path="*" element={<NotFound />} />
