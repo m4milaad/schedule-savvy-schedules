@@ -424,8 +424,8 @@ const StudentDashboard = () => {
     >
       <div className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-          {/* Enhanced Header with Card */}
-        <Card className="mb-6 md:mb-8 animate-fade-in shadow-lg border-2 transition-all duration-300 bg-card/90 backdrop-blur-sm">
+          {/* Enhanced Header with Card - Glassmorphism */}
+          <Card className="mb-6 md:mb-8 animate-fade-in shadow-lg border border-white/20 transition-all duration-300 bg-white/10 backdrop-blur-xl">
             <CardContent className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -535,7 +535,7 @@ const StudentDashboard = () => {
 
           {/* My Courses Tab */}
           <TabsContent value="courses" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-lg">
+            <Card className="transition-all duration-300 hover:shadow-lg bg-white/10 backdrop-blur-xl border border-white/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <BookOpen className="w-5 h-5" />
