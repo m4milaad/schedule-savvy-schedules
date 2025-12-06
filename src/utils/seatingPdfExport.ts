@@ -78,15 +78,11 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
   // Draw the seating grid
   for (let row = 0; row < venue.rows_count; row++) {
     const y = gridStartY + (row * cellHeight);
-    const isJoinedStart = venue.joined_rows.includes(row + 1);
-    const isJoinedEnd = venue.joined_rows.includes(row);
-
+    
     // Row label
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
-    let rowLabel = `R${row + 1}`;
-    if (isJoinedStart) rowLabel += ' ⟨';
-    if (isJoinedEnd) rowLabel += ' ⟩';
+    const rowLabel = `R${row + 1}`;
     pdf.text(rowLabel, gridStartX - 3, y + (cellHeight / 2) + 1, { align: 'right' });
 
     for (let col = 0; col < venue.columns_count; col++) {
@@ -110,11 +106,12 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
       pdf.setLineWidth(0.3);
       pdf.rect(x, y, cellWidth, cellHeight, 'S');
 
-      // Joined row indicator
-      if (isJoinedStart) {
+      // Joined column indicator (vertical line between joined columns)
+      const isJoinedColumn = venue.joined_columns.includes(col + 1);
+      if (isJoinedColumn && col + 1 < venue.columns_count) {
         pdf.setDrawColor(59, 130, 246);
         pdf.setLineWidth(1);
-        pdf.line(x, y + cellHeight, x + cellWidth, y + cellHeight);
+        pdf.line(x + cellWidth, y, x + cellWidth, y + cellHeight);
       }
 
       // Seat content

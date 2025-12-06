@@ -43,12 +43,13 @@ export function useSeatingAssignment(): UseSeatingAssignmentResult {
 
       if (venueError) throw venueError;
 
+      // Note: joined_rows in DB maps to joined_columns in algorithm (terminology fix)
       const venue: VenueLayout = {
         venue_id: venueData.venue_id,
         venue_name: venueData.venue_name,
         rows_count: venueData.rows_count || 4,
         columns_count: venueData.columns_count || 6,
-        joined_rows: venueData.joined_rows || []
+        joined_columns: venueData.joined_rows || []
       };
 
       // Generate seating arrangement
