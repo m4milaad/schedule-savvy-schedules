@@ -144,7 +144,10 @@ const DepartmentAdminProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div 
+      className="min-h-screen p-4 transition-colors duration-300"
+      style={{ backgroundColor: formData.theme_color || undefined }}
+    >
       <div className="max-w-2xl mx-auto">
         <Button
           onClick={() => navigate('/admin-dashboard')}
@@ -155,18 +158,9 @@ const DepartmentAdminProfile = () => {
           Back to Dashboard
         </Button>
 
-        <Card 
-          className="animate-fade-in transition-all duration-300"
-          style={{ 
-            backgroundColor: formData.theme_color || undefined,
-            color: formData.theme_color ? getContrastColor(formData.theme_color) : undefined
-          }}
-        >
+        <Card className="animate-fade-in transition-all duration-300 bg-card/90 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle 
-              className="flex items-center gap-2"
-              style={{ color: formData.theme_color ? getContrastColor(formData.theme_color) : undefined }}
-            >
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <User className="w-5 h-5" />
               My Profile
             </CardTitle>
