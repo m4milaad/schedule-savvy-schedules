@@ -314,7 +314,10 @@ const AdminDashboard: React.FC = () => {
     );
 
     return (
-        <div className="min-h-screen bg-background flex flex-col transition-colors duration-500">
+        <div 
+            className="min-h-screen bg-background flex flex-col transition-colors duration-500"
+            style={profileData?.theme_color ? { backgroundColor: profileData.theme_color } : undefined}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                     <div className="text-center md:text-left">
@@ -402,7 +405,7 @@ const AdminDashboard: React.FC = () => {
                     {activeTab === "departments" && <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />}
                     {activeTab === "courses" && <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />}
                     {activeTab === "teachers" && <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />}
-                    {activeTab === "venues" && <VenuesTab venues={venues} onRefresh={loadVenues} />}
+                    {activeTab === "venues" && <VenuesTab venues={venues} onRefresh={loadVenues} userDeptId={profileData?.dept_id} />}
                     {activeTab === "sessions" && <SessionsTab sessions={sessions} onRefresh={loadSessions} />}
                     {activeTab === "holidays" && <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />}
                     {activeTab === "students" && <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />}
