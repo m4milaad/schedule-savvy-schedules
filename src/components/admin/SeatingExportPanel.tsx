@@ -29,7 +29,11 @@ interface Datesheet {
   };
 }
 
-export const SeatingExportPanel: React.FC = () => {
+interface SeatingExportPanelProps {
+  userDeptId?: string | null;
+}
+
+export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDeptId }) => {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [datesheets, setDatesheets] = useState<Datesheet[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<string>('');
@@ -73,13 +77,20 @@ export const SeatingExportPanel: React.FC = () => {
       if (venuesRes.error) throw venuesRes.error;
       if (datesheetsRes.error) throw datesheetsRes.error;
 
-      setVenues((venuesRes.data || []).map(v => ({
+      let venueData = (venuesRes.data || []).map(v => ({
         ...v,
         rows_count: v.rows_count || 4,
         columns_count: v.columns_count || 6,
         joined_columns: v.joined_rows || [],
         dept_id: v.dept_id
-      })));
+      }));
+
+      // Filter venues by department if user is a department admin
+      if (userDeptId) {
+        venueData = venueData.filter(v => v.dept_id === userDeptId);
+      }
+
+      setVenues(venueData);
 
       setDatesheets((datesheetsRes.data || []).map((d: any) => ({
         exam_date: d.exam_date,
