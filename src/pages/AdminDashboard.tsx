@@ -319,14 +319,16 @@ const AdminDashboard: React.FC = () => {
             style={profileData?.theme_color ? { backgroundColor: profileData.theme_color } : undefined}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-                <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-                    <div className="text-center md:text-left">
-                        <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
-                            <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10 transition-transform hover:scale-110" />
-                            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                {/* Enhanced Header with Glassmorphism */}
+                <div className="mb-6 md:mb-8 p-4 md:p-6 rounded-xl shadow-2xl border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl animate-fade-in">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                        <div className="text-center md:text-left">
+                            <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
+                                <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10 transition-transform hover:scale-110" />
+                                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+                            </div>
+                            <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>
                         </div>
-                        <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>
-                    </div>
 
                     {/* Desktop navigation */}
                     {!isMobile && navigationButtons}
@@ -350,6 +352,7 @@ const AdminDashboard: React.FC = () => {
                             </SheetContent>
                         </Sheet>
                     )}
+                    </div>
                 </div>
 
                 {/* Tabs area: desktop uses Tabs component (controlled), mobile uses Select dropdown */}
@@ -378,7 +381,7 @@ const AdminDashboard: React.FC = () => {
                 ) : (
                     // Controlled Tabs (activeTab drives which content is visible)
                     <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)}>
-                        <TabsList className="flex flex-wrap justify-center gap-2 overflow-x-auto p-1 rounded-lg bg-background/50 backdrop-blur-sm mb-4">
+                        <TabsList className="flex flex-wrap justify-center gap-2 overflow-x-auto p-2 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg mb-4">
                             {userRole === "admin" && (
                                 <>
                                     <TabsTrigger value="schools">Schools</TabsTrigger>
