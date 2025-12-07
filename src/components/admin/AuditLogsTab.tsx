@@ -105,10 +105,10 @@ export const AuditLogsTab = () => {
   };
 
   return (
-    <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
+    <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 animate-fade-in">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+          <CardTitle className="flex items-center gap-2 text-foreground">
             <FileText className="w-5 h-5" />
             System Audit Logs ({logs.length})
           </CardTitle>
@@ -161,12 +161,12 @@ export const AuditLogsTab = () => {
                       <div className="flex flex-col">
                         <span className="font-medium">
                           {log.profiles?.full_name || (
-                            <span className="text-muted-foreground italic">
+                            <span className="text-foreground/50 italic">
                               {log.action === 'DELETE' ? 'Deleted User' : 'Unknown User'}
                             </span>
                           )}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-foreground/70">
                           {log.profiles?.email || log.user_id.substring(0, 8) + '...'}
                         </span>
                       </div>

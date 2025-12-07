@@ -186,8 +186,8 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
                         >
                             <div>
                                 <div className="font-medium">{session.session_name}</div>
-                                <div className="text-sm text-gray-500">Year: {session.session_year}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-foreground/70">Year: {session.session_year}</div>
+                                <div className="text-sm text-foreground/70">
                                     Created: {new Date(session.created_at).toLocaleDateString()}
                                 </div>
                             </div>

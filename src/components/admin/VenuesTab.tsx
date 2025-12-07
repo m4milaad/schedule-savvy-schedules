@@ -328,14 +328,14 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                                             </Badge>
                                         )}
                                     </div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-foreground/70">
                                         Capacity: {venue.venue_capacity} students
                                         {venue.rows_count && venue.columns_count && (
                                             <span className="ml-2">• {venue.rows_count}×{venue.columns_count} layout</span>
                                         )}
                                     </div>
                                     {venue.venue_address && (
-                                        <div className="text-sm text-gray-500">{venue.venue_address}</div>
+                                        <div className="text-sm text-foreground/70">{venue.venue_address}</div>
                                     )}
                                 </div>
                             </div>
