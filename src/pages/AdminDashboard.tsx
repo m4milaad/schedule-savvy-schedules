@@ -380,29 +380,69 @@ const AdminDashboard: React.FC = () => {
                     </div>
                 ) : (
                     // Controlled Tabs (activeTab drives which content is visible)
-                    <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)}>
-                        <TabsList className="inline-flex flex-wrap justify-center gap-2 p-2 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg mb-4 w-auto">
+                    <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)} className="space-y-4 md:space-y-6 animate-fade-in">
+                        <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 transition-all duration-300 h-auto bg-muted/50 p-1 rounded-xl shadow-sm">
                             {userRole === "admin" && (
                                 <>
-                                    <TabsTrigger value="schools">Schools</TabsTrigger>
-                                    <TabsTrigger value="departments">Departments</TabsTrigger>
+                                    <TabsTrigger 
+                                        value="schools"
+                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                    >
+                                        Schools
+                                    </TabsTrigger>
+                                    <TabsTrigger 
+                                        value="departments"
+                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                    >
+                                        Departments
+                                    </TabsTrigger>
                                 </>
                             )}
-                            <TabsTrigger value="courses">Courses</TabsTrigger>
-                            <TabsTrigger value="teachers">Teachers</TabsTrigger>
-                            <TabsTrigger value="venues">Venues</TabsTrigger>
+                            <TabsTrigger 
+                                value="courses"
+                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                            >
+                                Courses
+                            </TabsTrigger>
+                            <TabsTrigger 
+                                value="teachers"
+                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                            >
+                                Teachers
+                            </TabsTrigger>
+                            <TabsTrigger 
+                                value="venues"
+                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                            >
+                                Venues
+                            </TabsTrigger>
                             {userRole === "admin" && (
                                 <>
-                                    <TabsTrigger value="sessions">Sessions</TabsTrigger>
-                                    <TabsTrigger value="holidays">Holidays</TabsTrigger>
+                                    <TabsTrigger 
+                                        value="sessions"
+                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                    >
+                                        Sessions
+                                    </TabsTrigger>
+                                    <TabsTrigger 
+                                        value="holidays"
+                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                    >
+                                        Holidays
+                                    </TabsTrigger>
                                 </>
                             )}
-                            <TabsTrigger value="students">Students</TabsTrigger>
+                            <TabsTrigger 
+                                value="students"
+                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                            >
+                                Students
+                            </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 )}
 
-                <div className="mt-4 p-4 md:p-6 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg">
+                <div className="mt-4 animate-fade-in">
                     {/* Render content based on activeTab */}
                     {activeTab === "schools" && <SchoolsTab schools={schools} onRefresh={loadSchools} />}
                     {activeTab === "departments" && <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />}

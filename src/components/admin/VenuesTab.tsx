@@ -216,7 +216,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     return (
         <div className="space-y-6">
         <SeatingExportPanel userDeptId={userDeptId} />
-        <Card className="w-full shadow-2xl border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl transition-all duration-300 hover:shadow-lg animate-fade-in">
+        <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
                     Venues ({filteredVenues.length})
