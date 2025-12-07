@@ -256,7 +256,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl shadow-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileDown className="w-5 h-5" />
@@ -303,8 +303,8 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
 
           {getSelectedDatesheet() && (
             <div className="p-3 bg-muted/30 rounded-lg">
-              <p className="text-sm font-medium">{getSelectedDatesheet()?.course.course_name}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-medium text-foreground">{getSelectedDatesheet()?.course.course_name}</p>
+              <p className="text-xs text-foreground/70">
                 {new Date(getSelectedDatesheet()?.exam_date || '').toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -344,9 +344,9 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
             </Button>
           </div>
 
-          <div className="text-xs text-muted-foreground">
-            <p>• <strong>Seating Chart:</strong> Visual layout for posting at exam venue</p>
-            <p>• <strong>Student List:</strong> Roll call sheet with signature column</p>
+          <div className="text-xs text-foreground/70">
+            <p>• <strong className="text-foreground">Seating Chart:</strong> Visual layout for posting at exam venue</p>
+            <p>• <strong className="text-foreground">Student List:</strong> Roll call sheet with signature column</p>
             <p>• Students are assigned to venues within their department</p>
           </div>
         </CardContent>
