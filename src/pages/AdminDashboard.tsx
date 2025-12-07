@@ -381,7 +381,7 @@ const AdminDashboard: React.FC = () => {
                 ) : (
                     // Controlled Tabs (activeTab drives which content is visible)
                     <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)}>
-                        <TabsList className="flex flex-wrap justify-center gap-2 overflow-x-auto p-2 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg mb-4">
+                        <TabsList className="inline-flex flex-wrap justify-center gap-2 p-2 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg mb-4 w-auto">
                             {userRole === "admin" && (
                                 <>
                                     <TabsTrigger value="schools">Schools</TabsTrigger>
@@ -402,7 +402,7 @@ const AdminDashboard: React.FC = () => {
                     </Tabs>
                 )}
 
-                <div className="mt-4">
+                <div className="mt-4 p-4 md:p-6 rounded-xl bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/30 shadow-lg">
                     {/* Render content based on activeTab */}
                     {activeTab === "schools" && <SchoolsTab schools={schools} onRefresh={loadSchools} />}
                     {activeTab === "departments" && <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />}
@@ -412,8 +412,6 @@ const AdminDashboard: React.FC = () => {
                     {activeTab === "sessions" && <SessionsTab sessions={sessions} onRefresh={loadSessions} />}
                     {activeTab === "holidays" && <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />}
                     {activeTab === "students" && <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />}
-
-                    {/* If you still want an inline logs panel (optional) you can show it on the page (not as a tab). */}
                 </div>
             </div>
 
