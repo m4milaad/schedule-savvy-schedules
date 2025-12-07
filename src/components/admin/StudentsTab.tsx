@@ -330,7 +330,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     };
 
     return (
-        <Card className="transition-all duration-300 hover:shadow-lg animate-fade-in">
+        <Card className="shadow-2xl border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl transition-all duration-300 hover:shadow-lg animate-fade-in">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
