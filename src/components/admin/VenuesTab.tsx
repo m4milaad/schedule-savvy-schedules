@@ -31,9 +31,10 @@ import { SeatingExportPanel } from "./SeatingExportPanel";
 interface VenuesTabProps {
     venues: Venue[];
     onRefresh: () => void;
+    userDeptId?: string | null;
 }
 
-export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
+export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [newVenueName, setNewVenueName] = useState('');
     const [newVenueAddress, setNewVenueAddress] = useState('');
@@ -78,11 +79,16 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
         selectedCount,
     } = useBulkSelection<string>();
 
+    // Filter venues by department if user is a department admin
+    const filteredVenuesList = userDeptId 
+        ? venues.filter(v => v.dept_id === userDeptId)
+        : venues;
+
     const handleSelectAll = () => {
-        if (selectedCount === venues.length) {
+        if (selectedCount === filteredVenuesList.length) {
             clearSelection();
         } else {
-            selectAll(venues.map(v => v.venue_id));
+            selectAll(filteredVenuesList.map(v => v.venue_id));
         }
     };
 
@@ -204,13 +210,16 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
         setIsEditDialogOpen(true);
     };
 
+    // Use filtered venues list for display
+    const filteredVenues = filteredVenuesList;
+
     return (
         <div className="space-y-6">
-        <SeatingExportPanel />
+        <SeatingExportPanel userDeptId={userDeptId} />
         <Card className="w-full shadow-md">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
-                    Venues ({venues.length})
+                    Venues ({filteredVenues.length})
                 </CardTitle>
                 <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
@@ -284,21 +293,21 @@ export const VenuesTab = ({ venues, onRefresh }: VenuesTabProps) => {
             </CardHeader>
 
             <CardContent className="overflow-visible space-y-2">
-                {venues.length > 0 && (
+                {filteredVenues.length > 0 && (
                     <div className="flex items-center gap-2 pb-2 border-b mb-2">
                         <Checkbox
-                            checked={venues.length > 0 && selectedCount === venues.length}
+                            checked={filteredVenues.length > 0 && selectedCount === filteredVenues.length}
                             onCheckedChange={handleSelectAll}
                         />
                         <span className="text-sm text-muted-foreground">Select all</span>
                     </div>
                 )}
-                {venues.length === 0 ? (
+                {filteredVenues.length === 0 ? (
                     <div className="p-4 text-center text-muted-foreground">
-                        No venues available. Add one to get started.
+                        No venues available for your department. Add one to get started.
                     </div>
                 ) : (
-                    venues.map((venue) => (
+                    filteredVenues.map((venue) => (
                         <div
                             key={venue.venue_id}
                             className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}
