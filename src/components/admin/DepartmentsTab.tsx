@@ -201,10 +201,10 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
                         >
                             <div>
                                 <div className="font-medium">{dept.dept_name}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-foreground/70">
                                     School: {getSchoolName(dept.school_id)}
                                 </div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-foreground/70">
                                     Created: {new Date(dept.created_at).toLocaleDateString()}
                                 </div>
                             </div>

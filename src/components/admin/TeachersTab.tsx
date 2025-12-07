@@ -468,15 +468,15 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                 />
                                 <div className="flex-1">
                                     <div className="font-medium">{teacher.teacher_name}</div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-foreground/70">
                                         {teacher.designation && `${teacher.designation} • `}
                                         {getDepartmentName(teacher.dept_id)}
                                     </div>
                                     {teacher.teacher_email && (
-                                        <div className="text-sm text-gray-500">{teacher.teacher_email}</div>
+                                        <div className="text-sm text-foreground/70">{teacher.teacher_email}</div>
                                     )}
                                     {teacher.contact_no && (
-                                        <div className="text-sm text-gray-500">{teacher.contact_no}</div>
+                                        <div className="text-sm text-foreground/70">{teacher.contact_no}</div>
                                     )}
                                     {/* Show assigned courses */}
                                     {teacherCourses[teacher.teacher_id]?.length > 0 && (

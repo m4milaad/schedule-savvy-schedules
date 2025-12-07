@@ -253,12 +253,12 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         >
                             <div>
                                 <div className="font-medium">{holiday.holiday_name}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-foreground/70">
                                     {new Date(holiday.holiday_date).toLocaleDateString()}
                                     {holiday.is_recurring && ' (Recurring)'}
                                 </div>
                                 {holiday.description && (
-                                    <div className="text-sm text-gray-500">{holiday.description}</div>
+                                    <div className="text-sm text-foreground/70">{holiday.description}</div>
                                 )}
                             </div>
                             <div className="flex gap-2">

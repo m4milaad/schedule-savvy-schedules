@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X, Trash2, Download, Mail } from "lucide-react";
@@ -22,7 +23,7 @@ export function BulkActionsBar({
 }: BulkActionsBarProps) {
   if (selectedCount === 0) return null;
 
-  return (
+  return createPortal(
     <div
       className={cn(
         "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5",
@@ -83,6 +84,7 @@ export function BulkActionsBar({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -345,10 +345,10 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                                 />
                                 <div>
                                     <div className="font-medium">{course.course_code} - {course.course_name}</div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-foreground/70">
                                         {course.course_credits} credits • {course.course_type}
                                     </div>
-                                    <div className="text-sm text-gray-500">
+                                    <div className="text-sm text-foreground/70">
                                         Department: {getDepartmentName(course.dept_id)}
                                     </div>
                                 </div>

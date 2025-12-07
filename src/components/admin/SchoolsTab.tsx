@@ -165,7 +165,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
                         <div key={school.school_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in">
                             <div>
                                 <div className="font-medium">{school.school_name}</div>
-                                <div className="text-sm text-gray-500">
+                                <div className="text-sm text-foreground/70">
                                     Created: {new Date(school.created_at).toLocaleDateString()}
                                 </div>
                             </div>
