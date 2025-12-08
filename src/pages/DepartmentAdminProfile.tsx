@@ -24,7 +24,7 @@ const DepartmentAdminProfile = () => {
     email: '',
     dept_id: '',
     contact_no: '',
-    theme_color: '#3b82f6'
+    theme_color: '#020817'  // Default theme color
   });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -70,7 +70,7 @@ const DepartmentAdminProfile = () => {
         email: profileData.email || user.email || '',
         dept_id: profileData.dept_id || '',
         contact_no: (profileData as any).contact_no || '',
-        theme_color: (profileData as any).theme_color || '#3b82f6'
+        theme_color: (profileData as any).theme_color || '#020817'  // Default theme color
       });
     } catch (error: any) {
       console.error('Error loading profile:', error);

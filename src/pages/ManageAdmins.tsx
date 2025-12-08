@@ -34,11 +34,20 @@ const ManageAdmins = () => {
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAdmins();
     loadDepartments();
+    loadCurrentUser();
   }, []);
+
+  const loadCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
 
   const loadDepartments = async () => {
     try {
@@ -408,7 +417,9 @@ const ManageAdmins = () => {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {admins.map((admin) => (
+                  {admins
+                    .filter(admin => admin.user_id !== currentUserId)
+                    .map((admin) => (
                     <div
                       key={admin.user_id}
                       className="flex items-center justify-between p-3 border rounded-lg bg-card"
