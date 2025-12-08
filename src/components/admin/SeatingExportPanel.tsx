@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { FileDown, Users, Grid3X3, Eye, EyeOff } from 'lucide-react';
+import { FileDown, Users, Grid3X3, Eye, EyeOff, RotateCcw, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSeatingPdf, generateStudentListPdf } from '@/utils/seatingPdfExport';
@@ -45,6 +45,9 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
     assignments: SeatAssignment[];
     examDate: string;
   } | null>(null);
+  const [originalAssignments, setOriginalAssignments] = useState<SeatAssignment[]>([]);
+  const [hasManualChanges, setHasManualChanges] = useState(false);
+  const [savingSwaps, setSavingSwaps] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -188,8 +191,80 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
         assignments: result.assignments,
         examDate: datesheet.exam_date
       });
+      setOriginalAssignments(result.assignments);
+      setHasManualChanges(false);
     } catch (error: any) {
       console.error('Failed to generate preview:', error);
+    }
+  };
+
+  const handleResetToOriginal = () => {
+    if (!previewData || originalAssignments.length === 0) return;
+    
+    setPreviewData({
+      ...previewData,
+      assignments: [...originalAssignments]
+    });
+    setHasManualChanges(false);
+    toast({
+      title: "Reset Complete",
+      description: "Seating arrangement has been reset to auto-generated state",
+    });
+  };
+
+  const handleSaveSwappedSeats = async () => {
+    if (!previewData || !selectedVenue) return;
+    
+    const datesheet = getSelectedDatesheet();
+    if (!datesheet) return;
+
+    setSavingSwaps(true);
+    try {
+      // Delete existing assignments for this venue/date
+      const { error: deleteError } = await supabase
+        .from('seat_assignments')
+        .delete()
+        .eq('venue_id', selectedVenue)
+        .eq('exam_date', datesheet.exam_date);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new assignments
+      if (previewData.assignments.length > 0) {
+        const assignmentsToInsert = previewData.assignments.map(a => ({
+          venue_id: selectedVenue,
+          course_id: a.course_id,
+          student_id: a.student_id,
+          exam_date: datesheet.exam_date,
+          row_number: a.row_number,
+          column_number: a.column_number,
+          seat_label: a.seat_label,
+          semester_group: a.course_code
+        }));
+
+        const { error: insertError } = await supabase
+          .from('seat_assignments')
+          .insert(assignmentsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      setOriginalAssignments([...previewData.assignments]);
+      setHasManualChanges(false);
+      
+      toast({
+        title: "Saved Successfully",
+        description: `Saved ${previewData.assignments.length} seat assignments to database`,
+      });
+    } catch (error: any) {
+      console.error('Error saving seat assignments:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save seat assignments",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingSwaps(false);
     }
   };
 
@@ -221,6 +296,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       ...previewData,
       assignments: newAssignments
     });
+    setHasManualChanges(true);
   };
 
   const handleGeneratePdf = async (type: 'seating' | 'list') => {
@@ -382,9 +458,35 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
             </Button>
           </div>
 
+          {showPreview && hasManualChanges && (
+            <div className="flex flex-wrap gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-300 flex-1">
+                You have unsaved manual seat changes.
+              </p>
+              <Button
+                onClick={handleSaveSwappedSeats}
+                disabled={savingSwaps}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {savingSwaps ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button
+                onClick={handleResetToOriginal}
+                variant="outline"
+                size="sm"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset to Auto
+              </Button>
+            </div>
+          )}
+
           <div className="text-xs text-foreground/70">
             <p>• <strong className="text-foreground">Seating Chart:</strong> Visual layout with course codes alternated by columns</p>
             <p>• <strong className="text-foreground">Student List:</strong> Roll call sheet with signature column</p>
+            <p>• <strong className="text-foreground">Manual Swaps:</strong> Use "Swap Seats" in preview to manually adjust, then save</p>
           </div>
         </CardContent>
       </Card>
