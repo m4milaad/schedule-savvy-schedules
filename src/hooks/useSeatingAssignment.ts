@@ -11,7 +11,6 @@ import {
 interface UseSeatingAssignmentResult {
   generateAndSaveSeating: (
     venueId: string,
-    courseId: string,
     examDate: string,
     students: Student[]
   ) => Promise<SeatingResult | null>;
@@ -26,7 +25,6 @@ export function useSeatingAssignment(): UseSeatingAssignmentResult {
 
   const generateAndSaveSeating = async (
     venueId: string,
-    courseId: string,
     examDate: string,
     students: Student[]
   ): Promise<SeatingResult | null> => {
@@ -37,19 +35,18 @@ export function useSeatingAssignment(): UseSeatingAssignmentResult {
       // Fetch venue layout
       const { data: venueData, error: venueError } = await supabase
         .from('venues')
-        .select('venue_id, venue_name, rows_count, columns_count, joined_rows')
+        .select('venue_id, venue_name, rows_count, columns_count, dept_id')
         .eq('venue_id', venueId)
         .single();
 
       if (venueError) throw venueError;
 
-      // Note: joined_rows in DB maps to joined_columns in algorithm (terminology fix)
       const venue: VenueLayout = {
         venue_id: venueData.venue_id,
         venue_name: venueData.venue_name,
         rows_count: venueData.rows_count || 4,
         columns_count: venueData.columns_count || 6,
-        joined_columns: venueData.joined_rows || []
+        dept_id: venueData.dept_id
       };
 
       // Generate seating arrangement
@@ -66,13 +63,13 @@ export function useSeatingAssignment(): UseSeatingAssignmentResult {
       if (result.assignments.length > 0) {
         const assignmentsToInsert = result.assignments.map(a => ({
           venue_id: venueId,
-          course_id: courseId,
+          course_id: a.course_id,
           student_id: a.student_id,
           exam_date: examDate,
           row_number: a.row_number,
           column_number: a.column_number,
           seat_label: a.seat_label,
-          semester_group: a.semester_group
+          semester_group: a.course_code // Store course code in semester_group field for now
         }));
 
         const { error: insertError } = await supabase
