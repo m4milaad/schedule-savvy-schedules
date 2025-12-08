@@ -249,12 +249,12 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                                 </div>
                                 <div>
                                     <Label htmlFor="venue-dept">Department</Label>
-                                    <Select value={newVenueDeptId} onValueChange={setNewVenueDeptId}>
+                                    <Select value={newVenueDeptId || "none"} onValueChange={(val) => setNewVenueDeptId(val === "none" ? "" : val)}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select department (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="">No Department (All students)</SelectItem>
+                                            <SelectItem value="none">No Department (All students)</SelectItem>
                                             {departments.map(dept => (
                                                 <SelectItem key={dept.dept_id} value={dept.dept_id}>
                                                     {dept.dept_name}
@@ -404,12 +404,12 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                         </div>
                         <div>
                             <Label htmlFor="edit-venue-dept">Department</Label>
-                            <Select value={editVenueDeptId} onValueChange={setEditVenueDeptId}>
+                            <Select value={editVenueDeptId || "none"} onValueChange={(val) => setEditVenueDeptId(val === "none" ? "" : val)}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select department (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">No Department (All students)</SelectItem>
+                                    <SelectItem value="none">No Department (All students)</SelectItem>
                                     {departments.map(dept => (
                                         <SelectItem key={dept.dept_id} value={dept.dept_id}>
                                             {dept.dept_name}
