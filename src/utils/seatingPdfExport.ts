@@ -4,17 +4,27 @@ import { SeatAssignment, VenueLayout } from './seatingAlgorithm';
 interface SeatingPdfData {
   venue: VenueLayout;
   examDate: string;
-  courseName: string;
-  courseCode: string;
   assignments: SeatAssignment[];
   layout: (SeatAssignment | null)[][];
 }
+
+// Colors for different course codes
+const courseColorPalette = [
+  { fill: [219, 234, 254], text: [59, 130, 246] },   // Blue
+  { fill: [220, 252, 231], text: [34, 197, 94] },    // Green
+  { fill: [243, 232, 255], text: [147, 51, 234] },   // Purple
+  { fill: [255, 237, 213], text: [234, 88, 12] },    // Orange
+  { fill: [252, 231, 243], text: [236, 72, 153] },   // Pink
+  { fill: [204, 251, 241], text: [20, 184, 166] },   // Teal
+  { fill: [254, 226, 226], text: [239, 68, 68] },    // Red
+  { fill: [224, 231, 255], text: [99, 102, 241] },   // Indigo
+];
 
 /**
  * Generates a PDF of the seating arrangement for printing/posting at exam venues
  */
 export function generateSeatingPdf(data: SeatingPdfData): void {
-  const { venue, examDate, courseName, courseCode, assignments, layout } = data;
+  const { venue, examDate, assignments, layout } = data;
   
   const pdf = new jsPDF({
     orientation: 'landscape',
@@ -25,6 +35,13 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
+
+  // Get unique course codes and assign colors
+  const courseCodes = [...new Set(assignments.map(a => a.course_code))];
+  const courseColorMap = new Map<string, typeof courseColorPalette[0]>();
+  courseCodes.forEach((code, index) => {
+    courseColorMap.set(code, courseColorPalette[index % courseColorPalette.length]);
+  });
 
   // Header
   pdf.setFontSize(18);
@@ -42,22 +59,25 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
     month: 'long', 
     day: 'numeric' 
   })}`, margin, infoY + 6);
-  pdf.text(`Course: ${courseCode} - ${courseName}`, margin, infoY + 12);
   pdf.text(`Total Students: ${assignments.length}`, pageWidth - margin - 50, infoY);
 
-  // Legend
-  const legendY = infoY + 20;
-  pdf.setFillColor(59, 130, 246); // Blue for Group A
-  pdf.rect(margin, legendY, 8, 5, 'F');
+  // Legend - show course codes with colors
+  const legendY = infoY + 14;
   pdf.setFontSize(10);
-  pdf.text('Group A (Odd Semesters: 1, 3, 5...)', margin + 10, legendY + 4);
-
-  pdf.setFillColor(34, 197, 94); // Green for Group B
-  pdf.rect(margin + 80, legendY, 8, 5, 'F');
-  pdf.text('Group B (Even Semesters: 2, 4, 6...)', margin + 92, legendY + 4);
+  let legendX = margin;
+  courseCodes.forEach((code, index) => {
+    const colors = courseColorMap.get(code) || courseColorPalette[0];
+    pdf.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
+    pdf.rect(legendX, legendY, 8, 5, 'F');
+    pdf.text(code, legendX + 10, legendY + 4);
+    legendX += 40;
+    if (legendX > pageWidth - 60) {
+      legendX = margin;
+    }
+  });
 
   // Calculate grid dimensions
-  const gridStartY = legendY + 15;
+  const gridStartY = legendY + 12;
   const availableWidth = pageWidth - (2 * margin);
   const availableHeight = pageHeight - gridStartY - margin - 20;
   
@@ -91,11 +111,8 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
 
       // Cell background
       if (seat) {
-        if (seat.semester_group === 'A') {
-          pdf.setFillColor(219, 234, 254); // Light blue
-        } else {
-          pdf.setFillColor(220, 252, 231); // Light green
-        }
+        const colors = courseColorMap.get(seat.course_code) || courseColorPalette[0];
+        pdf.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
       } else {
         pdf.setFillColor(245, 245, 245); // Gray for empty
       }
@@ -105,14 +122,6 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
       pdf.setDrawColor(200, 200, 200);
       pdf.setLineWidth(0.3);
       pdf.rect(x, y, cellWidth, cellHeight, 'S');
-
-      // Joined column indicator (vertical line between joined columns)
-      const isJoinedColumn = venue.joined_columns.includes(col + 1);
-      if (isJoinedColumn && col + 1 < venue.columns_count) {
-        pdf.setDrawColor(59, 130, 246);
-        pdf.setLineWidth(1);
-        pdf.line(x + cellWidth, y, x + cellWidth, y + cellHeight);
-      }
 
       // Seat content
       if (seat) {
@@ -131,15 +140,12 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
           : seat.student_name;
         pdf.text(truncatedName, x + cellWidth / 2, y + 9, { align: 'center' });
         
-        // Group indicator
-        pdf.setFontSize(8);
+        // Course code indicator
+        pdf.setFontSize(7);
         pdf.setFont('helvetica', 'bold');
-        if (seat.semester_group === 'A') {
-          pdf.setTextColor(59, 130, 246);
-        } else {
-          pdf.setTextColor(34, 197, 94);
-        }
-        pdf.text(seat.semester_group, x + cellWidth / 2, y + 15, { align: 'center' });
+        const colors = courseColorMap.get(seat.course_code) || courseColorPalette[0];
+        pdf.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+        pdf.text(seat.course_code, x + cellWidth / 2, y + 15, { align: 'center' });
         pdf.setTextColor(0, 0, 0);
       }
     }
@@ -162,7 +168,7 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
   pdf.text('Central University of Kashmir - Examination Cell', pageWidth / 2, pageHeight - 5, { align: 'center' });
 
   // Save the PDF
-  const filename = `Seating_${courseCode}_${venue.venue_name}_${examDate}.pdf`.replace(/\s+/g, '_');
+  const filename = `Seating_${venue.venue_name}_${examDate}.pdf`.replace(/\s+/g, '_');
   pdf.save(filename);
 }
 
@@ -170,7 +176,7 @@ export function generateSeatingPdf(data: SeatingPdfData): void {
  * Generates a student list PDF for roll call
  */
 export function generateStudentListPdf(data: SeatingPdfData): void {
-  const { venue, examDate, courseName, courseCode, assignments } = data;
+  const { venue, examDate, assignments } = data;
   
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -191,20 +197,19 @@ export function generateStudentListPdf(data: SeatingPdfData): void {
   pdf.setFont('helvetica', 'normal');
   const infoY = margin + 10;
   pdf.text(`Venue: ${venue.venue_name}`, margin, infoY);
-  pdf.text(`Course: ${courseCode} - ${courseName}`, margin, infoY + 6);
-  pdf.text(`Date: ${new Date(examDate).toLocaleDateString()}`, margin, infoY + 12);
+  pdf.text(`Date: ${new Date(examDate).toLocaleDateString()}`, margin, infoY + 6);
   pdf.text(`Total: ${assignments.length} students`, pageWidth - margin - 40, infoY);
 
   // Table header
-  const tableStartY = infoY + 22;
+  const tableStartY = infoY + 16;
   pdf.setFillColor(240, 240, 240);
   pdf.rect(margin, tableStartY, pageWidth - 2 * margin, 8, 'F');
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.text('S.No', margin + 5, tableStartY + 5.5);
   pdf.text('Student Name', margin + 20, tableStartY + 5.5);
-  pdf.text('Seat', margin + 100, tableStartY + 5.5);
-  pdf.text('Group', margin + 125, tableStartY + 5.5);
+  pdf.text('Seat', margin + 90, tableStartY + 5.5);
+  pdf.text('Course', margin + 115, tableStartY + 5.5);
   pdf.text('Signature', margin + 150, tableStartY + 5.5);
 
   // Table rows
@@ -225,12 +230,12 @@ export function generateStudentListPdf(data: SeatingPdfData): void {
     
     currentY += 7;
     pdf.text(`${index + 1}`, margin + 5, currentY);
-    pdf.text(seat.student_name.substring(0, 35), margin + 20, currentY);
-    pdf.text(seat.seat_label, margin + 100, currentY);
-    pdf.text(seat.semester_group, margin + 130, currentY);
+    pdf.text(seat.student_name.substring(0, 30), margin + 20, currentY);
+    pdf.text(seat.seat_label, margin + 90, currentY);
+    pdf.text(seat.course_code, margin + 115, currentY);
     pdf.line(margin + 145, currentY + 1, margin + 175, currentY + 1); // Signature line
   });
 
-  const filename = `StudentList_${courseCode}_${venue.venue_name}_${examDate}.pdf`.replace(/\s+/g, '_');
+  const filename = `StudentList_${venue.venue_name}_${examDate}.pdf`.replace(/\s+/g, '_');
   pdf.save(filename);
 }
