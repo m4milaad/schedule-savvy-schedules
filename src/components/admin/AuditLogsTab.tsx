@@ -4,9 +4,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, RefreshCw } from 'lucide-react';
+import { FileText, RefreshCw, Download, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 interface AuditLog {
   id: string;
@@ -25,6 +36,7 @@ interface AuditLog {
 export const AuditLogsTab = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -104,6 +116,106 @@ export const AuditLogsTab = () => {
     );
   };
 
+  const exportToCSV = () => {
+    if (logs.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No logs available to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
+    const csvData = logs.map(log => [
+      format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+      log.profiles?.full_name || 'Unknown',
+      log.profiles?.email || log.user_id,
+      log.user_type,
+      log.action,
+      log.table_name,
+      log.description || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `audit_logs_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+    link.click();
+
+    toast({
+      title: "Export Complete",
+      description: `Exported ${logs.length} log entries to CSV`,
+    });
+  };
+
+  const clearAllLogs = async () => {
+    setClearing(true);
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (error) throw error;
+
+      setLogs([]);
+      toast({
+        title: "Logs Cleared",
+        description: "All audit logs have been deleted",
+      });
+    } catch (error: any) {
+      console.error('Error clearing logs:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear logs",
+        variant: "destructive",
+      });
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const getDetailedDescription = (log: AuditLog): string => {
+    // Try to provide more meaningful descriptions based on table and action
+    const tableFriendlyNames: { [key: string]: string } = {
+      'profiles': 'Profile',
+      'students': 'Student',
+      'student_enrollments': 'Course Enrollment',
+      'courses': 'Course',
+      'teachers': 'Teacher',
+      'venues': 'Venue',
+      'datesheets': 'Exam Schedule',
+      'seat_assignments': 'Seat Assignment',
+      'departments': 'Department',
+      'schools': 'School',
+      'sessions': 'Session',
+      'holidays': 'Holiday',
+    };
+
+    const friendlyTable = tableFriendlyNames[log.table_name] || log.table_name;
+
+    if (log.description && log.description !== `${log.table_name} record ${log.action.toLowerCase()}d`) {
+      return log.description;
+    }
+
+    switch (log.action) {
+      case 'INSERT':
+        return `Created new ${friendlyTable.toLowerCase()}`;
+      case 'UPDATE':
+        return `Updated ${friendlyTable.toLowerCase()} details`;
+      case 'DELETE':
+        return `Deleted ${friendlyTable.toLowerCase()}`;
+      default:
+        return log.description || `${friendlyTable} ${log.action.toLowerCase()}`;
+    }
+  };
+
   return (
     <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 animate-fade-in">
       <CardHeader>
@@ -112,15 +224,53 @@ export const AuditLogsTab = () => {
             <FileText className="w-5 h-5" />
             System Audit Logs ({logs.length})
           </CardTitle>
-          <Button
-            onClick={loadLogs}
-            variant="outline"
-            size="sm"
-            className="transition-all duration-300 hover:scale-105"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={exportToCSV}
+              variant="outline"
+              size="sm"
+              disabled={logs.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={logs.length === 0 || clearing}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {clearing ? 'Clearing...' : 'Clear Logs'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear All Audit Logs</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all {logs.length} audit log entries. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={clearAllLogs} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button
+              onClick={loadLogs}
+              variant="outline"
+              size="sm"
+              className="transition-all duration-300 hover:scale-105"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -183,7 +333,7 @@ export const AuditLogsTab = () => {
                       </code>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {log.description}
+                      {getDetailedDescription(log)}
                     </TableCell>
                   </TableRow>
                 ))}
