@@ -15,7 +15,6 @@ interface Venue {
   venue_name: string;
   rows_count: number;
   columns_count: number;
-  joined_columns: number[];
   dept_id?: string | null;
 }
 
@@ -44,7 +43,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
   const [previewData, setPreviewData] = useState<{
     venue: VenueLayout;
     assignments: SeatAssignment[];
-    courseName: string;
     examDate: string;
   } | null>(null);
   const { toast } = useToast();
@@ -65,7 +63,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
     setLoading(true);
     try {
       const [venuesRes, datesheetsRes] = await Promise.all([
-        supabase.from('venues').select('venue_id, venue_name, rows_count, columns_count, joined_rows, dept_id'),
+        supabase.from('venues').select('venue_id, venue_name, rows_count, columns_count, dept_id'),
         supabase.from('datesheets').select(`
           exam_date,
           course_id,
@@ -81,7 +79,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
         ...v,
         rows_count: v.rows_count || 4,
         columns_count: v.columns_count || 6,
-        joined_columns: v.joined_rows || [],
         dept_id: v.dept_id
       }));
 
@@ -115,36 +112,52 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
     return datesheets.find(d => d.course_id === courseId && d.exam_date === examDate);
   };
 
-  const fetchStudentsForCourse = async (courseId: string, venueDeptId?: string | null): Promise<Student[]> => {
-    let query = supabase
-      .from('student_enrollments')
+  const fetchStudentsForVenue = async (venueId: string, examDate: string): Promise<Student[]> => {
+    // Get all courses scheduled for this venue on this date
+    const { data: scheduledCourses, error: scheduleError } = await supabase
+      .from('datesheets')
       .select(`
-        student_id,
-        students!inner (
-          student_id,
-          student_name,
-          semester,
-          student_enrollment_no,
-          dept_id
-        )
+        course_id,
+        courses (course_code, course_name)
       `)
-      .eq('course_id', courseId)
-      .eq('is_active', true);
+      .eq('venue_assigned', venueId)
+      .eq('exam_date', examDate);
 
-    const { data: enrollments, error } = await query;
-    if (error) throw error;
+    if (scheduleError) throw scheduleError;
 
-    let students: Student[] = (enrollments || []).map((e: any) => ({
-      student_id: e.students.student_id,
-      student_name: e.students.student_name,
-      semester: e.students.semester || 1,
-      student_enrollment_no: e.students.student_enrollment_no,
-      dept_id: e.students.dept_id
-    }));
+    const students: Student[] = [];
 
-    // Filter by department if venue has a department
-    if (venueDeptId) {
-      students = students.filter(s => s.dept_id === venueDeptId);
+    for (const scheduled of scheduledCourses || []) {
+      const courseCode = (scheduled as any).courses?.course_code || 'UNKNOWN';
+      const courseId = scheduled.course_id;
+
+      // Get enrolled students for this course
+      const { data: enrollments, error: enrollError } = await supabase
+        .from('student_enrollments')
+        .select(`
+          student_id,
+          students!inner (
+            student_id,
+            student_name,
+            student_enrollment_no,
+            dept_id
+          )
+        `)
+        .eq('course_id', courseId)
+        .eq('is_active', true);
+
+      if (enrollError) throw enrollError;
+
+      for (const e of enrollments || []) {
+        students.push({
+          student_id: (e as any).students.student_id,
+          student_name: (e as any).students.student_name,
+          student_enrollment_no: (e as any).students.student_enrollment_no,
+          course_code: courseCode,
+          course_id: courseId,
+          dept_id: (e as any).students.dept_id
+        });
+      }
     }
 
     return students;
@@ -158,14 +171,13 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       const venue = venues.find(v => v.venue_id === selectedVenue);
       if (!venue) return;
 
-      const students = await fetchStudentsForCourse(datesheet.course_id, venue.dept_id);
+      const students = await fetchStudentsForVenue(venue.venue_id, datesheet.exam_date);
 
       const venueLayout: VenueLayout = {
         venue_id: venue.venue_id,
         venue_name: venue.venue_name,
         rows_count: venue.rows_count,
         columns_count: venue.columns_count,
-        joined_columns: venue.joined_columns,
         dept_id: venue.dept_id
       };
 
@@ -174,7 +186,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       setPreviewData({
         venue: venueLayout,
         assignments: result.assignments,
-        courseName: datesheet.course.course_name,
         examDate: datesheet.exam_date
       });
     } catch (error: any) {
@@ -198,12 +209,12 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       const venue = venues.find(v => v.venue_id === selectedVenue);
       if (!venue) throw new Error('Venue not found');
 
-      const students = await fetchStudentsForCourse(datesheet.course_id, venue.dept_id);
+      const students = await fetchStudentsForVenue(venue.venue_id, datesheet.exam_date);
 
       if (students.length === 0) {
         toast({
           title: "No Students",
-          description: "No students from this department are enrolled in this course",
+          description: "No students are enrolled in courses scheduled at this venue",
           variant: "destructive",
         });
         return;
@@ -214,7 +225,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
         venue_name: venue.venue_name,
         rows_count: venue.rows_count,
         columns_count: venue.columns_count,
-        joined_columns: venue.joined_columns,
         dept_id: venue.dept_id
       };
 
@@ -223,8 +233,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       const pdfData = {
         venue: venueLayout,
         examDate: datesheet.exam_date,
-        courseName: datesheet.course.course_name,
-        courseCode: datesheet.course.course_code,
         assignments: seatingResult.assignments,
         layout: seatingResult.layout
       };
@@ -282,7 +290,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
             </div>
 
             <div className="space-y-2">
-              <Label>Select Exam</Label>
+              <Label>Select Exam Date</Label>
               <Select value={selectedDatesheet} onValueChange={setSelectedDatesheet}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose an exam..." />
@@ -345,9 +353,8 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
           </div>
 
           <div className="text-xs text-foreground/70">
-            <p>• <strong className="text-foreground">Seating Chart:</strong> Visual layout for posting at exam venue</p>
+            <p>• <strong className="text-foreground">Seating Chart:</strong> Visual layout with course codes alternated by columns</p>
             <p>• <strong className="text-foreground">Student List:</strong> Roll call sheet with signature column</p>
-            <p>• Students are assigned to venues within their department</p>
           </div>
         </CardContent>
       </Card>
@@ -356,7 +363,6 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
         <SeatingChartPreview
           venue={previewData.venue}
           assignments={previewData.assignments}
-          courseName={previewData.courseName}
           examDate={previewData.examDate}
         />
       )}
