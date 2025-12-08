@@ -193,6 +193,36 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
     }
   };
 
+  const handleSwapSeats = (assignment1: SeatAssignment, assignment2: SeatAssignment) => {
+    if (!previewData) return;
+
+    // Swap positions in the assignments array
+    const newAssignments = previewData.assignments.map(a => {
+      if (a.student_id === assignment1.student_id) {
+        return {
+          ...a,
+          row_number: assignment2.row_number,
+          column_number: assignment2.column_number,
+          seat_label: assignment2.seat_label
+        };
+      }
+      if (a.student_id === assignment2.student_id) {
+        return {
+          ...a,
+          row_number: assignment1.row_number,
+          column_number: assignment1.column_number,
+          seat_label: assignment1.seat_label
+        };
+      }
+      return a;
+    });
+
+    setPreviewData({
+      ...previewData,
+      assignments: newAssignments
+    });
+  };
+
   const handleGeneratePdf = async (type: 'seating' | 'list') => {
     const datesheet = getSelectedDatesheet();
     if (!selectedVenue || !datesheet) {
@@ -364,6 +394,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
           venue={previewData.venue}
           assignments={previewData.assignments}
           examDate={previewData.examDate}
+          onSwapSeats={handleSwapSeats}
         />
       )}
     </div>
