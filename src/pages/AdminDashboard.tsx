@@ -382,18 +382,18 @@ const AdminDashboard: React.FC = () => {
                     // Controlled Tabs (activeTab drives which content is visible)
                     <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)} className="space-y-4 md:space-y-6 animate-fade-in">
                         <div className="flex justify-center">
-                            <TabsList className="inline-flex flex-wrap justify-center gap-1 transition-all duration-300 h-auto bg-muted/50 p-1 rounded-xl shadow-sm">
+                            <TabsList className="inline-flex flex-wrap justify-center gap-1 h-auto bg-muted/50 p-1 rounded-xl">
                             {userRole === "admin" && (
                                 <>
                                     <TabsTrigger 
                                         value="schools"
-                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                                     >
                                         Schools
                                     </TabsTrigger>
                                     <TabsTrigger 
                                         value="departments"
-                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                                     >
                                         Departments
                                     </TabsTrigger>
@@ -401,19 +401,19 @@ const AdminDashboard: React.FC = () => {
                             )}
                             <TabsTrigger 
                                 value="courses"
-                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                             >
                                 Courses
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="teachers"
-                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                             >
                                 Teachers
                             </TabsTrigger>
                             <TabsTrigger 
                                 value="venues"
-                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                             >
                                 Venues
                             </TabsTrigger>
@@ -421,13 +421,13 @@ const AdminDashboard: React.FC = () => {
                                 <>
                                     <TabsTrigger 
                                         value="sessions"
-                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                                     >
                                         Sessions
                                     </TabsTrigger>
                                     <TabsTrigger 
                                         value="holidays"
-                                        className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                                     >
                                         Holidays
                                     </TabsTrigger>
@@ -435,7 +435,7 @@ const AdminDashboard: React.FC = () => {
                             )}
                             <TabsTrigger 
                                 value="students"
-                                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
                             >
                                 Students
                             </TabsTrigger>
