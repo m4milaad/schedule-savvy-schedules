@@ -282,31 +282,31 @@ const AdminDashboard: React.FC = () => {
             <ThemeToggle />
             {userRole === "admin" && (
                 <>
-                    <Button onClick={() => navigate("/manage-admins")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                    <Button onClick={() => navigate("/manage-admins")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                         <Shield className="w-4 h-4" />
                         Manage Admins
                     </Button>
-                    <Button onClick={() => navigate("/schedule-generator")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                    <Button onClick={() => navigate("/schedule-generator")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                         <Home className="w-4 h-4" />
                         Schedule Generator
                     </Button>
-                    <Button onClick={() => navigate("/admin-logs")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                    <Button onClick={() => navigate("/admin-logs")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                         <List className="w-4 h-4" />
                         View Logs
                     </Button>
-                    <Button onClick={() => navigate("/update-password")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                    <Button onClick={() => navigate("/update-password")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                         <Lock className="w-4 h-4" />
                         Update Password
                     </Button>
                 </>
             )}
             {userRole === "department_admin" && (
-                <Button onClick={() => navigate("/department-admin-profile")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+                <Button onClick={() => navigate("/department-admin-profile")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                     <User className="w-4 h-4" />
                     My Profile
                 </Button>
             )}
-            <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all">
+            <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
                 <Home className="w-4 h-4" />
                 Logout
             </Button>

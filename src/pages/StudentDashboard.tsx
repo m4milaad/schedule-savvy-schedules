@@ -474,7 +474,7 @@ const StudentDashboard = () => {
       <div className="flex-1 p-4 md:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Enhanced Header with Card - Glassmorphism */}
-          <Card className="mb-6 md:mb-8 animate-fade-in shadow-2xl border border-white/30 transition-all duration-300 bg-white/30 dark:bg-black/30 backdrop-blur-xl">
+          <Card className="mb-6 md:mb-8 animate-fade-in shadow-sm border border-border/50 transition-all duration-300 bg-white/40 dark:bg-black/40 backdrop-blur-xl">
             <CardContent className="p-4 md:p-6">
               <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                 <div className="flex items-start gap-3 md:gap-4">
@@ -524,7 +524,7 @@ const StudentDashboard = () => {
                       onClick={() => setShowProfileDialog(true)}
                       variant="outline" 
                       size="sm"
-                      className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
+                      className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
                   >
                     <Edit className="w-3 h-3 md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Edit Profile</span>
@@ -534,7 +534,7 @@ const StudentDashboard = () => {
                       onClick={signOut} 
                       variant="outline" 
                       size="sm"
-                      className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
+                      className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
                   >
                     <LogOut className="w-3 h-3 md:w-4 md:h-4" />
                     <span className="hidden sm:inline">Sign Out</span>
@@ -555,10 +555,10 @@ const StudentDashboard = () => {
         )}
 
           <Tabs defaultValue="courses" className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-3 transition-all duration-300 h-auto bg-muted/50 p-1 rounded-xl shadow-sm">
+            <TabsList className="grid w-full grid-cols-3 h-auto bg-muted/50 p-1 rounded-xl">
               <TabsTrigger 
                 value="courses" 
-                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
               >
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">My Courses</span>
@@ -566,7 +566,7 @@ const StudentDashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="enroll" 
-                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Enroll</span>
@@ -574,7 +574,7 @@ const StudentDashboard = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="transition-all duration-300 hover:scale-105 text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
               >
                 <Calendar className="w-4 h-4" />
                 <span className="hidden sm:inline">Exam Schedule</span>
@@ -584,7 +584,7 @@ const StudentDashboard = () => {
 
           {/* My Courses Tab */}
           <TabsContent value="courses" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30">
+            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <BookOpen className="w-5 h-5" />
@@ -693,7 +693,7 @@ const StudentDashboard = () => {
 
           {/* Enroll in Courses Tab */}
           <TabsContent value="enroll" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30">
+            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Plus className="w-5 h-5" />
@@ -768,7 +768,7 @@ const StudentDashboard = () => {
                                   size="sm"
                                   onClick={() => enrollInCourse(course.course_id)}
                                   disabled={enrolling}
-                                  className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                  className="flex items-center gap-1"
                                 >
                                   <Plus className="w-3 h-3" />
                                   Enroll
@@ -825,7 +825,7 @@ const StudentDashboard = () => {
 
           {/* Exam Schedule Tab */}
           <TabsContent value="schedule" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30">
+            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Calendar className="w-5 h-5" />

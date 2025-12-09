@@ -166,7 +166,7 @@ const ResetPassword = () => {
           <ThemeToggle />
         </div>
 
-        <Card className="animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
+        <Card className="animate-scale-in shadow-sm backdrop-blur-sm bg-background/95">
           <CardHeader>
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-full bg-primary/10 p-4">
@@ -236,7 +236,7 @@ const ResetPassword = () => {
 
               <Button
                 type="submit"
-                className="w-full transition-all duration-300 hover:scale-105"
+                className="w-full"
                 disabled={loading || !isSessionReady}
               >
                 {loading ? "Updating..." : isSessionReady ? "Update Password" : "Validating link..."}

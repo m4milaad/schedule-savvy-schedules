@@ -78,7 +78,7 @@ const EmailVerified = () => {
           <ThemeToggle />
         </div>
         
-        <Card className="animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
+        <Card className="animate-scale-in shadow-sm backdrop-blur-sm bg-background/95">
           <CardHeader>
             <div className="flex flex-col items-center gap-4">
               <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-4 animate-pulse">
@@ -104,7 +104,7 @@ const EmailVerified = () => {
             <div className="space-y-3">
               <Button 
                 onClick={() => navigate('/auth')} 
-                className="w-full transition-all duration-300 hover:scale-105"
+                className="w-full"
               >
                 Go to Sign In
               </Button>
