@@ -27,6 +27,8 @@ interface AuditLog {
   table_name: string;
   description: string;
   created_at: string;
+  old_data?: Record<string, any> | null;
+  new_data?: Record<string, any> | null;
   profiles?: {
     full_name: string;
     email: string;
@@ -181,8 +183,67 @@ export const AuditLogsTab = () => {
     }
   };
 
-  const getDetailedDescription = (log: AuditLog): string => {
-    // Try to provide more meaningful descriptions based on table and action
+  const formatFieldName = (field: string): string => {
+    return field
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\bid\b/gi, 'ID')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined) return 'empty';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'object') return JSON.stringify(value);
+    const str = String(value);
+    return str.length > 50 ? str.substring(0, 47) + '...' : str;
+  };
+
+  const getChangedFields = (oldData: Record<string, any> | null | undefined, newData: Record<string, any> | null | undefined): string[] => {
+    const changes: string[] = [];
+    const ignoredFields = ['updated_at', 'created_at', 'id', 'user_id', 'student_id', 'course_id', 'dept_id', 'venue_id', 'teacher_id', 'session_id', 'school_id'];
+    
+    if (!oldData && newData) {
+      // INSERT - show key fields that were set
+      const keyFields = ['full_name', 'email', 'student_name', 'course_name', 'course_code', 'venue_name', 'teacher_name', 'dept_name', 'school_name', 'session_name', 'holiday_name', 'student_enrollment_no', 'semester', 'is_active'];
+      for (const field of keyFields) {
+        if (newData[field] !== undefined && newData[field] !== null && newData[field] !== '') {
+          changes.push(`${formatFieldName(field)}: ${formatValue(newData[field])}`);
+        }
+      }
+      return changes.slice(0, 3); // Limit to 3 fields for readability
+    }
+    
+    if (oldData && !newData) {
+      // DELETE - show what was deleted
+      const keyFields = ['full_name', 'student_name', 'course_name', 'course_code', 'venue_name', 'teacher_name', 'student_enrollment_no'];
+      for (const field of keyFields) {
+        if (oldData[field]) {
+          changes.push(`${formatFieldName(field)}: ${formatValue(oldData[field])}`);
+          break; // Just show the main identifier
+        }
+      }
+      return changes;
+    }
+    
+    if (oldData && newData) {
+      // UPDATE - show what changed
+      for (const key of Object.keys(newData)) {
+        if (ignoredFields.includes(key)) continue;
+        const oldVal = oldData[key];
+        const newVal = newData[key];
+        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+          changes.push(`${formatFieldName(key)}: "${formatValue(oldVal)}" → "${formatValue(newVal)}"`);
+        }
+      }
+    }
+    
+    return changes.slice(0, 4); // Limit to 4 changes for readability
+  };
+
+  const getDetailedDescription = (log: AuditLog): React.ReactNode => {
     const tableFriendlyNames: { [key: string]: string } = {
       'profiles': 'Profile',
       'students': 'Student',
@@ -199,11 +260,26 @@ export const AuditLogsTab = () => {
     };
 
     const friendlyTable = tableFriendlyNames[log.table_name] || log.table_name;
+    const changes = getChangedFields(log.old_data, log.new_data);
 
-    if (log.description && log.description !== `${log.table_name} record ${log.action.toLowerCase()}d`) {
-      return log.description;
+    if (changes.length > 0) {
+      return (
+        <div className="space-y-1">
+          <span className="font-medium">
+            {log.action === 'INSERT' && `Created ${friendlyTable}`}
+            {log.action === 'UPDATE' && `Updated ${friendlyTable}`}
+            {log.action === 'DELETE' && `Deleted ${friendlyTable}`}
+          </span>
+          <ul className="text-xs text-muted-foreground list-disc list-inside">
+            {changes.map((change, i) => (
+              <li key={i}>{change}</li>
+            ))}
+          </ul>
+        </div>
+      );
     }
 
+    // Fallback to basic description
     switch (log.action) {
       case 'INSERT':
         return `Created new ${friendlyTable.toLowerCase()}`;
