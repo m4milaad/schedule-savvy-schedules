@@ -217,7 +217,7 @@ export const AuditLogsTab = () => {
   };
 
   return (
-    <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30 animate-fade-in">
+    <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50 animate-fade-in">
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-foreground">
