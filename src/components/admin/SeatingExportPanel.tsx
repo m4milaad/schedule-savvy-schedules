@@ -372,7 +372,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
 
   return (
     <div className="space-y-4">
-      <Card className="border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl shadow-2xl">
+      <Card className="border border-border/50 bg-white/40 dark:bg-black/40 backdrop-blur-xl shadow-sm hover:shadow-md transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileDown className="w-5 h-5" />
