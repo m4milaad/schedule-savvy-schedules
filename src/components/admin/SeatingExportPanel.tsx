@@ -86,8 +86,9 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
       }));
 
       // Filter venues by department if user is a department admin
+      // Include venues with matching dept_id OR venues with no dept_id assigned
       if (userDeptId) {
-        venueData = venueData.filter(v => v.dept_id === userDeptId);
+        venueData = venueData.filter(v => v.dept_id === userDeptId || !v.dept_id);
       }
 
       setVenues(venueData);
@@ -97,7 +98,7 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
         course_id: d.course_id,
         venue_assigned: d.venue_assigned,
         course: d.courses
-      })));
+      })).filter((d: any) => d.course));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -364,8 +365,9 @@ export const SeatingExportPanel: React.FC<SeatingExportPanelProps> = ({ userDept
     }
   };
 
+  // Show all exams when no venue selected, or exams assigned to selected venue
   const filteredDatesheets = selectedVenue 
-    ? datesheets.filter(d => d.venue_assigned === selectedVenue)
+    ? datesheets.filter(d => d.venue_assigned === selectedVenue || !d.venue_assigned)
     : datesheets;
 
   return (
