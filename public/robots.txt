@@ -1,14 +1,50 @@
+# Robots.txt for CUK Date Sheet Management System
+# https://ds-cuk.vercel.app/
+
+# Allow all major search engines
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
+User-agent: Slurp
+Allow: /
+Crawl-delay: 1
+
+User-agent: DuckDuckBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Baiduspider
+Allow: /
+Crawl-delay: 1
+
+# Social Media Crawlers
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# Allow all other bots
 User-agent: *
 Allow: /
+Crawl-delay: 2
+
+# Disallow admin and private areas (if needed for security)
+# Uncomment these if you want to prevent indexing of sensitive areas
+# Disallow: /admin-dashboard
+# Disallow: /manage-admins
+# Disallow: /admin-logs
+
+# Sitemap location
+Sitemap: https://ds-cuk.vercel.app/sitemap.xml
