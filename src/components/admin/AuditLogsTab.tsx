@@ -37,6 +37,7 @@ interface AuditLog {
 
 export const AuditLogsTab = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
   const { toast } = useToast();
@@ -49,7 +50,16 @@ export const AuditLogsTab = () => {
     try {
       setLoading(true);
       
-      // Fetch audit logs
+      // Get total count first
+      const { count, error: countError } = await supabase
+        .from('audit_logs')
+        .select('*', { count: 'exact', head: true });
+
+      if (!countError && count !== null) {
+        setTotalCount(count);
+      }
+      
+      // Fetch audit logs (latest 100)
       const { data: logsData, error: logsError } = await supabase
         .from('audit_logs')
         .select('*')
@@ -60,6 +70,7 @@ export const AuditLogsTab = () => {
 
       if (!logsData || logsData.length === 0) {
         setLogs([]);
+        setTotalCount(0);
         return;
       }
 
@@ -162,11 +173,12 @@ export const AuditLogsTab = () => {
       const { error } = await supabase
         .from('audit_logs')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .gte('created_at', '1970-01-01'); // Delete all records
 
       if (error) throw error;
 
       setLogs([]);
+      setTotalCount(0);
       toast({
         title: "Logs Cleared",
         description: "All audit logs have been deleted",
@@ -298,7 +310,7 @@ export const AuditLogsTab = () => {
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2 text-foreground">
             <FileText className="w-5 h-5" />
-            System Audit Logs ({logs.length})
+            System Audit Logs ({totalCount > 100 ? `${logs.length} of ${totalCount}` : totalCount})
           </CardTitle>
           <div className="flex gap-2">
             <Button
@@ -325,8 +337,8 @@ export const AuditLogsTab = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Clear All Audit Logs</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all {logs.length} audit log entries. This action cannot be undone.
+                <AlertDialogDescription>
+                    This will permanently delete all {totalCount} audit log entries. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
