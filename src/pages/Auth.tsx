@@ -266,13 +266,13 @@ const Auth = () => {
         </div>
 
         <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={(value) => setIsSignUp(value === "signup")} className="animate-fade-in">
-          <TabsList className="grid w-full grid-cols-2 transition-all duration-300">
-            <TabsTrigger value="signin" className="transition-all duration-300 hover:scale-105">Sign In</TabsTrigger>
-            <TabsTrigger value="signup" className="transition-all duration-300 hover:scale-105">Sign Up</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin">
-            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
+            <Card className="animate-scale-in shadow-sm backdrop-blur-sm bg-background/95">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Shield className="w-5 h-5" />
@@ -330,7 +330,7 @@ const Auth = () => {
                       Forgot Password?
                     </Button>
                   </div>
-                  <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
@@ -339,7 +339,7 @@ const Auth = () => {
           </TabsContent>
 
           <TabsContent value="signup">
-            <Card className="transition-all duration-300 hover:shadow-lg animate-scale-in shadow-2xl backdrop-blur-sm bg-background/95">
+            <Card className="animate-scale-in shadow-sm backdrop-blur-sm bg-background/95">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
                   <Users className="w-5 h-5" />
@@ -484,7 +484,7 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full transition-all duration-300 hover:scale-105 hover:shadow-lg" disabled={loading}>
+                  <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>
