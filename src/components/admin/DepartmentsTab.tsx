@@ -131,7 +131,7 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
     };
 
     return (
-        <Card className="transition-all duration-300 hover:shadow-2xl shadow-xl bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-white/30">
+        <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
                     Departments ({departments.length})
