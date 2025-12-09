@@ -265,7 +265,6 @@ export const AuditLogsTab = () => {
               onClick={loadLogs}
               variant="outline"
               size="sm"
-              className="transition-all duration-300 hover:scale-105"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
