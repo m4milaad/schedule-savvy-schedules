@@ -42,7 +42,7 @@ export const AuditLogsPage: React.FC = () => {
       <Button
         onClick={() => navigate("/admin-dashboard")}
         variant="outline"
-        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base"
       >
         <Home className="w-4 h-4" />
         Dashboard
@@ -50,7 +50,7 @@ export const AuditLogsPage: React.FC = () => {
       <Button
         onClick={() => navigate("/manage-admins")}
         variant="outline"
-        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base"
       >
         <Shield className="w-4 h-4" />
         Manage Admins
@@ -58,7 +58,7 @@ export const AuditLogsPage: React.FC = () => {
       <Button
         onClick={() => navigate("/department-admin-profile")}
         variant="outline"
-        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base hover:scale-105 transition-all"
+        className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base"
       >
         <User className="w-4 h-4" />
         My Profile
@@ -73,7 +73,7 @@ export const AuditLogsPage: React.FC = () => {
     >
       {/* Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-        <div className="mb-6 md:mb-8 p-4 md:p-6 rounded-xl shadow-2xl border border-white/30 bg-white/30 dark:bg-black/30 backdrop-blur-xl animate-fade-in">
+        <div className="mb-6 md:mb-8 p-4 md:p-6 rounded-xl shadow-sm border border-border/50 bg-white/40 dark:bg-black/40 backdrop-blur-xl animate-fade-in">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
             <div className="text-center md:text-left">
               <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
