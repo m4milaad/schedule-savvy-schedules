@@ -49,7 +49,7 @@ export const useAuth = () => {
 
   const loadUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
@@ -160,7 +160,7 @@ export const useAuth = () => {
 
       if (data.user) {
         // Load profile to determine redirect
-        const { data: profileData } = await (supabase as any)
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('user_type, is_approved')
           .eq('user_id', data.user.id)
@@ -247,7 +247,7 @@ export const useAuth = () => {
         throw validationError;
       }
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('user_id', user.id)

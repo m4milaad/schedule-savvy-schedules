@@ -58,24 +58,12 @@ interface ExamSchedule {
   session_name: string;
 }
 
-interface SeatAssignment {
-  id: string;
-  exam_date: string;
-  row_number: number;
-  column_number: number;
-  seat_label: string;
-  semester_group: string;
-  venue?: { venue_name: string };
-  course?: { course_code: string; course_name: string };
-}
-
 const StudentDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const [enrollments, setEnrollments] = useState<StudentEnrollment[]>([]);
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [examSchedule, setExamSchedule] = useState<ExamSchedule[]>([]);
-  const [seatAssignments, setSeatAssignments] = useState<SeatAssignment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [semesterFilter, setSemesterFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -141,8 +129,7 @@ const StudentDashboard = () => {
         loadDepartments(),
         loadEnrollments(),
         loadAvailableCourses(),
-        loadExamSchedule(),
-        loadSeatAssignments()
+        loadExamSchedule()
       ]);
     } catch (error) {
       console.error('Error loading student data:', error);
@@ -302,42 +289,6 @@ const StudentDashboard = () => {
     }));
 
     setExamSchedule(transformedSchedule);
-  };
-
-  const loadSeatAssignments = async () => {
-    if (!profile) return;
-
-    const { data, error } = await supabase
-      .from('seat_assignments')
-      .select(`
-        id,
-        exam_date,
-        row_number,
-        column_number,
-        seat_label,
-        semester_group,
-        venues (venue_name),
-        courses (course_code, course_name)
-      `)
-      .eq('student_id', profile.id);
-
-    if (error) {
-      console.error('Error loading seat assignments:', error);
-      return;
-    }
-
-    const transformed = (data || []).map((item: any) => ({
-      id: item.id,
-      exam_date: item.exam_date,
-      row_number: item.row_number,
-      column_number: item.column_number,
-      seat_label: item.seat_label,
-      semester_group: item.semester_group,
-      venue: item.venues,
-      course: item.courses
-    }));
-
-    setSeatAssignments(transformed);
   };
 
   const enrollInCourse = async (courseId: string) => {
@@ -878,19 +829,7 @@ const StudentDashboard = () => {
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.venue_name}</TableCell>
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.session_name}</TableCell>
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">
-                                {(() => {
-                                  const seat = seatAssignments.find(s => 
-                                    s.exam_date === exam.exam_date && 
-                                    s.course?.course_code === exam.course_code
-                                  );
-                                  return seat ? (
-                                    <Badge className={seat.semester_group === 'A' ? 'bg-blue-500' : 'bg-green-500'}>
-                                      {seat.seat_label}
-                                    </Badge>
-                                  ) : (
-                                    <span className="text-muted-foreground">TBD</span>
-                                  );
-                                })()}
+                                <Badge variant="outline">{exam.session_name}</Badge>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -934,21 +873,9 @@ const StudentDashboard = () => {
                                   <MapPin className="w-3 h-3 text-muted-foreground" />
                                   <span className="text-muted-foreground truncate">{exam.venue_name}</span>
                                 </div>
-                                {(() => {
-                                  const seat = seatAssignments.find(s => 
-                                    s.exam_date === exam.exam_date && 
-                                    s.course?.course_code === exam.course_code
-                                  );
-                                  return seat ? (
-                                    <Badge className={`text-xs ${seat.semester_group === 'A' ? 'bg-blue-500' : 'bg-green-500'}`}>
-                                      Seat: {seat.seat_label}
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
-                                      {exam.session_name}
-                                    </Badge>
-                                  );
-                                })()}
+                                <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
+                                  {exam.session_name}
+                                </Badge>
                               </div>
                             </div>
                           </CardContent>
