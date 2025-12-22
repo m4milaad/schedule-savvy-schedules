@@ -5,14 +5,38 @@ import { format } from 'date-fns';
 
 interface UseRealtimeNotificationsProps {
   studentId?: string;
+  userId?: string;
   enabled?: boolean;
 }
 
-export function useRealtimeNotifications({ studentId, enabled = true }: UseRealtimeNotificationsProps) {
+// Helper to store notification in database
+async function storeNotification(
+  userId: string,
+  title: string,
+  message: string,
+  type: 'success' | 'info' | 'warning' | 'error',
+  metadata?: Record<string, any>
+) {
+  try {
+    await supabase.from('user_notifications').insert({
+      user_id: userId,
+      title,
+      message,
+      type,
+      metadata: metadata || {}
+    });
+  } catch (error) {
+    console.error('Failed to store notification:', error);
+  }
+}
+
+export function useRealtimeNotifications({ studentId, userId, enabled = true }: UseRealtimeNotificationsProps) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!enabled || !studentId) return;
+
+    const authUserId = userId;
 
     // Create a single channel for all notifications
     const channel = supabase
@@ -44,12 +68,27 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
           if (data) {
             const venue = (data.venues as any)?.venue_name || 'Unknown venue';
             const course = (data.courses as any)?.course_code || 'Unknown course';
+            const courseName = (data.courses as any)?.course_name || '';
             const examDate = format(new Date(data.exam_date), 'PPP');
             
-            toast.success('Seat Assigned!', {
-              description: `You have been assigned seat ${data.seat_label} at ${venue} for ${course} on ${examDate}`,
+            const title = 'Seat Assigned!';
+            const message = `You have been assigned seat ${data.seat_label} at ${venue} for ${course} on ${examDate}`;
+            
+            toast.success(title, {
+              description: message,
               duration: 8000,
             });
+
+            // Store in database
+            if (authUserId) {
+              storeNotification(authUserId, title, message, 'success', {
+                seat_label: data.seat_label,
+                venue,
+                course,
+                course_name: courseName,
+                exam_date: data.exam_date
+              });
+            }
           }
         }
       )
@@ -80,10 +119,22 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
             const venue = (data.venues as any)?.venue_name || 'Unknown venue';
             const course = (data.courses as any)?.course_code || 'Unknown course';
             
-            toast.info('Seat Updated', {
-              description: `Your seat for ${course} has been changed to ${data.seat_label} at ${venue}`,
+            const title = 'Seat Updated';
+            const message = `Your seat for ${course} has been changed to ${data.seat_label} at ${venue}`;
+            
+            toast.info(title, {
+              description: message,
               duration: 6000,
             });
+
+            if (authUserId) {
+              storeNotification(authUserId, title, message, 'info', {
+                seat_label: data.seat_label,
+                venue,
+                course,
+                exam_date: data.exam_date
+              });
+            }
           }
         }
       )
@@ -118,10 +169,21 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
             if (courseData) {
               const examDate = format(new Date(payload.new.exam_date), 'PPP');
               
-              toast.success('New Exam Scheduled!', {
-                description: `${courseData.course_code} - ${courseData.course_name} is scheduled for ${examDate}`,
+              const title = 'New Exam Scheduled!';
+              const message = `${courseData.course_code} - ${courseData.course_name} is scheduled for ${examDate}`;
+              
+              toast.success(title, {
+                description: message,
                 duration: 8000,
               });
+
+              if (authUserId) {
+                storeNotification(authUserId, title, message, 'success', {
+                  course_code: courseData.course_code,
+                  course_name: courseData.course_name,
+                  exam_date: payload.new.exam_date
+                });
+              }
             }
           }
         }
@@ -160,15 +222,36 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
                 : 'unknown';
 
               if (payload.old?.exam_date !== payload.new.exam_date) {
-                toast.warning('Exam Date Changed!', {
-                  description: `${courseData.course_code} has been rescheduled from ${oldDate} to ${newDate}`,
+                const title = 'Exam Date Changed!';
+                const message = `${courseData.course_code} has been rescheduled from ${oldDate} to ${newDate}`;
+                
+                toast.warning(title, {
+                  description: message,
                   duration: 10000,
                 });
+
+                if (authUserId) {
+                  storeNotification(authUserId, title, message, 'warning', {
+                    course_code: courseData.course_code,
+                    old_date: payload.old?.exam_date,
+                    new_date: payload.new.exam_date
+                  });
+                }
               } else {
-                toast.info('Exam Details Updated', {
-                  description: `Details for ${courseData.course_code} exam on ${newDate} have been updated`,
+                const title = 'Exam Details Updated';
+                const message = `Details for ${courseData.course_code} exam on ${newDate} have been updated`;
+                
+                toast.info(title, {
+                  description: message,
                   duration: 6000,
                 });
+
+                if (authUserId) {
+                  storeNotification(authUserId, title, message, 'info', {
+                    course_code: courseData.course_code,
+                    exam_date: payload.new.exam_date
+                  });
+                }
               }
             }
           }
@@ -202,10 +285,19 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
                 .single();
 
               if (courseData) {
-                toast.error('Exam Cancelled', {
-                  description: `The scheduled exam for ${courseData.course_code} has been cancelled`,
+                const title = 'Exam Cancelled';
+                const message = `The scheduled exam for ${courseData.course_code} has been cancelled`;
+                
+                toast.error(title, {
+                  description: message,
                   duration: 8000,
                 });
+
+                if (authUserId) {
+                  storeNotification(authUserId, title, message, 'error', {
+                    course_code: courseData.course_code
+                  });
+                }
               }
             }
           }
@@ -222,7 +314,7 @@ export function useRealtimeNotifications({ studentId, enabled = true }: UseRealt
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [studentId, enabled]);
+  }, [studentId, userId, enabled]);
 
   return null;
 }
