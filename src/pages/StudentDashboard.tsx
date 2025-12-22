@@ -31,6 +31,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { Footer } from '@/components/Footer';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { getContrastColor } from '@/components/ThemeColorPicker';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -83,6 +84,12 @@ const StudentDashboard = () => {
   
   // Enable "/" keyboard shortcut to focus search
   useSearchShortcut(searchInputRef);
+
+  // Enable real-time notifications for seat assignments and datesheets
+  useRealtimeNotifications({
+    studentId: profile?.id,
+    enabled: !!profile?.id
+  });
 
   useEffect(() => {
     if (profile) {
