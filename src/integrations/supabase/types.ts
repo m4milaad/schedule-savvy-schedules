@@ -358,70 +358,6 @@ export type Database = {
         }
         Relationships: []
       }
-      seat_assignments: {
-        Row: {
-          column_number: number
-          course_id: string
-          created_at: string | null
-          exam_date: string
-          id: string
-          row_number: number
-          seat_label: string | null
-          semester_group: string | null
-          student_id: string
-          updated_at: string | null
-          venue_id: string
-        }
-        Insert: {
-          column_number: number
-          course_id: string
-          created_at?: string | null
-          exam_date: string
-          id?: string
-          row_number: number
-          seat_label?: string | null
-          semester_group?: string | null
-          student_id: string
-          updated_at?: string | null
-          venue_id: string
-        }
-        Update: {
-          column_number?: number
-          course_id?: string
-          created_at?: string | null
-          exam_date?: string
-          id?: string
-          row_number?: number
-          seat_label?: string | null
-          semester_group?: string | null
-          student_id?: string
-          updated_at?: string | null
-          venue_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "seat_assignments_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["course_id"]
-          },
-          {
-            foreignKeyName: "seat_assignments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["student_id"]
-          },
-          {
-            foreignKeyName: "seat_assignments_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["venue_id"]
-          },
-        ]
-      }
       sessions: {
         Row: {
           created_at: string | null
@@ -789,7 +725,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_orphaned_records: { Args: never; Returns: Json }
       create_realistic_student_enrollments: { Args: never; Returns: Json }
       get_exam_schedule_data: {
         Args: never
@@ -799,24 +734,6 @@ export type Database = {
           exam_date: string
           session_name: string
           venue_name: string
-        }[]
-      }
-      get_schedule_data: {
-        Args: {
-          p_course_code?: string
-          p_program_type?: string
-          p_semester?: number
-        }
-        Returns: {
-          assignment_id: string
-          course_code: string
-          course_name: string
-          gap_days: number
-          has_exam_scheduled: boolean
-          program_type: string
-          semester: number
-          teacher_code: string
-          teacher_name: string
         }[]
       }
       get_student_enrollment_info: {
@@ -840,19 +757,6 @@ export type Database = {
       is_approved_department_admin: {
         Args: { _user_id: string }
         Returns: boolean
-      }
-      manage_course_teacher_assignment: {
-        Args: {
-          p_action: string
-          p_course_code: string
-          p_course_name?: string
-          p_gap_days?: number
-          p_program_type?: string
-          p_semester?: number
-          p_teacher_code: string
-          p_teacher_name?: string
-        }
-        Returns: Json
       }
       manage_holiday: {
         Args: {
