@@ -37,12 +37,14 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     const [departments, setDepartments] = useState<Department[]>([]);
     const [newVenueName, setNewVenueName] = useState('');
     const [newVenueAddress, setNewVenueAddress] = useState('');
-    const [newVenueCapacity, setNewVenueCapacity] = useState('50');
+    const [newVenueRows, setNewVenueRows] = useState('4');
+    const [newVenueColumns, setNewVenueColumns] = useState('6');
     const [newVenueDeptId, setNewVenueDeptId] = useState<string>('');
     const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
     const [editVenueName, setEditVenueName] = useState('');
     const [editVenueAddress, setEditVenueAddress] = useState('');
-    const [editVenueCapacity, setEditVenueCapacity] = useState('');
+    const [editVenueRows, setEditVenueRows] = useState('4');
+    const [editVenueColumns, setEditVenueColumns] = useState('6');
     const [editVenueDeptId, setEditVenueDeptId] = useState<string>('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -118,13 +120,19 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             return;
         }
 
+        const rows = parseInt(newVenueRows) || 4;
+        const columns = parseInt(newVenueColumns) || 6;
+        const capacity = rows * columns;
+
         try {
             const { error } = await supabase
                 .from('venues')
                 .insert({
                     venue_name: newVenueName.trim(),
                     venue_address: newVenueAddress.trim() || null,
-                    venue_capacity: parseInt(newVenueCapacity) || 50,
+                    venue_capacity: capacity,
+                    rows_count: rows,
+                    columns_count: columns,
                     dept_id: newVenueDeptId || null
                 });
 
@@ -133,7 +141,8 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             toast.success('Venue added successfully');
             setNewVenueName('');
             setNewVenueAddress('');
-            setNewVenueCapacity('50');
+            setNewVenueRows('4');
+            setNewVenueColumns('6');
             setNewVenueDeptId('');
             setIsAddDialogOpen(false);
             onRefresh();
@@ -149,13 +158,19 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             return;
         }
 
+        const rows = parseInt(editVenueRows) || 4;
+        const columns = parseInt(editVenueColumns) || 6;
+        const capacity = rows * columns;
+
         try {
             const { error } = await supabase
                 .from('venues')
                 .update({
                     venue_name: editVenueName.trim(),
                     venue_address: editVenueAddress.trim() || null,
-                    venue_capacity: parseInt(editVenueCapacity) || 50,
+                    venue_capacity: capacity,
+                    rows_count: rows,
+                    columns_count: columns,
                     dept_id: editVenueDeptId || null
                 })
                 .eq('venue_id', editingVenue.venue_id);
@@ -204,7 +219,8 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
         setEditingVenue(venue);
         setEditVenueName(venue.venue_name);
         setEditVenueAddress(venue.venue_address || '');
-        setEditVenueCapacity(venue.venue_capacity.toString());
+        setEditVenueRows((venue.rows_count || 4).toString());
+        setEditVenueColumns((venue.columns_count || 6).toString());
         setEditVenueDeptId(venue.dept_id || '');
         setIsEditDialogOpen(true);
     };
@@ -301,15 +317,37 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                                         placeholder="Enter venue address"
                                     />
                                 </div>
-                                <div>
-                                    <Label htmlFor="venue-capacity">Capacity</Label>
-                                    <Input
-                                        id="venue-capacity"
-                                        type="number"
-                                        value={newVenueCapacity}
-                                        onChange={(e) => setNewVenueCapacity(e.target.value)}
-                                        placeholder="Enter venue capacity"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Label htmlFor="venue-rows">Rows</Label>
+                                        <Input
+                                            id="venue-rows"
+                                            type="number"
+                                            min="1"
+                                            value={newVenueRows}
+                                            onChange={(e) => setNewVenueRows(e.target.value)}
+                                            placeholder="4"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="venue-columns">Columns</Label>
+                                        <Input
+                                            id="venue-columns"
+                                            type="number"
+                                            min="1"
+                                            value={newVenueColumns}
+                                            onChange={(e) => setNewVenueColumns(e.target.value)}
+                                            placeholder="6"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-muted/50 rounded-lg">
+                                    <p className="text-sm text-muted-foreground">
+                                        Total Capacity: <span className="font-bold text-foreground">{(parseInt(newVenueRows) || 4) * (parseInt(newVenueColumns) || 6)} seats</span>
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Calculated as Rows × Columns
+                                    </p>
                                 </div>
                                 <Button onClick={handleAddVenue} className="w-full">Add Venue</Button>
                             </div>
@@ -448,15 +486,34 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                                 placeholder="Enter venue address"
                             />
                         </div>
-                        <div>
-                            <Label htmlFor="edit-venue-capacity">Capacity</Label>
-                            <Input
-                                id="edit-venue-capacity"
-                                type="number"
-                                value={editVenueCapacity}
-                                onChange={(e) => setEditVenueCapacity(e.target.value)}
-                                placeholder="Enter venue capacity"
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="edit-venue-rows">Rows</Label>
+                                <Input
+                                    id="edit-venue-rows"
+                                    type="number"
+                                    min="1"
+                                    value={editVenueRows}
+                                    onChange={(e) => setEditVenueRows(e.target.value)}
+                                    placeholder="4"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-venue-columns">Columns</Label>
+                                <Input
+                                    id="edit-venue-columns"
+                                    type="number"
+                                    min="1"
+                                    value={editVenueColumns}
+                                    onChange={(e) => setEditVenueColumns(e.target.value)}
+                                    placeholder="6"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-sm text-muted-foreground">
+                                Total Capacity: <span className="font-bold text-foreground">{(parseInt(editVenueRows) || 4) * (parseInt(editVenueColumns) || 6)} seats</span>
+                            </p>
                         </div>
                         <div className="flex gap-2">
                             <Button onClick={handleEditVenue} className="flex-1">Update Venue</Button>
