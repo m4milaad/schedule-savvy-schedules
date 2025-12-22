@@ -13,7 +13,9 @@ import {
   Trash2, 
   AlertCircle,
   CheckCircle2,
-  Building2
+  Building2,
+  Download,
+  FileDown
 } from 'lucide-react';
 import { useSeatingAssignment } from '@/hooks/useSeatingAssignment';
 import { VenueSeatingPlan, StudentSeat } from '@/utils/seatingAlgorithm';
@@ -30,6 +32,8 @@ import {
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { exportAllVenuesToPdf, exportSingleVenueToPdf } from '@/utils/seatingPdfExport';
+import { toast } from 'sonner';
 
 interface SeatingArrangementProps {
   examDates: string[];
@@ -66,6 +70,28 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
   const handleSave = () => {
     if (generatedPlan?.venues) {
       save(generatedPlan.venues);
+    }
+  };
+
+  const handleExportAll = () => {
+    if (selectedDate && displayVenues.length > 0) {
+      try {
+        const filename = exportAllVenuesToPdf(displayVenues, selectedDate);
+        toast.success(`Exported seating chart: ${filename}`);
+      } catch (error) {
+        toast.error('Failed to export PDF');
+      }
+    }
+  };
+
+  const handleExportVenue = () => {
+    if (selectedDate && currentVenue) {
+      try {
+        const filename = exportSingleVenueToPdf(currentVenue, selectedDate);
+        toast.success(`Exported: ${filename}`);
+      } catch (error) {
+        toast.error('Failed to export PDF');
+      }
     }
   };
 
@@ -171,6 +197,13 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
                   Cancel
                 </Button>
               )}
+
+              {displayVenues.length > 0 && !generatedPlan && (
+                <Button variant="outline" onClick={handleExportAll}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export All
+                </Button>
+              )}
             </div>
           </div>
 
@@ -263,20 +296,28 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
       {selectedDate && displayVenues.length > 0 && (
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader>
-            <div className="flex flex-wrap gap-2">
-              {displayVenues.map(venue => (
-                <Button
-                  key={venue.venue_id}
-                  variant={currentVenue?.venue_id === venue.venue_id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedVenue(venue.venue_id)}
-                >
-                  {venue.venue_name}
-                  <Badge variant="secondary" className="ml-2">
-                    {venue.seats.flat().filter(s => s !== null).length}
-                  </Badge>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-2">
+                {displayVenues.map(venue => (
+                  <Button
+                    key={venue.venue_id}
+                    variant={currentVenue?.venue_id === venue.venue_id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedVenue(venue.venue_id)}
+                  >
+                    {venue.venue_name}
+                    <Badge variant="secondary" className="ml-2">
+                      {venue.seats.flat().filter(s => s !== null).length}
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+              {currentVenue && (
+                <Button variant="outline" size="sm" onClick={handleExportVenue}>
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export This Venue
                 </Button>
-              ))}
+              )}
             </div>
           </CardHeader>
 
