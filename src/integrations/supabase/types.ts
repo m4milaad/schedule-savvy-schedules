@@ -530,6 +530,13 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["course_id"]
           },
+          {
+            foreignKeyName: "student_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
         ]
       }
       students: {
