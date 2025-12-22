@@ -358,6 +358,67 @@ export type Database = {
         }
         Relationships: []
       }
+      seat_assignments: {
+        Row: {
+          column_number: number
+          course_id: string
+          created_at: string | null
+          exam_date: string
+          id: string
+          row_number: number
+          seat_label: string | null
+          student_id: string
+          updated_at: string | null
+          venue_id: string
+        }
+        Insert: {
+          column_number: number
+          course_id: string
+          created_at?: string | null
+          exam_date: string
+          id?: string
+          row_number: number
+          seat_label?: string | null
+          student_id: string
+          updated_at?: string | null
+          venue_id: string
+        }
+        Update: {
+          column_number?: number
+          course_id?: string
+          created_at?: string | null
+          exam_date?: string
+          id?: string
+          row_number?: number
+          seat_label?: string | null
+          student_id?: string
+          updated_at?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "seat_assignments_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["venue_id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string | null

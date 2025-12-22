@@ -17,6 +17,7 @@ import { VenuesTab } from "@/components/admin/VenuesTab";
 import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
+import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import {
@@ -36,6 +37,7 @@ const AdminDashboard: React.FC = () => {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [holidays, setHolidays] = useState<Holiday[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
+    const [examDates, setExamDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
@@ -265,7 +267,16 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    if (loading) {
+    const loadExamDates = async () => {
+        const { data } = await supabase
+            .from('datesheets')
+            .select('exam_date')
+            .order('exam_date');
+        if (data) {
+            const uniqueDates = [...new Set(data.map(d => d.exam_date))];
+            setExamDates(uniqueDates);
+        }
+    };
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
@@ -375,6 +386,7 @@ const AdminDashboard: React.FC = () => {
                                 <SelectItem value="sessions">Sessions</SelectItem>
                                 <SelectItem value="holidays">Holidays</SelectItem>
                                 <SelectItem value="students">Students</SelectItem>
+                                <SelectItem value="seating">Seating</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -439,6 +451,12 @@ const AdminDashboard: React.FC = () => {
                             >
                                 Students
                             </TabsTrigger>
+                            <TabsTrigger 
+                                value="seating"
+                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
+                            >
+                                Seating
+                            </TabsTrigger>
                         </TabsList>
                         </div>
                     </Tabs>
@@ -454,6 +472,7 @@ const AdminDashboard: React.FC = () => {
                     {activeTab === "sessions" && <SessionsTab sessions={sessions} onRefresh={loadSessions} />}
                     {activeTab === "holidays" && <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />}
                     {activeTab === "students" && <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />}
+                    {activeTab === "seating" && <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />}
                 </div>
             </div>
 
