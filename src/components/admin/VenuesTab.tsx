@@ -18,15 +18,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Upload, Grid3X3, Building2, Database } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload, Building2, Database } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
-import { SeatingLayoutEditor } from "./SeatingLayoutEditor";
-import { SeatingExportPanel } from "./SeatingExportPanel";
 import { generateDummyVenues } from "@/utils/dummyVenueData";
 
 interface VenuesTabProps {
@@ -50,7 +48,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-    const [layoutEditorVenue, setLayoutEditorVenue] = useState<Venue | null>(null);
     const [generatingDummy, setGeneratingDummy] = useState(false);
 
     // Load departments on mount
@@ -234,7 +231,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     return (
         <div className="space-y-6">
-        <SeatingExportPanel userDeptId={userDeptId} />
         <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
@@ -373,14 +369,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setLayoutEditorVenue(venue)}
-                                    title="Configure Seating Layout"
-                                >
-                                    <Grid3X3 className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
                                     onClick={() => openEditDialog(venue)}
                                 >
                                     <Edit2 className="w-4 h-4" />
@@ -512,27 +500,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            {/* Seating Layout Editor Dialog */}
-            <Dialog open={!!layoutEditorVenue} onOpenChange={(open) => !open && setLayoutEditorVenue(null)}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    {layoutEditorVenue && (
-                        <SeatingLayoutEditor
-                            venue={{
-                                venue_id: layoutEditorVenue.venue_id,
-                                venue_name: layoutEditorVenue.venue_name,
-                                rows_count: layoutEditorVenue.rows_count || 6,
-                                columns_count: layoutEditorVenue.columns_count || 4,
-                                joined_columns: layoutEditorVenue.joined_rows || []
-                            }}
-                            onSave={() => {
-                                setLayoutEditorVenue(null);
-                                onRefresh();
-                            }}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
         </Card>
         </div>
     );
