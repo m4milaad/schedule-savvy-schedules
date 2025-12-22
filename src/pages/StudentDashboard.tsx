@@ -54,8 +54,12 @@ interface ExamSchedule {
   exam_date: string;
   course_code: string;
   course_name: string;
+  course_id: string;
   venue_name: string;
   session_name: string;
+  seat_label?: string;
+  row_number?: number;
+  column_number?: number;
 }
 
 const StudentDashboard = () => {
@@ -261,7 +265,9 @@ const StudentDashboard = () => {
       .from('datesheets')
       .select(`
         exam_date,
+        course_id,
         courses (
+          course_id,
           course_code,
           course_name
         ),
@@ -280,13 +286,40 @@ const StudentDashboard = () => {
       return;
     }
 
-    const transformedSchedule = (data || []).map((item: any) => ({
-      exam_date: item.exam_date,
-      course_code: item.courses?.course_code || '',
-      course_name: item.courses?.course_name || '',
-      venue_name: item.venues?.venue_name || 'TBD',
-      session_name: item.sessions?.session_name || 'Current Session'
-    }));
+    // Get seat assignments for this student
+    const { data: seatData } = await supabase
+      .from('seat_assignments')
+      .select('exam_date, course_id, seat_label, row_number, column_number')
+      .eq('student_id', profile.id);
+
+    // Create a map of seat assignments by exam_date + course_id
+    const seatMap = new Map<string, { seat_label: string; row_number: number; column_number: number }>();
+    (seatData || []).forEach((seat: any) => {
+      const key = `${seat.exam_date}-${seat.course_id}`;
+      seatMap.set(key, {
+        seat_label: seat.seat_label,
+        row_number: seat.row_number,
+        column_number: seat.column_number
+      });
+    });
+
+    const transformedSchedule = (data || []).map((item: any) => {
+      const courseId = item.course_id || item.courses?.course_id;
+      const seatKey = `${item.exam_date}-${courseId}`;
+      const seatInfo = seatMap.get(seatKey);
+      
+      return {
+        exam_date: item.exam_date,
+        course_id: courseId,
+        course_code: item.courses?.course_code || '',
+        course_name: item.courses?.course_name || '',
+        venue_name: item.venues?.venue_name || 'TBD',
+        session_name: item.sessions?.session_name || 'Current Session',
+        seat_label: seatInfo?.seat_label,
+        row_number: seatInfo?.row_number,
+        column_number: seatInfo?.column_number
+      };
+    });
 
     setExamSchedule(transformedSchedule);
   };
@@ -829,7 +862,15 @@ const StudentDashboard = () => {
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.venue_name}</TableCell>
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.session_name}</TableCell>
                               <TableCell className="dark:text-gray-300 transition-colors duration-300">
-                                <Badge variant="outline">{exam.session_name}</Badge>
+                                {exam.seat_label ? (
+                                  <Badge className="bg-primary/10 text-primary border-primary/30">
+                                    {exam.seat_label}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground">
+                                    Not Assigned
+                                  </Badge>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -868,14 +909,22 @@ const StudentDashboard = () => {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex justify-between items-center text-xs pt-2 border-t">
+                              <div className="flex flex-wrap justify-between items-center text-xs pt-2 border-t gap-2">
                                 <div className="flex items-center gap-1">
                                   <MapPin className="w-3 h-3 text-muted-foreground" />
                                   <span className="text-muted-foreground truncate">{exam.venue_name}</span>
                                 </div>
-                                <Badge variant="outline" className="text-xs flex-shrink-0 ml-2">
-                                  {exam.session_name}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  {exam.seat_label ? (
+                                    <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">
+                                      Seat: {exam.seat_label}
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs text-muted-foreground">
+                                      No Seat
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </CardContent>
