@@ -32,6 +32,7 @@ import { Footer } from '@/components/Footer';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { getContrastColor } from '@/components/ThemeColorPicker';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -88,7 +89,8 @@ const StudentDashboard = () => {
   // Enable real-time notifications for seat assignments and datesheets
   useRealtimeNotifications({
     studentId: profile?.id,
-    enabled: !!profile?.id
+    userId: user?.id,
+    enabled: !!profile?.id && !!user?.id
   });
 
   useEffect(() => {
@@ -509,7 +511,8 @@ const StudentDashboard = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-wrap md:flex-nowrap">
+                <div className="flex gap-2 flex-wrap md:flex-nowrap items-center">
+                  <NotificationCenter userId={user?.id} />
                   <ThemeToggle />
                     <Button 
                       onClick={() => setShowProfileDialog(true)}
