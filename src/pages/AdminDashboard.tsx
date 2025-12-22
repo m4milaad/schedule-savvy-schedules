@@ -132,6 +132,7 @@ const AdminDashboard: React.FC = () => {
                 loadSessions(),
                 loadHolidays(),
                 loadStudents(currentRole, currentProfile),
+                loadExamDates(),
             ]);
         } catch (err) {
             console.error("Error loading data:", err);
@@ -277,6 +278,8 @@ const AdminDashboard: React.FC = () => {
             setExamDates(uniqueDates);
         }
     };
+
+    if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
