@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Trash2, UserPlus, ArrowLeft } from 'lucide-react';
+import { Shield, Trash2, UserPlus, ArrowLeft, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface AdminUser {
@@ -24,11 +24,12 @@ interface AdminUser {
 
 const ManageAdmins = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [teachers, setTeachers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'admin' | 'department_admin'>('department_admin');
+  const [role, setRole] = useState<'admin' | 'department_admin' | 'teacher'>('department_admin');
   const [deptId, setDeptId] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
   const [creating, setCreating] = useState(false);
@@ -37,10 +38,14 @@ const ManageAdmins = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadAdmins();
-    loadDepartments();
-    loadCurrentUser();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([loadAdmins(), loadTeachers(), loadDepartments(), loadCurrentUser()]);
+    setLoading(false);
+  };
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -65,8 +70,6 @@ const ManageAdmins = () => {
 
   const loadAdmins = async () => {
     try {
-      setLoading(true);
-      
       // Get all users with admin roles
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
@@ -118,8 +121,57 @@ const ManageAdmins = () => {
         description: error.message || "Failed to load admin users",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const loadTeachers = async () => {
+    try {
+      // Get all users with teacher role
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'teacher');
+
+      if (roleError) throw roleError;
+
+      if (!roleData || roleData.length === 0) {
+        setTeachers([]);
+        return;
+      }
+
+      // Get profile info for these users with department
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          user_id, 
+          full_name, 
+          email, 
+          is_approved, 
+          dept_id,
+          departments:dept_id (dept_name)
+        `)
+        .in('user_id', roleData.map(r => r.user_id));
+
+      if (profileError) throw profileError;
+
+      // Combine the data
+      const combinedData = roleData.map(role => {
+        const profile = profileData?.find(p => p.user_id === role.user_id);
+        return {
+          user_id: role.user_id,
+          role: role.role,
+          email: profile?.email || 'N/A',
+          full_name: profile?.full_name || 'N/A',
+          created_at: new Date().toISOString(),
+          is_approved: profile?.is_approved ?? false,
+          dept_id: profile?.dept_id,
+          dept_name: (profile as any)?.departments?.dept_name || 'N/A',
+        };
+      });
+
+      setTeachers(combinedData);
+    } catch (error: any) {
+      console.error('Error loading teachers:', error);
     }
   };
 
@@ -135,10 +187,10 @@ const ManageAdmins = () => {
       return;
     }
 
-    if (role === 'department_admin' && !deptId) {
+    if ((role === 'department_admin' || role === 'teacher') && !deptId) {
       toast({
         title: "Error",
-        description: "Please select a department for department admin",
+        description: `Please select a department for ${role === 'teacher' ? 'teacher' : 'department admin'}`,
         variant: "destructive",
       });
       return;
@@ -165,7 +217,7 @@ const ManageAdmins = () => {
           data: {
             full_name: fullName.trim(),
             user_type: role,
-            ...(role === 'department_admin' && { dept_id: deptId }),
+            ...(role !== 'admin' && { dept_id: deptId }),
           }
         }
       });
@@ -173,12 +225,11 @@ const ManageAdmins = () => {
       if (authError) throw authError;
 
       // The triggers will automatically create the profile and user_role
-      // But we need to wait a moment for them to complete
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
         title: "Success",
-        description: `Admin user created successfully. They will receive a confirmation email.`,
+        description: `${role === 'teacher' ? 'Teacher' : 'Admin'} user created successfully. They will receive a confirmation email.`,
       });
 
       // Reset form
@@ -188,13 +239,13 @@ const ManageAdmins = () => {
       setRole('department_admin');
       setDeptId('');
 
-      // Reload admin list
-      loadAdmins();
+      // Reload data
+      loadData();
     } catch (error: any) {
-      console.error('Error creating admin:', error);
+      console.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create admin user",
+        description: error.message || "Failed to create user",
         variant: "destructive",
       });
     } finally {
@@ -202,7 +253,7 @@ const ManageAdmins = () => {
     }
   };
 
-  const approveAdmin = async (userId: string, full_name: string) => {
+  const approveUser = async (userId: string, full_name: string, userType: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -213,21 +264,21 @@ const ManageAdmins = () => {
 
       toast({
         title: "Success",
-        description: `${full_name} has been approved as department admin`,
+        description: `${full_name} has been approved as ${userType}`,
       });
 
-      loadAdmins();
+      loadData();
     } catch (error: any) {
-      console.error('Error approving admin:', error);
+      console.error('Error approving user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to approve admin",
+        description: error.message || "Failed to approve user",
         variant: "destructive",
       });
     }
   };
 
-  const revokeAdmin = async (userId: string, full_name: string) => {
+  const revokeUser = async (userId: string, full_name: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
@@ -241,29 +292,30 @@ const ManageAdmins = () => {
         description: `${full_name}'s approval has been revoked`,
       });
 
-      loadAdmins();
+      loadData();
     } catch (error: any) {
-      console.error('Error revoking admin:', error);
+      console.error('Error revoking user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to revoke admin",
+        description: error.message || "Failed to revoke user",
         variant: "destructive",
       });
     }
   };
 
-  const removeAdmin = async (userId: string, email: string) => {
-    if (!confirm(`Are you sure you want to remove admin access from ${email}?`)) {
+  const removeUser = async (userId: string, email: string, roleToRemove: string) => {
+    if (!confirm(`Are you sure you want to remove ${roleToRemove} access from ${email}?`)) {
       return;
     }
 
     try {
-      // Remove admin role
+      // Remove role - cast to the expected type
+      const roleValue = roleToRemove as 'admin' | 'department_admin' | 'student' | 'teacher';
       const { error: roleError } = await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
-        .in('role', ['admin', 'department_admin']);
+        .eq('role', roleValue);
 
       if (roleError) throw roleError;
 
@@ -277,18 +329,97 @@ const ManageAdmins = () => {
 
       toast({
         title: "Success",
-        description: "Admin access removed successfully",
+        description: `${roleToRemove} access removed successfully`,
       });
 
-      loadAdmins();
+      loadData();
     } catch (error: any) {
-      console.error('Error removing admin:', error);
+      console.error('Error removing user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to remove admin access",
+        description: error.message || "Failed to remove access",
         variant: "destructive",
       });
     }
+  };
+
+  const renderUserList = (users: AdminUser[], userType: 'admin' | 'teacher') => {
+    const filteredUsers = users.filter(user => user.user_id !== currentUserId);
+    
+    if (filteredUsers.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          {userType === 'admin' ? (
+            <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          ) : (
+            <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          )}
+          <p>No {userType === 'admin' ? 'admin' : 'teacher'} users found</p>
+          <p className="text-sm mt-2">Create one using the form</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3 max-h-96 overflow-y-auto">
+        {filteredUsers.map((user) => (
+          <div
+            key={user.user_id}
+            className="flex items-center justify-between p-3 border rounded-lg bg-card"
+          >
+            <div className="flex-1">
+              <div className="font-medium">{user.full_name}</div>
+              <div className="text-sm text-muted-foreground">{user.email}</div>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <Badge variant="secondary">
+                  {user.role === 'admin' ? 'Super Admin' : user.role === 'department_admin' ? 'Department Admin' : 'Teacher'}
+                </Badge>
+                {user.role !== 'admin' && (
+                  <>
+                    <Badge variant="outline">{user.dept_name}</Badge>
+                    {user.is_approved ? (
+                      <Badge variant="default" className="bg-green-600">Approved</Badge>
+                    ) : (
+                      <Badge variant="destructive">Pending</Badge>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {user.role !== 'admin' && !user.is_approved && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => approveUser(user.user_id, user.full_name, user.role === 'department_admin' ? 'department admin' : 'teacher')}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Approve
+                </Button>
+              )}
+              {user.role !== 'admin' && user.is_approved && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => revokeUser(user.user_id, user.full_name)}
+                  className="text-orange-600 hover:text-orange-700 border-orange-300"
+                >
+                  Revoke
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeUser(user.user_id, user.email, user.role)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -306,15 +437,15 @@ const ManageAdmins = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Create Admin Form */}
+          {/* Create User Form */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
-                Create Admin User
+                Create User
               </CardTitle>
               <CardDescription>
-                Add new admin or department admin users to the system
+                Add new admin, department admin, or teacher users
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -337,7 +468,7 @@ const ManageAdmins = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@cukashmir.ac.in"
+                    placeholder="user@cukashmir.ac.in"
                     required
                   />
                 </div>
@@ -363,11 +494,12 @@ const ManageAdmins = () => {
                     <SelectContent>
                       <SelectItem value="department_admin">Department Admin</SelectItem>
                       <SelectItem value="admin">Super Admin</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {role === 'department_admin' && (
+                {(role === 'department_admin' || role === 'teacher') && (
                   <div className="space-y-2">
                     <Label htmlFor="department">Department *</Label>
                     <Select value={deptId} onValueChange={setDeptId}>
@@ -386,96 +518,48 @@ const ManageAdmins = () => {
                 )}
 
                 <Button type="submit" className="w-full" disabled={creating}>
-                  {creating ? "Creating..." : "Create Admin User"}
+                  {creating ? "Creating..." : `Create ${role === 'teacher' ? 'Teacher' : 'Admin'} User`}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* Admin List */}
+          {/* User Lists */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5" />
-                Admin Users
+                Manage Users
               </CardTitle>
               <CardDescription>
-                Manage existing admin and department admin users
+                Approve, revoke, or remove admin and teacher access
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p>Loading admins...</p>
-                </div>
-              ) : admins.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No admin users found</p>
-                  <p className="text-sm mt-2">Create the first admin using the form</p>
+                  <p>Loading users...</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {admins
-                    .filter(admin => admin.user_id !== currentUserId)
-                    .map((admin) => (
-                    <div
-                      key={admin.user_id}
-                      className="flex items-center justify-between p-3 border rounded-lg bg-card"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{admin.full_name}</div>
-                        <div className="text-sm text-muted-foreground">{admin.email}</div>
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          <Badge variant="secondary">
-                            {admin.role === 'admin' ? 'Super Admin' : 'Department Admin'}
-                          </Badge>
-                          {admin.role === 'department_admin' && (
-                            <>
-                              <Badge variant="outline">{admin.dept_name}</Badge>
-                              {admin.is_approved ? (
-                                <Badge variant="default" className="bg-green-600">Approved</Badge>
-                              ) : (
-                                <Badge variant="destructive">Pending</Badge>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {admin.role === 'department_admin' && !admin.is_approved && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => approveAdmin(admin.user_id, admin.full_name)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Approve
-                          </Button>
-                        )}
-                        {admin.role === 'department_admin' && admin.is_approved && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => revokeAdmin(admin.user_id, admin.full_name)}
-                            className="text-orange-600 hover:text-orange-700 border-orange-300"
-                          >
-                            Revoke
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeAdmin(admin.user_id, admin.email)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Tabs defaultValue="admins">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="admins" className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Admins ({admins.filter(a => a.user_id !== currentUserId).length})
+                    </TabsTrigger>
+                    <TabsTrigger value="teachers" className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4" />
+                      Teachers ({teachers.length})
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="admins">
+                    {renderUserList(admins, 'admin')}
+                  </TabsContent>
+                  <TabsContent value="teachers">
+                    {renderUserList(teachers, 'teacher')}
+                  </TabsContent>
+                </Tabs>
               )}
             </CardContent>
           </Card>
@@ -484,14 +568,17 @@ const ManageAdmins = () => {
         {/* Info Card */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Important Information</CardTitle>
+            <CardTitle>Role Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
               <strong>Super Admin:</strong> Full system access to all departments and settings
             </p>
             <p>
-              <strong>Department Admin:</strong> Department-specific admin access
+              <strong>Department Admin:</strong> Department-specific admin access (requires approval)
+            </p>
+            <p>
+              <strong>Teacher:</strong> Can manage courses, marks, attendance, assignments, and resources (requires approval)
             </p>
           </CardContent>
         </Card>
