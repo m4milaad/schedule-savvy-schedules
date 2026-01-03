@@ -630,6 +630,12 @@ src/
 - 🎓 Institution: Central University of Kashmir
 - 💼 Role: Full Stack Developer
 
+**Nimra Wani**
+- 🌐 Portfolio: [Nimra Wani](https://nimrawani.vercel.app/)
+- 📧 Email: nimrawani04@gmail.com
+- 🎓 Institution: Central University of Kashmir
+- 💼 Role: Full Stack Developer
+
 ### Development Timeline
 - **Initial Development**: June 2024
 - **Beta Release**: October 2024
