@@ -337,14 +337,14 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         Students ({students.length})
                     </CardTitle>
                     <div className="flex flex-wrap gap-2">
-                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm" className="transition-all duration-300 hover:scale-105">
+                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                             <Upload className="w-4 h-4 mr-2" />
                             <span className="hidden sm:inline">Bulk Upload</span>
                             <span className="sm:hidden">Upload</span>
                         </Button>
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button onClick={() => resetForm()} size="sm" className="transition-all duration-300 hover:scale-105">
+                                <Button onClick={() => resetForm()} size="sm">
                                     <Plus className="w-4 h-4 mr-2" />
                                     <span className="hidden sm:inline">Add Student</span>
                                     <span className="sm:hidden">Add</span>
@@ -656,10 +656,10 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <Button type="submit" className="flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                            <Button type="submit" className="flex-1">
                                 {editingStudent ? 'Update' : 'Add'} Student
                             </Button>
-                            <Button type="button" variant="outline" onClick={resetForm} className="transition-all duration-300 hover:scale-105">
+                            <Button type="button" variant="outline" onClick={resetForm}>
                                 Cancel
                             </Button>
                         </div>
