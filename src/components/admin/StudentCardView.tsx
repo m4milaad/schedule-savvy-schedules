@@ -48,7 +48,7 @@ export const StudentCardView: React.FC<StudentCardViewProps> = ({
   onDelete,
 }) => {
   return (
-    <Card className="transition-all duration-300 hover:shadow-lg">
+    <Card className="">
       <CardContent className="p-4 space-y-3">
         <div className="flex justify-between items-start">
           <div className="flex-1">

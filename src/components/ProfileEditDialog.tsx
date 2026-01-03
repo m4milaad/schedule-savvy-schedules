@@ -303,7 +303,7 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
           <div className="flex gap-2 pt-4">
             <Button 
               type="submit" 
-              className="flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg" 
+              className="flex-1" 
               disabled={loading}
             >
               {loading ? 'Updating...' : 'Update Profile'}
@@ -311,8 +311,7 @@ export const ProfileEditDialog: React.FC<ProfileEditDialogProps> = ({
             <Button 
               type="button" 
               variant="outline" 
-              onClick={onClose} 
-              className="transition-all duration-300 hover:scale-105"
+              onClick={onClose}
             >
               Cancel
             </Button>

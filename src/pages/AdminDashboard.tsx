@@ -338,7 +338,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                         <div className="text-center md:text-left">
                             <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
-                                <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10 transition-transform hover:scale-110" />
+                                <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10" />
                                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
                             </div>
                             <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>

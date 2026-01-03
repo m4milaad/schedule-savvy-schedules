@@ -271,7 +271,7 @@ const Auth = () => {
             <img
               src="/favicon.ico"
               alt="CUK Logo"
-              className="w-16 h-16 mx-auto mb-4 transition-transform duration-300 hover:scale-110"
+              className="w-16 h-16 mx-auto mb-4"
             />
           </div>
           <h1 className="text-3xl font-bold text-foreground transition-colors duration-300">
