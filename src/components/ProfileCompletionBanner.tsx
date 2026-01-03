@@ -45,7 +45,7 @@ export const ProfileCompletionBanner: React.FC<ProfileCompletionBannerProps> = (
               <Button 
                 onClick={onComplete}
                 size="sm"
-                className="bg-orange-600 hover:bg-orange-700 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                className="bg-orange-600 hover:bg-orange-700 text-white"
               >
                 Complete Profile
               </Button>
@@ -55,7 +55,7 @@ export const ProfileCompletionBanner: React.FC<ProfileCompletionBannerProps> = (
             variant="ghost"
             size="sm"
             onClick={onDismiss}
-            className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 transition-all duration-300 hover:scale-110"
+            className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
           >
             <X className="w-4 h-4" />
           </Button>
