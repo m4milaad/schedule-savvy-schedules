@@ -39,6 +39,7 @@ interface AvailableCourse {
   semester: number;
   course_type: string;
   dept_id: string;
+  dept_name?: string;
   teacher_name?: string;
 }
 
@@ -102,7 +103,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   const loadAvailableCourses = async () => {
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select(`
+        *,
+        departments:dept_id (
+          dept_name
+        )
+      `)
       .order('course_code');
 
     if (error) {
@@ -110,7 +116,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       return;
     }
 
-    setAvailableCourses(data || []);
+    const transformed = (data || []).map((c: any) => ({
+      ...c,
+      dept_name: c.departments?.dept_name || 'General'
+    }));
+
+    setAvailableCourses(transformed);
   };
 
   const loadGradesAndAttendance = async () => {
@@ -385,7 +396,10 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                     <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
                       <CardContent className="pt-4">
                         <div className="mb-3">
-                          <Badge variant="outline" className="mb-1">{course.course_code}</Badge>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Badge variant="outline">{course.course_code}</Badge>
+                            <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+                          </div>
                           <h3 className="font-semibold text-sm">{course.course_name}</h3>
                           <p className="text-xs text-muted-foreground">
                             Semester {course.semester} • {course.course_credits} Credits
