@@ -25,7 +25,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [userType, setUserType] = useState<'student' | 'department_admin' | 'admin'>('student');
+  const [userType, setUserType] = useState<'student' | 'department_admin' | 'admin' | 'teacher'>('student');
   const [deptId, setDeptId] = useState('');
   const [enrollmentNo, setEnrollmentNo] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -53,6 +53,9 @@ const Auth = () => {
           break;
         case 'department_admin':
           navigate('/admin-dashboard');
+          break;
+        case 'teacher':
+          navigate('/teacher-dashboard');
           break;
         case 'student':
           navigate('/');
@@ -195,6 +198,15 @@ const Auth = () => {
           return;
         }
 
+        if (userType === 'teacher' && !deptId) {
+          toast({
+            title: "Error",
+            description: "Department selection is required for teachers",
+            variant: "destructive",
+          });
+          return;
+        }
+
         if (userType === 'admin' && !deptId) {
           toast({
             title: "Error",
@@ -207,17 +219,17 @@ const Auth = () => {
         const userData = {
           full_name: fullName.trim(),
           user_type: userType,
-          ...(userType === 'department_admin' && { dept_id: deptId }),
+          ...((userType === 'department_admin' || userType === 'teacher') && { dept_id: deptId }),
           ...(userType === 'student' && { student_enrollment_no: enrollmentNo.trim() }),
         };
 
         await signUp(email, password, userData);
         
-        // Show special message for department admins
-        if (userType === 'department_admin') {
+        // Show special message for department admins and teachers
+        if (userType === 'department_admin' || userType === 'teacher') {
           toast({
             title: "Account Created - Pending Approval",
-            description: "Your department admin account has been created but requires approval from a super administrator before you can log in.",
+            description: `Your ${userType === 'teacher' ? 'teacher' : 'department admin'} account has been created but requires approval from an administrator before you can log in.`,
             duration: 10000,
           });
         }
@@ -376,12 +388,13 @@ const Auth = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="user-type" className="dark:text-gray-300 transition-colors duration-300">Account Type</Label>
-                    <Select value={userType} onValueChange={(value: 'student' | 'department_admin' | 'admin') => setUserType(value)}>
+                    <Select value={userType} onValueChange={(value: 'student' | 'department_admin' | 'admin' | 'teacher') => setUserType(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
+                        <SelectItem value="teacher">Teacher</SelectItem>
                         <SelectItem value="department_admin">Department Admin</SelectItem>
                         <SelectItem value="admin">Administrator</SelectItem>
                       </SelectContent>
@@ -403,7 +416,7 @@ const Auth = () => {
                     </div>
                   )}
 
-                  {(userType === 'department_admin' || userType === 'admin') && (
+                  {(userType === 'department_admin' || userType === 'admin' || userType === 'teacher') && (
                     <div className="space-y-2">
                       <Label htmlFor="department" className="dark:text-gray-300 transition-colors duration-300">Department</Label>
                       <Select value={deptId} onValueChange={setDeptId} disabled={loadingDepartments}>
