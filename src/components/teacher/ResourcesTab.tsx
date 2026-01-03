@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File } from 'lucide-react';
+import { FolderOpen, Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';
 
 interface ResourcesTabProps {
   teacherId: string;
@@ -41,6 +42,9 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Form state
@@ -50,6 +54,10 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
   const [resourceType, setResourceType] = useState('document');
   const [accessLevel, setAccessLevel] = useState('enrolled_students');
   const [fileUrl, setFileUrl] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [fileSize, setFileSize] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadComplete, setUploadComplete] = useState(false);
 
   useEffect(() => {
     loadResources();
@@ -87,8 +95,81 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     setResourceType('document');
     setAccessLevel('enrolled_students');
     setFileUrl('');
+    setFileName('');
+    setFileSize(0);
+    setSelectedFile(null);
+    setUploadComplete(false);
     setEditingResource(null);
     setShowForm(false);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit for resources
+        toast({
+          title: 'Error',
+          description: 'File size must be less than 50MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setSelectedFile(file);
+      setFileName(file.name);
+      setFileSize(file.size);
+      // Auto-detect resource type based on file extension
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (['pdf', 'doc', 'docx'].includes(ext || '')) {
+        setResourceType('document');
+      } else if (['ppt', 'pptx'].includes(ext || '')) {
+        setResourceType('presentation');
+      } else if (['mp4', 'mov', 'avi', 'webm'].includes(ext || '')) {
+        setResourceType('video_tutorial');
+      }
+    }
+  };
+
+  const uploadFile = async (): Promise<string | null> => {
+    if (!selectedFile) return null;
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const fileExt = selectedFile.name.split('.').pop();
+      const uniqueFileName = `${teacherId}/${courseId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
+      }, 100);
+
+      const { data, error } = await supabase.storage
+        .from('resources')
+        .upload(uniqueFileName, selectedFile);
+
+      clearInterval(progressInterval);
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('resources')
+        .getPublicUrl(uniqueFileName);
+
+      setUploadProgress(100);
+      setUploadComplete(true);
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload Error',
+        description: error.message || 'Failed to upload file',
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,6 +185,22 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     }
 
     try {
+      let finalFileUrl = fileUrl;
+      let finalFileName = fileName;
+      let finalFileSize = fileSize;
+
+      // Upload file if selected
+      if (selectedFile && !uploadComplete) {
+        const uploadedUrl = await uploadFile();
+        if (uploadedUrl) {
+          finalFileUrl = uploadedUrl;
+          finalFileName = selectedFile.name;
+          finalFileSize = selectedFile.size;
+        } else {
+          return; // Upload failed
+        }
+      }
+
       const resourceData = {
         teacher_id: teacherId,
         title: title.trim(),
@@ -111,8 +208,10 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
         course_id: courseId,
         resource_type: resourceType,
         access_level: accessLevel,
-        file_url: fileUrl,
-        file_name: title.trim(),
+        file_url: finalFileUrl,
+        file_name: finalFileName || title.trim(),
+        file_size: finalFileSize,
+        file_type: selectedFile?.type || '',
       };
 
       if (editingResource) {
@@ -151,6 +250,8 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     setResourceType(resource.resource_type);
     setAccessLevel(resource.access_level);
     setFileUrl(resource.file_url || '');
+    setFileName(resource.file_name || '');
+    setFileSize(resource.file_size || 0);
     setShowForm(true);
   };
 
@@ -281,17 +382,87 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
                 </div>
               </div>
 
+              {/* File Upload Section */}
               <div className="space-y-2">
-                <Label htmlFor="fileUrl">File URL (External Link)</Label>
+                <Label>Upload File</Label>
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    uploading ? 'border-primary bg-primary/5' : uploadComplete ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'hover:border-primary'
+                  }`}
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                >
+                  {uploading ? (
+                    <div className="space-y-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                      <p className="text-sm text-muted-foreground">Uploading {fileName}...</p>
+                      <Progress value={uploadProgress} className="h-2" />
+                    </div>
+                  ) : selectedFile || uploadComplete ? (
+                    <div className="flex items-center justify-center gap-2">
+                      {uploadComplete ? (
+                        <Check className="h-8 w-8 text-green-500" />
+                      ) : (
+                        <FileText className="h-8 w-8 text-primary" />
+                      )}
+                      <div className="text-left">
+                        <p className={`font-medium ${uploadComplete ? 'text-green-600' : ''}`}>{fileName}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(fileSize)}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedFile(null);
+                          setFileName('');
+                          setFileSize(0);
+                          setUploadComplete(false);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        PDF, DOC, PPT, MP4, etc. (Max 50MB)
+                      </p>
+                    </>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.mov,.avi,.webm,.txt,.xlsx,.xls"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Or use external URL */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or use external URL</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fileUrl">External URL</Label>
                 <Input
                   id="fileUrl"
                   value={fileUrl}
                   onChange={(e) => setFileUrl(e.target.value)}
                   placeholder="https://drive.google.com/... or external file link"
+                  disabled={!!selectedFile}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter a URL to an externally hosted file (Google Drive, Dropbox, etc.)
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -306,8 +477,8 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit">
-                  {editingResource ? 'Update Resource' : 'Upload Resource'}
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? 'Uploading...' : editingResource ? 'Update Resource' : 'Upload Resource'}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
