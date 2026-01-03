@@ -21,9 +21,16 @@ export const Footer = () => {
                           href="https://m4milaad.github.io/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:text-primary/80 transition-colors duration-200"> Milad Ajaz Bhat
+                          className="text-primary hover:text-primary/80 transition-colors duration-200">Milad Ajaz Bhat
                       </a>{' '}
-                      | All Rights Reserved. Why are you reading the footer tho?
+                      &{' '}
+                      <a
+                          href="https://nimrawani.vercel.app/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/80 transition-colors duration-200">Nimra Wani
+                      </a>{' '}
+                      | All Rights Reserved.
                   </p>
                   <div className="flex items-center gap-4">
                       <img
