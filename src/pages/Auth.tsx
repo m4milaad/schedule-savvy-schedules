@@ -40,15 +40,9 @@ const Auth = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { resolvedTheme, theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { theme } = useTheme();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Default to dark mode until theme is resolved to prevent flash
-  const isDarkMode = !mounted ? true : resolvedTheme === 'dark';
+  const isDarkMode = theme === 'dark';
 
   useEffect(() => {
     loadDepartments();
