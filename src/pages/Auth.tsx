@@ -251,8 +251,8 @@ const Auth = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgba(100, 116, 139, 0.15)'
-          hoverFillColor='rgba(100, 116, 139, 0.1)'
+          borderColor='rgba(59, 130, 246, 0.2)'
+          hoverFillColor='rgba(59, 130, 246, 0.25)'
           showVignette={false}
         />
       </div>
