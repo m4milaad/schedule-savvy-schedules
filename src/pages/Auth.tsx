@@ -35,6 +35,7 @@ const Auth = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
@@ -42,6 +43,18 @@ const Auth = () => {
 
   useEffect(() => {
     loadDepartments();
+    
+    // Detect dark mode
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'));
+    };
+    checkDarkMode();
+    
+    // Watch for theme changes
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -251,9 +264,9 @@ const Auth = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgba(59, 130, 246, 0.2)'
-          hoverFillColor='rgba(59, 130, 246, 0.25)'
-          showVignette={false}
+          borderColor={isDarkMode ? 'rgb(39,30,55)' : 'rgba(59, 130, 246, 0.2)'}
+          hoverFillColor={isDarkMode ? 'rgb(34,34,34)' : 'rgba(59, 130, 246, 0.25)'}
+          showVignette={isDarkMode}
         />
       </div>
 
