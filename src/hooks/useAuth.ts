@@ -76,7 +76,7 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, userData: {
     full_name: string;
-    user_type: 'student' | 'department_admin' | 'admin';
+    user_type: 'student' | 'department_admin' | 'admin' | 'teacher';
     dept_id?: string;
     student_enrollment_no?: string;
   }) => {
@@ -166,11 +166,11 @@ export const useAuth = () => {
           .eq('user_id', data.user.id)
           .single();
         
-        // Check if department_admin is approved
-        if (profileData?.user_type === 'department_admin' && !profileData?.is_approved) {
+        // Check if department_admin or teacher is approved
+        if (['department_admin', 'teacher'].includes(profileData?.user_type) && !profileData?.is_approved) {
           // Sign out the unapproved user
           await supabase.auth.signOut();
-          throw new Error('Your account is pending approval by a super administrator. Please wait for approval before logging in.');
+          throw new Error('Your account is pending approval by an administrator. Please wait for approval before logging in.');
         }
         
         // Redirect based on user type
@@ -178,6 +178,8 @@ export const useAuth = () => {
           window.location.href = '/';
         } else if (['admin', 'department_admin'].includes(profileData?.user_type)) {
           window.location.href = '/admin-dashboard';
+        } else if (profileData?.user_type === 'teacher') {
+          window.location.href = '/teacher-dashboard';
         } else {
           window.location.href = '/';
         }

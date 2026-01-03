@@ -2,7 +2,7 @@
 export interface Profile {
   id: string;
   user_id: string;
-  user_type: 'student' | 'admin' | 'department_admin';
+  user_type: 'student' | 'admin' | 'department_admin' | 'teacher';
   dept_id?: string;
   student_enrollment_no?: string;
   full_name: string;
