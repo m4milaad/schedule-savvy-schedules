@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,8 @@ import {
   Bell,
   FolderOpen,
   Library,
-  CalendarDays
+  CalendarDays,
+  Keyboard
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,6 +50,38 @@ import { StudentPerformanceTab } from '@/components/student/StudentPerformanceTa
 import { StudentResourcesTab } from '@/components/student/StudentResourcesTab';
 import { StudentLibraryTab } from '@/components/student/StudentLibraryTab';
 import { StudentLeaveTab } from '@/components/student/StudentLeaveTab';
+import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
+
+const TAB_VALUES = ['notices', 'courses', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
+type TabValue = typeof TAB_VALUES[number];
+
+const KEYBOARD_SHORTCUTS = [
+  {
+    title: 'Navigation',
+    shortcuts: [
+      { keys: ['1'], description: 'Go to Notices' },
+      { keys: ['2'], description: 'Go to Courses' },
+      { keys: ['3'], description: 'Go to Marks' },
+      { keys: ['4'], description: 'Go to Performance' },
+      { keys: ['5'], description: 'Go to Resources' },
+      { keys: ['6'], description: 'Go to Assignments' },
+      { keys: ['7'], description: 'Go to Library' },
+      { keys: ['8'], description: 'Go to Leave' },
+      { keys: ['←'], description: 'Previous tab' },
+      { keys: ['→'], description: 'Next tab' },
+    ],
+  },
+  {
+    title: 'Actions',
+    shortcuts: [
+      { keys: ['/'], description: 'Focus search' },
+      { keys: ['E'], description: 'Edit profile' },
+      { keys: ['?'], description: 'Show keyboard shortcuts' },
+      { keys: ['Esc'], description: 'Close dialogs' },
+    ],
+  },
+];
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -94,6 +127,8 @@ const StudentDashboard = () => {
   const [showCompletionBanner, setShowCompletionBanner] = useState(true);
   const [showIncompleteProfileDialog, setShowIncompleteProfileDialog] = useState(false);
   const [studentData, setStudentData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<TabValue>('notices');
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const { toast } = useToast();
   
   // Ref for search input
@@ -108,6 +143,45 @@ const StudentDashboard = () => {
     userId: user?.id,
     enabled: !!profile?.id && !!user?.id
   });
+
+  // Keyboard shortcuts
+  const navigateToTab = useCallback((index: number) => {
+    if (index >= 0 && index < TAB_VALUES.length) {
+      setActiveTab(TAB_VALUES[index]);
+    }
+  }, []);
+
+  const navigatePrevTab = useCallback(() => {
+    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_VALUES.length - 1;
+    setActiveTab(TAB_VALUES[newIndex]);
+  }, [activeTab]);
+
+  const navigateNextTab = useCallback(() => {
+    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const newIndex = currentIndex < TAB_VALUES.length - 1 ? currentIndex + 1 : 0;
+    setActiveTab(TAB_VALUES[newIndex]);
+  }, [activeTab]);
+
+  useKeyboardShortcuts([
+    { shortcut: { key: '1' }, callback: () => navigateToTab(0) },
+    { shortcut: { key: '2' }, callback: () => navigateToTab(1) },
+    { shortcut: { key: '3' }, callback: () => navigateToTab(2) },
+    { shortcut: { key: '4' }, callback: () => navigateToTab(3) },
+    { shortcut: { key: '5' }, callback: () => navigateToTab(4) },
+    { shortcut: { key: '6' }, callback: () => navigateToTab(5) },
+    { shortcut: { key: '7' }, callback: () => navigateToTab(6) },
+    { shortcut: { key: '8' }, callback: () => navigateToTab(7) },
+    { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
+    { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
+    { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
+    { shortcut: { key: '?' }, callback: () => setShowShortcutsHelp(prev => !prev) },
+    { shortcut: { key: 'Escape' }, callback: () => {
+      setShowShortcutsHelp(false);
+      setShowProfileDialog(false);
+      setShowIncompleteProfileDialog(false);
+    }},
+  ]);
 
   useEffect(() => {
     if (profile) {
@@ -528,6 +602,16 @@ const StudentDashboard = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap md:flex-nowrap items-center">
+                  <Button
+                    onClick={() => setShowShortcutsHelp(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
+                    title="Keyboard shortcuts (?)"
+                  >
+                    <Keyboard className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Shortcuts</span>
+                  </Button>
                   <NotificationCenter userId={user?.id} />
                   <ThemeToggle />
                     <Button 
@@ -564,7 +648,7 @@ const StudentDashboard = () => {
           />
         )}
 
-          <Tabs defaultValue="notices" className="space-y-4 md:space-y-6 animate-fade-in">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="space-y-4 md:space-y-6 animate-fade-in">
             <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto bg-muted/50 p-1 rounded-xl">
               <TabsTrigger 
                 value="notices" 
@@ -727,6 +811,13 @@ const StudentDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Keyboard Shortcuts Help Dialog */}
+        <KeyboardShortcutsHelp
+          isOpen={showShortcutsHelp}
+          onClose={() => setShowShortcutsHelp(false)}
+          shortcuts={KEYBOARD_SHORTCUTS}
+        />
         </div>
       </div>
       <Footer />
