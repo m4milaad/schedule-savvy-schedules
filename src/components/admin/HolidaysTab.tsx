@@ -158,7 +158,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
     };
 
     return (
-        <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
+        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
             <CardHeader className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <CardTitle className="text-lg font-bold">

@@ -50,7 +50,7 @@ const App = () => {
           <img
             src="/favicon.ico"
             alt="CUK Logo"
-            className="mx-auto h-20 w-20 transition-transform duration-300 hover:scale-110"
+            className="mx-auto h-20 w-20"
           />
         </div>
 
@@ -104,7 +104,7 @@ const App = () => {
           {/* App Reset Button */}
           <AppResetDialog
             trigger={
-              <button className="inline-block w-full transform rounded-lg border-2 border-slate-300 bg-white/50 px-6 py-3 font-semibold text-slate-700 shadow-md backdrop-blur-sm transition-all duration-300 ease-in-out hover:scale-105 hover:border-slate-400 hover:bg-white/70 hover:shadow-lg dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800/70">
+              <button className="inline-block w-full rounded-lg border-2 border-slate-300 bg-white/50 px-6 py-3 font-semibold text-slate-700 shadow-sm backdrop-blur-sm transition-colors duration-300 hover:border-slate-400 hover:bg-white/70 dark:border-slate-600 dark:bg-slate-800/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800/70">
                 Clear App Data
               </button>
             }
@@ -112,7 +112,7 @@ const App = () => {
           {/* Primary Action Button (Home) */}
           <Link
             to="/"
-            className="inline-block w-full transform rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-bold text-white shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl"
+            className="inline-block w-full rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 font-bold text-white shadow-sm transition-colors duration-300 hover:from-indigo-700 hover:to-purple-700"
           >
             Return to Home
           </Link>
