@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import Squares from "@/components/Squares";
+import { useTheme } from 'next-themes';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -20,6 +21,8 @@ const ResetPassword = () => {
   const [isSessionReady, setIsSessionReady] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = resolvedTheme === 'dark';
 
   useEffect(() => {
     const hydrateSession = async () => {
@@ -156,8 +159,9 @@ const ResetPassword = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgb(39,30,55)'
-          hoverFillColor='rgb(34,34,34)'
+          borderColor={isDarkMode ? 'rgb(39,30,55)' : 'rgb(200,210,230)'}
+          hoverFillColor={isDarkMode ? 'rgb(34,34,34)' : 'rgb(230,235,245)'}
+          showVignette={isDarkMode}
         />
       </div>
 
