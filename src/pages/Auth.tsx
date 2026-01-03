@@ -40,9 +40,9 @@ const Auth = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
-  const isDarkMode = theme === 'dark';
+  const isDarkMode = resolvedTheme === 'dark';
 
   useEffect(() => {
     loadDepartments();
