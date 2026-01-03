@@ -3,7 +3,7 @@
 > A comprehensive, production-ready exam scheduling system with intelligent constraint handling, real-time collaboration, and modern UI/UX design.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://ds-cuk.vercel.app/)
-[![Version](https://img.shields.io/badge/version-4.0.20-blue)]()
+[![Version](https://img.shields.io/badge/version-5.0.0-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)]()
 [![React](https://img.shields.io/badge/React-18.3-blue)]()
@@ -26,7 +26,80 @@
 
 ---
 
-## 🚀 What's New in v4.0
+## 🚀 What's New in v5.0
+
+### Seating Arrangement System
+- **Column-Based Seating Algorithm** (`src/utils/seatingAlgorithm.ts`) - Intelligent seating with alternating subject pattern to prevent cheating; students from same course are not seated adjacent
+- **Drag & Drop Seating** (`src/components/admin/SeatingArrangement.tsx`) - Visual seating grid with drag-and-drop to swap seats; supports cross-venue dragging
+- **PDF Export** (`src/utils/seatingPdfExport.ts`) - Export seating charts to PDF with color-coded courses, seat labels, and venue layouts using jsPDF
+- **Student Seat View** (`src/components/exam-schedule/StudentSeatView.tsx`) - Students can view their assigned seat, venue, row/column for each exam
+- **Search Across Venues** - Search students by name or enrollment number and navigate directly to their seat
+
+### Real-Time Notification System
+- **Notification Center** (`src/components/NotificationCenter.tsx`) - Bell icon with unread count badge, popover with notification list, mark as read/delete functionality
+- **Real-Time Alerts** (`src/hooks/useRealtimeNotifications.ts`) - Supabase realtime subscriptions for:
+  - Seat assignment notifications (new/updated)
+  - Datesheet changes (new exam scheduled, date changed, exam cancelled)
+- **Persistent Notifications** - Notifications stored in `user_notifications` table with type (success/info/warning/error)
+
+### Teacher Dashboard (`src/pages/TeacherDashboard.tsx`)
+- **Collapsible Sidebar** - Navigation with 7 tabs: Notices, Marks, Attendance, Assignments, Resources, Leave Management, Apply Leave
+- **Notices Tab** (`src/components/teacher/NoticesTab.tsx`) - Create/manage notices with priority levels (normal/important/urgent), target audience selection
+- **Marks Tab** (`src/components/teacher/MarksTab.tsx`) - Enter/edit student marks (Test 1, Test 2, Presentation, Assignment, Attendance), auto-calculate totals and grades
+- **Attendance Tab** (`src/components/teacher/AttendanceTab.tsx`) - Mark daily attendance (present/absent/late/on_leave) with date picker
+- **Assignments Tab** (`src/components/teacher/AssignmentsTab.tsx`) - Create assignments with due dates, view/grade submissions
+- **Resources Tab** (`src/components/teacher/ResourcesTab.tsx`) - Upload teaching materials (lecture notes, presentations, videos), track downloads
+- **Leave Management Tab** (`src/components/teacher/LeaveManagementTab.tsx`) - Review and approve/reject student leave applications
+- **Apply Leave Tab** (`src/components/teacher/TeacherApplyLeaveTab.tsx`) - Teachers can apply for their own leave
+
+### Enhanced Student Dashboard (`src/pages/StudentDashboard.tsx`)
+- **9 New Tabs**: Notices, Courses, Marks, Performance, Resources, Assignments, Library, Leave
+- **Student Components**:
+  - `StudentNoticesTab.tsx` - View notices from teachers with priority badges
+  - `StudentCoursesTab.tsx` - Course enrollment management
+  - `StudentMarksTab.tsx` - View marks breakdown by course
+  - `StudentPerformanceTab.tsx` - Performance analytics and trends
+  - `StudentResourcesTab.tsx` - Access uploaded teaching materials
+  - `StudentAssignmentsTab.tsx` - View assignments, submit work
+  - `StudentLibraryTab.tsx` - Library resources (placeholder)
+  - `StudentLeaveTab.tsx` - Apply for leave, track application status
+  - `StudentAttendanceTab.tsx` - View attendance records
+- **Glassmorphism Cards** - Modern glass-effect styling on student profile cards
+- **Keyboard Shortcuts** (`src/components/KeyboardShortcutsHelp.tsx`):
+  - `1-8` - Navigate to tabs
+  - `←/→` - Previous/next tab
+  - `/` - Focus search
+  - `E` - Edit profile
+  - `?` - Show shortcuts help
+
+### UI/UX Improvements
+- **Theme-Aware Auth Background** (`src/pages/Auth.tsx`, `src/components/Squares.tsx`):
+  - Added `vignetteColor` prop to Squares component
+  - Dark mode: Original dark vignette (`#060010`), dark hover (`rgb(34,34,34)`)
+  - Light mode: White vignette (`#ffffff`), blue hover (`rgb(59,130,246)`), lighter grid borders
+- **Updated Footer** (`src/components/Footer.tsx`) - Added Nimra Wani as co-developer with portfolio link
+- **File Upload Component** (`src/components/ui/file-upload.tsx`) - Reusable file upload with drag-and-drop
+
+### Database Schema Changes (New Tables)
+- `seat_assignments` - Exam seating with venue_id, student_id, row/column, seat_label
+- `user_notifications` - Notification storage with type, is_read, metadata
+- `notices` - Teacher notices with priority, target audience, expiry
+- `student_marks` - Marks breakdown (test1, test2, presentation, assignment, attendance, total, grade)
+- `attendance` - Daily attendance records with status
+- `assignments` - Assignment definitions with due dates
+- `assignment_submissions` - Student submissions with grading
+- `resources` - Teaching materials with download tracking
+- `leave_applications` - Leave requests for students and teachers
+- `teacher_courses` - Teacher-course assignments
+
+### Other Changes
+- **Teacher Role Support** - Teachers require admin approval like department admins
+- **Venue Rows/Columns** - Added `rows` and `columns` fields to venues table for seating grid
+- **Student FK to Enrollments** - Proper foreign key relationship for data integrity
+
+---
+
+## 📋 Version 4.0 (Previous Release)
 
 ### Major Performance & UX Improvements
 
@@ -606,7 +679,7 @@ src/
 - [ ] **Version Control**: Track schedule changes and rollback
 - [x] ~~**Audit Logs**: Comprehensive activity logging~~
 - [ ] **Custom Reports**: Configurable report generation
-- [ ] **Seating Arrangement**: Automated seating plan generation
+- [x] ~~**Seating Arrangement**: Automated seating plan generation~~
 - [ ] **Invigilator Assignment**: Automatic invigilator scheduling
 - [x] ~~**Loading Skeletons**: Professional loading states~~
 - [x] ~~**Debounced Search**: Optimized search performance~~
@@ -641,8 +714,9 @@ src/
 - **Beta Release**: October 2024
 - **Production Release**: November 2024
 - **Major Update (v4.0)**: November 2024
-- **Current Version**: 4.0.0
-- **Last Updated**: November 2024
+- **Major Update (v5.0)**: January 2026
+- **Current Version**: 5.0.0
+- **Last Updated**: January 2026
 
 ---
 
