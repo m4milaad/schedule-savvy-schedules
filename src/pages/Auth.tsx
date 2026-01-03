@@ -345,6 +345,29 @@ const Auth = () => {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
+                  
+                  {/* Test Credentials Section */}
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Test Credentials:</p>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Teacher:</span>
+                        <span className="font-mono text-foreground">teacher@test.com / Teacher@123</span>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 text-xs h-7"
+                      onClick={() => {
+                        setEmail('teacher@test.com');
+                        setPassword('Teacher@123');
+                      }}
+                    >
+                      Use Teacher Credentials
+                    </Button>
+                  </div>
                 </form>
               </CardContent>
             </Card>
