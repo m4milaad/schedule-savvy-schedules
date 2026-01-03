@@ -245,14 +245,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="fixed inset-0 z-0">
         <Squares
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgb(39,30,55)'
-          hoverFillColor='rgb(34,34,34)'
+          borderColor='rgba(100, 116, 139, 0.15)'
+          hoverFillColor='rgba(100, 116, 139, 0.1)'
+          showVignette={false}
         />
       </div>
 
