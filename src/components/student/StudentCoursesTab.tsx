@@ -234,7 +234,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -247,7 +247,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -260,7 +260,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -273,7 +273,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -295,7 +295,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         </TabsList>
 
         <TabsContent value="enrolled">
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
@@ -315,7 +315,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                   {enrollments.map((enrollment) => {
                     const gradeInfo = courseGrades.get(enrollment.course_id);
                     return (
-                      <Card key={enrollment.id} className="border">
+                      <Card key={enrollment.id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
                         <CardContent className="pt-4">
                           <div className="flex items-start justify-between mb-3">
                             <div>
@@ -355,7 +355,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         </TabsContent>
 
         <TabsContent value="available">
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5" />
@@ -382,7 +382,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
               ) : (
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {filteredAvailable.slice(0, 12).map((course) => (
-                    <Card key={course.course_id} className="border">
+                    <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
                       <CardContent className="pt-4">
                         <div className="mb-3">
                           <Badge variant="outline" className="mb-1">{course.course_code}</Badge>

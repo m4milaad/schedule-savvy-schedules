@@ -95,7 +95,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
           <p className="text-muted-foreground">View your academic performance</p>
         </div>
         {marks.length > 0 && (
-          <Card className="px-4 py-2">
+          <Card className="px-4 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-500" />
               <span className="font-semibold">{calculateOverallPercentage()}%</span>
@@ -105,7 +105,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
         )}
       </div>
 
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
