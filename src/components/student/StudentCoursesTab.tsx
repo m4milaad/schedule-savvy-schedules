@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { BookOpen, GraduationCap, Search, Plus, CheckCircle, Clock, Users, TrendingUp } from 'lucide-react';
 
 interface StudentCoursesTabProps {
@@ -42,6 +44,88 @@ interface AvailableCourse {
   dept_name?: string;
   teacher_name?: string;
 }
+
+const COURSES_PER_PAGE = 12;
+
+// Paginated grid component for available courses
+const AvailableCoursesGrid: React.FC<{
+  courses: AvailableCourse[];
+  enrolling: string | null;
+  onEnroll: (courseId: string) => void;
+}> = ({ courses, enrolling, onEnroll }) => {
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    goToPage,
+    nextPage,
+    previousPage,
+    canGoNext,
+    canGoPrevious,
+    startIndex,
+    endIndex,
+    totalItems,
+  } = usePagination({ items: courses, itemsPerPage: COURSES_PER_PAGE });
+
+  if (courses.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No available courses found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {paginatedItems.map((course) => (
+          <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+            <CardContent className="pt-4">
+              <div className="mb-3">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <Badge variant="outline">{course.course_code}</Badge>
+                  <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+                </div>
+                <h3 className="font-semibold text-sm">{course.course_name}</h3>
+                <p className="text-xs text-muted-foreground">
+                  Semester {course.semester} • {course.course_credits} Credits
+                </p>
+              </div>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => onEnroll(course.course_id)}
+                disabled={enrolling === course.course_id}
+              >
+                {enrolling === course.course_id ? (
+                  'Enrolling...'
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Enroll
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      {totalPages > 1 && (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          canGoNext={canGoNext}
+          canGoPrevious={canGoPrevious}
+          onPageChange={goToPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          totalItems={totalItems}
+        />
+      )}
+    </div>
+  );
+};
 
 export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({ 
   studentId, 
@@ -386,45 +470,11 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                   />
                 </div>
               </div>
-              {filteredAvailable.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No available courses found</p>
-                </div>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredAvailable.map((course) => (
-                    <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-                      <CardContent className="pt-4">
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <Badge variant="outline">{course.course_code}</Badge>
-                            <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
-                          </div>
-                          <h3 className="font-semibold text-sm">{course.course_name}</h3>
-                          <p className="text-xs text-muted-foreground">
-                            Semester {course.semester} • {course.course_credits} Credits
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          className="w-full"
-                          onClick={() => enrollInCourse(course.course_id)}
-                          disabled={enrolling === course.course_id}
-                        >
-                          {enrolling === course.course_id ? (
-                            'Enrolling...'
-                          ) : (
-                            <>
-                              <Plus className="h-4 w-4 mr-1" />
-                              Enroll
-                            </>
-                          )}
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+              <AvailableCoursesGrid 
+                courses={filteredAvailable}
+                enrolling={enrolling}
+                onEnroll={enrollInCourse}
+              />
             </CardContent>
           </Card>
         </TabsContent>
