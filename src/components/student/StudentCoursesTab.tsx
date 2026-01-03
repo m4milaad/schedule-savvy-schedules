@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare } from 'lucide-react';
+import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';
 
 interface StudentCoursesTabProps {
   studentId: string;
@@ -204,6 +211,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   const [enrolling, setEnrolling] = useState<string | null>(null);
   const [unenrolling, setUnenrolling] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [courseGrades, setCourseGrades] = useState<Map<string, { grade: string; attendance: number }>>(new Map());
   
   // Bulk selection states
@@ -551,10 +559,23 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   };
 
   const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
+  
+  // Get unique departments for filter
+  const uniqueDepartments = useMemo(() => {
+    const depts = new Map<string, string>();
+    availableCourses.forEach(c => {
+      if (c.dept_id && c.dept_name) {
+        depts.set(c.dept_id, c.dept_name);
+      }
+    });
+    return Array.from(depts.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [availableCourses]);
+  
   const filteredAvailable = availableCourses.filter(c => 
     !enrolledCourseIds.has(c.course_id) &&
     (c.course_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     c.course_code.toLowerCase().includes(searchTerm.toLowerCase()))
+     c.course_code.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (departmentFilter === 'all' || c.dept_id === departmentFilter)
   );
 
   const totalCredits = enrollments.reduce((sum, e) => sum + (e.course.course_credits || 0), 0);
@@ -778,8 +799,8 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
               <CardDescription>Browse and enroll in new courses</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-4">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search courses..."
@@ -787,6 +808,22 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="All Departments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {uniqueDepartments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <AvailableCoursesGrid 
