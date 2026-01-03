@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BookOpen, GraduationCap, Search, Plus, CheckCircle, Clock, Users, TrendingUp } from 'lucide-react';
+import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare } from 'lucide-react';
 
 interface StudentCoursesTabProps {
   studentId: string;
@@ -47,19 +48,23 @@ interface AvailableCourse {
 
 const COURSES_PER_PAGE = 12;
 
-// Paginated grid component for available courses
+// Paginated grid component for available courses with bulk selection
 const AvailableCoursesGrid: React.FC<{
   courses: AvailableCourse[];
   enrolling: string | null;
   onEnroll: (courseId: string) => void;
-}> = ({ courses, enrolling, onEnroll }) => {
+  selectedCourses: Set<string>;
+  onToggleSelect: (courseId: string) => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+  onBulkEnroll: () => void;
+  isBulkEnrolling: boolean;
+}> = ({ courses, enrolling, onEnroll, selectedCourses, onToggleSelect, onSelectAll, onClearSelection, onBulkEnroll, isBulkEnrolling }) => {
   const {
     currentPage,
     totalPages,
     paginatedItems,
     goToPage,
-    nextPage,
-    previousPage,
     canGoNext,
     canGoPrevious,
     startIndex,
@@ -75,21 +80,72 @@ const AvailableCoursesGrid: React.FC<{
     );
   }
 
+  const allCurrentPageSelected = paginatedItems.every(c => selectedCourses.has(c.course_id));
+
   return (
     <div className="space-y-4">
+      {/* Bulk actions bar */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={allCurrentPageSelected && paginatedItems.length > 0}
+            onCheckedChange={() => {
+              if (allCurrentPageSelected) {
+                onClearSelection();
+              } else {
+                paginatedItems.forEach(c => {
+                  if (!selectedCourses.has(c.course_id)) {
+                    onToggleSelect(c.course_id);
+                  }
+                });
+              }
+            }}
+          />
+          <span className="text-sm text-muted-foreground">
+            {selectedCourses.size > 0 ? `${selectedCourses.size} selected` : 'Select all on page'}
+          </span>
+        </div>
+        {selectedCourses.size > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={onBulkEnroll}
+              disabled={isBulkEnrolling}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" />
+              {isBulkEnrolling ? 'Enrolling...' : `Enroll ${selectedCourses.size} courses`}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClearSelection}
+            >
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {paginatedItems.map((course) => (
-          <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+          <Card key={course.course_id} className={`bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50 ${selectedCourses.has(course.course_id) ? 'ring-2 ring-primary' : ''}`}>
             <CardContent className="pt-4">
-              <div className="mb-3">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Badge variant="outline">{course.course_code}</Badge>
-                  <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+              <div className="flex items-start gap-2 mb-3">
+                <Checkbox
+                  checked={selectedCourses.has(course.course_id)}
+                  onCheckedChange={() => onToggleSelect(course.course_id)}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <Badge variant="outline">{course.course_code}</Badge>
+                    <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+                  </div>
+                  <h3 className="font-semibold text-sm">{course.course_name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Semester {course.semester} • {course.course_credits} Credits
+                  </p>
                 </div>
-                <h3 className="font-semibold text-sm">{course.course_name}</h3>
-                <p className="text-xs text-muted-foreground">
-                  Semester {course.semester} • {course.course_credits} Credits
-                </p>
               </div>
               <Button
                 size="sm"
@@ -136,8 +192,16 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   const [availableCourses, setAvailableCourses] = useState<AvailableCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [unenrolling, setUnenrolling] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [courseGrades, setCourseGrades] = useState<Map<string, { grade: string; attendance: number }>>(new Map());
+  
+  // Bulk selection states
+  const [selectedAvailableCourses, setSelectedAvailableCourses] = useState<Set<string>>(new Set());
+  const [selectedEnrolledCourses, setSelectedEnrolledCourses] = useState<Set<string>>(new Set());
+  const [isBulkEnrolling, setIsBulkEnrolling] = useState(false);
+  const [isBulkUnenrolling, setIsBulkUnenrolling] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -298,6 +362,159 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     }
   };
 
+  const unenrollFromCourse = async (enrollmentId: string) => {
+    setUnenrolling(enrollmentId);
+    try {
+      const { error } = await supabase
+        .from('student_enrollments')
+        .update({ is_active: false })
+        .eq('id', enrollmentId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Successfully unenrolled from course',
+      });
+      loadEnrollments();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to unenroll',
+        variant: 'destructive',
+      });
+    } finally {
+      setUnenrolling(null);
+    }
+  };
+
+  // Bulk enroll
+  const handleBulkEnroll = async () => {
+    if (selectedAvailableCourses.size === 0) return;
+    
+    setIsBulkEnrolling(true);
+    try {
+      const courseIds = Array.from(selectedAvailableCourses);
+      
+      // Check for existing enrollments
+      const { data: existing } = await supabase
+        .from('student_enrollments')
+        .select('id, course_id, is_active')
+        .eq('student_id', studentId)
+        .in('course_id', courseIds);
+
+      const existingMap = new Map((existing || []).map(e => [e.course_id, e]));
+      
+      // Separate into reactivate and new inserts
+      const toReactivate: string[] = [];
+      const toInsert: string[] = [];
+      
+      courseIds.forEach(courseId => {
+        const existingEnrollment = existingMap.get(courseId);
+        if (existingEnrollment) {
+          if (!existingEnrollment.is_active) {
+            toReactivate.push(existingEnrollment.id);
+          }
+        } else {
+          toInsert.push(courseId);
+        }
+      });
+
+      // Reactivate existing inactive enrollments
+      if (toReactivate.length > 0) {
+        await supabase
+          .from('student_enrollments')
+          .update({ is_active: true })
+          .in('id', toReactivate);
+      }
+
+      // Insert new enrollments
+      if (toInsert.length > 0) {
+        await supabase
+          .from('student_enrollments')
+          .insert(toInsert.map(course_id => ({
+            student_id: studentId,
+            course_id,
+            is_active: true
+          })));
+      }
+
+      toast({
+        title: 'Success',
+        description: `Successfully enrolled in ${courseIds.length} courses`,
+      });
+      
+      setSelectedAvailableCourses(new Set());
+      loadEnrollments();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to bulk enroll',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBulkEnrolling(false);
+    }
+  };
+
+  // Bulk unenroll
+  const handleBulkUnenroll = async () => {
+    if (selectedEnrolledCourses.size === 0) return;
+    
+    setIsBulkUnenrolling(true);
+    try {
+      const enrollmentIds = Array.from(selectedEnrolledCourses);
+      
+      const { error } = await supabase
+        .from('student_enrollments')
+        .update({ is_active: false })
+        .in('id', enrollmentIds);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: `Successfully unenrolled from ${enrollmentIds.length} courses`,
+      });
+      
+      setSelectedEnrolledCourses(new Set());
+      loadEnrollments();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to bulk unenroll',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBulkUnenrolling(false);
+    }
+  };
+
+  // Toggle selection helpers
+  const toggleAvailableCourseSelection = (courseId: string) => {
+    setSelectedAvailableCourses(prev => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+      }
+      return next;
+    });
+  };
+
+  const toggleEnrolledCourseSelection = (enrollmentId: string) => {
+    setSelectedEnrolledCourses(prev => {
+      const next = new Set(prev);
+      if (next.has(enrollmentId)) {
+        next.delete(enrollmentId);
+      } else {
+        next.add(enrollmentId);
+      }
+      return next;
+    });
+  };
+
   const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
   const filteredAvailable = availableCourses.filter(c => 
     !enrolledCourseIds.has(c.course_id) &&
@@ -392,11 +609,35 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         <TabsContent value="enrolled">
           <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Enrolled Courses
-              </CardTitle>
-              <CardDescription>Your current course enrollments with grades and attendance</CardDescription>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" />
+                    Enrolled Courses
+                  </CardTitle>
+                  <CardDescription>Your current course enrollments with grades and attendance</CardDescription>
+                </div>
+                {selectedEnrolledCourses.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleBulkUnenroll}
+                      disabled={isBulkUnenrolling}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      {isBulkUnenrolling ? 'Unenrolling...' : `Unenroll ${selectedEnrolledCourses.size} courses`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedEnrolledCourses(new Set())}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {enrollments.length === 0 ? (
@@ -406,44 +647,87 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                   <p className="text-sm">Browse available courses to get started</p>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {enrollments.map((enrollment) => {
-                    const gradeInfo = courseGrades.get(enrollment.course_id);
-                    return (
-                      <Card key={enrollment.id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-                        <CardContent className="pt-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <Badge variant="outline" className="mb-1">{enrollment.course.course_code}</Badge>
-                              <h3 className="font-semibold">{enrollment.course.course_name}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {enrollment.course.course_type} • {enrollment.course.course_credits} Credits
-                              </p>
-                            </div>
-                            <Badge className="bg-green-500">Active</Badge>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span>Grade</span>
-                              <Badge variant={gradeInfo?.grade && gradeInfo.grade !== 'N/A' ? 'default' : 'outline'}>
-                                {gradeInfo?.grade || 'N/A'}
-                              </Badge>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Attendance</span>
-                                <span className={gradeInfo?.attendance && gradeInfo.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}>
-                                  {gradeInfo?.attendance || 0}%
-                                </span>
+                <>
+                  {/* Select all for enrolled */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <Checkbox
+                      checked={selectedEnrolledCourses.size === enrollments.length && enrollments.length > 0}
+                      onCheckedChange={() => {
+                        if (selectedEnrolledCourses.size === enrollments.length) {
+                          setSelectedEnrolledCourses(new Set());
+                        } else {
+                          setSelectedEnrolledCourses(new Set(enrollments.map(e => e.id)));
+                        }
+                      }}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {selectedEnrolledCourses.size > 0 ? `${selectedEnrolledCourses.size} selected` : 'Select all'}
+                    </span>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {enrollments.map((enrollment) => {
+                      const gradeInfo = courseGrades.get(enrollment.course_id);
+                      return (
+                        <Card key={enrollment.id} className={`bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50 ${selectedEnrolledCourses.has(enrollment.id) ? 'ring-2 ring-primary' : ''}`}>
+                          <CardContent className="pt-4">
+                            <div className="flex items-start gap-2 mb-3">
+                              <Checkbox
+                                checked={selectedEnrolledCourses.has(enrollment.id)}
+                                onCheckedChange={() => toggleEnrolledCourseSelection(enrollment.id)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <Badge variant="outline" className="mb-1">{enrollment.course.course_code}</Badge>
+                                    <h3 className="font-semibold">{enrollment.course.course_name}</h3>
+                                    <p className="text-xs text-muted-foreground">
+                                      {enrollment.course.course_type} • {enrollment.course.course_credits} Credits
+                                    </p>
+                                  </div>
+                                  <Badge className="bg-green-500 shrink-0">Active</Badge>
+                                </div>
                               </div>
-                              <Progress value={gradeInfo?.attendance || 0} className="h-2" />
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span>Grade</span>
+                                <Badge variant={gradeInfo?.grade && gradeInfo.grade !== 'N/A' ? 'default' : 'outline'}>
+                                  {gradeInfo?.grade || 'N/A'}
+                                </Badge>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>Attendance</span>
+                                  <span className={gradeInfo?.attendance && gradeInfo.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}>
+                                    {gradeInfo?.attendance || 0}%
+                                  </span>
+                                </div>
+                                <Progress value={gradeInfo?.attendance || 0} className="h-2" />
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full mt-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => unenrollFromCourse(enrollment.id)}
+                              disabled={unenrolling === enrollment.id}
+                            >
+                              {unenrolling === enrollment.id ? (
+                                'Unenrolling...'
+                              ) : (
+                                <>
+                                  <X className="h-4 w-4 mr-1" />
+                                  Unenroll
+                                </>
+                              )}
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -474,6 +758,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                 courses={filteredAvailable}
                 enrolling={enrolling}
                 onEnroll={enrollInCourse}
+                selectedCourses={selectedAvailableCourses}
+                onToggleSelect={toggleAvailableCourseSelection}
+                onSelectAll={() => setSelectedAvailableCourses(new Set(filteredAvailable.map(c => c.course_id)))}
+                onClearSelection={() => setSelectedAvailableCourses(new Set())}
+                onBulkEnroll={handleBulkEnroll}
+                isBulkEnrolling={isBulkEnrolling}
               />
             </CardContent>
           </Card>
