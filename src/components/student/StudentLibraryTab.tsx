@@ -139,7 +139,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -152,7 +152,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -165,7 +165,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -178,7 +178,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -196,7 +196,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       </div>
 
       {/* Search Books */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -268,7 +268,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       </Card>
 
       {/* Currently Issued Books */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
