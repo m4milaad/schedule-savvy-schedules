@@ -210,7 +210,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -223,7 +223,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -236,7 +236,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -258,7 +258,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
         </TabsList>
 
         <TabsContent value="apply">
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Send className="h-5 w-5" />
@@ -370,7 +370,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
         </TabsContent>
 
         <TabsContent value="applications">
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardHeader>
               <CardTitle>My Leave Applications</CardTitle>
               <CardDescription>Track the status of your leave applications</CardDescription>

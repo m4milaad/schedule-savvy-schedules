@@ -190,7 +190,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
 
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -207,7 +207,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -224,7 +224,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -244,7 +244,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </div>
 
       {/* GPA Trend Chart */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>GPA Trend</CardTitle>
           <CardDescription>Your performance over the last 6 months</CardDescription>
@@ -277,7 +277,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </Card>
 
       {/* Subject-wise Performance */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Subject-wise Performance</CardTitle>
           <CardDescription>Detailed breakdown by subject</CardDescription>
@@ -291,7 +291,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {performance.map((p) => (
-                <Card key={p.courseId} className="border">
+                <Card key={p.courseId} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -334,7 +334,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </Card>
 
       {/* Recommendations */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Personalized Recommendations</CardTitle>
           <CardDescription>Tips to improve your performance</CardDescription>

@@ -246,20 +246,20 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
           <p className="text-muted-foreground">View and submit your assignments</p>
         </div>
         <div className="flex gap-4">
-          <Card className="px-3 py-2">
+          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-yellow-500" />
               <span className="text-sm">{pendingCount} Pending</span>
             </div>
           </Card>
-          <Card className="px-3 py-2">
+          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
               <span className="text-sm">{submittedCount} Submitted</span>
             </div>
           </Card>
           {overdueCount > 0 && (
-            <Card className="px-3 py-2">
+            <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 <span className="text-sm">{overdueCount} Overdue</span>
@@ -269,7 +269,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
         </div>
       </div>
 
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
