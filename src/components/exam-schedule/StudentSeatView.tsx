@@ -2,9 +2,68 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Calendar, Building, Grid3X3 } from 'lucide-react';
+import { MapPin, Calendar, Building, Grid3X3, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, differenceInDays, differenceInHours, isToday, isTomorrow, isPast } from 'date-fns';
+
+const CountdownTimer = ({ examDate }: { examDate: string }) => {
+  const examDateTime = new Date(examDate);
+  const now = new Date();
+  
+  if (isPast(examDateTime) && !isToday(examDateTime)) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Completed</span>
+      </div>
+    );
+  }
+  
+  if (isToday(examDateTime)) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 animate-pulse">
+        <Clock className="h-4 w-4 text-destructive" />
+        <span className="text-sm font-semibold text-destructive">Today!</span>
+      </div>
+    );
+  }
+  
+  if (isTomorrow(examDateTime)) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10">
+        <Clock className="h-4 w-4 text-orange-500" />
+        <span className="text-sm font-semibold text-orange-500">Tomorrow</span>
+      </div>
+    );
+  }
+  
+  const daysRemaining = differenceInDays(examDateTime, now);
+  
+  if (daysRemaining <= 3) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10">
+        <Clock className="h-4 w-4 text-yellow-600" />
+        <span className="text-sm font-semibold text-yellow-600">{daysRemaining} days left</span>
+      </div>
+    );
+  }
+  
+  if (daysRemaining <= 7) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10">
+        <Clock className="h-4 w-4 text-primary" />
+        <span className="text-sm font-medium text-primary">{daysRemaining} days left</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
+      <Clock className="h-4 w-4 text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">{daysRemaining} days left</span>
+    </div>
+  );
+};
 
 interface SeatAssignment {
   id: string;
@@ -116,10 +175,13 @@ export const StudentSeatView = ({ studentId }: StudentSeatViewProps) => {
                   <h3 className="font-semibold text-lg">{seat.course_code}</h3>
                   <p className="text-sm text-muted-foreground">{seat.course_name}</p>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {format(new Date(seat.exam_date), 'PPP')}
-                </Badge>
+                <div className="flex flex-col sm:flex-row gap-2 items-end sm:items-center">
+                  <CountdownTimer examDate={seat.exam_date} />
+                  <Badge variant="outline" className="text-xs">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {format(new Date(seat.exam_date), 'PPP')}
+                  </Badge>
+                </div>
               </div>
 
               <div className="flex flex-wrap gap-4 text-sm">
