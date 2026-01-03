@@ -150,14 +150,14 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
           <p className="text-muted-foreground">Stay updated with announcements</p>
         </div>
         <div className="flex gap-3">
-          <Card className="px-3 py-2">
+          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
               <span className="text-sm">{notices.length} Total</span>
             </div>
           </Card>
           {unreadCount > 0 && (
-            <Card className="px-3 py-2 border-primary">
+            <Card className="px-3 py-2 border-primary bg-white/40 dark:bg-black/40 backdrop-blur-xl">
               <div className="flex items-center gap-2">
                 <Badge variant="default">{unreadCount}</Badge>
                 <span className="text-sm">Unread</span>
@@ -168,7 +168,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardContent className="pt-4">
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
@@ -208,7 +208,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
       </Card>
 
       {/* Notices List */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
