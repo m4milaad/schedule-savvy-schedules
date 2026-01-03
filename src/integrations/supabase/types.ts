@@ -219,6 +219,63 @@ export type Database = {
         }
         Relationships: []
       }
+      book_issues: {
+        Row: {
+          book_id: string
+          created_at: string | null
+          due_date: string
+          id: string
+          issued_date: string
+          late_fee: number | null
+          renewed_count: number | null
+          returned_date: string | null
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          book_id: string
+          created_at?: string | null
+          due_date: string
+          id?: string
+          issued_date?: string
+          late_fee?: number | null
+          renewed_count?: number | null
+          returned_date?: string | null
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          book_id?: string
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          issued_date?: string
+          late_fee?: number | null
+          renewed_count?: number | null
+          returned_date?: string | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_issues_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "library_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_issues_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           course_code: string
@@ -492,6 +549,45 @@ export type Database = {
           },
         ]
       }
+      library_books: {
+        Row: {
+          author: string
+          available_copies: number | null
+          category: string | null
+          created_at: string | null
+          id: string
+          isbn: string | null
+          location: string | null
+          title: string
+          total_copies: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          author: string
+          available_copies?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          isbn?: string | null
+          location?: string | null
+          title: string
+          total_copies?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string
+          available_copies?: number | null
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          isbn?: string | null
+          location?: string | null
+          title?: string
+          total_copies?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notices: {
         Row: {
           content: string
@@ -642,6 +738,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["dept_id"]
+          },
+        ]
+      }
+      resource_bookmarks: {
+        Row: {
+          created_at: string | null
+          id: string
+          resource_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          resource_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          resource_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_bookmarks_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_bookmarks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
           },
         ]
       }
@@ -992,6 +1124,42 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_notice_reads: {
+        Row: {
+          id: string
+          notice_id: string
+          read_at: string | null
+          student_id: string
+        }
+        Insert: {
+          id?: string
+          notice_id: string
+          read_at?: string | null
+          student_id: string
+        }
+        Update: {
+          id?: string
+          notice_id?: string
+          read_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_notice_reads_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_notice_reads_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
           },
         ]
       }
