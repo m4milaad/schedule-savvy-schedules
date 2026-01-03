@@ -130,7 +130,7 @@ export const MobileScheduleViewer = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-4 transition-colors duration-500">
       <div className="max-w-md mx-auto">
-        <Card className="mb-6 shadow-lg transition-all duration-300 hover:shadow-xl animate-fade-in">
+        <Card className="mb-6 shadow-sm animate-fade-in">
           <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-t-lg transition-all duration-300">
             <div className="flex items-center justify-center mb-2">
               <img 
@@ -157,7 +157,7 @@ export const MobileScheduleViewer = () => {
                 size="sm"
                 onClick={fetchSchedule}
                 disabled={loading}
-                className="flex items-center gap-2 transition-all duration-300 hover:scale-105 hover:shadow-md"
+                className="flex items-center gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -203,7 +203,7 @@ export const MobileScheduleViewer = () => {
               return (
                 <Card 
                   key={dateString} 
-                  className="shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] animate-fade-in"
+                  className="shadow-sm animate-fade-in"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <CardHeader className="pb-3 bg-gray-50 dark:bg-slate-800 rounded-t-lg transition-colors duration-300">
