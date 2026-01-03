@@ -6,11 +6,14 @@ import { CheckCircle2 } from 'lucide-react';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Squares from "@/components/Squares";
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from 'next-themes';
 
 const EmailVerified = () => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = resolvedTheme === 'dark';
 
   useEffect(() => {
     const exchangeSession = async () => {
@@ -68,8 +71,9 @@ const EmailVerified = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgb(39,30,55)'
-          hoverFillColor='rgb(34,34,34)'
+          borderColor={isDarkMode ? 'rgb(39,30,55)' : 'rgb(200,210,230)'}
+          hoverFillColor={isDarkMode ? 'rgb(34,34,34)' : 'rgb(230,235,245)'}
+          showVignette={isDarkMode}
         />
       </div>
       
