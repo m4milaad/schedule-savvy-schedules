@@ -247,7 +247,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     return (
         <div className="space-y-6">
-        <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
+        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
                     Venues ({filteredVenues.length})

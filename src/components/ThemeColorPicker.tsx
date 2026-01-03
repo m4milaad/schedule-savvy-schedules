@@ -51,7 +51,7 @@ export const ThemeColorPicker: React.FC<ThemeColorPickerProps> = ({ color, onCha
         {/* Reset to Default button */}
         <button
           type="button"
-          className={`px-3 py-1 text-xs rounded-full border-2 transition-all duration-200 hover:scale-105 ${
+          className={`px-3 py-1 text-xs rounded-full border-2 transition-colors duration-200 ${
             color === DEFAULT_COLOR ? 'border-foreground ring-2 ring-offset-2 ring-primary bg-muted' : 'border-border bg-muted/50'
           }`}
           onClick={() => onChange(DEFAULT_COLOR)}
@@ -63,7 +63,7 @@ export const ThemeColorPicker: React.FC<ThemeColorPickerProps> = ({ color, onCha
           <button
             key={presetColor}
             type="button"
-            className={`w-8 h-8 rounded-full border-2 transition-all duration-200 hover:scale-110 ${
+            className={`w-8 h-8 rounded-full border-2 transition-colors duration-200 ${
               color === presetColor ? 'border-foreground ring-2 ring-offset-2 ring-primary' : 'border-transparent'
             }`}
             style={{ backgroundColor: presetColor }}

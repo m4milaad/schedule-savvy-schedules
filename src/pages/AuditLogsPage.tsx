@@ -80,7 +80,7 @@ export const AuditLogsPage: React.FC = () => {
                 <img
                   src="/favicon.ico"
                   alt="CUK Logo"
-                  className="hidden md:block w-10 h-10 transition-transform hover:scale-110"
+                  className="hidden md:block w-10 h-10"
                 />
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                   System Audit Logs

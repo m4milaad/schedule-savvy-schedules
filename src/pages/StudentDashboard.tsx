@@ -796,14 +796,13 @@ const StudentDashboard = () => {
                     setShowIncompleteProfileDialog(false);
                     setShowProfileDialog(true);
                   }}
-                  className="flex-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  className="flex-1"
                 >
                   Complete Profile
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => setShowIncompleteProfileDialog(false)}
-                  className="transition-all duration-300 hover:scale-105"
                 >
                   Cancel
                 </Button>

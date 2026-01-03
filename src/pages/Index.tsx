@@ -824,7 +824,7 @@ export default function Index() {
               <img
                 src="/favicon.ico"
                 alt="CUK Logo"
-                className="hidden md:block w-12 h-12 md:w-16 md:h-16 transition-transform duration-300 hover:scale-110"
+                className="hidden md:block w-12 h-12 md:w-16 md:h-16"
               />
               <div className="space-y-1">
                 <h1 className="text-xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -903,7 +903,7 @@ export default function Index() {
             {/* Course Selection Tab */}
             <TabsContent value="selection" className="space-y-6 animate-fade-in">
               {/* Course selection summary */}
-              <Card className="transition-all duration-300 hover:shadow-lg">
+              <Card className="">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
