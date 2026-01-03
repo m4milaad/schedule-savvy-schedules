@@ -6,6 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
@@ -202,6 +212,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   const [isBulkEnrolling, setIsBulkEnrolling] = useState(false);
   const [isBulkUnenrolling, setIsBulkUnenrolling] = useState(false);
   
+  // Confirmation dialog states
+  const [unenrollConfirmOpen, setUnenrollConfirmOpen] = useState(false);
+  const [bulkUnenrollConfirmOpen, setBulkUnenrollConfirmOpen] = useState(false);
+  const [pendingUnenrollId, setPendingUnenrollId] = useState<string | null>(null);
+  const [pendingUnenrollName, setPendingUnenrollName] = useState<string>('');
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -362,13 +378,24 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     }
   };
 
-  const unenrollFromCourse = async (enrollmentId: string) => {
-    setUnenrolling(enrollmentId);
+  // Show unenroll confirmation
+  const confirmUnenroll = (enrollmentId: string, courseName: string) => {
+    setPendingUnenrollId(enrollmentId);
+    setPendingUnenrollName(courseName);
+    setUnenrollConfirmOpen(true);
+  };
+
+  const unenrollFromCourse = async () => {
+    if (!pendingUnenrollId) return;
+    
+    setUnenrolling(pendingUnenrollId);
+    setUnenrollConfirmOpen(false);
+    
     try {
       const { error } = await supabase
         .from('student_enrollments')
         .update({ is_active: false })
-        .eq('id', enrollmentId);
+        .eq('id', pendingUnenrollId);
 
       if (error) throw error;
 
@@ -385,6 +412,8 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       });
     } finally {
       setUnenrolling(null);
+      setPendingUnenrollId(null);
+      setPendingUnenrollName('');
     }
   };
 
@@ -457,10 +486,16 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     }
   };
 
+  // Show bulk unenroll confirmation
+  const confirmBulkUnenroll = () => {
+    setBulkUnenrollConfirmOpen(true);
+  };
+
   // Bulk unenroll
   const handleBulkUnenroll = async () => {
     if (selectedEnrolledCourses.size === 0) return;
     
+    setBulkUnenrollConfirmOpen(false);
     setIsBulkUnenrolling(true);
     try {
       const enrollmentIds = Array.from(selectedEnrolledCourses);
@@ -622,7 +657,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={handleBulkUnenroll}
+                      onClick={confirmBulkUnenroll}
                       disabled={isBulkUnenrolling}
                     >
                       <X className="h-4 w-4 mr-1" />
@@ -710,7 +745,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                               size="sm"
                               variant="outline"
                               className="w-full mt-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => unenrollFromCourse(enrollment.id)}
+                              onClick={() => confirmUnenroll(enrollment.id, enrollment.course.course_name)}
                               disabled={unenrolling === enrollment.id}
                             >
                               {unenrolling === enrollment.id ? (
@@ -769,6 +804,44 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Single unenroll confirmation dialog */}
+      <AlertDialog open={unenrollConfirmOpen} onOpenChange={setUnenrollConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unenroll from Course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unenroll from <strong>{pendingUnenrollName}</strong>? 
+              You can re-enroll later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={unenrollFromCourse} className="bg-destructive hover:bg-destructive/90">
+              Unenroll
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk unenroll confirmation dialog */}
+      <AlertDialog open={bulkUnenrollConfirmOpen} onOpenChange={setBulkUnenrollConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unenroll from Multiple Courses?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unenroll from <strong>{selectedEnrolledCourses.size} courses</strong>? 
+              You can re-enroll in these courses later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkUnenroll} className="bg-destructive hover:bg-destructive/90">
+              Unenroll All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
