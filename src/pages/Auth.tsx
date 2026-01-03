@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import { useTheme } from '@/components/ThemeProvider';
 
 interface Department {
   dept_id: string;
@@ -39,6 +40,9 @@ const Auth = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
+  
+  const isLightMode = theme === 'light' || (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   useEffect(() => {
     loadDepartments();
@@ -251,8 +255,9 @@ const Auth = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor='rgb(39,30,55)'
-          hoverFillColor='rgb(34,34,34)'
+          borderColor={isLightMode ? 'rgb(200,200,210)' : 'rgb(39,30,55)'}
+          hoverFillColor={isLightMode ? 'rgb(59,130,246)' : 'rgb(34,34,34)'}
+          vignetteColor={isLightMode ? '#ffffff' : '#060010'}
         />
       </div>
 
