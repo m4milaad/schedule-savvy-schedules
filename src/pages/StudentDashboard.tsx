@@ -19,7 +19,10 @@ import {
   Edit,
   AlertTriangle,
   MapPin,
-  Building
+  Building,
+  FileText,
+  ClipboardCheck,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,6 +36,9 @@ import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { getContrastColor } from '@/components/ThemeColorPicker';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { StudentMarksTab } from '@/components/student/StudentMarksTab';
+import { StudentAttendanceTab } from '@/components/student/StudentAttendanceTab';
+import { StudentAssignmentsTab } from '@/components/student/StudentAssignmentsTab';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -549,30 +555,49 @@ const StudentDashboard = () => {
         )}
 
           <Tabs defaultValue="courses" className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-3 h-auto bg-muted/50 p-1 rounded-xl">
+            <TabsList className="grid w-full grid-cols-6 h-auto bg-muted/50 p-1 rounded-xl">
               <TabsTrigger 
                 value="courses" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
               >
                 <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">My Courses</span>
-                <span className="sm:hidden">Courses</span>
+                <span className="hidden lg:inline">My Courses</span>
+                <span className="lg:hidden hidden sm:inline">Courses</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="enroll" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Enroll</span>
-                <span className="sm:hidden">Enroll</span>
+                <span className="hidden lg:inline">Enroll</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="marks" 
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span className="hidden lg:inline">Marks</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="attendance" 
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                <span className="hidden lg:inline">Attendance</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="assignments" 
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="hidden lg:inline">Assignments</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-2"
+                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
               >
                 <Calendar className="w-4 h-4" />
-                <span className="hidden sm:inline">Exam Schedule</span>
-                <span className="sm:hidden">Exams</span>
+                <span className="hidden lg:inline">Exams</span>
               </TabsTrigger>
             </TabsList>
 
@@ -945,6 +970,21 @@ const StudentDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Marks Tab */}
+          <TabsContent value="marks" className="animate-fade-in">
+            <StudentMarksTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Attendance Tab */}
+          <TabsContent value="attendance" className="animate-fade-in">
+            <StudentAttendanceTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Assignments Tab */}
+          <TabsContent value="assignments" className="animate-fade-in">
+            <StudentAssignmentsTab studentId={profile?.id || ''} />
           </TabsContent>
         </Tabs>
 
