@@ -13,6 +13,7 @@ interface SquaresProps {
   borderColor?: CanvasStrokeStyle;
   squareSize?: number;
   hoverFillColor?: CanvasStrokeStyle;
+  gradientColor?: string;
 }
 
 const Squares: React.FC<SquaresProps> = ({
@@ -20,7 +21,8 @@ const Squares: React.FC<SquaresProps> = ({
   speed = 1,
   borderColor = '#999',
   squareSize = 40,
-  hoverFillColor = '#222'
+  hoverFillColor = '#222',
+  gradientColor = '#060010'
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number | null>(null);
@@ -80,7 +82,7 @@ const Squares: React.FC<SquaresProps> = ({
         Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2
       );
       gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      gradient.addColorStop(1, '#060010');
+      gradient.addColorStop(1, gradientColor);
 
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -147,7 +149,7 @@ const Squares: React.FC<SquaresProps> = ({
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [direction, speed, borderColor, hoverFillColor, squareSize]);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize, gradientColor]);
 
   return <canvas ref={canvasRef} className="w-full h-full border-none block"></canvas>;
 };
