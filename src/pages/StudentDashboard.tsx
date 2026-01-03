@@ -22,7 +22,11 @@ import {
   Building,
   FileText,
   ClipboardCheck,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  FolderOpen,
+  Library,
+  CalendarDays
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +43,12 @@ import { NotificationCenter } from '@/components/NotificationCenter';
 import { StudentMarksTab } from '@/components/student/StudentMarksTab';
 import { StudentAttendanceTab } from '@/components/student/StudentAttendanceTab';
 import { StudentAssignmentsTab } from '@/components/student/StudentAssignmentsTab';
+import { StudentNoticesTab } from '@/components/student/StudentNoticesTab';
+import { StudentCoursesTab } from '@/components/student/StudentCoursesTab';
+import { StudentPerformanceTab } from '@/components/student/StudentPerformanceTab';
+import { StudentResourcesTab } from '@/components/student/StudentResourcesTab';
+import { StudentLibraryTab } from '@/components/student/StudentLibraryTab';
+import { StudentLeaveTab } from '@/components/student/StudentLeaveTab';
 
 interface Course extends ExtendedCourse {
   dept_name?: string;
@@ -554,422 +564,78 @@ const StudentDashboard = () => {
           />
         )}
 
-          <Tabs defaultValue="courses" className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-6 h-auto bg-muted/50 p-1 rounded-xl">
+          <Tabs defaultValue="notices" className="space-y-4 md:space-y-6 animate-fade-in">
+            <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto bg-muted/50 p-1 rounded-xl">
               <TabsTrigger 
-                value="courses" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                value="notices" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden lg:inline">My Courses</span>
-                <span className="lg:hidden hidden sm:inline">Courses</span>
+                <Bell className="w-4 h-4" />
+                <span className="hidden lg:inline">Notices</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="enroll" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                value="courses" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden lg:inline">Enroll</span>
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden lg:inline">Courses</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="marks" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
-                <TrendingUp className="w-4 h-4" />
+                <GraduationCap className="w-4 h-4" />
                 <span className="hidden lg:inline">Marks</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="attendance" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                value="performance" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
-                <ClipboardCheck className="w-4 h-4" />
-                <span className="hidden lg:inline">Attendance</span>
+                <TrendingUp className="w-4 h-4" />
+                <span className="hidden lg:inline">Performance</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="resources" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span className="hidden lg:inline">Resources</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="assignments" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
                 <FileText className="w-4 h-4" />
                 <span className="hidden lg:inline">Assignments</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="schedule" 
-                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1 md:gap-2"
+                value="library" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
               >
-                <Calendar className="w-4 h-4" />
-                <span className="hidden lg:inline">Exams</span>
+                <Library className="w-4 h-4" />
+                <span className="hidden lg:inline">Library</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="leave" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span className="hidden lg:inline">Leave</span>
               </TabsTrigger>
             </TabsList>
 
-          {/* My Courses Tab */}
+          {/* Notices Tab */}
+          <TabsContent value="notices" className="animate-fade-in">
+            <StudentNoticesTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Courses Tab */}
           <TabsContent value="courses" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
-                  <BookOpen className="w-5 h-5" />
-                  My Enrolled Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {enrollments.length === 0 ? (
-                  <div className="text-center py-8 animate-scale-in">
-                    <BookOpen className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4 transition-colors duration-300" />
-                    <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">You haven't enrolled in any courses yet.</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">Go to the "Enroll" tab to add courses.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {enrollments.map((enrollment, index) => (
-                            <TableRow 
-                              key={enrollment.id}
-                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                              style={{ animationDelay: `${index * 0.05}s` }}
-                            >
-                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
-                                {enrollment.course.course_code}
-                              </TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_name}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.course_credits}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="transition-colors duration-300">
-                                  Semester {enrollment.course.semester}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{enrollment.course.dept_name || 'N/A'}</TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => unenrollFromCourse(enrollment.id)}
-                                  className="flex items-center gap-1 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                  Unenroll
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
-                      {enrollments.map((enrollment, index) => (
-                        <Card key={enrollment.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                          <CardContent className="p-4">
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
-                                    {enrollment.course.course_code}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {enrollment.course.course_name}
-                                  </p>
-                                </div>
-                                <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0">
-                                  Sem {enrollment.course.semester}
-                                </Badge>
-                              </div>
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground">Credits: {enrollment.course.course_credits}</span>
-                                <span className="text-muted-foreground truncate ml-2">{enrollment.course.dept_name || 'N/A'}</span>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => unenrollFromCourse(enrollment.id)}
-                                className="w-full flex items-center justify-center gap-1 text-xs"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                Unenroll
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Enroll in Courses Tab */}
-          <TabsContent value="enroll" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
-                  <Plus className="w-5 h-5" />
-                  Available Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
-                  <div className="flex-1">
-                    <Input
-                      ref={searchInputRef}
-                      placeholder="Search courses... (Type / to search)"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full transition-all duration-300 hover:border-blue-400 text-sm"
-                    />
-                  </div>
-                  <Select value={semesterFilter} onValueChange={setSemesterFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Semesters</SelectItem>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(sem => (
-                        <SelectItem key={sem} value={sem.toString()}>
-                          Semester {sem}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {filteredCourses.length === 0 ? (
-                  <div className="text-center py-8 animate-scale-in">
-                    <Search className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4 transition-colors duration-300" />
-                    <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">No available courses found.</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">Try adjusting your search or filters.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Credits</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Semester</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Department</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredCourses.map((course, index) => (
-                            <TableRow 
-                              key={course.course_id}
-                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                              style={{ animationDelay: `${index * 0.05}s` }}
-                            >
-                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">{course.course_code}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_name}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.course_credits}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="transition-colors duration-300">
-                                  Semester {course.semester}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{course.dept_name || 'N/A'}</TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  onClick={() => enrollInCourse(course.course_id)}
-                                  disabled={enrolling}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                  Enroll
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
-                      {filteredCourses.map((course, index) => (
-                        <Card key={course.course_id} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                          <CardContent className="p-4">
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
-                                    {course.course_code}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {course.course_name}
-                                  </p>
-                                </div>
-                                <Badge variant="secondary" className="ml-2 text-xs flex-shrink-0">
-                                  Sem {course.semester}
-                                </Badge>
-                              </div>
-                              <div className="flex justify-between items-center text-xs">
-                                <span className="text-muted-foreground">Credits: {course.course_credits}</span>
-                                <span className="text-muted-foreground truncate ml-2">{course.dept_name || 'N/A'}</span>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => enrollInCourse(course.course_id)}
-                                disabled={enrolling}
-                                className="w-full flex items-center justify-center gap-1 text-xs"
-                              >
-                                <Plus className="w-3 h-3" />
-                                Enroll
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Exam Schedule Tab */}
-          <TabsContent value="schedule" className="animate-fade-in">
-            <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
-                  <Calendar className="w-5 h-5" />
-                  Your Exam Schedule
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {examSchedule.length === 0 ? (
-                  <div className="text-center py-8 animate-scale-in">
-                    <Calendar className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4 transition-colors duration-300" />
-                    <p className="text-gray-600 dark:text-gray-400 transition-colors duration-300">No exam schedule available.</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500 transition-colors duration-300">
-                      Enroll in courses to see your exam schedule.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Exam Date</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Code</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Course Name</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Venue</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Session</TableHead>
-                            <TableHead className="dark:text-gray-300 transition-colors duration-300">Your Seat</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {examSchedule
-                            .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
-                            .map((exam, index) => (
-                            <TableRow 
-                              key={index}
-                              className="transition-all duration-300 hover:bg-muted/50 hover:scale-[1.01] animate-fade-in"
-                              style={{ animationDelay: `${index * 0.05}s` }}
-                            >
-                              <TableCell className="font-medium dark:text-gray-200 transition-colors duration-300">
-                                {new Date(exam.exam_date).toLocaleDateString('en-US', {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
-                              </TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_code}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.course_name}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.venue_name}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">{exam.session_name}</TableCell>
-                              <TableCell className="dark:text-gray-300 transition-colors duration-300">
-                                {exam.seat_label ? (
-                                  <Badge className="bg-primary/10 text-primary border-primary/30">
-                                    {exam.seat_label}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-muted-foreground">
-                                    Not Assigned
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
-                      {examSchedule
-                        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
-                        .map((exam, index) => (
-                        <Card key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                          <CardContent className="p-4">
-                            <div className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-xs dark:text-gray-200">
-                                    {new Date(exam.exam_date).toLocaleDateString('en-US', {
-                                      weekday: 'short',
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-sm dark:text-gray-200 truncate">
-                                    {exam.course_code}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {exam.course_name}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap justify-between items-center text-xs pt-2 border-t gap-2">
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-muted-foreground truncate">{exam.venue_name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {exam.seat_label ? (
-                                    <Badge className="bg-primary/10 text-primary border-primary/30 text-xs">
-                                      Seat: {exam.seat_label}
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                                      No Seat
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <StudentCoursesTab 
+              studentId={profile?.id || ''} 
+              profileDeptId={profile?.dept_id || undefined}
+              profileSemester={profile?.semester || undefined}
+            />
           </TabsContent>
 
           {/* Marks Tab */}
@@ -977,14 +643,29 @@ const StudentDashboard = () => {
             <StudentMarksTab studentId={profile?.id || ''} />
           </TabsContent>
 
-          {/* Attendance Tab */}
-          <TabsContent value="attendance" className="animate-fade-in">
-            <StudentAttendanceTab studentId={profile?.id || ''} />
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="animate-fade-in">
+            <StudentPerformanceTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Resources Tab */}
+          <TabsContent value="resources" className="animate-fade-in">
+            <StudentResourcesTab studentId={profile?.id || ''} />
           </TabsContent>
 
           {/* Assignments Tab */}
           <TabsContent value="assignments" className="animate-fade-in">
             <StudentAssignmentsTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Library Tab */}
+          <TabsContent value="library" className="animate-fade-in">
+            <StudentLibraryTab studentId={profile?.id || ''} />
+          </TabsContent>
+
+          {/* Leave Tab */}
+          <TabsContent value="leave" className="animate-fade-in">
+            <StudentLeaveTab studentId={profile?.id || ''} profileId={profile?.id || ''} />
           </TabsContent>
         </Tabs>
 
