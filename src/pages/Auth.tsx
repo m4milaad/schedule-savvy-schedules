@@ -13,7 +13,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import { useTheme } from 'next-themes';
 
 interface Department {
   dept_id: string;
@@ -40,8 +39,6 @@ const Auth = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { resolvedTheme } = useTheme();
-  const isDarkMode = resolvedTheme === 'dark';
 
   useEffect(() => {
     loadDepartments();
@@ -254,9 +251,8 @@ const Auth = () => {
           speed={0.5}
           squareSize={40}
           direction='diagonal'
-          borderColor={isDarkMode ? 'rgb(39,30,55)' : 'rgb(200,210,230)'}
-          hoverFillColor={isDarkMode ? 'rgb(34,34,34)' : 'rgb(230,235,245)'}
-          showVignette={isDarkMode}
+          borderColor='rgb(39,30,55)'
+          hoverFillColor='rgb(34,34,34)'
         />
       </div>
 
