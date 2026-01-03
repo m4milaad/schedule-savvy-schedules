@@ -53,7 +53,7 @@ import { StudentLeaveTab } from '@/components/student/StudentLeaveTab';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 
-const TAB_VALUES = ['notices', 'courses', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
+const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
 type TabValue = typeof TAB_VALUES[number];
 
 const KEYBOARD_SHORTCUTS = [
@@ -62,12 +62,13 @@ const KEYBOARD_SHORTCUTS = [
     shortcuts: [
       { keys: ['1'], description: 'Go to Notices' },
       { keys: ['2'], description: 'Go to Courses' },
-      { keys: ['3'], description: 'Go to Marks' },
-      { keys: ['4'], description: 'Go to Performance' },
-      { keys: ['5'], description: 'Go to Resources' },
-      { keys: ['6'], description: 'Go to Assignments' },
-      { keys: ['7'], description: 'Go to Library' },
-      { keys: ['8'], description: 'Go to Leave' },
+      { keys: ['3'], description: 'Go to Exams' },
+      { keys: ['4'], description: 'Go to Marks' },
+      { keys: ['5'], description: 'Go to Performance' },
+      { keys: ['6'], description: 'Go to Resources' },
+      { keys: ['7'], description: 'Go to Assignments' },
+      { keys: ['8'], description: 'Go to Library' },
+      { keys: ['9'], description: 'Go to Leave' },
       { keys: ['←'], description: 'Previous tab' },
       { keys: ['→'], description: 'Next tab' },
     ],
@@ -172,6 +173,7 @@ const StudentDashboard = () => {
     { shortcut: { key: '6' }, callback: () => navigateToTab(5) },
     { shortcut: { key: '7' }, callback: () => navigateToTab(6) },
     { shortcut: { key: '8' }, callback: () => navigateToTab(7) },
+    { shortcut: { key: '9' }, callback: () => navigateToTab(8) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
     { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
@@ -649,7 +651,7 @@ const StudentDashboard = () => {
         )}
 
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-auto bg-muted/50 p-1 rounded-xl">
+            <TabsList className="grid w-full grid-cols-5 md:grid-cols-9 h-auto bg-muted/50 p-1 rounded-xl">
               <TabsTrigger 
                 value="notices" 
                 className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
@@ -663,6 +665,13 @@ const StudentDashboard = () => {
               >
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden lg:inline">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="exams" 
+                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
+              >
+                <Calendar className="w-4 h-4" />
+                <span className="hidden lg:inline">Exams</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="marks" 
@@ -720,6 +729,88 @@ const StudentDashboard = () => {
               profileDeptId={profile?.dept_id || undefined}
               profileSemester={profile?.semester || undefined}
             />
+          </TabsContent>
+
+          {/* Exams Tab */}
+          <TabsContent value="exams" className="animate-fade-in">
+            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Exam Schedule & Seating
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {examSchedule.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No Upcoming Exams</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Your exam schedule will appear here once it's published.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {examSchedule.map((exam, index) => (
+                      <Card key={`${exam.exam_date}-${exam.course_id}-${index}`} className="overflow-hidden border-border/50">
+                        <div className="flex flex-col sm:flex-row">
+                          {/* Seat Visual */}
+                          <div className={`p-6 flex flex-col items-center justify-center min-w-[140px] ${
+                            exam.seat_label 
+                              ? 'bg-primary/10' 
+                              : 'bg-muted/50'
+                          }`}>
+                            {exam.seat_label ? (
+                              <>
+                                <div className="text-2xl font-bold text-primary">{exam.seat_label}</div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Row {exam.row_number}, Col {exam.column_number}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <MapPin className="h-8 w-8 text-muted-foreground" />
+                                <div className="text-xs text-muted-foreground mt-1">Not Assigned</div>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Details */}
+                          <div className="flex-1 p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                              <div>
+                                <h3 className="font-semibold text-lg">{exam.course_code}</h3>
+                                <p className="text-sm text-muted-foreground">{exam.course_name}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {new Date(exam.exam_date).toLocaleDateString('en-US', { 
+                                  weekday: 'short', 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })}
+                              </Badge>
+                            </div>
+
+                            <div className="flex flex-wrap gap-4 text-sm">
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <Building className="h-4 w-4" />
+                                <span>{exam.venue_name}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-muted-foreground">
+                                <GraduationCap className="h-4 w-4" />
+                                <span>{exam.session_name}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Marks Tab */}
