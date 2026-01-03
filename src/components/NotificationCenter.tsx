@@ -185,7 +185,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button variant="outline" size="icon" className="relative bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
