@@ -38,6 +38,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       return <Navigate to="/" replace />;
     } else if (['admin', 'department_admin'].includes(profile.user_type)) {
       return <Navigate to="/admin-dashboard" replace />;
+    } else if (profile.user_type === 'teacher') {
+      return <Navigate to="/teacher-dashboard" replace />;
     }
     return <Navigate to="/auth" replace />;
   }

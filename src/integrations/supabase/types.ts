@@ -14,6 +14,172 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_submissions: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          feedback: string | null
+          file_url: string | null
+          id: string
+          marks_obtained: number | null
+          status: string | null
+          student_id: string
+          submission_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          feedback?: string | null
+          file_url?: string | null
+          id?: string
+          marks_obtained?: number | null
+          status?: string | null
+          student_id: string
+          submission_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          feedback?: string | null
+          file_url?: string | null
+          id?: string
+          marks_obtained?: number | null
+          status?: string | null
+          student_id?: string
+          submission_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignment_submissions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          description: string | null
+          due_date: string
+          id: string
+          is_active: boolean | null
+          max_marks: number
+          teacher_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          is_active?: boolean | null
+          max_marks?: number
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          is_active?: boolean | null
+          max_marks?: number
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance: {
+        Row: {
+          attendance_date: string
+          course_id: string
+          created_at: string | null
+          id: string
+          remarks: string | null
+          status: string
+          student_id: string
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          attendance_date: string
+          course_id: string
+          created_at?: string | null
+          id?: string
+          remarks?: string | null
+          status?: string
+          student_id: string
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          remarks?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "attendance_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -260,6 +426,148 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_applications: {
+        Row: {
+          applicant_id: string
+          applicant_type: string
+          contact_info: string | null
+          created_at: string | null
+          end_date: string
+          id: string
+          leave_type: string
+          reason: string
+          review_remarks: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          applicant_id: string
+          applicant_type: string
+          contact_info?: string | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          leave_type: string
+          reason: string
+          review_remarks?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          applicant_type?: string
+          contact_info?: string | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          leave_type?: string
+          reason?: string
+          review_remarks?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_applications_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notices: {
+        Row: {
+          content: string
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          is_active: boolean | null
+          notifications_sent: number | null
+          priority: string
+          target_audience: string
+          target_course_id: string | null
+          target_dept_id: string | null
+          target_semester: number | null
+          teacher_id: string
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          notifications_sent?: number | null
+          priority?: string
+          target_audience?: string
+          target_course_id?: string | null
+          target_dept_id?: string | null
+          target_semester?: number | null
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          notifications_sent?: number | null
+          priority?: string
+          target_audience?: string
+          target_course_id?: string | null
+          target_dept_id?: string | null
+          target_semester?: number | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notices_target_course_id_fkey"
+            columns: ["target_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "notices_target_dept_id_fkey"
+            columns: ["target_dept_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["dept_id"]
+          },
+          {
+            foreignKeyName: "notices_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -334,6 +642,78 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departments"
             referencedColumns: ["dept_id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          access_level: string | null
+          course_id: string
+          created_at: string | null
+          description: string | null
+          download_count: number | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          resource_type: string
+          teacher_id: string
+          title: string
+          updated_at: string | null
+          view_count: number | null
+        }
+        Insert: {
+          access_level?: string | null
+          course_id: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          resource_type?: string
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          access_level?: string | null
+          course_id?: string
+          created_at?: string | null
+          description?: string | null
+          download_count?: number | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          resource_type?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "resources_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -536,6 +916,82 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["student_id"]
+          },
+        ]
+      }
+      student_marks: {
+        Row: {
+          academic_year: number | null
+          assignment_marks: number | null
+          attendance_marks: number | null
+          course_id: string
+          created_at: string | null
+          grade: string | null
+          id: string
+          presentation_marks: number | null
+          semester: number
+          student_id: string
+          teacher_id: string
+          test_1_marks: number | null
+          test_2_marks: number | null
+          total_marks: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year?: number | null
+          assignment_marks?: number | null
+          attendance_marks?: number | null
+          course_id: string
+          created_at?: string | null
+          grade?: string | null
+          id?: string
+          presentation_marks?: number | null
+          semester: number
+          student_id: string
+          teacher_id: string
+          test_1_marks?: number | null
+          test_2_marks?: number | null
+          total_marks?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: number | null
+          assignment_marks?: number | null
+          attendance_marks?: number | null
+          course_id?: string
+          created_at?: string | null
+          grade?: string | null
+          id?: string
+          presentation_marks?: number | null
+          semester?: number
+          student_id?: string
+          teacher_id?: string
+          test_1_marks?: number | null
+          test_2_marks?: number | null
+          total_marks?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_marks_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["course_id"]
+          },
+          {
+            foreignKeyName: "student_marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["student_id"]
+          },
+          {
+            foreignKeyName: "student_marks_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -871,7 +1327,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "department_admin" | "student"
+      app_role: "admin" | "department_admin" | "student" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -999,7 +1455,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "department_admin", "student"],
+      app_role: ["admin", "department_admin", "student", "teacher"],
     },
   },
 } as const
