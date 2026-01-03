@@ -14,7 +14,7 @@ const CountdownTimer = ({ examDate }: { examDate: string }) => {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
         <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Completed</span>
+        <span className="text-sm text-muted-foreground">Exam Over</span>
       </div>
     );
   }
