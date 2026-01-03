@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import TeacherDashboard from "./pages/TeacherDashboard";
 import MobileSchedule from "./pages/MobileSchedule";
 import NotFound from "./pages/NotFound";
 import ManageAdmins from "./pages/ManageAdmins";
@@ -92,6 +93,14 @@ const App = () => {
                 element={
                   <ProtectedRoute allowedRoles={['student', 'admin', 'department_admin']}>
                     <UpdatePassword />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/teacher-dashboard" 
+                element={
+                  <ProtectedRoute allowedRoles={['teacher']}>
+                    <TeacherDashboard />
                   </ProtectedRoute>
                 } 
               />
