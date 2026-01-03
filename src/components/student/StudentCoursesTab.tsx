@@ -392,7 +392,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                 </div>
               ) : (
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredAvailable.slice(0, 12).map((course) => (
+                  {filteredAvailable.map((course) => (
                     <Card key={course.course_id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
                       <CardContent className="pt-4">
                         <div className="mb-3">
