@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import { exportToExcel as excelJsExport, createWorkbook, addWorksheetFromJson, downloadWorkbook, autoSizeColumns } from './excelUtils';
 
 /**
  * Export data to CSV format
@@ -46,47 +46,17 @@ export function exportToCSV<T extends Record<string, any>>(
 /**
  * Export data to Excel format
  */
-export function exportToExcel<T extends Record<string, any>>(
+export async function exportToExcel<T extends Record<string, any>>(
   data: T[],
   filename: string,
   sheetName: string = 'Sheet1',
   columns?: { key: keyof T; label: string }[]
-) {
+): Promise<void> {
   if (data.length === 0) {
     throw new Error('No data to export');
   }
 
-  // Prepare data for Excel
-  const excelData = data.map((item) => {
-    if (columns) {
-      const row: Record<string, any> = {};
-      columns.forEach((col) => {
-        row[col.label] = item[col.key];
-      });
-      return row;
-    }
-    return item;
-  });
-
-  // Create workbook
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(excelData);
-
-  // Auto-size columns
-  const maxWidth = 50;
-  const colWidths = Object.keys(excelData[0] || {}).map((key) => {
-    const maxLength = Math.max(
-      key.length,
-      ...excelData.map((row) => String(row[key] || '').length)
-    );
-    return { wch: Math.min(maxLength + 2, maxWidth) };
-  });
-  ws['!cols'] = colWidths;
-
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-
-  // Download
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  await excelJsExport(data, filename, sheetName, columns);
 }
 
 /**
@@ -119,7 +89,7 @@ function downloadBlob(blob: Blob, filename: string) {
 /**
  * Export table data with custom formatting
  */
-export function exportTableData<T extends Record<string, any>>(
+export async function exportTableData<T extends Record<string, any>>(
   data: T[],
   filename: string,
   format: 'csv' | 'excel' | 'json',
@@ -127,14 +97,14 @@ export function exportTableData<T extends Record<string, any>>(
     columns?: { key: keyof T; label: string }[];
     sheetName?: string;
   }
-) {
+): Promise<boolean> {
   try {
     switch (format) {
       case 'csv':
         exportToCSV(data, filename, options?.columns);
         break;
       case 'excel':
-        exportToExcel(data, filename, options?.sheetName, options?.columns);
+        await exportToExcel(data, filename, options?.sheetName, options?.columns);
         break;
       case 'json':
         exportToJSON(data, filename);
@@ -148,3 +118,6 @@ export function exportTableData<T extends Record<string, any>>(
     throw error;
   }
 }
+
+// Re-export utilities for direct usage
+export { createWorkbook, addWorksheetFromJson, downloadWorkbook, autoSizeColumns };

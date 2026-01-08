@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, Download, Upload, Save, Trash2, FileSpreadsheet } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 
 interface MarksTabProps {
   teacherId: string;
@@ -153,6 +153,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           student_id: mark.student_id,
           course_id: selectedCourse,
           teacher_id: teacherId,
+          semester,
           test_1_marks: mark.test_1_marks,
           test_2_marks: mark.test_2_marks,
           presentation_marks: mark.presentation_marks,
@@ -160,8 +161,6 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           attendance_marks: mark.attendance_marks,
           total_marks: mark.total_marks,
           grade: mark.grade,
-          semester,
-          academic_year: new Date().getFullYear(),
         };
 
         if (mark.id) {
@@ -191,7 +190,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     }
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const templateData = marks.map(m => ({
       'Enrollment No': m.enrollment_no,
       'Student Name': m.student_name,
@@ -202,57 +201,49 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       'Attendance (20)': m.attendance_marks || '',
     }));
 
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Marks');
-    XLSX.writeFile(wb, `marks_template_${selectedCourse}.xlsx`);
+    const workbook = createWorkbook();
+    addWorksheetFromJson(workbook, 'Marks', templateData);
+    await downloadWorkbook(workbook, `marks_template_${selectedCourse}.xlsx`);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = new Uint8Array(event.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
+    try {
+      const jsonData = await readExcelFile(file);
 
-        const newMarks = [...marks];
-        jsonData.forEach((row: any) => {
-          const enrollmentNo = row['Enrollment No'];
-          const markIndex = newMarks.findIndex(m => m.enrollment_no === enrollmentNo);
+      const newMarks = [...marks];
+      jsonData.forEach((row: any) => {
+        const enrollmentNo = row['Enrollment No'];
+        const markIndex = newMarks.findIndex(m => m.enrollment_no === enrollmentNo);
+        
+        if (markIndex !== -1) {
+          newMarks[markIndex].test_1_marks = row['Test I (20)'] || null;
+          newMarks[markIndex].test_2_marks = row['Test II (20)'] || null;
+          newMarks[markIndex].presentation_marks = row['Presentation (20)'] || null;
+          newMarks[markIndex].assignment_marks = row['Assignment (20)'] || null;
+          newMarks[markIndex].attendance_marks = row['Attendance (20)'] || null;
           
-          if (markIndex !== -1) {
-            newMarks[markIndex].test_1_marks = row['Test I (20)'] || null;
-            newMarks[markIndex].test_2_marks = row['Test II (20)'] || null;
-            newMarks[markIndex].presentation_marks = row['Presentation (20)'] || null;
-            newMarks[markIndex].assignment_marks = row['Assignment (20)'] || null;
-            newMarks[markIndex].attendance_marks = row['Attendance (20)'] || null;
-            
-            const total = calculateTotal(newMarks[markIndex]);
-            newMarks[markIndex].total_marks = total;
-            newMarks[markIndex].grade = calculateGrade(total);
-          }
-        });
+          const total = calculateTotal(newMarks[markIndex]);
+          newMarks[markIndex].total_marks = total;
+          newMarks[markIndex].grade = calculateGrade(total);
+        }
+      });
 
-        setMarks(newMarks);
-        toast({ title: 'Success', description: 'Marks imported successfully' });
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to parse Excel file',
-          variant: 'destructive',
-        });
-      }
-    };
-    reader.readAsArrayBuffer(file);
+      setMarks(newMarks);
+      toast({ title: 'Success', description: 'Marks imported successfully' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to parse Excel file',
+        variant: 'destructive',
+      });
+    }
     e.target.value = '';
   };
 
-  const exportMarks = () => {
+  const exportMarks = async () => {
     const exportData = marks.map(m => ({
       'Enrollment No': m.enrollment_no,
       'Student Name': m.student_name,
@@ -265,10 +256,9 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       'Grade': m.grade,
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Marks');
-    XLSX.writeFile(wb, `marks_export_${selectedCourse}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    const workbook = createWorkbook();
+    addWorksheetFromJson(workbook, 'Marks', exportData);
+    await downloadWorkbook(workbook, `marks_export_${selectedCourse}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   return (
@@ -280,91 +270,90 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         </div>
       </div>
 
-      {/* Course Selection and File Actions */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            Excel File Management
+            <BookOpen className="w-5 h-5" />
+            Select Course
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Select Subject</Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.course_id} value={course.course_id}>
-                      {course.course_code} - {course.course_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end gap-2">
-              <Button variant="outline" onClick={downloadTemplate} disabled={!selectedCourse}>
-                <Download className="h-4 w-4 mr-2" />
-                Download Template
-              </Button>
-            </div>
-            <div className="flex items-end gap-2">
-              <Label htmlFor="upload" className="cursor-pointer">
-                <Button variant="outline" asChild disabled={!selectedCourse}>
-                  <span>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Excel
-                  </span>
-                </Button>
-              </Label>
-              <Input
-                id="upload"
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={!selectedCourse}
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <Button variant="outline" onClick={exportMarks} disabled={!selectedCourse || marks.length === 0}>
-                <Download className="h-4 w-4 mr-2" />
-                Export Marks
-              </Button>
-            </div>
-          </div>
+        <CardContent>
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a course" />
+            </SelectTrigger>
+            <SelectContent>
+              {courses.map((course) => (
+                <SelectItem key={course.course_id} value={course.course_id}>
+                  {course.course_code} - {course.course_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
-      {/* Marks Table */}
       {selectedCourse && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Subject-wise Marks Entry</CardTitle>
-                <CardDescription>
-                  Enter marks for each student. Max marks: 20 for each component.
-                </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5" />
+                Student Marks
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadTemplate}
+                  disabled={marks.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Template
+                </Button>
+                <Label htmlFor="marks-upload" className="cursor-pointer">
+                  <Button variant="outline" size="sm" asChild>
+                    <span>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload
+                    </span>
+                  </Button>
+                </Label>
+                <Input
+                  id="marks-upload"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportMarks}
+                  disabled={marks.length === 0}
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+                <Button
+                  onClick={saveMarks}
+                  disabled={saving || marks.length === 0}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
               </div>
-              <Button onClick={saveMarks} disabled={saving || marks.length === 0}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save All Changes'}
-              </Button>
             </div>
+            <CardDescription>
+              Marks are out of 20 for each component. Total: 100 marks
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Loading students...</div>
             ) : marks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No students enrolled in this course</p>
+                No enrolled students found for this course
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -385,7 +374,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                   <TableBody>
                     {marks.map((mark, index) => (
                       <TableRow key={mark.student_id}>
-                        <TableCell className="font-mono">{mark.enrollment_no}</TableCell>
+                        <TableCell className="font-medium">{mark.enrollment_no}</TableCell>
                         <TableCell>{mark.student_name}</TableCell>
                         <TableCell>
                           <Input
@@ -440,8 +429,19 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                         <TableCell className="text-center font-semibold">
                           {mark.total_marks ?? '-'}
                         </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {mark.grade ?? '-'}
+                        <TableCell className="text-center">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            mark.grade === 'A+' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            mark.grade === 'A' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            mark.grade === 'B+' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                            mark.grade === 'B' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            mark.grade === 'C' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            mark.grade === 'D' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            mark.grade === 'F' ? 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                          }`}>
+                            {mark.grade ?? '-'}
+                          </span>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -453,32 +453,27 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         </Card>
       )}
 
-      {/* Attendance Guide */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
         <CardHeader>
-          <CardTitle>Attendance Marking Guide</CardTitle>
+          <CardTitle>Attendance Marks Guide</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            <div className="p-3 bg-muted rounded-lg text-center">
-              <div className="font-semibold">95%+</div>
-              <div className="text-muted-foreground">= 20 marks</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="p-3 rounded-lg bg-background/50">
+              <div className="font-semibold">90-100%</div>
+              <div className="text-muted-foreground">20 marks</div>
             </div>
-            <div className="p-3 bg-muted rounded-lg text-center">
-              <div className="font-semibold">85-94%</div>
-              <div className="text-muted-foreground">= 16 marks</div>
+            <div className="p-3 rounded-lg bg-background/50">
+              <div className="font-semibold">80-89%</div>
+              <div className="text-muted-foreground">18 marks</div>
             </div>
-            <div className="p-3 bg-muted rounded-lg text-center">
-              <div className="font-semibold">75-84%</div>
-              <div className="text-muted-foreground">= 12 marks</div>
+            <div className="p-3 rounded-lg bg-background/50">
+              <div className="font-semibold">70-79%</div>
+              <div className="text-muted-foreground">16 marks</div>
             </div>
-            <div className="p-3 bg-muted rounded-lg text-center">
-              <div className="font-semibold">65-74%</div>
-              <div className="text-muted-foreground">= 8 marks</div>
-            </div>
-            <div className="p-3 bg-muted rounded-lg text-center">
-              <div className="font-semibold">&lt;65%</div>
-              <div className="text-muted-foreground">= 4 marks</div>
+            <div className="p-3 rounded-lg bg-background/50">
+              <div className="font-semibold">60-69%</div>
+              <div className="text-muted-foreground">14 marks</div>
             </div>
           </div>
         </CardContent>
