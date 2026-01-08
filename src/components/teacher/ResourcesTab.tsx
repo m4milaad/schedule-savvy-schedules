@@ -318,7 +318,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       </div>
 
       {showForm && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <CardTitle>{editingResource ? 'Edit Resource' : 'Upload New Resource'}</CardTitle>
           </CardHeader>
@@ -490,7 +490,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       )}
 
       {/* Resources List */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Uploaded Resources</CardTitle>
           <CardDescription>View and manage all your resources</CardDescription>
