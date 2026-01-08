@@ -145,7 +145,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
@@ -153,7 +153,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
@@ -161,7 +161,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
@@ -169,7 +169,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardContent className="pt-6">
             <div className="text-center">
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -180,7 +180,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -225,7 +225,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
       </Card>
 
       {/* Applications List */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Leave Applications</CardTitle>
           <CardDescription>

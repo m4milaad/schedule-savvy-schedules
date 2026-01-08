@@ -179,7 +179,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
       </div>
 
       {/* Selection */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -227,7 +227,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
       {/* Attendance Stats */}
       {selectedCourse && attendance.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{attendanceStats.present}</div>
@@ -235,7 +235,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{attendanceStats.absent}</div>
@@ -243,7 +243,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">{attendanceStats.late}</div>
@@ -251,7 +251,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-gray-600">{attendanceStats.on_leave}</div>
@@ -264,7 +264,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       {/* Attendance Table */}
       {selectedCourse && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
