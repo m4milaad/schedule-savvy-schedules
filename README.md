@@ -3,7 +3,7 @@
 > A comprehensive, production-ready exam scheduling system with intelligent constraint handling, real-time collaboration, and modern UI/UX design.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://ds-cuk.vercel.app/)
-[![Version](https://img.shields.io/badge/version-5.0.0-blue)]()
+[![Version](https://img.shields.io/badge/version-5.1.0-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)]()
 [![React](https://img.shields.io/badge/React-18.3-blue)]()
@@ -26,6 +26,39 @@
 
 ---
 
+## 🚀 What's New in v5.1
+
+### Security Updates
+- **ExcelJS Migration** - Replaced vulnerable `xlsx` library with secure `exceljs` for Excel import/export
+- **jsPDF v4 Upgrade** - Updated to jsPDF 4.0.0 to fix critical path traversal vulnerability
+- **Teacher Profile Edit** - Teachers can now update their profile information and theme color
+
+### Teacher Dashboard Redesign (`src/pages/TeacherDashboard.tsx`)
+- **Tab-Based Layout** - Modern tabbed interface matching Student and Admin dashboards
+- **Glassmorphism Styling** - Consistent glass-effect cards across all tabs
+- **Variable Background Color** - Theme color picker for personalized dashboard backgrounds
+- **Profile Edit Dialog** (`src/components/teacher/TeacherProfileEditDialog.tsx`) - Full profile management including:
+  - Contact information
+  - Address and designation
+  - Department selection
+  - Theme color customization
+- **Keyboard Shortcuts** - Quick navigation (1-7 for tabs, E for edit, ? for help)
+
+### Excel Utilities Refactor
+- **New `excelUtils.ts`** (`src/utils/excelUtils.ts`) - Centralized Excel handling with ExcelJS:
+  - `createWorkbook()` - Create new workbooks
+  - `addWorksheetFromJson()` - Convert JSON to worksheet with auto-sizing
+  - `downloadWorkbook()` - Download as .xlsx file
+  - `readExcelFile()` - Parse uploaded Excel files
+  - `exportToExcel()` - Convenience function for quick exports
+- **Updated Components** - All Excel operations now use the new secure utilities:
+  - `BulkUploadModal.tsx` - Admin bulk uploads
+  - `MarksTab.tsx` - Teacher marks management
+  - `Index.tsx` - Exam schedule export
+  - `exportUtils.ts` - Generic export utilities
+
+---
+
 ## 🚀 What's New in v5.0
 
 ### Seating Arrangement System
@@ -43,7 +76,7 @@
 - **Persistent Notifications** - Notifications stored in `user_notifications` table with type (success/info/warning/error)
 
 ### Teacher Dashboard (`src/pages/TeacherDashboard.tsx`)
-- **Collapsible Sidebar** - Navigation with 7 tabs: Notices, Marks, Attendance, Assignments, Resources, Leave Management, Apply Leave
+- **Tab-Based Navigation** - 7 tabs: Notices, Marks, Attendance, Assignments, Resources, Leave Management, Apply Leave
 - **Notices Tab** (`src/components/teacher/NoticesTab.tsx`) - Create/manage notices with priority levels (normal/important/urgent), target audience selection
 - **Marks Tab** (`src/components/teacher/MarksTab.tsx`) - Enter/edit student marks (Test 1, Test 2, Presentation, Assignment, Attendance), auto-calculate totals and grades
 - **Attendance Tab** (`src/components/teacher/AttendanceTab.tsx`) - Mark daily attendance (present/absent/late/on_leave) with date picker
@@ -53,17 +86,18 @@
 - **Apply Leave Tab** (`src/components/teacher/TeacherApplyLeaveTab.tsx`) - Teachers can apply for their own leave
 
 ### Enhanced Student Dashboard (`src/pages/StudentDashboard.tsx`)
-- **9 New Tabs**: Notices, Courses, Marks, Performance, Resources, Assignments, Library, Leave
+- **9 Tabs**: Notices, Courses, Marks, Performance, Resources, Assignments, Library, Leave, Attendance
 - **Student Components**:
   - `StudentNoticesTab.tsx` - View notices from teachers with priority badges
-  - `StudentCoursesTab.tsx` - Course enrollment management
+  - `StudentCoursesTab.tsx` - Course enrollment management with department filtering
   - `StudentMarksTab.tsx` - View marks breakdown by course
   - `StudentPerformanceTab.tsx` - Performance analytics and trends
   - `StudentResourcesTab.tsx` - Access uploaded teaching materials
   - `StudentAssignmentsTab.tsx` - View assignments, submit work
-  - `StudentLibraryTab.tsx` - Library resources (placeholder)
+  - `StudentLibraryTab.tsx` - Library resources
   - `StudentLeaveTab.tsx` - Apply for leave, track application status
   - `StudentAttendanceTab.tsx` - View attendance records
+- **Exam Schedule View** - Personal exam schedule with seat assignments and countdown timers
 - **Glassmorphism Cards** - Modern glass-effect styling on student profile cards
 - **Keyboard Shortcuts** (`src/components/KeyboardShortcutsHelp.tsx`):
   - `1-8` - Navigate to tabs
@@ -181,11 +215,20 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 #### **Student Dashboard**
 - **Enhanced Profile Card**: Modern card-based header with status indicators
 - **Course Enrollment**: Easy course enrollment with profile completion checks
-- **Exam Schedule View**: Personal exam schedule with venue and date information
+- **Exam Schedule View**: Personal exam schedule with venue, seat, and countdown timer
 - **Profile Management**: Complete profile editing with validation
 - **Mobile-Optimized**: Card views for mobile, table views for desktop
 - **Advanced Filtering**: Filter by department, year, and search across all fields
 - **Export Options**: Export data to CSV, Excel, or JSON formats
+
+#### **Teacher Dashboard**
+- **Tab-Based Navigation**: 7 feature-rich tabs for complete teaching management
+- **Marks Management**: Excel import/export with auto-calculation
+- **Attendance Tracking**: Date-based marking with statistics
+- **Assignment Management**: Create, track, and grade assignments
+- **Resource Sharing**: Upload and manage teaching materials
+- **Leave Management**: Review student leave requests + apply for own leave
+- **Profile Customization**: Theme color picker and contact info management
 
 ### 📊 Comprehensive Data Management
 
@@ -194,13 +237,14 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 - **Departments**: Manage departments under schools
 - **Courses**: Full course catalog with credits, types, and gap settings (with search)
 - **Teachers**: Faculty information management (with search)
-- **Venues**: Exam venues with capacity tracking
+- **Venues**: Exam venues with capacity and seating grid configuration
 - **Sessions**: Academic session configuration
 - **Holidays**: Holiday calendar management (with search)
 - **Students**: Student records with enrollment tracking (with advanced filters)
+- **Seating Arrangement**: Visual seating grid with drag-and-drop
 
 #### **Bulk Operations**
-- **Excel Import/Export**: Bulk upload via Excel templates
+- **Excel Import/Export**: Bulk upload via Excel templates (using secure ExcelJS)
 - **Data Validation**: Automatic validation during import
 - **Backup & Restore**: Export data for backup purposes
 - **Template Generation**: Download pre-formatted Excel templates
@@ -213,6 +257,7 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 
 #### **Multi-Level Access Control**
 - **Student Accounts**: Supabase authentication with email verification
+- **Teacher Accounts**: Teacher-specific dashboard with approval workflow
 - **Admin Accounts**: Separate admin authentication system
 - **Department Admins**: Limited access for department-level management
 - **Row Level Security**: Database-level access control
@@ -239,11 +284,10 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 - **Print Optimization**: Hides unnecessary elements, optimized tables
 - **Save to Database**: Persist schedules for future reference
 
-#### **Advanced Export Features**
-- **Bulk Export**: Export selected items only
-- **Format Options**: CSV (comma-separated), XLSX (Excel), JSON (structured)
-- **Data Escaping**: Proper CSV escaping for special characters
-- **Batch Processing**: Handle large datasets efficiently
+#### **PDF Export**
+- **Exam Schedule PDF**: Complete schedule with all details
+- **Seating Chart PDF**: Color-coded venue seating plans
+- **Per-Venue Export**: Export individual venue seating arrangements
 
 ---
 
@@ -260,6 +304,7 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 ### **Backend & Database**
 - **Supabase**: PostgreSQL database with real-time capabilities
 - **Supabase Auth**: User authentication and authorization
+- **Supabase Storage**: File storage for resources and assignments
 - **Row Level Security**: Database-level access control
 - **PostgreSQL Functions**: Custom RPC functions for complex queries
 
@@ -275,9 +320,11 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 - **date-fns**: Date manipulation
 - **sonner**: Toast notifications
 - **next-themes**: Theme management
+- **Framer Motion** (via GSAP): Animations
 
 ### **Utilities**
-- **xlsx**: Excel file processing and export
+- **ExcelJS**: Secure Excel file processing and export (replaced xlsx)
+- **jsPDF 4.0**: PDF generation for schedules and seating charts
 - **zod**: Schema validation
 - **clsx & tailwind-merge**: Conditional styling
 - **bcryptjs**: Password hashing
@@ -289,6 +336,7 @@ The CUK Exam Scheduling System is a sophisticated web application designed speci
 - **TypeScript ESLint**: TypeScript-specific linting
 - **Vite SWC**: Fast compilation
 - **Vercel Analytics**: Performance monitoring
+- **Vercel Speed Insights**: Core Web Vitals tracking
 
 ### **Mobile**
 - **Capacitor 7.4**: Native mobile app framework
@@ -380,16 +428,49 @@ npx cap open android
 - Profile must be complete before enrolling in courses
 
 #### 3. **Enroll in Courses**
-- Go to "Enroll" tab
-- Search or filter courses by semester
+- Go to "Courses" tab
+- Search or filter courses by department/semester
 - Click "Enroll" to add courses
-- View enrolled courses in "My Courses" tab
+- View enrolled courses with enrollment status
 
 #### 4. **View Exam Schedule**
-- Navigate to "Exam Schedule" tab
+- Navigate to "Exam Schedule" section
 - View your personalized exam timetable
-- See exam dates, venues, and course details
+- See exam dates, venues, seat assignments, and countdown timers
 - Schedule updates automatically when admin generates new schedule
+
+#### 5. **Access Resources & Assignments**
+- View uploaded teaching materials in "Resources" tab
+- Submit assignments before due dates in "Assignments" tab
+- Track your marks and performance analytics
+
+### For Teachers
+
+#### 1. **Account Setup**
+- Register as a teacher (requires admin approval)
+- Complete your profile with contact and designation info
+- Set your preferred theme color
+
+#### 2. **Manage Marks**
+- Select a course from your assigned courses
+- Enter marks for each component (Test 1, Test 2, Presentation, Assignment, Attendance)
+- Use Excel upload for bulk entry
+- Export marks for records
+
+#### 3. **Take Attendance**
+- Select course and date
+- Mark students as Present/Absent/Late/On Leave
+- View attendance statistics
+
+#### 4. **Create Assignments**
+- Add new assignments with title, description, and due date
+- Track student submissions
+- Grade and provide feedback
+
+#### 5. **Share Resources**
+- Upload lecture notes, presentations, videos
+- Track download statistics
+- Manage resource visibility
 
 ### For Administrators
 
@@ -415,11 +496,12 @@ npx cap open android
 **Teachers:**
 - Add faculty members
 - Assign to departments
+- Approve teacher registrations
 - Bulk upload supported
 
 **Venues:**
 - Add exam venues
-- Set capacity for each venue
+- Set capacity, rows, and columns for seating
 - Manage venue availability
 
 **Students:**
@@ -460,6 +542,12 @@ npx cap open android
 - Click "Download Excel" for Excel export
 - Share with stakeholders
 
+#### 4. **Generate Seating Arrangement**
+- Select exam date
+- Click "Generate Seating"
+- Review seating grid with drag-and-drop adjustments
+- Export to PDF for printing
+
 ### For Department Admins
 
 - Limited access to department-specific data
@@ -478,17 +566,34 @@ npx cap open android
 - `departments` - Academic departments (linked to schools)
 - `courses` - Course catalog with metadata
 - `teachers` - Faculty information
-- `venues` - Exam venues with capacity
+- `venues` - Exam venues with capacity and seating grid
 - `sessions` - Academic sessions/years
 - `holidays` - Holiday calendar
 - `students` - Student records
 - `datesheets` - Generated exam schedules
 - `student_enrollments` - Student course enrollments
+- `seat_assignments` - Exam seating arrangements
+
+#### **Academic Tables**
+- `notices` - Teacher notices with priority and targeting
+- `student_marks` - Marks breakdown by component
+- `attendance` - Daily attendance records
+- `assignments` - Assignment definitions
+- `assignment_submissions` - Student submissions
+- `resources` - Teaching materials
+- `resource_bookmarks` - Student bookmarks
+- `leave_applications` - Leave requests
+- `teacher_courses` - Teacher-course assignments
 
 #### **Authentication Tables**
 - `profiles` - User profiles (linked to Supabase auth)
-- `user_roles` - User role assignments
-- `admin_users` - Admin authentication (separate system)
+- `user_roles` - User role assignments (admin, department_admin, student, teacher)
+- `user_notifications` - Real-time notifications
+
+#### **System Tables**
+- `audit_logs` - Activity logging
+- `library_books` - Library catalog
+- `book_issues` - Library book issues
 
 ### Key Algorithms
 
@@ -500,6 +605,12 @@ npx cap open android
 5. **Constraint Checking**: Validate gap requirements and capacity
 6. **Backtracking**: Retry if conflicts detected
 7. **Optimization**: Minimize total schedule duration
+
+#### **Seating Algorithm**
+1. **Venue Selection**: Select venues based on capacity
+2. **Column-Based Distribution**: Alternate subjects by column to prevent cheating
+3. **Student Assignment**: Assign students ensuring no adjacent same-course
+4. **Cross-Venue Support**: Handle overflow to multiple venues
 
 #### **Conflict Detection**
 - Checks if students are enrolled in multiple courses
@@ -520,30 +631,67 @@ src/
 │   │   ├── VenuesTab.tsx
 │   │   ├── SessionsTab.tsx
 │   │   ├── HolidaysTab.tsx     # With search
-│   │   └── StudentsTab.tsx     # With advanced filters & pagination
+│   │   ├── StudentsTab.tsx     # With advanced filters & pagination
+│   │   ├── SeatingArrangement.tsx  # Drag-drop seating
+│   │   ├── BulkUploadModal.tsx # Excel upload
+│   │   └── AuditLogsTab.tsx
+│   ├── teacher/            # Teacher dashboard components
+│   │   ├── NoticesTab.tsx
+│   │   ├── MarksTab.tsx        # Excel import/export
+│   │   ├── AttendanceTab.tsx
+│   │   ├── AssignmentsTab.tsx
+│   │   ├── ResourcesTab.tsx
+│   │   ├── LeaveManagementTab.tsx
+│   │   ├── TeacherApplyLeaveTab.tsx
+│   │   └── TeacherProfileEditDialog.tsx
+│   ├── student/            # Student dashboard components
+│   │   ├── StudentNoticesTab.tsx
+│   │   ├── StudentCoursesTab.tsx
+│   │   ├── StudentMarksTab.tsx
+│   │   ├── StudentPerformanceTab.tsx
+│   │   ├── StudentResourcesTab.tsx
+│   │   ├── StudentAssignmentsTab.tsx
+│   │   ├── StudentLibraryTab.tsx
+│   │   ├── StudentLeaveTab.tsx
+│   │   └── StudentAttendanceTab.tsx
 │   ├── exam-schedule/      # Schedule generation components
 │   │   ├── ScheduleSettings.tsx
 │   │   ├── ScheduleTable.tsx
 │   │   ├── ScheduleStatusCard.tsx
-│   │   └── CourseEnrollmentCard.tsx
+│   │   ├── CourseEnrollmentCard.tsx
+│   │   ├── StudentSeatView.tsx
+│   │   └── DetailedScheduleView.tsx
+│   ├── mobile/             # Mobile-specific components
+│   │   ├── MobileScheduleViewer.tsx
+│   │   └── SplashScreen.tsx
 │   ├── ui/                 # Reusable UI components
 │   │   ├── skeleton-table.tsx      # Loading skeletons
 │   │   ├── pagination-controls.tsx # Pagination UI
 │   │   ├── bulk-actions-bar.tsx    # Bulk actions
 │   │   ├── advanced-filters.tsx    # Advanced filtering
 │   │   ├── stats-card.tsx          # Dashboard stats
+│   │   ├── file-upload.tsx         # File uploads
 │   │   └── ... (shadcn/ui components)
 │   ├── ErrorBoundary.tsx   # Error boundary wrapper
+│   ├── NotificationCenter.tsx  # Real-time notifications
+│   ├── KeyboardShortcutsHelp.tsx
+│   ├── ProfileEditDialog.tsx
+│   ├── ThemeColorPicker.tsx
 │   └── ...
 ├── pages/
 │   ├── Index.tsx           # Schedule generator
 │   ├── AdminDashboard.tsx  # Admin panel
 │   ├── StudentDashboard.tsx # Student portal
+│   ├── TeacherDashboard.tsx # Teacher portal
 │   ├── Auth.tsx            # Authentication
+│   ├── ManageAdmins.tsx    # Admin management
+│   ├── AuditLogsPage.tsx   # Audit logs
 │   └── ...
 ├── hooks/
 │   ├── useAuth.ts          # Authentication hook
 │   ├── useExamData.ts      # Exam data management
+│   ├── useSeatingAssignment.ts  # Seating management
+│   ├── useRealtimeNotifications.ts  # Real-time updates
 │   ├── useDebounce.ts      # Debounce hook
 │   ├── usePagination.ts    # Pagination logic
 │   ├── useDataFetch.ts     # Generic data fetching
@@ -553,14 +701,19 @@ src/
 │   └── ...
 ├── utils/
 │   ├── scheduleAlgorithm.ts # Core scheduling logic
+│   ├── seatingAlgorithm.ts  # Seating arrangement
 │   ├── scheduleUtils.ts     # Utility functions
 │   ├── courseUtils.ts       # Course utilities
+│   ├── excelUtils.ts        # ExcelJS utilities
 │   ├── exportUtils.ts       # Export to CSV/Excel/JSON
+│   ├── pdfGenerator.ts      # Schedule PDF
+│   ├── seatingPdfExport.ts  # Seating chart PDF
 │   └── ...
 ├── styles/
 │   └── print.css           # Print-optimized styles
 └── types/
-    └── examSchedule.ts      # TypeScript types
+    ├── examSchedule.ts      # TypeScript types
+    └── database.ts          # Database types
 ```
 
 ---
@@ -577,6 +730,7 @@ src/
 - ✅ Error boundaries for crash prevention
 - ✅ Reusable custom hooks
 - ✅ Modular component architecture
+- ✅ Secure dependencies (no known vulnerabilities)
 
 ### Performance
 - ✅ Code splitting with manual chunks
@@ -598,6 +752,8 @@ src/
 - ✅ Input validation
 - ✅ XSS prevention (React handles this)
 - ✅ SQL injection prevention (Supabase ORM)
+- ✅ Secure Excel library (ExcelJS - no prototype pollution)
+- ✅ Updated PDF library (jsPDF 4.0 - no path traversal)
 
 ### UI/UX
 - ✅ Consistent animations across all components
@@ -612,6 +768,8 @@ src/
 - ✅ Bulk selection with floating action bar
 - ✅ Advanced filtering with visual badges
 - ✅ Print-optimized layouts
+- ✅ Glassmorphism design elements
+- ✅ Customizable theme colors
 
 ### Browser Compatibility
 - ✅ Chrome/Edge (latest)
@@ -670,32 +828,40 @@ src/
 - [ ] **Conflict Resolution AI**: ML-based conflict resolution suggestions
 - [ ] **Automated Venue Assignment**: Smart venue allocation based on enrollment
 - [ ] **Student Feedback**: Post-exam feedback collection
-- [ ] **Attendance Tracking**: Integration with attendance system
+- [ ] **Invigilator Assignment**: Automatic invigilator scheduling
 
 ### Potential Improvements
 - [ ] **Progressive Web App (PWA)**: Offline-first web app
 - [ ] **iOS App**: Native iOS application
 - [ ] **Real-time Collaboration**: Multiple admins editing simultaneously
 - [ ] **Version Control**: Track schedule changes and rollback
-- [x] ~~**Audit Logs**: Comprehensive activity logging~~
 - [ ] **Custom Reports**: Configurable report generation
-- [x] ~~**Seating Arrangement**: Automated seating plan generation~~
-- [ ] **Invigilator Assignment**: Automatic invigilator scheduling
-- [x] ~~**Loading Skeletons**: Professional loading states~~
-- [x] ~~**Debounced Search**: Optimized search performance~~
-- [x] ~~**Pagination**: Handle large datasets efficiently~~
-- [x] ~~**Error Boundaries**: Graceful error handling~~
-- [x] ~~**React Query**: Automatic caching and state management~~
-- [x] ~~**Bulk Actions**: Select and act on multiple items~~
-- [x] ~~**Export Utilities**: CSV/Excel/JSON export~~
-- [x] ~~**Keyboard Shortcuts**: Power user features~~
-- [x] ~~**Advanced Filters**: Multi-criteria filtering~~
-- [x] ~~**Stats Cards**: Dashboard analytics~~
-- [x] ~~**Print Styles**: Professional printing~~
+
+### Completed Features (v5.x)
+- [x] ~~Seating Arrangement~~ - Automated seating plan generation
+- [x] ~~Teacher Dashboard~~ - Complete teaching management
+- [x] ~~Real-time Notifications~~ - Push notifications for updates
+- [x] ~~Excel Security~~ - Migrated to secure ExcelJS library
+- [x] ~~Teacher Profile Edit~~ - Full profile management
+- [x] ~~Student Exam View~~ - Seat and countdown display
+
+### Completed Features (v4.x)
+- [x] ~~Loading Skeletons~~ - Professional loading states
+- [x] ~~Debounced Search~~ - Optimized search performance
+- [x] ~~Pagination~~ - Handle large datasets efficiently
+- [x] ~~Error Boundaries~~ - Graceful error handling
+- [x] ~~React Query~~ - Automatic caching and state management
+- [x] ~~Bulk Actions~~ - Select and act on multiple items
+- [x] ~~Export Utilities~~ - CSV/Excel/JSON export
+- [x] ~~Keyboard Shortcuts~~ - Power user features
+- [x] ~~Advanced Filters~~ - Multi-criteria filtering
+- [x] ~~Stats Cards~~ - Dashboard analytics
+- [x] ~~Print Styles~~ - Professional printing
+- [x] ~~Audit Logs~~ - Comprehensive activity logging
 
 ---
 
-## 👨‍💻 Developer
+## 👨‍💻 Developers
 
 **Milad Ajaz Bhat**
 - 🌐 Portfolio: [m4milaad.github.io](https://m4milaad.github.io)
@@ -715,7 +881,8 @@ src/
 - **Production Release**: November 2024
 - **Major Update (v4.0)**: November 2024
 - **Major Update (v5.0)**: January 2026
-- **Current Version**: 5.0.0
+- **Security Update (v5.1)**: January 2026
+- **Current Version**: 5.1.0
 - **Last Updated**: January 2026
 
 ---
@@ -732,6 +899,7 @@ This project is developed specifically for Central University of Kashmir. All ri
 - **Supabase** for the excellent backend platform
 - **Vercel** for hosting and deployment
 - **shadcn/ui** for beautiful UI components
+- **ExcelJS** for secure Excel processing
 - **Open Source Community** for amazing tools and libraries
 
 ---
@@ -748,11 +916,11 @@ For technical support, feature requests, or bug reports:
 
 ## 📊 Project Stats
 
-- **Lines of Code**: ~18,000+
-- **Components**: 57+
-- **Custom Hooks**: 12+
-- **Database Tables**: 15+
-- **API Endpoints**: 20+
+- **Lines of Code**: ~20,000+
+- **Components**: 65+
+- **Custom Hooks**: 14+
+- **Database Tables**: 20+
+- **API Endpoints**: 25+
 - **Test Coverage**: In Progress
 - **Performance Score**: 95+ (Lighthouse)
 - **Accessibility Score**: 100 (Lighthouse)
