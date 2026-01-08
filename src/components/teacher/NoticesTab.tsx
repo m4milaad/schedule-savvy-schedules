@@ -213,7 +213,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses }) =>
       </div>
 
       {showForm && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <CardTitle>{editingNotice ? 'Edit Notice' : 'Create New Notice'}</CardTitle>
           </CardHeader>
@@ -313,7 +313,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses }) =>
       )}
 
       {/* Published Notices */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Published Notices</CardTitle>
           <CardDescription>View and manage all your notices</CardDescription>

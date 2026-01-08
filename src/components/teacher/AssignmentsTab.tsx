@@ -224,7 +224,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       </div>
 
       {showForm && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <CardTitle>{editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}</CardTitle>
           </CardHeader>
@@ -308,7 +308,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       )}
 
       {/* Assignments List */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Existing Assignments</CardTitle>
           <CardDescription>View and manage all your assignments</CardDescription>
