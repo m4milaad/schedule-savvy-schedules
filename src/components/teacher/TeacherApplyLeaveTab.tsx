@@ -173,7 +173,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
       </div>
 
       {showForm && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <CardTitle>New Leave Application</CardTitle>
             <CardDescription>Fill in the details for your leave request</CardDescription>
@@ -256,7 +256,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
       )}
 
       {/* My Applications */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>My Leave Applications</CardTitle>
           <CardDescription>View the status of your leave requests</CardDescription>
