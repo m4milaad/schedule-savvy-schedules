@@ -281,7 +281,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       </div>
 
       {/* Course Selection and File Actions */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
@@ -341,7 +341,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       {/* Marks Table */}
       {selectedCourse && (
-        <Card>
+        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -454,7 +454,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       )}
 
       {/* Attendance Guide */}
-      <Card>
+      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
         <CardHeader>
           <CardTitle>Attendance Marking Guide</CardTitle>
         </CardHeader>
