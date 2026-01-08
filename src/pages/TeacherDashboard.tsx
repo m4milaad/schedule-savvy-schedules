@@ -15,7 +15,8 @@ import {
   LogOut, 
   Building,
   User,
-  Keyboard
+  Keyboard,
+  Edit
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
@@ -26,11 +27,17 @@ import { AssignmentsTab } from '@/components/teacher/AssignmentsTab';
 import { ResourcesTab } from '@/components/teacher/ResourcesTab';
 import { LeaveManagementTab } from '@/components/teacher/LeaveManagementTab';
 import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab';
+import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
 import { Footer } from '@/components/Footer';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import { getContrastColor } from '@/components/ThemeColorPicker';
+
+interface Department {
+  dept_id: string;
+  dept_name: string;
+}
 
 const TAB_VALUES = ['notices', 'marks', 'attendance', 'assignments', 'resources', 'leave-management', 'apply-leave'] as const;
 type TabValue = typeof TAB_VALUES[number];
@@ -53,6 +60,7 @@ const KEYBOARD_SHORTCUTS = [
   {
     title: 'Actions',
     shortcuts: [
+      { keys: ['E'], description: 'Edit profile' },
       { keys: ['?'], description: 'Show keyboard shortcuts' },
       { keys: ['Esc'], description: 'Close dialogs' },
     ],
@@ -60,12 +68,14 @@ const KEYBOARD_SHORTCUTS = [
 ];
 
 const TeacherDashboard = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
   const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentName, setDepartmentName] = useState<string>('');
 
   // Keyboard shortcuts
@@ -97,8 +107,12 @@ const TeacherDashboard = () => {
     { shortcut: { key: '7' }, callback: () => navigateToTab(6) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
+    { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
     { shortcut: { key: '?' }, callback: () => setShowShortcutsHelp(prev => !prev) },
-    { shortcut: { key: 'Escape' }, callback: () => setShowShortcutsHelp(false) },
+    { shortcut: { key: 'Escape' }, callback: () => {
+      setShowShortcutsHelp(false);
+      setShowProfileDialog(false);
+    }},
   ]);
 
   useEffect(() => {
@@ -111,6 +125,16 @@ const TeacherDashboard = () => {
     if (!profile?.id) return;
     
     try {
+      // Load departments
+      const { data: deptData } = await supabase
+        .from('departments')
+        .select('dept_id, dept_name')
+        .order('dept_name');
+      
+      if (deptData) {
+        setDepartments(deptData);
+      }
+
       // Get courses assigned to this teacher through teacher_courses
       const { data: teacherCoursesData, error } = await supabase
         .from('teacher_courses')
@@ -133,14 +157,9 @@ const TeacherDashboard = () => {
 
       // Load department name
       if (profile.dept_id) {
-        const { data: deptData } = await supabase
-          .from('departments')
-          .select('dept_name')
-          .eq('dept_id', profile.dept_id)
-          .single();
-        
-        if (deptData) {
-          setDepartmentName(deptData.dept_name);
+        const dept = deptData?.find(d => d.dept_id === profile.dept_id);
+        if (dept) {
+          setDepartmentName(dept.dept_name);
         }
       }
     } catch (error) {
@@ -214,6 +233,16 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
                 <div className="flex gap-2 flex-wrap md:flex-nowrap items-center">
+                  <Button
+                    onClick={() => setShowProfileDialog(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
+                    title="Edit profile (E)"
+                  >
+                    <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Edit Profile</span>
+                  </Button>
                   <Button
                     onClick={() => setShowShortcutsHelp(true)}
                     variant="outline"
@@ -333,6 +362,17 @@ const TeacherDashboard = () => {
         onClose={() => setShowShortcutsHelp(false)}
         shortcuts={KEYBOARD_SHORTCUTS}
       />
+
+      {/* Profile Edit Dialog */}
+      {profile && (
+        <TeacherProfileEditDialog
+          isOpen={showProfileDialog}
+          onClose={() => setShowProfileDialog(false)}
+          profile={profile}
+          departments={departments}
+          onUpdate={updateProfile}
+        />
+      )}
     </div>
   );
 };
