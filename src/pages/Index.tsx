@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
-import * as XLSX from "xlsx";
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook } from "@/utils/excelUtils";
 import { normalizeCourseCode, shouldMergeCourses } from "@/utils/courseUtils";
 
 import { useExamData } from "@/hooks/useExamData";
@@ -704,7 +704,7 @@ export default function Index() {
   /**
    * Handles downloading the generated schedule as an Excel file.
    */
-  const handleDownloadExcel = () => {
+  const handleDownloadExcel = async () => {
     if (generatedSchedule.length === 0) {
       toast({
         title: "Error",
@@ -734,32 +734,28 @@ export default function Index() {
           Venue: exam.venue_name,
         }));
 
-      // Create a new workbook and add a worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
-
-      // Define column widths for better readability in Excel
-      const colWidths = [
-        { wch: 12 },
-        { wch: 10 },
-        { wch: 18 },
-        { wch: 12 },
-        { wch: 15 },
-        { wch: 10 },
-        { wch: 10 },
-        { wch: 10 },
-        { wch: 12 },
-        { wch: 15 },
+      // Create workbook with custom column widths
+      const columns = [
+        { key: 'Date', label: 'Date', width: 12 },
+        { key: 'Day', label: 'Day', width: 10 },
+        { key: 'Time', label: 'Time', width: 18 },
+        { key: 'Course Code', label: 'Course Code', width: 12 },
+        { key: 'Teacher Name', label: 'Teacher Name', width: 15 },
+        { key: 'Semester', label: 'Semester', width: 10 },
+        { key: 'Program', label: 'Program', width: 10 },
+        { key: 'Gap Days', label: 'Gap Days', width: 10 },
+        { key: 'First Paper', label: 'First Paper', width: 12 },
+        { key: 'Venue', label: 'Venue', width: 15 },
       ];
-      ws["!cols"] = colWidths;
 
-      XLSX.utils.book_append_sheet(wb, ws, "Exam Schedule");
+      const workbook = createWorkbook();
+      addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as any);
 
       // Generate filename and download the Excel file
       const filename = `exam-schedule-${
         new Date().toISOString().split("T")[0]
       }.xlsx`;
-      XLSX.writeFile(wb, filename);
+      await downloadWorkbook(workbook, filename);
 
       toast({
         title: "Success",

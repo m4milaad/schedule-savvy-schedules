@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Upload, Download } from 'lucide-react';
 import { toast } from "sonner";
-import * as XLSX from 'xlsx';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 
 interface BulkUploadModalProps {
   isOpen: boolean;
@@ -61,12 +61,11 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
     return templates[type];
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = getTemplate();
-    const worksheet = XLSX.utils.json_to_sheet(template);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, type);
-    XLSX.writeFile(workbook, `${type}_template.xlsx`);
+    const workbook = createWorkbook();
+    addWorksheetFromJson(workbook, type, template as Record<string, any>[]);
+    await downloadWorkbook(workbook, `${type}_template.xlsx`);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,11 +83,7 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
 
     setUploading(true);
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      const jsonData = await readExcelFile(file);
 
       if (jsonData.length === 0) {
         toast.error('The file appears to be empty');
