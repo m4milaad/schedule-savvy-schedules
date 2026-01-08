@@ -8,6 +8,23 @@ type KeyboardShortcut = {
   meta?: boolean;
 };
 
+// Helper to check if user is typing in an input element
+const isTypingElement = (target: EventTarget | null): boolean => {
+  if (!target) return false;
+  const element = target as HTMLElement;
+  const tagName = element.tagName?.toUpperCase();
+  return (
+    tagName === 'INPUT' ||
+    tagName === 'TEXTAREA' ||
+    element.isContentEditable
+  );
+};
+
+// Helper to check if shortcut uses any modifier keys
+const hasModifierKey = (shortcut: KeyboardShortcut): boolean => {
+  return !!(shortcut.ctrl || shortcut.shift || shortcut.alt || shortcut.meta);
+};
+
 /**
  * Custom hook for keyboard shortcuts
  * @param shortcut - Keyboard shortcut configuration
@@ -22,6 +39,11 @@ export function useKeyboardShortcut(
   const handleKeyPress = useCallback(
     (event: KeyboardEvent) => {
       if (!enabled) return;
+
+      // Skip single-key shortcuts when user is typing in an input
+      if (!hasModifierKey(shortcut) && isTypingElement(event.target)) {
+        return;
+      }
 
       const { key, ctrl, shift, alt, meta } = shortcut;
 
@@ -58,6 +80,11 @@ export function useKeyboardShortcuts(
     (event: KeyboardEvent) => {
       for (const { shortcut, callback, enabled = true } of shortcuts) {
         if (!enabled) continue;
+
+        // Skip single-key shortcuts when user is typing in an input
+        if (!hasModifierKey(shortcut) && isTypingElement(event.target)) {
+          continue;
+        }
 
         const { key, ctrl, shift, alt, meta } = shortcut;
 
