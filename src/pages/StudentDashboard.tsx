@@ -719,7 +719,7 @@ const StudentDashboard = () => {
 
           {/* Notices Tab */}
           <TabsContent value="notices" className="animate-fade-in">
-            <StudentNoticesTab studentId={profile?.id || ''} />
+            <StudentNoticesTab studentId={profile?.id || ''} studentDeptId={profile?.dept_id || undefined} />
           </TabsContent>
 
           {/* Courses Tab */}
