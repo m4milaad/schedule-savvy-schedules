@@ -18,7 +18,8 @@ export const fullNameSchema = z
   .trim()
   .min(1, 'Full name is required')
   .max(100, 'Full name must be less than 100 characters')
-  .regex(/^[a-zA-Z\s'-]+$/, 'Full name can only contain letters, spaces, hyphens, and apostrophes');
+  // Allow letters (including Unicode), spaces, hyphens, apostrophes, and periods (for titles like Dr.)
+  .regex(/^[\p{L}\s'.,-]+$/u, 'Full name can only contain letters, spaces, hyphens, apostrophes, and periods');
 
 export const enrollmentNumberSchema = z
   .string()
