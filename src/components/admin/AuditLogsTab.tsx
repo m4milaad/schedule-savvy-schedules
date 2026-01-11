@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FileText, RefreshCw, Download, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -362,10 +363,13 @@ export const AuditLogsTab = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading logs...</p>
-          </div>
+          <LoadingScreen 
+            message="Loading logs..." 
+            variant="dots" 
+            size="sm" 
+            fullScreen={false} 
+            className="py-12"
+          />
         ) : logs.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />

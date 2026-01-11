@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Search, Eye, Download, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { TabLoader } from '@/components/ui/loading-screen';
 
 interface StudentNoticesTabProps {
   studentId: string;
@@ -173,11 +174,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
   const unreadCount = notices.filter(n => !n.isRead).length;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading notices..." />;
   }
 
   return (

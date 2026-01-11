@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Trash2, UserPlus, ArrowLeft, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 interface AdminUser {
   email: string;
@@ -537,10 +538,13 @@ const ManageAdmins = () => {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p>Loading users...</p>
-                </div>
+                <LoadingScreen 
+                  message="Loading users..." 
+                  variant="dots" 
+                  size="sm" 
+                  fullScreen={false} 
+                  className="py-8"
+                />
               ) : (
                 <Tabs defaultValue="admins">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
