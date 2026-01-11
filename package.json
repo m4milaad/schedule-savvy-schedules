@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.0",
-    "@capacitor/cli": "^7.4.0",
+    "@capacitor/cli": "^8.0.0",
     "@capacitor/core": "^7.4.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
