@@ -135,12 +135,15 @@ const TeacherDashboard = () => {
         setDepartments(deptData);
       }
 
-      // First, find the teacher record by matching email
-      const { data: teacherRecord } = await supabase
-        .from('teachers')
-        .select('teacher_id')
-        .eq('teacher_email', profile.email)
-        .maybeSingle();
+      // First, find the teacher record by matching email (profile email can be null in legacy data)
+      const teacherEmail = profile.email || user?.email;
+      const { data: teacherRecord } = teacherEmail
+        ? await supabase
+            .from('teachers')
+            .select('teacher_id')
+            .eq('teacher_email', teacherEmail)
+            .maybeSingle()
+        : { data: null };
 
       if (teacherRecord?.teacher_id) {
         // Get courses assigned to this teacher through teacher_courses
