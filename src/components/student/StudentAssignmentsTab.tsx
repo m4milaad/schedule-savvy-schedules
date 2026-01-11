@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Upload, Clock, CheckCircle, AlertCircle, Download, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { TabLoader } from '@/components/ui/loading-screen';
 
 interface StudentAssignmentsTabProps {
   studentId: string;
@@ -227,11 +228,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading assignments..." />;
   }
 
   const pendingCount = assignments.filter(a => !a.submission && !isOverdue(a.due_date)).length;

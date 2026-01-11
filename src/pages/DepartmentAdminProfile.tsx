@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock } from 'lucide-react';
 import { ThemeColorPicker, getContrastColor } from '@/components/ThemeColorPicker';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 interface Department {
   dept_id: string;
@@ -127,14 +128,7 @@ const DepartmentAdminProfile = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading profile..." variant="default" />;
   }
 
   const getDepartmentName = (deptId: string | null | undefined) => {
