@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,9 +96,9 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
       // Update profile data including theme_color
       const profileUpdates: any = {
         full_name: formData.full_name,
-        email: formData.email,
+        email: formData.email || null,
         dept_id: formData.dept_id || null,
-        theme_color: formData.theme_color
+        theme_color: formData.theme_color,
       };
       
       await onUpdate(profileUpdates);
@@ -149,6 +149,9 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
           <DialogTitle className="dark:text-gray-100 transition-colors duration-300">
             Edit Profile
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Update your profile details and theme color.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

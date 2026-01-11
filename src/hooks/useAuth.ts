@@ -239,9 +239,10 @@ export const useAuth = () => {
     if (!user || !profile) return { error: 'No user logged in' };
 
     try {
-      // Validate inputs
+      // Validate + sanitize inputs (trim strings, strip unknown keys)
+      let validatedUpdates: Partial<UserProfile>;
       try {
-        profileUpdateSchema.parse(updates);
+        validatedUpdates = profileUpdateSchema.parse(updates) as Partial<UserProfile>;
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
           throw new Error(validationError.issues[0].message);
@@ -251,7 +252,7 @@ export const useAuth = () => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(validatedUpdates)
         .eq('user_id', user.id)
         .select()
         .single();

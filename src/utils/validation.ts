@@ -24,7 +24,7 @@ export const signUpSchema = z.object({
     .trim()
     .min(1, { message: 'Full name is required' })
     .max(100, { message: 'Full name must be less than 100 characters' })
-    .regex(/^[a-zA-Z\s'-]+$/, { message: 'Full name can only contain letters, spaces, hyphens, and apostrophes' }),
+    .regex(/^[\p{L}\p{M}\s'.,()\-]+$/u, { message: "Full name can only contain letters, spaces, and common punctuation (.,()'-)" }),
   userType: z.enum(['student', 'department_admin']),
   enrollmentNo: z.string()
     .trim()
@@ -56,7 +56,7 @@ export const profileUpdateSchema = z.object({
     .trim()
     .min(1, { message: 'Full name is required' })
     .max(100, { message: 'Full name must be less than 100 characters' })
-    .regex(/^[a-zA-Z\s'-]+$/, { message: 'Full name can only contain letters, spaces, hyphens, and apostrophes' })
+    .regex(/^[\p{L}\p{M}\s'.,()\-]+$/u, { message: "Full name can only contain letters, spaces, and common punctuation (.,()'-)" })
     .optional(),
   contact_no: z.string()
     .trim()
