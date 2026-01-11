@@ -48,6 +48,7 @@ import { StudentNoticesTab } from '@/components/student/StudentNoticesTab';
 import { StudentCoursesTab } from '@/components/student/StudentCoursesTab';
 import { StudentPerformanceTab } from '@/components/student/StudentPerformanceTab';
 import { StudentResourcesTab } from '@/components/student/StudentResourcesTab';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 import { StudentLibraryTab } from '@/components/student/StudentLibraryTab';
 import { StudentLeaveTab } from '@/components/student/StudentLeaveTab';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
@@ -539,14 +540,7 @@ const StudentDashboard = () => {
   });
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center animate-fade-in">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading dashboard..." variant="default" size="lg" />;
   }
 
   const themeColor = (profile as any)?.theme_color;
