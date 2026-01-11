@@ -15,6 +15,7 @@ import { TabLoader } from '@/components/ui/loading-screen';
 interface NoticesTabProps {
   teacherId: string;
   courses: any[];
+  deptId?: string;
 }
 
 interface Notice {
@@ -31,7 +32,7 @@ interface Notice {
   created_at: string;
 }
 
-export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses }) => {
+export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, deptId }) => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -103,6 +104,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses }) =>
         priority,
         target_audience: targetAudience,
         target_course_id: targetAudience === 'subject_students' ? targetCourseId : null,
+        target_dept_id: targetAudience === 'all_students' ? deptId : null,
         expiry_date: expiryDate || null,
       };
 
