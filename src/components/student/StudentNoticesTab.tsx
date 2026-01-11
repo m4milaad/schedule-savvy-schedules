@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 
 interface StudentNoticesTabProps {
   studentId: string;
+  studentDeptId?: string;
 }
 
 interface Notice {
@@ -28,7 +29,7 @@ interface Notice {
   isRead?: boolean;
 }
 
-export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId }) => {
+export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId, studentDeptId }) => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [readNotices, setReadNotices] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -40,11 +41,20 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
 
   useEffect(() => {
     loadNotices();
-  }, [studentId]);
+  }, [studentId, studentDeptId]);
 
   const loadNotices = async () => {
     try {
-      // Load notices
+      // First get student's enrolled courses
+      const { data: enrollments } = await supabase
+        .from('student_enrollments')
+        .select('course_id')
+        .eq('student_id', studentId)
+        .eq('is_active', true);
+      
+      const enrolledCourseIds = (enrollments || []).map(e => e.course_id);
+
+      // Load notices with filtering
       const { data: noticesData, error } = await supabase
         .from('notices')
         .select(`
@@ -57,6 +67,34 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
 
       if (error) throw error;
 
+      // Filter notices based on target audience
+      const filteredNotices = (noticesData || []).filter(notice => {
+        // all_students: Show only if target_dept_id matches student's dept OR target_dept_id is null (legacy)
+        if (notice.target_audience === 'all_students') {
+          // If notice has target_dept_id, check if it matches student's dept
+          if (notice.target_dept_id) {
+            return notice.target_dept_id === studentDeptId;
+          }
+          // Legacy notices without target_dept_id - show to all (backward compatibility)
+          return true;
+        }
+        
+        // subject_students: Show only if student is enrolled in the target course
+        if (notice.target_audience === 'subject_students') {
+          return notice.target_course_id && enrolledCourseIds.includes(notice.target_course_id);
+        }
+        
+        // specific_class: Show if matches student's dept (or semester in future)
+        if (notice.target_audience === 'specific_class') {
+          if (notice.target_dept_id) {
+            return notice.target_dept_id === studentDeptId;
+          }
+          return true;
+        }
+        
+        return true;
+      });
+
       // Load read status
       const { data: readsData } = await supabase
         .from('student_notice_reads')
@@ -66,7 +104,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId 
       const readIds = new Set((readsData || []).map(r => r.notice_id));
       setReadNotices(readIds);
 
-      const noticesWithRead = (noticesData || []).map(notice => ({
+      const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
         teacher: notice.profiles,
         isRead: readIds.has(notice.id)
