@@ -18,7 +18,11 @@ export const fullNameSchema = z
   .trim()
   .min(1, 'Full name is required')
   .max(100, 'Full name must be less than 100 characters')
-  .regex(/^[a-zA-Z\s'-]+$/, 'Full name can only contain letters, spaces, hyphens, and apostrophes');
+  // Allow Unicode letters (plus combining marks), spaces, and common punctuation used in names/titles.
+  .regex(
+    /^[\p{L}\p{M}\s'.,()\-]+$/u,
+    'Full name can only contain letters, spaces, and common punctuation (.,()\'-)'
+  );
 
 export const enrollmentNumberSchema = z
   .string()
@@ -59,6 +63,8 @@ export const adminLoginSchema = z.object({
 // Profile update validation schema
 export const profileUpdateSchema = z.object({
   full_name: fullNameSchema.optional(),
+  email: z.union([emailSchema, z.null()]).optional(),
+  dept_id: z.union([z.string().uuid('Invalid department ID'), z.null()]).optional(),
   contact_no: z.string().trim().max(20, 'Contact number must be less than 20 characters').optional(),
   address: z.string().trim().max(500, 'Address must be less than 500 characters').optional(),
   semester: z.number().int().min(1).max(12).optional(),
