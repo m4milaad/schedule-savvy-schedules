@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2, Edit, Eye, Send } from 'lucide-react';
 import { format } from 'date-fns';
+import { TabLoader } from '@/components/ui/loading-screen';
 
 interface NoticesTabProps {
   teacherId: string;
@@ -194,11 +195,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading notices..." />;
   }
 
   return (

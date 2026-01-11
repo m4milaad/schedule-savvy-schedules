@@ -33,6 +33,7 @@ import { NotificationCenter } from '@/components/NotificationCenter';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import { getContrastColor } from '@/components/ThemeColorPicker';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 interface Department {
   dept_id: string;
@@ -197,14 +198,7 @@ const TeacherDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center animate-fade-in">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Loading dashboard..." variant="default" size="lg" />;
   }
 
   const themeColor = (profile as any)?.theme_color;

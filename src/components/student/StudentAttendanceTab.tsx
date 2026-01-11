@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarCheck, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { TabLoader } from '@/components/ui/loading-screen';
 
 interface StudentAttendanceTabProps {
   studentId: string;
@@ -153,11 +154,7 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading attendance..." />;
   }
 
   const overallAttendance = courseStats.length > 0
