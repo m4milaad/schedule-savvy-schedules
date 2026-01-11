@@ -20,6 +20,7 @@ import { StudentsTab } from "@/components/admin/StudentsTab";
 import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 import {
     Select,
     SelectTrigger,
@@ -280,14 +281,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
-                    <p>Loading admin dashboard...</p>
-                </div>
-            </div>
-        );
+        return <LoadingScreen message="Loading admin dashboard..." variant="default" size="lg" />;
     }
 
     // top nav buttons (responsive)

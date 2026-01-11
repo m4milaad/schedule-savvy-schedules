@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, TrendingUp } from 'lucide-react';
+import { TabLoader } from '@/components/ui/loading-screen';
 
 interface StudentMarksTabProps {
   studentId: string;
@@ -72,11 +73,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading marks..." />;
   }
 
   const calculateOverallPercentage = () => {
