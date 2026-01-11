@@ -136,25 +136,47 @@ const TeacherDashboard = () => {
         setDepartments(deptData);
       }
 
-      // Get courses assigned to this teacher through teacher_courses
-      const { data: teacherCoursesData, error } = await supabase
-        .from('teacher_courses')
-        .select(`
-          course_id,
-          courses:course_id (
+      // First, find the teacher record by matching email (profile email can be null in legacy data)
+      const teacherEmail = profile.email || user?.email;
+      const { data: teacherRecord } = teacherEmail
+        ? await supabase
+            .from('teachers')
+            .select('teacher_id')
+            .eq('teacher_email', teacherEmail)
+            .maybeSingle()
+        : { data: null };
+
+      if (teacherRecord?.teacher_id) {
+        // Get courses assigned to this teacher through teacher_courses
+        const { data: teacherCoursesData, error } = await supabase
+          .from('teacher_courses')
+          .select(`
             course_id,
-            course_code,
-            course_name,
-            semester,
-            dept_id
-          )
-        `)
-        .eq('teacher_id', profile.id);
+            courses:course_id (
+              course_id,
+              course_code,
+              course_name,
+              semester,
+              dept_id
+            )
+          `)
+          .eq('teacher_id', teacherRecord.teacher_id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const courses = teacherCoursesData?.map(tc => tc.courses).filter(Boolean) || [];
-      setTeacherCourses(courses);
+        const courses = teacherCoursesData?.map(tc => tc.courses).filter(Boolean) || [];
+        setTeacherCourses(courses);
+      } else {
+        // Fallback: Try getting courses from dept_id if no teacher record
+        if (profile.dept_id) {
+          const { data: deptCourses } = await supabase
+            .from('courses')
+            .select('course_id, course_code, course_name, semester, dept_id')
+            .eq('dept_id', profile.dept_id);
+          
+          setTeacherCourses(deptCourses || []);
+        }
+      }
 
       // Load department name
       if (profile.dept_id) {
@@ -318,7 +340,7 @@ const TeacherDashboard = () => {
             </TabsList>
 
             <TabsContent value="notices" className="space-y-4">
-              <NoticesTab teacherId={profile?.id || ''} courses={teacherCourses} />
+              <NoticesTab teacherId={profile?.id || ''} courses={teacherCourses} deptId={profile?.dept_id || undefined} />
             </TabsContent>
 
             <TabsContent value="marks" className="space-y-4">
