@@ -42,7 +42,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   };
 
   if (loading) {
-    return <LoadingScreen message="Verifying admin access..." variant="default" />;
+    return <LoadingScreen message="Verifying admin access..." variant="morphing" />;
   }
 
   if (!isAdmin) {

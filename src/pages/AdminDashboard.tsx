@@ -281,7 +281,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     if (loading) {
-        return <LoadingScreen message="Loading admin dashboard..." variant="default" size="lg" />;
+        return <LoadingScreen message="Loading admin dashboard..." variant="morphing" size="lg" />;
     }
 
     // top nav buttons (responsive)
