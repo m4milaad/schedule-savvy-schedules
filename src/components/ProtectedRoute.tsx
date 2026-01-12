@@ -19,7 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, profile, loading } = useAuth();
 
   if (loading) {
-    return <LoadingScreen message="Authenticating..." variant="default" />;
+    return <LoadingScreen message="Authenticating..." variant="morphing" />;
   }
 
   if (requireAuth && !user) {

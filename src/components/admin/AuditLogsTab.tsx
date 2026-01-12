@@ -365,7 +365,7 @@ export const AuditLogsTab = () => {
         {loading ? (
           <LoadingScreen 
             message="Loading logs..." 
-            variant="dots" 
+            variant="cascade" 
             size="sm" 
             fullScreen={false} 
             className="py-12"

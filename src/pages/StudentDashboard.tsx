@@ -540,7 +540,7 @@ const StudentDashboard = () => {
   });
 
   if (loading) {
-    return <LoadingScreen message="Loading dashboard..." variant="default" size="lg" />;
+    return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
   }
 
   const themeColor = (profile as any)?.theme_color;
