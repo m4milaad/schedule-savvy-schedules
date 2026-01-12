@@ -540,7 +540,7 @@ const ManageAdmins = () => {
               {loading ? (
                 <LoadingScreen 
                   message="Loading users..." 
-                  variant="dots" 
+                  variant="cascade" 
                   size="sm" 
                   fullScreen={false} 
                   className="py-8"

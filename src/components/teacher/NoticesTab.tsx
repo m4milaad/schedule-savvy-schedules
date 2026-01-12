@@ -262,15 +262,21 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
                   <div className="space-y-2">
                     <Label htmlFor="course">Select Course</Label>
                     <Select value={targetCourseId} onValueChange={setTargetCourseId}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-background">
                         <SelectValue placeholder="Select course" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {courses.map((course) => (
-                          <SelectItem key={course.course_id} value={course.course_id}>
-                            {course.course_code} - {course.course_name}
+                      <SelectContent className="z-[100] bg-background border shadow-lg">
+                        {courses.length === 0 ? (
+                          <SelectItem value="no-courses" disabled>
+                            No courses assigned
                           </SelectItem>
-                        ))}
+                        ) : (
+                          courses.map((course) => (
+                            <SelectItem key={course.course_id} value={course.course_id}>
+                              {course.course_code} - {course.course_name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
