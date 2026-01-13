@@ -128,7 +128,7 @@ const DepartmentAdminProfile = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading profile..." variant="default" />;
+    return <LoadingScreen message="Loading profile..." variant="morphing" />;
   }
 
   const getDepartmentName = (deptId: string | null | undefined) => {
