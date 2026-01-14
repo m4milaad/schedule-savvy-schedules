@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.cuk.examschedule',
-  appName: 'CUK DateSheet',
+  appName: 'CUK Academic Compass.',
   webDir: 'dist',
   server: {
     url: 'https://cuk-examschedule.netlify.app',

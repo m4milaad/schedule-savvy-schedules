@@ -39,7 +39,7 @@ export const ScheduleTable = ({
   );
 
   return (
-    <Card className="mt-6">
+    <Card className="linear-surface overflow-hidden mt-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
@@ -98,9 +98,8 @@ export const ScheduleTable = ({
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${
-                                snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
-                              } ${examCount >= 4 ? 'bg-red-50' : ''}`}
+                              className={`flex gap-2 flex-wrap min-h-[40px] p-2 rounded ${snapshot.isDraggingOver ? 'bg-blue-50 border-2 border-blue-300 border-dashed' : ''
+                                } ${examCount >= 4 ? 'bg-red-50' : ''}`}
                             >
                               {examsOnDate.map((exam, index) => (
                                 <Draggable key={exam.id} draggableId={exam.id} index={index}>
@@ -115,15 +114,14 @@ export const ScheduleTable = ({
                                         <TooltipTrigger asChild>
                                           <Badge
                                             variant="outline"
-                                            className={`cursor-move flex items-center gap-1 ${
-                                              exam.is_first_paper ? 'bg-green-50 text-green-700 border-green-200' :
-                                              exam.gap_days !== 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                              exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
-                                              exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                              exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
-                                              exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                              'bg-orange-50 text-orange-700 border-orange-200'
-                                            } ${snapshot.isDragging ? 'rotate-3' : ''}`}
+                                            className={`cursor-move flex items-center gap-1 ${exam.is_first_paper ? 'bg-green-50 text-green-700 border-green-200' :
+                                                exam.gap_days !== 2 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                  exam.semester === 1 || exam.semester === 2 ? 'bg-red-50 text-red-700 border-red-200' :
+                                                    exam.semester === 3 || exam.semester === 4 ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                      exam.semester === 5 || exam.semester === 6 ? 'bg-green-50 text-green-700 border-green-200' :
+                                                        exam.semester === 7 || exam.semester === 8 ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                                          'bg-orange-50 text-orange-700 border-orange-200'
+                                              } ${snapshot.isDragging ? 'rotate-3' : ''}`}
                                           >
                                             <GripVertical className="h-3 w-3" />
                                             S{exam.semester}: {exam.courseCode}

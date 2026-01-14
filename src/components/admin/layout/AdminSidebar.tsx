@@ -194,11 +194,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
                         <Button
                             variant="ghost"
-                            className={cn("w-full justify-start text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center px-0" : "px-3")}
-                            onClick={() => onNavigate("/manage-admins")}
+                            className={cn(
+                                "w-full justify-start transition-all duration-200",
+                                activeTab === 'admins'
+                                    ? "bg-sidebar-accent text-foreground font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                                isCollapsed ? "justify-center px-0" : "px-3"
+                            )}
+                            onClick={() => setActiveTab("admins")}
                             title="Manage Admins"
                         >
-                            <Shield className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                            <Shield className={cn(
+                                "h-5 w-5",
+                                !isCollapsed && "mr-3",
+                                activeTab === 'admins' ? "text-primary" : "text-muted-foreground"
+                            )} />
                             {!isCollapsed && "Admins"}
                         </Button>
                         <Button

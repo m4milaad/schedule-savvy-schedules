@@ -109,12 +109,11 @@ export const CourseEnrollmentCard = ({
   };
 
   return (
-    <Card 
-      className={`transition-all duration-300 border shadow-sm hover:shadow-md h-full ${
-        isSelected 
-          ? 'ring-2 ring-primary bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20' 
-          : 'bg-card hover:bg-card/80'
-      }`}
+    <Card
+      className={`linear-surface transition-all duration-300 shadow-sm hover:shadow-md h-full ${isSelected
+          ? 'ring-2 ring-primary border-primary/40'
+          : 'hover:border-primary/20'
+        }`}
     >
       <CardHeader className="pb-2"
         role="button"
@@ -145,14 +144,14 @@ export const CourseEnrollmentCard = ({
               </p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-md">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{courseTeacher.teacher_name || 'TBD'}</span>
             </span>
           </div>
-          
+
           <div className="flex items-center justify-between gap-2">
             <Badge variant="outline" className="text-xs flex items-center gap-1 bg-background/50">
               <Users className="h-3 w-3" />
@@ -203,7 +202,7 @@ export const CourseEnrollmentCard = ({
             </div>
           </div>
         </div>
-        
+
         {enrollmentCount > 0 && (
           <div className="flex items-center justify-center pt-2">
             <Button
@@ -218,17 +217,16 @@ export const CourseEnrollmentCard = ({
               aria-controls={`students-${courseTeacher.id}`}
             >
               <span>{showStudents ? 'Hide' : 'Show'} Students</span>
-              <ChevronDown className={`h-3 w-3 ml-1 transition-transform duration-200 ${
-                showStudents ? 'rotate-180' : ''
-              }`} />
+              <ChevronDown className={`h-3 w-3 ml-1 transition-transform duration-200 ${showStudents ? 'rotate-180' : ''
+                }`} />
             </Button>
           </div>
         )}
       </CardHeader>
-      
+
       {showStudents && enrolledStudents.length > 0 && (
         <CardContent className="pt-0 pb-4 animate-fade-in">
-          <div 
+          <div
             className="space-y-3"
             id={`students-${courseTeacher.id}`}
             role="region"
@@ -296,7 +294,7 @@ export const CourseEnrollmentCard = ({
           </div>
         </CardContent>
       )}
-      
+
       {enrolledStudents.length === 0 && !loading && (
         <CardContent className="pt-0 pb-4">
           <div className="text-center py-4 text-muted-foreground" role="status">
