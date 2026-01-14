@@ -214,24 +214,51 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
     };
 
     return (
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <CardTitle className="text-lg font-bold">
-                        Courses ({filteredCourses.length} of {courses.length})
-                    </CardTitle>
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Catalog</div>
+                        <CardTitle className="text-base font-semibold">
+                            Courses
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{filteredCourses.length}</span>
+                        <span className="hidden sm:inline">shown</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-medium text-foreground">{courses.length}</span>
+                        <span className="hidden sm:inline">total</span>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative max-w-md w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            ref={searchInputRef}
+                            placeholder="Search courses…"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    searchInputRef.current?.blur();
+                                }
+                            }}
+                            className="w-full pl-10"
+                        />
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Bulk Upload
-                    </Button>
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Course
-                            </Button>
-                        </DialogTrigger>
+                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Bulk Upload
+                        </Button>
+                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Course
+                                </Button>
+                            </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>Add New Course</DialogTitle>
@@ -299,88 +326,94 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                                 </div>
                             </div>
                         </DialogContent>
-                    </Dialog>
-                </div>
-                </div>
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                        ref={searchInputRef}
-                        placeholder="Type / to search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                                searchInputRef.current?.blur();
-                            }
-                        }}
-                        className="w-full pl-10"
-                    />
+                        </Dialog>
+                    </div>
                 </div>
             </CardHeader>
 
-            {/* ✅ FIXED: No internal scroll, full expansion */}
-            <CardContent className="overflow-visible space-y-2">
-                {filteredCourses.length > 0 && (
-                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
-                        <Checkbox
-                            checked={filteredCourses.length > 0 && selectedCount === filteredCourses.length}
-                            onCheckedChange={handleSelectAll}
-                        />
-                        <span className="text-sm text-muted-foreground">Select all</span>
-                    </div>
-                )}
+            <CardContent className="p-0">
                 {filteredCourses.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        {searchQuery ? 'No courses match your search.' : 'No courses available. Add one to get started.'}
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">
+                            {searchQuery ? 'No matching courses' : 'No courses yet'}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            {searchQuery ? 'Try a different query.' : 'Add courses to begin building schedules.'}
+                        </div>
                     </div>
                 ) : (
-                    filteredCourses.map((course) => (
-                        <div key={course.course_id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(course.course_id) ? 'bg-primary/5' : ''}`}>
-                            <div className="flex items-start gap-3">
-                                <Checkbox
-                                    checked={isSelected(course.course_id)}
-                                    onCheckedChange={() => toggleSelection(course.course_id)}
-                                    className="mt-1"
-                                />
-                                <div>
-                                    <div className="font-medium">{course.course_code} - {course.course_name}</div>
-                                    <div className="text-sm text-foreground/70">
-                                        {course.course_credits} credits • {course.course_type}
-                                    </div>
-                                    <div className="text-sm text-foreground/70">
-                                        Department: {getDepartmentName(course.dept_id)}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => openEditDialog(course)}>
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{course.course_name}"? This will also delete related data.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteCourse(course.course_id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
+                            <thead>
+                                <tr>
+                                    <th className="linear-th w-10">
+                                        <Checkbox
+                                            checked={filteredCourses.length > 0 && selectedCount === filteredCourses.length}
+                                            onCheckedChange={handleSelectAll}
+                                        />
+                                    </th>
+                                    <th className="linear-th">Course</th>
+                                    <th className="linear-th hidden md:table-cell">Department</th>
+                                    <th className="linear-th hidden lg:table-cell">Type</th>
+                                    <th className="linear-th hidden lg:table-cell">Credits</th>
+                                    <th className="linear-th text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredCourses.map((course) => (
+                                    <tr key={course.course_id} className={`linear-tr ${isSelected(course.course_id) ? 'bg-primary/5' : ''}`}>
+                                        <td className="linear-td">
+                                            <Checkbox
+                                                checked={isSelected(course.course_id)}
+                                                onCheckedChange={() => toggleSelection(course.course_id)}
+                                            />
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="font-medium">{course.course_code}</div>
+                                            <div className="text-sm text-muted-foreground">{course.course_name}</div>
+                                        </td>
+                                        <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                                            {getDepartmentName(course.dept_id)}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {course.course_type}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {course.course_credits}
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(course)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{course.course_name}"? This will also delete related data.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteCourse(course.course_id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </CardContent>
 

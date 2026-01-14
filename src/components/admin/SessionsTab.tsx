@@ -126,11 +126,20 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
     };
 
     return (
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Sessions ({sessions.length})
-                </CardTitle>
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Academic</div>
+                        <CardTitle className="text-base font-semibold">
+                            Sessions
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{sessions.length}</span>
+                        <span>total</span>
+                    </div>
+                </div>
                 <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" /> Bulk Upload
@@ -172,54 +181,71 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
                 </div>
             </CardHeader>
 
-            {/* ✅ FIXED: Removed internal scroll */}
-            <CardContent className="overflow-visible space-y-2">
+            <CardContent className="p-0">
                 {sessions.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        No sessions available. Add one to get started.
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">No sessions yet</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            Add sessions to group exam schedules by academic year.
+                        </div>
                     </div>
                 ) : (
-                    sessions.map((session) => (
-                        <div
-                            key={session.session_id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
-                        >
-                            <div>
-                                <div className="font-medium">{session.session_name}</div>
-                                <div className="text-sm text-foreground/70">Year: {session.session_year}</div>
-                                <div className="text-sm text-foreground/70">
-                                    Created: {new Date(session.created_at).toLocaleDateString()}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => openEditDialog(session)}>
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Session</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{session.session_name}"?
-                                                This will also delete all associated exam schedules.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteSession(session.session_id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
+                            <thead>
+                                <tr>
+                                    <th className="linear-th">Session</th>
+                                    <th className="linear-th">Year</th>
+                                    <th className="linear-th hidden lg:table-cell">Created</th>
+                                    <th className="linear-th text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sessions.map((session) => (
+                                    <tr key={session.session_id} className="linear-tr">
+                                        <td className="linear-td">
+                                            <div className="font-medium">{session.session_name}</div>
+                                        </td>
+                                        <td className="linear-td text-sm text-muted-foreground">
+                                            {session.session_year}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {new Date(session.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(session)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{session.session_name}"?
+                                                                This will also delete all associated exam schedules.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteSession(session.session_id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </CardContent>
 

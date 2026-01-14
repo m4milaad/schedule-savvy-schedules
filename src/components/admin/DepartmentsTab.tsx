@@ -131,11 +131,20 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
     };
 
     return (
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Departments ({departments.length})
-                </CardTitle>
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Configuration</div>
+                        <CardTitle className="text-base font-semibold">
+                            Departments
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{departments.length}</span>
+                        <span>total</span>
+                    </div>
+                </div>
                 <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
@@ -187,55 +196,70 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
                 </div>
             </CardHeader>
 
-            {/* 🧠 Fix: Removed max-h & overflow; content now expands naturally */}
-            <CardContent className="overflow-visible space-y-2">
+            <CardContent className="p-0">
                 {departments.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        No departments available. Add one to get started.
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">No departments yet</div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            Create departments so courses, teachers and students can be organized.
+                        </div>
                     </div>
                 ) : (
-                    departments.map((dept) => (
-                        <div
-                            key={dept.dept_id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
-                        >
-                            <div>
-                                <div className="font-medium">{dept.dept_name}</div>
-                                <div className="text-sm text-foreground/70">
-                                    School: {getSchoolName(dept.school_id)}
-                                </div>
-                                <div className="text-sm text-foreground/70">
-                                    Created: {new Date(dept.created_at).toLocaleDateString()}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => openEditDialog(dept)}>
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Department</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{dept.dept_name}"? This will also delete all associated courses, teachers, and students.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteDepartment(dept.dept_id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
+                            <thead>
+                                <tr>
+                                    <th className="linear-th">Department</th>
+                                    <th className="linear-th hidden md:table-cell">School</th>
+                                    <th className="linear-th hidden lg:table-cell">Created</th>
+                                    <th className="linear-th text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {departments.map((dept) => (
+                                    <tr key={dept.dept_id} className="linear-tr">
+                                        <td className="linear-td">
+                                            <div className="font-medium">{dept.dept_name}</div>
+                                        </td>
+                                        <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                                            {getSchoolName(dept.school_id)}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {new Date(dept.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(dept)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Department</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{dept.dept_name}"? This will also delete all associated courses, teachers, and students.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteDepartment(dept.dept_id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </CardContent>
 

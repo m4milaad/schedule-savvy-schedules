@@ -42,8 +42,27 @@ export default function Index() {
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<string>("selection");
+  const [themeColor, setThemeColor] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadThemeColor = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('theme_color')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile?.theme_color) {
+          setThemeColor(profile.theme_color);
+        }
+      }
+    };
+    loadThemeColor();
+  }, []);
 
   // Custom hook to manage exam data, schedule generation, and persistence
   const {
@@ -165,7 +184,7 @@ export default function Index() {
       const coursesWithStudents = courseTeachers
         .filter((ct) => countNumbers[ct.course_id] > 0)
         .map((ct) => ct.id);
-      
+
       setSelectedCourseTeachers(coursesWithStudents);
     } catch (error) {
       console.error('Error loading enrollment counts:', error);
@@ -262,10 +281,10 @@ export default function Index() {
     // For accurate calculation: we need 1 day per course + gap days between them
     const totalCourses = mergedCourses.length;
     const avgGap = mergedCourses.reduce((sum, c) => sum + (c.gap_days || 2), 0) / totalCourses;
-    
+
     // More realistic calculation: courses + (average gap * (courses - 1))
-    const minimumDays = totalCourses === 1 
-      ? 1 
+    const minimumDays = totalCourses === 1
+      ? 1
       : Math.ceil(totalCourses + (avgGap * (totalCourses - 1)) / 2);
 
     return {
@@ -283,12 +302,12 @@ export default function Index() {
     return [...courseTeachers].sort((a, b) => {
       const aSelected = selectedCourseTeachers.includes(a.id);
       const bSelected = selectedCourseTeachers.includes(b.id);
-      
+
       // Sort by selection status first (selected courses on top)
       if (aSelected !== bSelected) {
         return aSelected ? -1 : 1;
       }
-      
+
       // Then sort by enrollment count descending (courses with students first)
       const aCount = courseEnrollmentCounts[a.course_id] || 0;
       const bCount = courseEnrollmentCounts[b.course_id] || 0;
@@ -508,9 +527,8 @@ export default function Index() {
     );
     toast({
       title: "Exam Moved Successfully",
-      description: `${
-        draggedExam?.courseCode
-      } moved to ${targetDate.toLocaleDateString()}`,
+      description: `${draggedExam?.courseCode
+        } moved to ${targetDate.toLocaleDateString()}`,
     });
   };
 
@@ -639,7 +657,7 @@ export default function Index() {
         if (sharedStudents.length > 0) {
           const daysDiff = Math.abs(Math.floor(
             (targetDate.getTime() - new Date(exam.exam_date).getTime()) /
-              (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24)
           ));
 
           if (daysDiff < draggedExam.gap_days) {
@@ -752,9 +770,8 @@ export default function Index() {
       addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as any);
 
       // Generate filename and download the Excel file
-      const filename = `exam-schedule-${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
+      const filename = `exam-schedule-${new Date().toISOString().split("T")[0]
+        }.xlsx`;
       await downloadWorkbook(workbook, filename);
 
       toast({
@@ -812,10 +829,16 @@ export default function Index() {
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+      <div
+        className={cn(
+          "min-h-screen transition-colors duration-500",
+          !themeColor && "bg-gradient-to-br from-background via-muted/20 to-background"
+        )}
+        style={{ backgroundColor: themeColor || undefined }}
+      >
         <div className="container mx-auto px-6 py-8 space-y-8">
           {/* Enhanced Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border shadow-sm">
+          <div className="linear-surface flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:p-6 rounded-xl">
             <div className="flex items-center space-x-3 md:space-x-4">
               <img
                 src="/favicon.ico"
@@ -837,7 +860,14 @@ export default function Index() {
                     rel="noopener noreferrer"
                     className="font-semibold text-primary hover:underline"
                   >
-                    Milad Ajaz Bhat
+                  Milad Ajaz Bhat
+                  </a> & <a
+                    href="https://nimrawani.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    Nimra Wani
                   </a>
                 </p>
               </div>
@@ -849,7 +879,7 @@ export default function Index() {
                 onClick={loadLastSchedule}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 shadow-sm"
+                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                 disabled={loadingLastSchedule}
               >
                 <RefreshCw
@@ -865,7 +895,7 @@ export default function Index() {
                 onClick={() => navigate("/auth")}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 shadow-sm"
+                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin Panel</span>
@@ -881,8 +911,8 @@ export default function Index() {
                 <Calendar className="w-4 h-4" />
                 Course Selection
               </TabsTrigger>
-              <TabsTrigger 
-                value="schedule" 
+              <TabsTrigger
+                value="schedule"
                 className="flex items-center gap-2"
                 disabled={!isScheduleGenerated}
               >
@@ -899,7 +929,7 @@ export default function Index() {
             {/* Course Selection Tab */}
             <TabsContent value="selection" className="space-y-6 animate-fade-in">
               {/* Course selection summary */}
-              <Card className="">
+              <Card className="linear-surface overflow-hidden">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
@@ -915,7 +945,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={selectEnrolledCourses}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Select Enrolled</span>
                         <span className="sm:hidden">Enrolled</span>
@@ -924,6 +954,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={selectAllCourses}
+                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Select All</span>
                         <span className="sm:hidden">All</span>
@@ -932,6 +963,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={deselectAllCourses}
+                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Clear All</span>
                         <span className="sm:hidden">Clear</span>
