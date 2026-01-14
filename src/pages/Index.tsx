@@ -860,7 +860,14 @@ export default function Index() {
                     rel="noopener noreferrer"
                     className="font-semibold text-primary hover:underline"
                   >
-                    Milad Ajaz Bhat
+                  Milad Ajaz Bhat
+                  </a> & <a
+                    href="https://nimrawani.vercel.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    Nimra Wani
                   </a>
                 </p>
               </div>
