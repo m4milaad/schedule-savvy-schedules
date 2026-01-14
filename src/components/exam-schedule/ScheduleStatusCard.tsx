@@ -10,7 +10,7 @@ export const ScheduleStatusCard = ({
   scheduleCount,
 }: ScheduleStatusCardProps) => {
   return (
-    <Card className="mb-6 bg-green-50 border-green-200">
+    <Card className="linear-surface mb-6 border-green-200">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

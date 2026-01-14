@@ -21,7 +21,7 @@ import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 interface Student {
     student_id: string;
     student_name: string;
-    student_enrollment_no: string; 
+    student_enrollment_no: string;
     student_email: string | null;
     student_address: string | null;
     contact_no: string | null;
@@ -58,7 +58,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [hoveredStudentId, setHoveredStudentId] = useState<string | null>(null);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    
+
     // Bulk selection
     const {
         selectedItems,
@@ -69,9 +69,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         selectedCount,
         hasSelection
     } = useBulkSelection<string>();
-    
+
     useSearchShortcut(searchInputRef);
-    
+
     const [formData, setFormData] = useState({
         student_name: '',
         student_enrollment_no: '',
@@ -92,7 +92,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const loadStudentEnrollments = async () => {
         try {
             // Get all student enrollments with course details
-            const { data: enrollmentsData, error: enrollmentsError} = await supabase
+            const { data: enrollmentsData, error: enrollmentsError } = await supabase
                 .from('student_enrollments')
                 .select(`
                     student_id,
@@ -111,14 +111,14 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
             // Build enrollments map by student_id
             const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
-            
+
             (enrollmentsData || []).forEach((item: any) => {
                 const studentId = item.student_id;
-                
+
                 if (!enrollmentsMap[studentId]) {
                     enrollmentsMap[studentId] = [];
                 }
-                
+
                 if (item.courses) {
                     enrollmentsMap[studentId].push({
                         course_code: item.courses.course_code,
@@ -126,7 +126,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                     });
                 }
             });
-            
+
             setStudentEnrollments(enrollmentsMap);
         } catch (error) {
             console.error('Error in loadStudentEnrollments:', error);
@@ -254,7 +254,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
     const handleBulkDelete = async () => {
         if (selectedCount === 0) return;
-        
+
         try {
             const selectedIds = Array.from(selectedItems);
             const { error } = await supabase
@@ -330,37 +330,29 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     };
 
     return (
-        <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
-                        Students ({students.length})
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
-                            <Upload className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Bulk Upload</span>
-                            <span className="sm:hidden">Upload</span>
-                        </Button>
-                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                            <DialogTrigger asChild>
-                                <Button onClick={() => resetForm()} size="sm">
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    <span className="hidden sm:inline">Add Student</span>
-                                    <span className="sm:hidden">Add</span>
-                                </Button>
-                            </DialogTrigger>
-                        </Dialog>
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Enrollment</div>
+                        <CardTitle className="text-base font-semibold">
+                            Students
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{filteredStudents.length}</span>
+                        <span className="hidden sm:inline">shown</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-medium text-foreground">{students.length}</span>
+                        <span className="hidden sm:inline">total</span>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="mb-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4 transition-colors duration-300" />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative max-w-md w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <Input
                             ref={searchInputRef}
-                            placeholder="Type / to search"
+                            placeholder="Search students…"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyDown={(e) => {
@@ -368,164 +360,98 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                     searchInputRef.current?.blur();
                                 }
                             }}
-                            className="pl-10 transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                            className="pl-10"
                         />
                     </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Bulk Upload
+                        </Button>
+                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button onClick={() => resetForm()} size="sm">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Student
+                                </Button>
+                            </DialogTrigger>
+                        </Dialog>
+                    </div>
                 </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full">
+            </CardHeader>
+            <CardContent className="p-0">
+                {filteredStudents.length === 0 ? (
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">
+                            {searchTerm ? 'No matching students' : 'No students yet'}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            {searchTerm ? 'Try a different search.' : 'Add students to enroll them in courses.'}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
                             <thead>
-                                <tr className="border-b">
-                                    <th className="text-left p-2 font-medium w-10">
-                                        <Checkbox 
+                                <tr>
+                                    <th className="linear-th w-10">
+                                        <Checkbox
                                             checked={filteredStudents.length > 0 && selectedCount === filteredStudents.length}
                                             onCheckedChange={handleSelectAll}
                                         />
                                     </th>
-                                    <th className="text-left p-2 font-medium">Name / Enrollment</th>
-                                    <th className="text-left p-2 font-medium">ABC ID</th>
-                                    <th className="text-left p-2 font-medium hidden sm:table-cell">Email</th>
-                                    <th className="text-left p-2 font-medium hidden md:table-cell">Contact</th>
-                                    <th className="text-left p-2 font-medium hidden lg:table-cell">Department</th>
-                                    <th className="text-left p-2 font-medium">Year/Sem</th>
-                                    <th className="text-left p-2 font-medium hidden xl:table-cell">Courses</th>
-                                    <th className="text-right p-2 font-medium">Actions</th>
+                                    <th className="linear-th">Student</th>
+                                    <th className="linear-th hidden sm:table-cell">ABC ID</th>
+                                    <th className="linear-th hidden md:table-cell">Email</th>
+                                    <th className="linear-th hidden lg:table-cell">Department</th>
+                                    <th className="linear-th hidden lg:table-cell">Year/Sem</th>
+                                    <th className="linear-th text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredStudents.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={9} className="text-center p-8 text-muted-foreground">
-                                            {searchTerm ? 'No students match your search.' : 'No students available. Add one to get started.'}
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredStudents.map((student) => (
-                                    <tr key={student.student_id} className={`border-b hover:bg-muted/50 ${isSelected(student.student_id) ? 'bg-primary/5' : ''}`}>
-                                        <td className="p-2">
-                                            <Checkbox 
+                                {filteredStudents.map((student) => (
+                                    <tr key={student.student_id} className={`linear-tr ${isSelected(student.student_id) ? 'bg-primary/5' : ''}`}>
+                                        <td className="linear-td">
+                                            <Checkbox
                                                 checked={isSelected(student.student_id)}
                                                 onCheckedChange={() => toggleSelection(student.student_id)}
                                             />
                                         </td>
-                                        <td className="p-2">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{student.student_name}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {student.student_enrollment_no}
-                                                </span>
-                                            </div>
+                                        <td className="linear-td">
+                                            <div className="font-medium">{student.student_name}</div>
+                                            <div className="text-sm text-muted-foreground">{student.student_enrollment_no}</div>
                                         </td>
-                                        <td className="p-2 text-sm">
-                                            {student.abc_id || (
-                                                <span className="text-muted-foreground italic">N/A</span>
-                                            )}
+                                        <td className="linear-td hidden sm:table-cell text-sm text-muted-foreground">
+                                            {student.abc_id || '—'}
                                         </td>
-                                        <td className="p-2 text-sm hidden sm:table-cell">{student.student_email || 'N/A'}</td>
-                                        <td className="p-2 text-sm hidden md:table-cell">{student.contact_no || 'N/A'}</td>
-                                        <td className="p-2 text-sm hidden lg:table-cell">{getDepartmentName(student.dept_id)}</td>
-                                        <td className="p-2">
+                                        <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                                            {student.student_email || '—'}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {getDepartmentName(student.dept_id)}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell">
                                             <div className="flex gap-1">
                                                 <Badge variant="secondary" className="text-xs">Y{student.student_year}</Badge>
                                                 <Badge variant="outline" className="text-xs">S{student.semester || 1}</Badge>
                                             </div>
                                         </td>
-                                        <td className="p-2 hidden xl:table-cell">
-                                            {studentEnrollments[student.student_id]?.length > 0 ? (
-                                                <div 
-                                                    className="inline-block"
-                                                    onMouseEnter={() => setHoveredStudentId(student.student_id)}
-                                                    onMouseLeave={() => setHoveredStudentId(null)}
-                                                >
-                                                    <Badge variant="outline" className="cursor-help bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors">
-                                                        <BookOpen className="w-3 h-3 mr-1" />
-                                                        {studentEnrollments[student.student_id].length}
-                                                    </Badge>
-                                                    {hoveredStudentId === student.student_id && createPortal(
-                                                        <div 
-                                                            className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 min-w-[280px] max-w-[400px] animate-in fade-in-0 zoom-in-95 duration-200"
-                                                            style={{
-                                                                top: '50%',
-                                                                left: '50%',
-                                                                transform: 'translate(-50%, -50%)'
-                                                            }}
-                                                            onMouseEnter={() => setHoveredStudentId(student.student_id)}
-                                                            onMouseLeave={() => setHoveredStudentId(null)}
-                                                        >
-                                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700">
-                                                                <BookOpen className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                                                <div className="font-semibold text-sm text-gray-900 dark:text-gray-100">Enrolled Courses</div>
-                                                            </div>
-                                                            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                                                                {studentEnrollments[student.student_id].map((enrollment, idx) => (
-                                                                    <div key={idx} className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                                                        <div className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5"></div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <div className="font-medium text-xs text-gray-900 dark:text-gray-100">{enrollment.course_code}</div>
-                                                                            <div className="text-xs text-gray-600 dark:text-gray-400">{enrollment.course_name}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </div>,
-                                                        document.body
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400 text-xs">None</span>
-                                            )}
-                                        </td>
-                                        <td className="p-2">
-                                            <div className="flex gap-1 justify-end">
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(student)} className="h-8 w-8 p-0" title="Edit">
-                                                    <Edit2 className="w-3 h-3" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={async () => {
-                                                        if (student.student_email) {
-                                                            try {
-                                                                const { error } = await supabase.auth.resetPasswordForEmail(student.student_email, {
-                                                                    redirectTo: `${window.location.origin}/reset-password`,
-                                                                });
-                                                                if (error) throw error;
-                                                                toast({
-                                                                    title: "Success",
-                                                                    description: `Password reset email sent to ${student.student_email}`,
-                                                                });
-                                                            } catch (error: any) {
-                                                                toast({
-                                                                    title: "Error",
-                                                                    description: error.message || "Failed to send reset email",
-                                                                    variant: "destructive",
-                                                                });
-                                                            }
-                                                        } else {
-                                                            toast({
-                                                                title: "Error",
-                                                                description: "Student has no email address",
-                                                                variant: "destructive",
-                                                            });
-                                                        }
-                                                    }}
-                                                    className="h-8 w-8 p-0"
-                                                    title="Reset Password"
-                                                >
-                                                    <KeyRound className="w-3 h-3" />
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => handleEdit(student)}>
+                                                    <Edit2 className="w-4 h-4" />
                                                 </Button>
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 h-8 w-8 p-0">
-                                                            <Trash2 className="w-3 h-3" />
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Delete Student</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                Are you sure you want to delete "{student.student_name}"? This action cannot be undone.
+                                                                Are you sure you want to delete "{student.student_name}"?
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -539,11 +465,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </CardContent>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -561,7 +487,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_name}
                                 onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
                                 placeholder="Enter student name"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 required
                             />
                         </div>
@@ -572,7 +498,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_enrollment_no}
                                 onChange={(e) => setFormData({ ...formData, student_enrollment_no: e.target.value })}
                                 placeholder="Enter enrollment number"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 required
                             />
                         </div>
@@ -583,7 +509,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.abc_id}
                                 onChange={(e) => handleAbcIdChange(e.target.value)}
                                 placeholder="Enter ABC ID (numbers only)"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 pattern="[0-9]*"
                                 inputMode="numeric"
                             />
@@ -596,7 +522,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_email}
                                 onChange={(e) => setFormData({ ...formData, student_email: e.target.value })}
                                 placeholder="Enter email address"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                             />
                         </div>
                         <div>
@@ -606,7 +532,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_address}
                                 onChange={(e) => setFormData({ ...formData, student_address: e.target.value })}
                                 placeholder="Enter address"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                             />
                         </div>
                         <div>

@@ -59,7 +59,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                 .from('departments')
                 .select('*')
                 .order('dept_name');
-            
+
             if (!error && data) {
                 setDepartments(data);
             }
@@ -81,7 +81,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     } = useBulkSelection<string>();
 
     // Filter venues by department if user is a department admin
-    const filteredVenuesList = userDeptId 
+    const filteredVenuesList = userDeptId
         ? venues.filter(v => v.dept_id === userDeptId)
         : venues;
 
@@ -95,7 +95,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     const handleBulkDelete = async () => {
         if (selectedCount === 0) return;
-        
+
         try {
             const selectedIds = Array.from(selectedItems);
             const { error } = await supabase
@@ -247,317 +247,325 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     return (
         <div className="space-y-6">
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <CardTitle className="text-lg font-bold">
-                    Venues ({filteredVenues.length})
-                </CardTitle>
-                <div className="flex flex-wrap gap-2">
-                    {!userDeptId && (
-                        <Button 
-                            onClick={handleGenerateDummyVenues} 
-                            variant="outline" 
-                            size="sm"
-                            disabled={generatingDummy}
-                        >
-                            <Database className="w-4 h-4 mr-2" />
-                            {generatingDummy ? 'Generating...' : 'Add Test Venues'}
-                        </Button>
-                    )}
-                    <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
-                        <Upload className="w-4 h-4 mr-2" />
-                        Bulk Upload
-                    </Button>
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Venue
+            <Card className="linear-surface overflow-hidden">
+                <CardHeader className="linear-toolbar flex flex-col gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <div className="linear-kicker">Infrastructure</div>
+                            <CardTitle className="text-base font-semibold">
+                                Venues
+                            </CardTitle>
+                        </div>
+                        <div className="linear-pill">
+                            <span className="font-medium text-foreground">{filteredVenues.length}</span>
+                            <span>total</span>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {!userDeptId && (
+                            <Button
+                                onClick={handleGenerateDummyVenues}
+                                variant="outline"
+                                size="sm"
+                                disabled={generatingDummy}
+                            >
+                                <Database className="w-4 h-4 mr-2" />
+                                {generatingDummy ? 'Generating...' : 'Add Test Venues'}
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Add New Venue</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="venue-name">Venue Name *</Label>
-                                    <Input
-                                        id="venue-name"
-                                        value={newVenueName}
-                                        onChange={(e) => setNewVenueName(e.target.value)}
-                                        placeholder="Enter venue name"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="venue-dept">Department</Label>
-                                    <Select value={newVenueDeptId || "none"} onValueChange={(val) => setNewVenueDeptId(val === "none" ? "" : val)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select department (optional)" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">No Department (All students)</SelectItem>
-                                            {departments.map(dept => (
-                                                <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                                                    {dept.dept_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Students will be assigned to venues in their department
-                                    </p>
-                                </div>
-                                <div>
-                                    <Label htmlFor="venue-address">Address</Label>
-                                    <Input
-                                        id="venue-address"
-                                        value={newVenueAddress}
-                                        onChange={(e) => setNewVenueAddress(e.target.value)}
-                                        placeholder="Enter venue address"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
+                        )}
+                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Bulk Upload
+                        </Button>
+                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm">
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Venue
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New Venue</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
                                     <div>
-                                        <Label htmlFor="venue-rows">Rows</Label>
+                                        <Label htmlFor="venue-name">Venue Name *</Label>
                                         <Input
-                                            id="venue-rows"
-                                            type="number"
-                                            min="1"
-                                            value={newVenueRows}
-                                            onChange={(e) => setNewVenueRows(e.target.value)}
-                                            placeholder="4"
+                                            id="venue-name"
+                                            value={newVenueName}
+                                            onChange={(e) => setNewVenueName(e.target.value)}
+                                            placeholder="Enter venue name"
                                         />
                                     </div>
                                     <div>
-                                        <Label htmlFor="venue-columns">Columns</Label>
+                                        <Label htmlFor="venue-dept">Department</Label>
+                                        <Select value={newVenueDeptId || "none"} onValueChange={(val) => setNewVenueDeptId(val === "none" ? "" : val)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select department (optional)" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No Department (All students)</SelectItem>
+                                                {departments.map(dept => (
+                                                    <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                                        {dept.dept_name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Students will be assigned to venues in their department
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="venue-address">Address</Label>
                                         <Input
-                                            id="venue-columns"
-                                            type="number"
-                                            min="1"
-                                            value={newVenueColumns}
-                                            onChange={(e) => setNewVenueColumns(e.target.value)}
-                                            placeholder="6"
+                                            id="venue-address"
+                                            value={newVenueAddress}
+                                            onChange={(e) => setNewVenueAddress(e.target.value)}
+                                            placeholder="Enter venue address"
                                         />
                                     </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label htmlFor="venue-rows">Rows</Label>
+                                            <Input
+                                                id="venue-rows"
+                                                type="number"
+                                                min="1"
+                                                value={newVenueRows}
+                                                onChange={(e) => setNewVenueRows(e.target.value)}
+                                                placeholder="4"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="venue-columns">Columns</Label>
+                                            <Input
+                                                id="venue-columns"
+                                                type="number"
+                                                min="1"
+                                                value={newVenueColumns}
+                                                onChange={(e) => setNewVenueColumns(e.target.value)}
+                                                placeholder="6"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-muted/50 rounded-lg">
+                                        <p className="text-sm text-muted-foreground">
+                                            Total Capacity: <span className="font-bold text-foreground">{(parseInt(newVenueRows) || 4) * (parseInt(newVenueColumns) || 6)} seats</span>
+                                        </p>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Calculated as Rows × Columns
+                                        </p>
+                                    </div>
+                                    <Button onClick={handleAddVenue} className="w-full">Add Venue</Button>
                                 </div>
-                                <div className="p-3 bg-muted/50 rounded-lg">
-                                    <p className="text-sm text-muted-foreground">
-                                        Total Capacity: <span className="font-bold text-foreground">{(parseInt(newVenueRows) || 4) * (parseInt(newVenueColumns) || 6)} seats</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Calculated as Rows × Columns
-                                    </p>
-                                </div>
-                                <Button onClick={handleAddVenue} className="w-full">Add Venue</Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </CardHeader>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                </CardHeader>
 
-            <CardContent className="overflow-visible space-y-2">
-                {filteredVenues.length > 0 && (
-                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
-                        <Checkbox
-                            checked={filteredVenues.length > 0 && selectedCount === filteredVenues.length}
-                            onCheckedChange={handleSelectAll}
-                        />
-                        <span className="text-sm text-muted-foreground">Select all</span>
-                    </div>
-                )}
-                {filteredVenues.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        No venues available for your department. Add one to get started.
-                    </div>
-                ) : (
-                    filteredVenues.map((venue) => (
-                        <div
-                            key={venue.venue_id}
-                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}
-                        >
-                            <div className="flex items-start gap-3">
-                                <Checkbox
-                                    checked={isSelected(venue.venue_id)}
-                                    onCheckedChange={() => toggleSelection(venue.venue_id)}
-                                    className="mt-1"
+                <CardContent className="p-0">
+                    {filteredVenues.length === 0 ? (
+                        <div className="py-14 text-center">
+                            <div className="text-sm font-medium">No venues yet</div>
+                            <div className="mt-1 text-sm text-muted-foreground">
+                                Add venues to assign seating for exams.
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="linear-table">
+                                <thead>
+                                    <tr>
+                                        <th className="linear-th w-10">
+                                            <Checkbox
+                                                checked={filteredVenues.length > 0 && selectedCount === filteredVenues.length}
+                                                onCheckedChange={handleSelectAll}
+                                            />
+                                        </th>
+                                        <th className="linear-th">Venue</th>
+                                        <th className="linear-th hidden md:table-cell">Department</th>
+                                        <th className="linear-th hidden lg:table-cell">Capacity</th>
+                                        <th className="linear-th hidden lg:table-cell">Layout</th>
+                                        <th className="linear-th text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredVenues.map((venue) => (
+                                        <tr key={venue.venue_id} className={`linear-tr ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}>
+                                            <td className="linear-td">
+                                                <Checkbox
+                                                    checked={isSelected(venue.venue_id)}
+                                                    onCheckedChange={() => toggleSelection(venue.venue_id)}
+                                                />
+                                            </td>
+                                            <td className="linear-td">
+                                                <div className="font-medium">{venue.venue_name}</div>
+                                                {venue.venue_address && (
+                                                    <div className="text-sm text-muted-foreground">{venue.venue_address}</div>
+                                                )}
+                                            </td>
+                                            <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                                                {venue.dept_id && deptMap.get(venue.dept_id) ? deptMap.get(venue.dept_id) : 'All departments'}
+                                            </td>
+                                            <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                                {venue.venue_capacity} seats
+                                            </td>
+                                            <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                                {venue.rows_count && venue.columns_count ? `${venue.rows_count}×${venue.columns_count}` : '—'}
+                                            </td>
+                                            <td className="linear-td">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button variant="outline" size="sm" onClick={() => openEditDialog(venue)}>
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Delete Venue</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Are you sure you want to delete "{venue.venue_name}"?
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteVenue(venue.venue_id)}>
+                                                                    Delete
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+
+                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Edit Venue</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="edit-venue-name">Venue Name *</Label>
+                                <Input
+                                    id="edit-venue-name"
+                                    value={editVenueName}
+                                    onChange={(e) => setEditVenueName(e.target.value)}
+                                    placeholder="Enter venue name"
                                 />
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-venue-dept">Department</Label>
+                                <Select value={editVenueDeptId || "none"} onValueChange={(val) => setEditVenueDeptId(val === "none" ? "" : val)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select department (optional)" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">No Department (All students)</SelectItem>
+                                        {departments.map(dept => (
+                                            <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                                                {dept.dept_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Students will be assigned to venues in their department
+                                </p>
+                            </div>
+                            <div>
+                                <Label htmlFor="edit-venue-address">Address</Label>
+                                <Input
+                                    id="edit-venue-address"
+                                    value={editVenueAddress}
+                                    onChange={(e) => setEditVenueAddress(e.target.value)}
+                                    placeholder="Enter venue address"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="font-medium flex items-center gap-2">
-                                        {venue.venue_name}
-                                        {venue.dept_id && deptMap.get(venue.dept_id) && (
-                                            <Badge variant="outline" className="text-xs">
-                                                <Building2 className="w-3 h-3 mr-1" />
-                                                {deptMap.get(venue.dept_id)}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <div className="text-sm text-foreground/70">
-                                        Capacity: {venue.venue_capacity} students
-                                        {venue.rows_count && venue.columns_count && (
-                                            <span className="ml-2">• {venue.rows_count}×{venue.columns_count} layout</span>
-                                        )}
-                                    </div>
-                                    {venue.venue_address && (
-                                        <div className="text-sm text-foreground/70">{venue.venue_address}</div>
-                                    )}
+                                    <Label htmlFor="edit-venue-rows">Rows</Label>
+                                    <Input
+                                        id="edit-venue-rows"
+                                        type="number"
+                                        min="1"
+                                        value={editVenueRows}
+                                        onChange={(e) => setEditVenueRows(e.target.value)}
+                                        placeholder="4"
+                                    />
                                 </div>
+                                <div>
+                                    <Label htmlFor="edit-venue-columns">Columns</Label>
+                                    <Input
+                                        id="edit-venue-columns"
+                                        type="number"
+                                        min="1"
+                                        value={editVenueColumns}
+                                        onChange={(e) => setEditVenueColumns(e.target.value)}
+                                        placeholder="6"
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                                <p className="text-sm text-muted-foreground">
+                                    Total Capacity: <span className="font-bold text-foreground">{(parseInt(editVenueRows) || 4) * (parseInt(editVenueColumns) || 6)} seats</span>
+                                </p>
                             </div>
                             <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => openEditDialog(venue)}
-                                >
-                                    <Edit2 className="w-4 h-4" />
+                                <Button onClick={handleEditVenue} className="flex-1">Update Venue</Button>
+                                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
+                                    Cancel
                                 </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Venue</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{venue.venue_name}"?
-                                                This will affect any scheduled exams at this venue.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteVenue(venue.venue_id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
                             </div>
                         </div>
-                    ))
-                )}
-            </CardContent>
+                    </DialogContent>
+                </Dialog>
 
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Edit Venue</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div>
-                            <Label htmlFor="edit-venue-name">Venue Name *</Label>
-                            <Input
-                                id="edit-venue-name"
-                                value={editVenueName}
-                                onChange={(e) => setEditVenueName(e.target.value)}
-                                placeholder="Enter venue name"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="edit-venue-dept">Department</Label>
-                            <Select value={editVenueDeptId || "none"} onValueChange={(val) => setEditVenueDeptId(val === "none" ? "" : val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select department (optional)" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">No Department (All students)</SelectItem>
-                                    {departments.map(dept => (
-                                        <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                                            {dept.dept_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Students will be assigned to venues in their department
-                            </p>
-                        </div>
-                        <div>
-                            <Label htmlFor="edit-venue-address">Address</Label>
-                            <Input
-                                id="edit-venue-address"
-                                value={editVenueAddress}
-                                onChange={(e) => setEditVenueAddress(e.target.value)}
-                                placeholder="Enter venue address"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label htmlFor="edit-venue-rows">Rows</Label>
-                                <Input
-                                    id="edit-venue-rows"
-                                    type="number"
-                                    min="1"
-                                    value={editVenueRows}
-                                    onChange={(e) => setEditVenueRows(e.target.value)}
-                                    placeholder="4"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="edit-venue-columns">Columns</Label>
-                                <Input
-                                    id="edit-venue-columns"
-                                    type="number"
-                                    min="1"
-                                    value={editVenueColumns}
-                                    onChange={(e) => setEditVenueColumns(e.target.value)}
-                                    placeholder="6"
-                                />
-                            </div>
-                        </div>
-                        <div className="p-3 bg-muted/50 rounded-lg">
-                            <p className="text-sm text-muted-foreground">
-                                Total Capacity: <span className="font-bold text-foreground">{(parseInt(editVenueRows) || 4) * (parseInt(editVenueColumns) || 6)} seats</span>
-                            </p>
-                        </div>
-                        <div className="flex gap-2">
-                            <Button onClick={handleEditVenue} className="flex-1">Update Venue</Button>
-                            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
-                                Cancel
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                <BulkUploadModal
+                    isOpen={showBulkUpload}
+                    onClose={() => setShowBulkUpload(false)}
+                    type="venues"
+                    onUpload={handleBulkUpload}
+                />
 
-            <BulkUploadModal
-                isOpen={showBulkUpload}
-                onClose={() => setShowBulkUpload(false)}
-                type="venues"
-                onUpload={handleBulkUpload}
-            />
+                <BulkActionsBar
+                    selectedCount={selectedCount}
+                    onClear={clearSelection}
+                    onDelete={() => setShowBulkDeleteConfirm(true)}
+                />
 
-            <BulkActionsBar
-                selectedCount={selectedCount}
-                onClear={clearSelection}
-                onDelete={() => setShowBulkDeleteConfirm(true)}
-            />
-
-            <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {selectedCount} Venue(s)</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete {selectedCount} selected venue(s)? This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => {
-                            handleBulkDelete();
-                            setShowBulkDeleteConfirm(false);
-                        }} className="bg-red-600 hover:bg-red-700">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </Card>
+                <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete {selectedCount} Venue(s)</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to delete {selectedCount} selected venue(s)? This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {
+                                handleBulkDelete();
+                                setShowBulkDeleteConfirm(false);
+                            }} className="bg-red-600 hover:bg-red-700">
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </Card>
         </div>
     );
 };

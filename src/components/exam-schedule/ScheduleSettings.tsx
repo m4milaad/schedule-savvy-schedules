@@ -60,11 +60,11 @@ export const ScheduleSettings = ({
   onSaveSchedule,
   onDownloadExcel,
 }: ScheduleSettingsProps) => {
-  const isInsufficientDays = dateRangeInfo && minimumDaysInfo && 
+  const isInsufficientDays = dateRangeInfo && minimumDaysInfo &&
     dateRangeInfo.workingDays < minimumDaysInfo.minimumDays;
 
   return (
-    <Card className="lg:col-span-1">
+    <Card className="linear-surface overflow-hidden lg:col-span-1">
       <CardHeader>
         <CardTitle>Schedule Settings</CardTitle>
         <CardDescription>Configure exam dates or view last schedule</CardDescription>
@@ -77,7 +77,7 @@ export const ScheduleSettings = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal",
+                  "w-full justify-start text-left font-normal bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70",
                   !startDate && "text-muted-foreground"
                 )}
               >
@@ -103,7 +103,7 @@ export const ScheduleSettings = ({
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full justify-start text-left font-normal",
+                  "w-full justify-start text-left font-normal bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70",
                   !endDate && "text-muted-foreground"
                 )}
               >
@@ -130,7 +130,7 @@ export const ScheduleSettings = ({
               <Label className="text-sm font-medium text-blue-700 dark:text-blue-400">Date Range Analysis</Label>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg space-y-2">
+            <div className="bg-primary/5 backdrop-blur-sm border border-primary/20 p-3 rounded-lg space-y-2">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Total Days:</span>
@@ -155,7 +155,7 @@ export const ScheduleSettings = ({
                   <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Holidays in Range:</div>
                   <div className="max-h-20 overflow-y-auto space-y-1">
                     {dateRangeInfo.holidaysInRange.map((holiday, index) => (
-                      <div key={index} className="text-xs bg-white dark:bg-gray-800 p-1 rounded border dark:border-gray-700">
+                      <div key={index} className="text-xs bg-background/60 backdrop-blur-sm p-1 rounded border border-border/50">
                         <div className="font-medium dark:text-gray-200">{new Date(holiday.holiday_date).toLocaleDateString()}</div>
                         <div className="text-gray-600 dark:text-gray-400">{holiday.holiday_name}</div>
                       </div>
@@ -181,7 +181,7 @@ export const ScheduleSettings = ({
               </Label>
             </div>
 
-            <div className={`p-3 rounded-lg space-y-2 ${isInsufficientDays ? 'bg-red-50 dark:bg-red-950/30' : 'bg-green-50 dark:bg-green-950/30'}`}>
+            <div className={`p-3 rounded-lg space-y-2 backdrop-blur-sm border ${isInsufficientDays ? 'bg-destructive/10 border-destructive/30' : 'bg-green-500/10 border-green-500/30'}`}>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Total Courses:</span>
@@ -198,7 +198,7 @@ export const ScheduleSettings = ({
               </div>
 
               {isInsufficientDays && dateRangeInfo && (
-                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/40 rounded text-xs text-red-800 dark:text-red-300">
+                <div className="mt-2 p-2 bg-destructive/15 backdrop-blur-sm border border-destructive/30 rounded text-xs text-destructive">
                   <div className="font-medium">⚠️ Insufficient Time Range</div>
                   <div>Need {minimumDaysInfo.minimumDays - dateRangeInfo.workingDays} more working days</div>
                 </div>
@@ -209,7 +209,7 @@ export const ScheduleSettings = ({
 
         <Button
           onClick={onGenerateSchedule}
-          className="w-full"
+          className="w-full backdrop-blur-sm"
           disabled={loading || isInsufficientDays}
         >
           Generate New Schedule

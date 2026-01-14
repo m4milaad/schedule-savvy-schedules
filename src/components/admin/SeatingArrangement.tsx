@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  CalendarDays, 
-  Grid3X3, 
-  Users, 
-  RefreshCw, 
-  Save, 
-  Trash2, 
+import {
+  CalendarDays,
+  Grid3X3,
+  Users,
+  RefreshCw,
+  Save,
+  Trash2,
   AlertCircle,
   CheckCircle2,
   Building2,
@@ -20,7 +20,9 @@ import {
   FileDown,
   GripVertical,
   Search,
-  X
+  X,
+  LayoutGrid,
+  Maximize2
 } from 'lucide-react';
 import { useSeatingAssignment } from '@/hooks/useSeatingAssignment';
 import { VenueSeatingPlan, StudentSeat } from '@/utils/seatingAlgorithm';
@@ -39,6 +41,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { exportAllVenuesToPdf, exportSingleVenueToPdf } from '@/utils/seatingPdfExport';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface SeatingArrangementProps {
   examDates: string[];
@@ -67,25 +71,21 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
   // Use local venues if modified, otherwise generated plan, otherwise saved seating
   const displayVenues = localVenues || generatedPlan?.venues || savedSeating;
-  const currentVenue = selectedVenue 
+  const currentVenue = selectedVenue
     ? displayVenues.find(v => v.venue_id === selectedVenue)
     : displayVenues[0];
 
-  const currentVenueIndex = currentVenue 
-    ? displayVenues.findIndex(v => v.venue_id === currentVenue.venue_id)
-    : 0;
-
-  const totalStudentsAssigned = displayVenues.reduce((acc, v) => 
+  const totalStudentsAssigned = displayVenues.reduce((acc, v) =>
     acc + v.seats.flat().filter(s => s !== null).length, 0
   );
 
   // Search results - find matching students across all venues
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    
+
     const query = searchQuery.toLowerCase().trim();
     const results: { venueId: string; venueName: string; row: number; col: number; student: StudentSeat }[] = [];
-    
+
     displayVenues.forEach(venue => {
       venue.seats.forEach((row, rowIdx) => {
         row.forEach((seat, colIdx) => {
@@ -105,7 +105,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
         });
       });
     });
-    
+
     return results;
   }, [searchQuery, displayVenues]);
 
@@ -160,9 +160,9 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
   // Handle drag and drop (supports cross-venue dragging)
   const handleDragEnd = useCallback((result: DropResult) => {
     const { source, destination } = result;
-    
+
     if (!destination) return;
-    
+
     // Parse seat positions from droppable IDs (format: venue-{venueId}-seat-{row}-{col})
     const parsePosition = (droppableId: string) => {
       const match = droppableId.match(/venue-(.+)-seat-(\d+)-(\d+)/);
@@ -185,7 +185,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
     const sourceVenueIndex = venues.findIndex(v => v.venue_id === sourcePos.venueId);
     const destVenueIndex = venues.findIndex(v => v.venue_id === destPos.venueId);
-    
+
     if (sourceVenueIndex === -1 || destVenueIndex === -1) return;
 
     // Get source and destination seats
@@ -223,9 +223,9 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
     setLocalVenues(venues);
     setHasLocalChanges(true);
-    
+
     const isCrossVenue = sourcePos.venueId !== destPos.venueId;
-    toast.success(isCrossVenue ? 'Student moved to different venue! Click "Save" to persist.' : 'Seat swapped! Click "Save" to persist.');
+    toast.success(isCrossVenue ? 'Moved to new venue.' : 'Seat swapped.');
   }, [localVenues, generatedPlan?.venues, savedSeating]);
 
   // Get unique course codes for color coding
@@ -237,387 +237,388 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
   });
   const courseColorMap = new Map<string, string>();
   const colors = [
-    'bg-blue-100 dark:bg-blue-900/30 border-blue-300',
-    'bg-green-100 dark:bg-green-900/30 border-green-300',
-    'bg-purple-100 dark:bg-purple-900/30 border-purple-300',
-    'bg-orange-100 dark:bg-orange-900/30 border-orange-300',
-    'bg-pink-100 dark:bg-pink-900/30 border-pink-300',
-    'bg-cyan-100 dark:bg-cyan-900/30 border-cyan-300',
-    'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300',
-    'bg-red-100 dark:bg-red-900/30 border-red-300'
+    'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+    'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
+    'bg-purple-50/50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300',
+    'bg-amber-50/50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300',
+    'bg-rose-50/50 dark:bg-rose-900/10 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300',
+    'bg-cyan-50/50 dark:bg-cyan-900/10 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300',
   ];
-  Array.from(courseCodes).forEach((code, idx) => {
+  Array.from(courseCodes).sort().forEach((code, idx) => {
     courseColorMap.set(code, colors[idx % colors.length]);
   });
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="space-y-6">
+      <motion.div
+        className="space-y-6 max-w-[1600px] mx-auto"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         {/* Header Controls */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Grid3X3 className="h-5 w-5" />
-              Seating Arrangement
-            </CardTitle>
-            <CardDescription>
-              Generate and manage exam seating with alternating subject pattern. Drag and drop students to swap seats across venues.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="flex-1 min-w-[200px]">
-                <label className="text-sm font-medium mb-2 block">Exam Date</label>
-                <Select value={selectedDate || ''} onValueChange={setSelectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select exam date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {examDates.map(date => (
-                      <SelectItem key={date} value={date}>
-                        <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4" />
-                          {format(new Date(date), 'PPP')}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        <Card className="prof-card bg-background/50">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+                  <Grid3X3 className="h-5 w-5 text-primary" />
+                  Seating Arrangement
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Plan, generate, and fine-tune seating assignments for upcoming exams.
+                </CardDescription>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 shadow-sm">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Exam Date</span>
+                  <Select value={selectedDate || ''} onValueChange={setSelectedDate}>
+                    <SelectTrigger className="h-8 w-[200px] border-none bg-transparent focus:ring-0 px-2 text-sm font-semibold">
+                      <SelectValue placeholder="Select a date..." />
+                    </SelectTrigger>
+                    <SelectContent align="end">
+                      {examDates.map(date => (
+                        <SelectItem key={date} value={date}>
+                          {format(new Date(date), 'PPP')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <Separator />
+
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap gap-2 items-center">
                 <Button
                   onClick={generate}
                   disabled={!selectedDate || isGenerating}
-                  variant="outline"
+                  size="sm"
+                  variant={generatedPlan || hasLocalChanges ? "secondary" : "default"}
+                  className="min-w-[110px]"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-                  {isGenerating ? 'Generating...' : 'Generate'}
+                  <RefreshCw className={cn("h-3.5 w-3.5 mr-2", isGenerating && "animate-spin")} />
+                  {isGenerating ? 'Generating...' : 'Generate New'}
                 </Button>
 
                 {(generatedPlan?.success || hasLocalChanges) && (
-                  <Button onClick={handleSave} disabled={isSaving}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSaving ? 'Saving...' : 'Save'}
+                  <Button onClick={handleSave} disabled={isSaving} size="sm" className="min-w-[100px]">
+                    <Save className="h-3.5 w-3.5 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                )}
+
+                {(generatedPlan || hasLocalChanges) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      clearGeneratedPlan();
+                      setLocalVenues(null);
+                      setHasLocalChanges(false);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Discard Changes
                   </Button>
                 )}
 
                 {savedSeating.length > 0 && !generatedPlan && !hasLocalChanges && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive" disabled={isClearing}>
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Clear
+                      <Button variant="ghost" size="sm" disabled={isClearing} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-2" />
+                        Clear All
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Clear Seating Arrangement?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will remove all seat assignments for the selected date.
-                          You can regenerate them later.
+                          This will permanently remove all seat assignments for {selectedDate && format(new Date(selectedDate), 'MMM d, yyyy')}.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={clear}>Clear</AlertDialogAction>
+                        <AlertDialogAction onClick={clear} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
 
-                {(generatedPlan || hasLocalChanges) && (
-                  <Button variant="ghost" onClick={() => {
-                    clearGeneratedPlan();
-                    setLocalVenues(null);
-                    setHasLocalChanges(false);
-                  }}>
-                    Cancel
-                  </Button>
-                )}
+                <div className="h-6 w-px bg-border mx-2 hidden md:block" />
 
                 {displayVenues.length > 0 && !generatedPlan && !hasLocalChanges && (
-                  <Button variant="outline" onClick={handleExportAll}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export All
+                  <Button variant="outline" size="sm" onClick={handleExportAll}>
+                    <FileDown className="h-3.5 w-3.5 mr-2" />
+                    Export PDF
                   </Button>
                 )}
               </div>
+
+              {/* Stats Summary */}
+              {selectedDate && displayVenues.length > 0 && (
+                <div className="flex gap-6 text-sm">
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Total Students</span>
+                    <span className="font-semibold text-lg leading-none">{totalStudentsAssigned}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-muted-foreground text-xs uppercase tracking-wider font-semibold">Venues Used</span>
+                    <span className="font-semibold text-lg leading-none">{displayVenues.length}</span>
+                  </div>
+                  {/* Status Pill */}
+                  <div className="flex items-center">
+                    {hasLocalChanges ? (
+                      <div className="flex items-center px-2 py-1 bg-amber-500/10 text-amber-600 rounded-md text-xs font-medium border border-amber-500/20">
+                        <AlertCircle className="h-3 w-3 mr-1.5" />
+                        Unsaved Changes
+                      </div>
+                    ) : savedSeating.length > 0 ? (
+                      <div className="flex items-center px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-md text-xs font-medium border border-emerald-500/20">
+                        <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                        Saved & Ready
+                      </div>
+                    ) : (
+                      <div className="flex items-center px-2 py-1 bg-muted text-muted-foreground rounded-md text-xs font-medium">
+                        No Data
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Error / Warning Messages */}
+            <AnimatePresence>
+              {(generatedPlan?.unassigned && generatedPlan.unassigned.length > 0) && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="mt-4 p-3 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-lg flex items-center gap-3"
+                >
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <div>
+                    <span className="font-medium text-red-900 dark:text-red-200 text-sm">Capacity Warning</span>
+                    <p className="text-xs text-red-700 dark:text-red-300">
+                      {generatedPlan.unassigned.length} students could not be assigned due to insufficient venue capacity.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Search Box */}
             {displayVenues.length > 0 && (
-              <div className="mt-4">
-                <div className="relative max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="mt-6 relative">
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Search by student name or enrollment number..."
+                    placeholder="Find student by name or enrollment..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-9 h-9 text-sm bg-muted/40 border-border/60 focus:bg-background transition-colors"
                   />
                   {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => setSearchQuery('')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
                   )}
                 </div>
-                
-                {/* Search Results */}
-                {searchQuery && searchResults.length > 0 && (
-                  <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
-                    <p className="text-sm font-medium mb-2">
-                      Found {searchResults.length} student{searchResults.length !== 1 ? 's' : ''}
-                    </p>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                      {searchResults.map((result, idx) => (
-                        <Button
-                          key={idx}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs"
-                          onClick={() => navigateToStudent(result.venueId)}
-                        >
-                          <span className="font-medium">{result.student.student_name}</span>
-                          <span className="text-muted-foreground ml-1">
-                            ({result.student.student_enrollment_no})
-                          </span>
-                          <Badge variant="secondary" className="ml-2 text-[10px]">
-                            {result.venueName} - {result.student.seat.label}
-                          </Badge>
-                        </Button>
-                      ))}
-                    </div>
+
+                {/* Search Results Dropdown */}
+                {searchQuery && (
+                  <div className="absolute top-full left-0 z-10 w-full max-w-lg mt-2 p-1 bg-popover border border-border rounded-lg shadow-lg animate-in fade-in zoom-in-95 duration-200">
+                    {searchResults.length > 0 ? (
+                      <div className="max-h-[200px] overflow-y-auto space-y-1 p-1">
+                        {searchResults.map((result, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              navigateToStudent(result.venueId);
+                              setSearchQuery('');
+                            }}
+                            className="w-full flex items-center justify-between p-2 rounded-md hover:bg-muted/50 text-left transition-colors"
+                          >
+                            <div>
+                              <div className="font-medium text-xs">{result.student.student_name}</div>
+                              <div className="text-[10px] text-muted-foreground">{result.student.student_enrollment_no}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] h-5 font-normal">
+                                {result.venueName}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] h-5 font-normal">
+                                {result.student.seat.label}
+                              </Badge>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-xs text-muted-foreground">
+                        No matching students found.
+                      </div>
+                    )}
                   </div>
                 )}
-                
-                {searchQuery && searchResults.length === 0 && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No students found matching "{searchQuery}"
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Status Messages */}
-            {hasLocalChanges && (
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">You have unsaved changes</span>
-                </div>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Click "Save" to persist your seat arrangement changes.
-                </p>
-              </div>
-            )}
-
-            {generatedPlan?.unassigned && generatedPlan.unassigned.length > 0 && (
-              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">{generatedPlan.unassigned.length} students unassigned</span>
-                </div>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Not enough venue capacity. Consider adding more venues.
-                </p>
-              </div>
-            )}
-
-            {generatedPlan?.error && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{generatedPlan.error}</span>
-                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Venue Selection & Stats */}
-        {selectedDate && displayVenues.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-2xl font-bold">{displayVenues.length}</p>
-                    <p className="text-sm text-muted-foreground">Venues</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-2xl font-bold">{totalStudentsAssigned}</p>
-                    <p className="text-sm text-muted-foreground">Students Seated</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2">
-                  <Grid3X3 className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-2xl font-bold">{courseCodes.size}</p>
-                    <p className="text-sm text-muted-foreground">Courses</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-2">
-                  {hasLocalChanges ? (
-                    <AlertCircle className="h-5 w-5 text-blue-500" />
-                  ) : generatedPlan ? (
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                  ) : savedSeating.length > 0 ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <div>
-                    <p className="text-lg font-medium">
-                      {hasLocalChanges ? 'Modified' : generatedPlan ? 'Preview' : savedSeating.length > 0 ? 'Saved' : 'Not Set'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Empty State */}
+        {!selectedDate && (
+          <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border/50 rounded-xl bg-muted/5">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+              <CalendarDays className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-medium">No Exam Date Selected</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
+              Please select an exam date from the dropdown above to view or generate seating layouts.
+            </p>
           </div>
         )}
 
-        {/* Venue Tabs */}
+        {/* Venue Layout Grid */}
         {selectedDate && displayVenues.length > 0 && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap gap-2">
-                  {displayVenues.map(venue => (
-                    <Button
-                      key={venue.venue_id}
-                      variant={currentVenue?.venue_id === venue.venue_id ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setSelectedVenue(venue.venue_id)}
-                    >
-                      {venue.venue_name}
-                      <Badge variant="secondary" className="ml-2">
-                        {venue.seats.flat().filter(s => s !== null).length}
-                      </Badge>
-                    </Button>
-                  ))}
-                </div>
-                {currentVenue && (
-                  <Button variant="outline" size="sm" onClick={handleExportVenue}>
-                    <FileDown className="h-4 w-4 mr-2" />
-                    Export This Venue
-                  </Button>
-                )}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+            {/* Sidebar: Venues List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  Venues
+                </h3>
+                <span className="text-[10px] font-medium bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                  {displayVenues.length}
+                </span>
               </div>
-            </CardHeader>
 
-            {currentVenue && (
-              <CardContent>
-                {/* Legend */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {Array.from(courseCodes).map(code => (
-                    <Badge key={code} variant="outline" className={courseColorMap.get(code)}>
-                      {code}
-                    </Badge>
-                  ))}
-                  <Badge variant="outline" className="bg-muted border-muted-foreground/30">
-                    Empty
-                  </Badge>
-                </div>
+              <div className="space-y-1 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin">
+                {displayVenues.map(venue => {
+                  const filledSeats = venue.seats.flat().filter(s => s !== null).length;
+                  const capacity = venue.total_capacity;
+                  const percent = Math.round((filledSeats / capacity) * 100);
+                  const isSelected = currentVenue?.venue_id === venue.venue_id;
 
-                <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-                  <GripVertical className="h-4 w-4" />
-                  <span>Drag and drop students to swap seats (works across venues too)</span>
-                </div>
-
-                <Separator className="mb-4" />
-
-                {/* Seating Grid with Drag & Drop */}
-                <div className="overflow-x-auto">
-                  <div className="inline-block min-w-full">
-                    <div className="text-center mb-2 text-sm text-muted-foreground">
-                      Front of Room (Invigilator)
-                    </div>
-                    <div 
-                      className="grid gap-2 p-4 bg-muted/30 rounded-lg"
-                      style={{ 
-                        gridTemplateColumns: `repeat(${currentVenue.columns}, minmax(80px, 1fr))` 
-                      }}
+                  return (
+                    <button
+                      key={venue.venue_id}
+                      onClick={() => setSelectedVenue(venue.venue_id)}
+                      className={cn(
+                        "w-full flex flex-col gap-1 p-3 rounded-lg border text-left transition-all duration-200",
+                        isSelected
+                          ? "bg-primary/5 border-primary/20 shadow-sm"
+                          : "bg-card border-border/40 hover:border-border/80 hover:bg-muted/30"
+                      )}
                     >
-                      {currentVenue.seats.map((row, rowIdx) => (
-                        row.map((seat, colIdx) => (
-                          <DroppableSeatCell 
-                            key={`${currentVenue.venue_id}-${rowIdx}-${colIdx}`}
-                            venueId={currentVenue.venue_id}
-                            seat={seat}
-                            row={rowIdx}
-                            col={colIdx}
-                            colorClass={seat ? courseColorMap.get(seat.course_code) : undefined}
-                            isHighlighted={isSeatHighlighted(currentVenue.venue_id, rowIdx, colIdx)}
-                          />
-                        ))
+                      <div className="flex justify-between items-center w-full">
+                        <span className={cn("text-sm font-medium", isSelected ? "text-primary" : "text-foreground")}>
+                          {venue.venue_name}
+                        </span>
+                        {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                      </div>
+
+                      <div className="flex justify-between items-center w-full mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {filledSeats}/{capacity} seats
+                        </span>
+                        <span className={cn("text-[10px] font-medium", percent >= 100 ? "text-amber-600" : "text-muted-foreground")}>
+                          {percent}%
+                        </span>
+                      </div>
+
+                      {/* Mini Progress Bar */}
+                      <div className="w-full h-1 bg-muted rounded-full mt-1 overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", percent >= 90 ? "bg-amber-500" : "bg-primary/60")}
+                          style={{ width: `${Math.min(percent, 100)}%` }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Main Area: Seating Grid */}
+            <div className="lg:col-span-3 space-y-4">
+              {currentVenue && (
+                <Card className="prof-card h-full flex flex-col">
+                  <CardHeader className="pb-2 border-b border-border/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <CardTitle className="text-base font-semibold">{currentVenue.venue_name}</CardTitle>
+                        <Badge variant="outline" className="font-mono text-[10px] uppercase font-normal">
+                          {currentVenue.rows}R x {currentVenue.columns}C
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={handleExportVenue} className="h-8 text-xs">
+                          <Download className="h-3.5 w-3.5 mr-1.5" />
+                          PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="flex-1 p-4 bg-muted/5 min-h-[500px]">
+                    {/* Legend */}
+                    <div className="flex flex-wrap gap-2 mb-6 p-3 bg-background rounded-lg border border-border/50 shadow-sm">
+                      <span className="text-xs font-medium text-muted-foreground mr-2 self-center">Assigned Courses:</span>
+                      {Array.from(courseCodes).map(code => (
+                        <div key={code} className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium border", courseColorMap.get(code))}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                          {code}
+                        </div>
                       ))}
                     </div>
-                    <div className="text-center mt-2 text-sm text-muted-foreground">
-                      Back of Room
+
+                    <div className="text-center mb-4">
+                      <div className="inline-block px-4 py-1 bg-muted/50 rounded-full text-[10px] font-semibold tracking-wider text-muted-foreground uppercase border border-border/50">
+                        Front of Room (Invigilator)
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-4 text-sm text-muted-foreground">
-                  Layout: {currentVenue.rows} rows × {currentVenue.columns} columns = {currentVenue.total_capacity} total seats
-                </div>
-              </CardContent>
-            )}
-          </Card>
+                    <div className="overflow-x-auto pb-6">
+                      <div
+                        className="grid gap-3 mx-auto max-w-fit p-1"
+                        style={{
+                          gridTemplateColumns: `repeat(${currentVenue.columns}, minmax(100px, 1fr))`
+                        }}
+                      >
+                        {currentVenue.seats.map((row, rowIdx) => (
+                          row.map((seat, colIdx) => (
+                            <DroppableSeatCell
+                              key={`${currentVenue.venue_id}-${rowIdx}-${colIdx}`}
+                              venueId={currentVenue.venue_id}
+                              seat={seat}
+                              row={rowIdx}
+                              col={colIdx}
+                              colorClass={seat ? courseColorMap.get(seat.course_code) : undefined}
+                              isHighlighted={isSeatHighlighted(currentVenue.venue_id, rowIdx, colIdx)}
+                            />
+                          ))
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
         )}
-
-        {/* Empty State */}
-        {selectedDate && displayVenues.length === 0 && !loadingSaved && !isGenerating && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardContent className="py-12 text-center">
-              <Grid3X3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Seating Arrangement</h3>
-              <p className="text-muted-foreground mb-4">
-                Click "Generate" to create a seating arrangement for this exam date.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {!selectedDate && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardContent className="py-12 text-center">
-              <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Select an Exam Date</h3>
-              <p className="text-muted-foreground">
-                Choose a date from the dropdown to view or generate seating arrangements.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      </motion.div>
     </DragDropContext>
   );
 };
@@ -633,55 +634,58 @@ interface DroppableSeatCellProps {
 
 const DroppableSeatCell = ({ venueId, seat, row, col, colorClass, isHighlighted }: DroppableSeatCellProps) => {
   const droppableId = `venue-${venueId}-seat-${row}-${col}`;
-  
+
   return (
     <Droppable droppableId={droppableId} isDropDisabled={false}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`h-20 ${snapshot.isDraggingOver ? 'ring-2 ring-primary ring-offset-2' : ''} ${isHighlighted ? 'ring-2 ring-yellow-500 ring-offset-2' : ''}`}
+          className={cn(
+            "h-24 rounded-lg transition-all duration-200 relative group",
+            snapshot.isDraggingOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5" : "",
+            isHighlighted ? "ring-2 ring-amber-500 ring-offset-2 z-10" : ""
+          )}
         >
           {seat ? (
             <Draggable draggableId={`student-${seat.student_id}-${venueId}-${row}-${col}`} index={0}>
               {(dragProvided, dragSnapshot) => (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        className={`h-full border rounded-md p-2 flex flex-col justify-between cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${colorClass} ${
-                          dragSnapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''
-                        } ${isHighlighted ? 'animate-pulse' : ''}`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="text-xs font-medium truncate flex-1">{seat.student_enrollment_no}</div>
-                          <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        </div>
-                        <div className="text-xs truncate text-muted-foreground">{seat.student_name}</div>
-                        <Badge variant="secondary" className="text-[10px] w-fit">
-                          {seat.course_code}
-                        </Badge>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="space-y-1">
-                        <p className="font-medium">{seat.student_name}</p>
-                        <p className="text-sm">Enrollment: {seat.student_enrollment_no}</p>
-                        <p className="text-sm">Course: {seat.course_code}</p>
-                        <p className="text-sm">Seat: {seat.seat.label}</p>
-                        <p className="text-xs text-muted-foreground mt-2">Drag to swap with another seat (any venue)</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div
+                  ref={dragProvided.innerRef}
+                  {...dragProvided.draggableProps}
+                  {...dragProvided.dragHandleProps}
+                  className={cn(
+                    "h-full w-full border rounded-lg p-2.5 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-all shadow-sm bg-background",
+                    colorClass,
+                    dragSnapshot.isDragging ? "shadow-xl ring-2 ring-primary scale-105 rotate-2 z-50" : "hover:border-primary/40 hover:shadow-md"
+                  )}
+                >
+                  <div className="flex items-start justify-between">
+                    <span className="text-[10px] font-mono opacity-70">
+                      {seat.seat.label}
+                    </span>
+                    <GripVertical className="h-3 w-3 opacity-20 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  <div className="my-1">
+                    <div className="font-semibold text-xs truncate leading-tight mb-0.5">{seat.student_name}</div>
+                    <div className="text-[10px] truncate opacity-80">{seat.student_enrollment_no}</div>
+                  </div>
+
+                  <div className="mt-auto pt-1 border-t border-black/5 dark:border-white/5 flex justify-between items-center">
+                    <span className="text-[9px] font-bold uppercase tracking-wider opacity-90 truncate max-w-[50px]">
+                      {seat.course_code}
+                    </span>
+                  </div>
+                </div>
               )}
             </Draggable>
           ) : (
-            <div className="h-full border border-dashed border-muted-foreground/30 rounded-md flex items-center justify-center bg-muted/20">
-              <span className="text-xs text-muted-foreground">R{row + 1}C{col + 1}</span>
+            <div className="h-full border border-dashed border-border/40 rounded-lg flex flex-col items-center justify-center bg-muted/10 group-hover:bg-muted/30 transition-colors">
+              <div className="w-1.5 h-1.5 rounded-full bg-border mb-1" />
+              <span className="text-[10px] font-mono text-muted-foreground/50">
+                R{row + 1}C{col + 1}
+              </span>
             </div>
           )}
           {provided.placeholder}
@@ -692,3 +696,4 @@ const DroppableSeatCell = ({ venueId, seat, row, col, colorClass, isHighlighted 
 };
 
 export default SeatingArrangement;
+
