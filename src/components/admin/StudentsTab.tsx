@@ -330,7 +330,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     };
 
     return (
-        <Card className="transition-all duration-300 hover:shadow-md shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
+        <Card className="admin-surface">
             <CardHeader>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <CardTitle className="flex items-center gap-2 dark:text-gray-100 transition-colors duration-300">
@@ -368,7 +368,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                     searchInputRef.current?.blur();
                                 }
                             }}
-                            className="pl-10 transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                            className="pl-10"
                         />
                     </div>
                 </div>
@@ -402,7 +402,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                     </tr>
                                 ) : (
                                     filteredStudents.map((student) => (
-                                    <tr key={student.student_id} className={`border-b hover:bg-muted/50 ${isSelected(student.student_id) ? 'bg-primary/5' : ''}`}>
+                                    <tr key={student.student_id} className={`border-b hover:bg-accent/30 ${isSelected(student.student_id) ? 'bg-primary/5' : ''}`}>
                                         <td className="p-2">
                                             <Checkbox 
                                                 checked={isSelected(student.student_id)}
@@ -561,7 +561,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_name}
                                 onChange={(e) => setFormData({ ...formData, student_name: e.target.value })}
                                 placeholder="Enter student name"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 required
                             />
                         </div>
@@ -572,7 +572,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_enrollment_no}
                                 onChange={(e) => setFormData({ ...formData, student_enrollment_no: e.target.value })}
                                 placeholder="Enter enrollment number"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 required
                             />
                         </div>
@@ -583,7 +583,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.abc_id}
                                 onChange={(e) => handleAbcIdChange(e.target.value)}
                                 placeholder="Enter ABC ID (numbers only)"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                                 pattern="[0-9]*"
                                 inputMode="numeric"
                             />
@@ -596,7 +596,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_email}
                                 onChange={(e) => setFormData({ ...formData, student_email: e.target.value })}
                                 placeholder="Enter email address"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                             />
                         </div>
                         <div>
@@ -606,7 +606,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                 value={formData.student_address}
                                 onChange={(e) => setFormData({ ...formData, student_address: e.target.value })}
                                 placeholder="Enter address"
-                                className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
+                                className=""
                             />
                         </div>
                         <div>

@@ -247,7 +247,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     return (
         <div className="space-y-6">
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
+        <Card className="admin-surface">
             <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <CardTitle className="text-lg font-bold">
                     Venues ({filteredVenues.length})
@@ -374,7 +374,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                     filteredVenues.map((venue) => (
                         <div
                             key={venue.venue_id}
-                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}
+                            className={`admin-row flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 animate-fade-in ${isSelected(venue.venue_id) ? 'bg-primary/5' : ''}`}
                         >
                             <div className="flex items-start gap-3">
                                 <Checkbox

@@ -254,20 +254,34 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="space-y-6">
         {/* Header Controls */}
-        <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Grid3X3 className="h-5 w-5" />
-              Seating Arrangement
-            </CardTitle>
-            <CardDescription>
-              Generate and manage exam seating with alternating subject pattern. Drag and drop students to swap seats across venues.
-            </CardDescription>
+        <Card className="admin-surface">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+                  <Grid3X3 className="h-5 w-5" />
+                  Seating arrangement
+                </CardTitle>
+                <CardDescription className="mt-1 max-w-2xl">
+                  Plan and fine-tune seating across venues. Generate once, then drag to make precise manual adjustments.
+                </CardDescription>
+              </div>
+              {selectedDate && (
+                <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs md:text-sm text-muted-foreground">
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="font-medium">
+                    {format(new Date(selectedDate), 'PPP')}
+                  </span>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="flex-1 min-w-[200px]">
-                <label className="text-sm font-medium mb-2 block">Exam Date</label>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="flex-1 min-w-[220px] space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Exam date
+                </label>
                 <Select value={selectedDate || ''} onValueChange={setSelectedDate}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select exam date" />
@@ -285,18 +299,19 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
                 </Select>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 justify-start lg:justify-end">
                 <Button
                   onClick={generate}
                   disabled={!selectedDate || isGenerating}
                   variant="outline"
+                  className="min-w-[120px]"
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
                   {isGenerating ? 'Generating...' : 'Generate'}
                 </Button>
 
                 {(generatedPlan?.success || hasLocalChanges) && (
-                  <Button onClick={handleSave} disabled={isSaving}>
+                  <Button onClick={handleSave} disabled={isSaving} className="min-w-[120px]">
                     <Save className="h-4 w-4 mr-2" />
                     {isSaving ? 'Saving...' : 'Save'}
                   </Button>
@@ -347,7 +362,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
             {/* Search Box */}
             {displayVenues.length > 0 && (
-              <div className="mt-4">
+              <div className="mt-6">
                 <div className="relative max-w-md">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -374,7 +389,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
                     <p className="text-sm font-medium mb-2">
                       Found {searchResults.length} student{searchResults.length !== 1 ? 's' : ''}
                     </p>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                       {searchResults.map((result, idx) => (
                         <Button
                           key={idx}
@@ -443,7 +458,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
         {/* Venue Selection & Stats */}
         {selectedDate && displayVenues.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="glass-card glass-hover rounded-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-muted-foreground" />
@@ -455,7 +470,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="glass-card glass-hover rounded-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
@@ -467,7 +482,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="glass-card glass-hover rounded-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   <Grid3X3 className="h-5 w-5 text-muted-foreground" />
@@ -479,7 +494,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
               </CardContent>
             </Card>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+            <Card className="glass-card glass-hover rounded-2xl">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-2">
                   {hasLocalChanges ? (
@@ -505,14 +520,14 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
         {/* Venue Tabs */}
         {selectedDate && displayVenues.length > 0 && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="admin-surface">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-2">
                   {displayVenues.map(venue => (
                     <Button
                       key={venue.venue_id}
-                      variant={currentVenue?.venue_id === venue.venue_id ? 'default' : 'outline'}
+                      variant={currentVenue?.venue_id === venue.venue_id ? 'default' : 'ghost'}
                       size="sm"
                       onClick={() => setSelectedVenue(venue.venue_id)}
                     >
@@ -595,7 +610,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
         {/* Empty State */}
         {selectedDate && displayVenues.length === 0 && !loadingSaved && !isGenerating && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="admin-surface">
             <CardContent className="py-12 text-center">
               <Grid3X3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Seating Arrangement</h3>
@@ -607,7 +622,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
         )}
 
         {!selectedDate && (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
+          <Card className="admin-surface">
             <CardContent className="py-12 text-center">
               <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Select an Exam Date</h3>
@@ -640,7 +655,7 @@ const DroppableSeatCell = ({ venueId, seat, row, col, colorClass, isHighlighted 
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`h-20 ${snapshot.isDraggingOver ? 'ring-2 ring-primary ring-offset-2' : ''} ${isHighlighted ? 'ring-2 ring-yellow-500 ring-offset-2' : ''}`}
+          className={`h-20 rounded-md ${snapshot.isDraggingOver ? 'ring-2 ring-primary/70 ring-offset-2' : ''} ${isHighlighted ? 'ring-2 ring-amber-500/80 ring-offset-2' : ''}`}
         >
           {seat ? (
             <Draggable draggableId={`student-${seat.student_id}-${venueId}-${row}-${col}`} index={0}>
@@ -652,9 +667,9 @@ const DroppableSeatCell = ({ venueId, seat, row, col, colorClass, isHighlighted 
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
-                        className={`h-full border rounded-md p-2 flex flex-col justify-between cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${colorClass} ${
-                          dragSnapshot.isDragging ? 'shadow-lg ring-2 ring-primary' : ''
-                        } ${isHighlighted ? 'animate-pulse' : ''}`}
+                        className={`h-full border rounded-md p-2 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-shadow ${colorClass} ${
+                          dragSnapshot.isDragging ? 'shadow-lg ring-2 ring-primary/80' : 'hover:shadow-md'
+                        }`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="text-xs font-medium truncate flex-1">{seat.student_enrollment_no}</div>
