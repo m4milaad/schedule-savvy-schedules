@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, RefreshCw, Download, Trash2 } from 'lucide-react';
+import { FileText, RefreshCw, Download, Trash2, Search, Filter, History } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { format } from 'date-fns';
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import {
@@ -19,6 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface AuditLog {
   id: string;
@@ -41,6 +44,7 @@ export const AuditLogsTab = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [clearing, setClearing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -50,7 +54,7 @@ export const AuditLogsTab = () => {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      
+
       // Get total count first
       const { count, error: countError } = await supabase
         .from('audit_logs')
@@ -59,7 +63,7 @@ export const AuditLogsTab = () => {
       if (!countError && count !== null) {
         setTotalCount(count);
       }
-      
+
       // Fetch audit logs (latest 100)
       const { data: logsData, error: logsError } = await supabase
         .from('audit_logs')
@@ -77,7 +81,7 @@ export const AuditLogsTab = () => {
 
       // Get unique user IDs
       const userIds = [...new Set(logsData.map(log => log.user_id))];
-      
+
       // Fetch profiles for these users
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -109,24 +113,28 @@ export const AuditLogsTab = () => {
   };
 
   const getActionBadge = (action: string) => {
-    const variants: { [key: string]: 'default' | 'secondary' | 'destructive' } = {
-      INSERT: 'default',
-      UPDATE: 'secondary',
-      DELETE: 'destructive',
+    const variants: { [key: string]: string } = {
+      INSERT: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15',
+      UPDATE: 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/15',
+      DELETE: 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/15',
     };
-    return <Badge variant={variants[action] || 'default'}>{action}</Badge>;
+    return (
+      <Badge variant="outline" className={cn("font-mono text-[10px] uppercase font-semibold", variants[action] || 'text-muted-foreground')}>
+        {action}
+      </Badge>
+    );
   };
 
   const getUserTypeBadge = (userType: string) => {
-    const variants: { [key: string]: 'default' | 'secondary' | 'outline' } = {
-      admin: 'default',
-      department_admin: 'secondary',
-      student: 'outline',
+    const variants: { [key: string]: string } = {
+      admin: 'bg-primary/10 text-primary border-primary/20',
+      department_admin: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+      student: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
     };
     return (
-      <Badge variant={variants[userType] || 'outline'}>
+      <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border", variants[userType] || 'bg-muted text-muted-foreground')}>
         {userType === 'department_admin' ? 'Dept Admin' : userType}
-      </Badge>
+      </span>
     );
   };
 
@@ -217,7 +225,7 @@ export const AuditLogsTab = () => {
   const getChangedFields = (oldData: Record<string, any> | null | undefined, newData: Record<string, any> | null | undefined): string[] => {
     const changes: string[] = [];
     const ignoredFields = ['updated_at', 'created_at', 'id', 'user_id', 'student_id', 'course_id', 'dept_id', 'venue_id', 'teacher_id', 'session_id', 'school_id'];
-    
+
     if (!oldData && newData) {
       // INSERT - show key fields that were set
       const keyFields = ['full_name', 'email', 'student_name', 'course_name', 'course_code', 'venue_name', 'teacher_name', 'dept_name', 'school_name', 'session_name', 'holiday_name', 'student_enrollment_no', 'semester', 'is_active'];
@@ -228,7 +236,7 @@ export const AuditLogsTab = () => {
       }
       return changes.slice(0, 3); // Limit to 3 fields for readability
     }
-    
+
     if (oldData && !newData) {
       // DELETE - show what was deleted
       const keyFields = ['full_name', 'student_name', 'course_name', 'course_code', 'venue_name', 'teacher_name', 'student_enrollment_no'];
@@ -240,7 +248,7 @@ export const AuditLogsTab = () => {
       }
       return changes;
     }
-    
+
     if (oldData && newData) {
       // UPDATE - show what changed
       for (const key of Object.keys(newData)) {
@@ -252,7 +260,7 @@ export const AuditLogsTab = () => {
         }
       }
     }
-    
+
     return changes.slice(0, 4); // Limit to 4 changes for readability
   };
 
@@ -277,15 +285,18 @@ export const AuditLogsTab = () => {
 
     if (changes.length > 0) {
       return (
-        <div className="space-y-1">
-          <span className="font-medium">
+        <div className="space-y-1.5">
+          <div className="font-medium text-xs">
             {log.action === 'INSERT' && `Created ${friendlyTable}`}
             {log.action === 'UPDATE' && `Updated ${friendlyTable}`}
             {log.action === 'DELETE' && `Deleted ${friendlyTable}`}
-          </span>
-          <ul className="text-xs text-muted-foreground list-disc list-inside">
+          </div>
+          <ul className="text-[10px] text-muted-foreground space-y-0.5">
             {changes.map((change, i) => (
-              <li key={i}>{change}</li>
+              <li key={i} className="flex items-start gap-1">
+                <span className="w-1 h-1 rounded-full bg-border mt-1.5 flex-shrink-0" />
+                {change}
+              </li>
             ))}
           </ul>
         </div>
@@ -293,146 +304,181 @@ export const AuditLogsTab = () => {
     }
 
     // Fallback to basic description
-    switch (log.action) {
-      case 'INSERT':
-        return `Created new ${friendlyTable.toLowerCase()}`;
-      case 'UPDATE':
-        return `Updated ${friendlyTable.toLowerCase()} details`;
-      case 'DELETE':
-        return `Deleted ${friendlyTable.toLowerCase()}`;
-      default:
-        return log.description || `${friendlyTable} ${log.action.toLowerCase()}`;
-    }
+    return (
+      <span className="text-xs font-medium">
+        {log.description || `${friendlyTable} ${log.action.toLowerCase()}`}
+      </span>
+    );
   };
 
+  const filteredLogs = logs.filter(log => {
+    if (!searchTerm) return true;
+    const lowerTerm = searchTerm.toLowerCase();
+    return (
+      log.description?.toLowerCase().includes(lowerTerm) ||
+      log.table_name?.toLowerCase().includes(lowerTerm) ||
+      log.profiles?.full_name?.toLowerCase().includes(lowerTerm) ||
+      log.profiles?.email?.toLowerCase().includes(lowerTerm)
+    );
+  });
+
   return (
-    <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50 animate-fade-in">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <FileText className="w-5 h-5" />
-            System Audit Logs ({totalCount > 100 ? `${logs.length} of ${totalCount}` : totalCount})
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              onClick={exportToCSV}
-              variant="outline"
-              size="sm"
-              disabled={logs.length === 0}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  disabled={logs.length === 0 || clearing}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {clearing ? 'Clearing...' : 'Clear Logs'}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear All Audit Logs</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will permanently delete all {totalCount} audit log entries. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={clearAllLogs} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete All
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button
-              onClick={loadLogs}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <LoadingScreen 
-            message="Loading logs..." 
-            variant="cascade" 
-            size="sm" 
-            fullScreen={false} 
-            className="py-12"
-          />
-        ) : logs.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>No audit logs found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[150px]">Timestamp</TableHead>
-                  <TableHead className="min-w-[150px]">User</TableHead>
-                  <TableHead className="min-w-[100px]">User Type</TableHead>
-                  <TableHead className="min-w-[100px]">Action</TableHead>
-                  <TableHead className="min-w-[120px]">Table</TableHead>
-                  <TableHead className="min-w-[250px]">Description</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log, index) => (
-                  <TableRow
-                    key={log.id}
-                    className="transition-all duration-300 hover:bg-muted/50 animate-fade-in"
-                    style={{ animationDelay: `${index * 0.05}s` }}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4 max-w-[1600px] mx-auto"
+    >
+      <Card className="prof-card">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+                <History className="w-5 h-5 text-primary" />
+                System Audit Logs
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Track and monitor system-wide activities, data changes, and access records.
+              </CardDescription>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search logs..."
+                  className="pl-8 h-8 text-xs bg-muted/40"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button onClick={loadLogs} variant="outline" size="sm" className="h-8">
+                <RefreshCw className={cn("w-3.5 h-3.5 mr-2", loading && "animate-spin")} />
+                Refresh
+              </Button>
+              <Button
+                onClick={exportToCSV}
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={logs.length === 0}
+              >
+                <Download className="w-3.5 h-3.5 mr-2" />
+                Export
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={logs.length === 0 || clearing}
                   >
-                    <TableCell className="font-mono text-xs">
-                      {format(new Date(log.created_at), 'MMM dd, yyyy HH:mm:ss')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {log.profiles?.full_name || (
-                            <span className="text-foreground/50 italic">
-                              {log.action === 'DELETE' ? 'Deleted User' : 'Unknown User'}
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-foreground/70">
-                          {log.profiles?.email || log.user_id.substring(0, 8) + '...'}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getUserTypeBadge(log.user_type)}
-                    </TableCell>
-                    <TableCell>
-                      {getActionBadge(log.action)}
-                    </TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {log.table_name}
-                      </code>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {getDetailedDescription(log)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    <Trash2 className="w-3.5 h-3.5 mr-2" />
+                    Clear
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear History?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {totalCount} audit log entries. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={clearAllLogs} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="py-20">
+              <LoadingScreen
+                message="Loading records..."
+                variant="cascade"
+                size="sm"
+                fullScreen={false}
+              />
+            </div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="text-center py-20 px-4">
+              <div className="bg-muted/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <History className="w-8 h-8 text-muted-foreground/50" />
+              </div>
+              <p className="font-medium text-foreground">No audit logs found</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {searchTerm ? "Try adjusting your search query." : "Activity will appear here when changes are made."}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="hover:bg-transparent border-b border-border/60">
+                    <TableHead className="w-[160px] text-xs uppercase tracking-wide font-semibold pl-6">Timestamp</TableHead>
+                    <TableHead className="w-[200px] text-xs uppercase tracking-wide font-semibold">User</TableHead>
+                    <TableHead className="w-[120px] text-xs uppercase tracking-wide font-semibold">Action</TableHead>
+                    <TableHead className="w-[140px] text-xs uppercase tracking-wide font-semibold">Entity</TableHead>
+                    <TableHead className="min-w-[300px] text-xs uppercase tracking-wide font-semibold">Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLogs.map((log, index) => (
+                    <motion.tr
+                      key={log.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02, duration: 0.2 }}
+                      className="group transition-colors border-b border-border/40 hover:bg-muted/30"
+                    >
+                      <TableCell className="font-mono text-[10px] text-muted-foreground pl-6 py-3">
+                        {format(new Date(log.created_at), 'MMM dd, yyyy')}
+                        <div className="text-foreground/80 font-medium">
+                          {format(new Date(log.created_at), 'HH:mm:ss')}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium leading-none text-foreground/90">
+                            {log.profiles?.full_name || 'Unknown User'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground mt-1 truncate max-w-[180px]">
+                            {log.profiles?.email || log.user_id}
+                          </span>
+                          <div className="mt-1.5">
+                            {getUserTypeBadge(log.user_type)}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {getActionBadge(log.action)}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant="secondary" className="font-normal text-[10px] text-foreground/80 bg-muted/60">
+                          {log.table_name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 pr-6">
+                        {getDetailedDescription(log)}
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="text-xs text-center text-muted-foreground py-2">
+        Showing {filteredLogs.length} of {totalCount} total records
+      </div>
+    </motion.div>
   );
 };
