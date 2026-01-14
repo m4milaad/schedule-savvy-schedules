@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Menu, Shield, User, List, Lock } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
@@ -18,16 +12,15 @@ import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
 import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
-import { Footer } from "@/components/Footer";
-import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from "@/components/ui/select";
+import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { PageTransition } from "@/components/layout/PageTransition";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
+import { OverviewTab } from "@/components/admin/OverviewTab";
+import { cn } from "@/lib/utils";
 
 const AdminDashboard: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
@@ -40,10 +33,11 @@ const AdminDashboard: React.FC = () => {
     const [students, setStudents] = useState<Student[]>([]);
     const [examDates, setExamDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
     const [profileData, setProfileData] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<string>("courses"); // safe default
+    const [activeTab, setActiveTab] = useState<string>("overview");
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navigate = useNavigate();
     const { toast } = useToast();
@@ -51,14 +45,11 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         checkUserRole();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Ensure activeTab updates sensibly after userRole known
     useEffect(() => {
         if (!userRole) return;
-        // Prefer "schools" for admin, otherwise "courses"
-        setActiveTab(userRole === "admin" ? "schools" : "courses");
+        setActiveTab("overview");
     }, [userRole]);
 
     const checkUserRole = async () => {
@@ -66,7 +57,6 @@ const AdminDashboard: React.FC = () => {
             const { data } = await supabase.auth.getUser();
             const user = data?.user;
             if (!user) {
-                // not signed in, redirect
                 navigate("/auth");
                 return;
             }
@@ -99,10 +89,8 @@ const AdminDashboard: React.FC = () => {
                     return;
                 }
                 
-                // Pass role and profile directly to avoid state timing issues
                 await loadAllData(role, profile);
             } else {
-                // no roles - sign out for safety
                 await supabase.auth.signOut();
                 navigate("/auth");
                 return;
@@ -153,7 +141,6 @@ const AdminDashboard: React.FC = () => {
         navigate("/auth");
     };
 
-    // Data loaders (kept defensive)
     const loadSchools = async () => {
         const { data, error } = await supabase.from("schools").select("*").order("school_name");
         if (error) throw error;
@@ -215,31 +202,19 @@ const AdminDashboard: React.FC = () => {
             let studentsQuery = supabase.from('students').select('*');
             let profilesQuery = supabase.from('profiles').select('*').eq('user_type', 'student');
 
-            // Filter by department for department admins
             if (currentRole === 'department_admin' && currentProfile?.dept_id) {
                 studentsQuery = studentsQuery.eq('dept_id', currentProfile.dept_id);
                 profilesQuery = profilesQuery.eq('dept_id', currentProfile.dept_id);
             }
 
-            // Get all students from students table
             const { data: studentsData, error: studentsError } = await studentsQuery.order('student_name');
 
-            if (studentsError) {
-                console.error('Error loading students:', studentsError);
-                throw studentsError;
-            }
+            if (studentsError) throw studentsError;
 
-            // Also get profiles that are students but don't have student records
-            const { data: profilesData, error: profilesError } = await profilesQuery;
+            const { data: profilesData } = await profilesQuery;
 
-            if (profilesError) {
-                console.error('Error loading profiles:', profilesError);
-            }
-
-            // Create a set of student IDs we already have in students table
             const existingStudentIds = new Set(studentsData?.map((s: any) => s.student_id) || []);
 
-            // Add profile-only students to the list
             const profileOnlyStudents = (profilesData || [])
                 .filter((p: any) => !existingStudentIds.has(p.id))
                 .map((p: any) => ({
@@ -281,199 +256,140 @@ const AdminDashboard: React.FC = () => {
     };
 
     if (loading) {
-        return <LoadingScreen message="Loading admin dashboard..." variant="morphing" size="lg" />;
+        return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
     }
 
-    // top nav buttons (responsive)
-    const navigationButtons = (
-        <div className="flex flex-wrap justify-center md:justify-end gap-2 md:gap-3">
-            <ThemeToggle />
-            {userRole === "admin" && (
-                <>
-                    <Button onClick={() => navigate("/manage-admins")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                        <Shield className="w-4 h-4" />
-                        Manage Admins
-                    </Button>
-                    <Button onClick={() => navigate("/schedule-generator")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                        <Home className="w-4 h-4" />
-                        Schedule Generator
-                    </Button>
-                    <Button onClick={() => navigate("/admin-logs")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                        <List className="w-4 h-4" />
-                        View Logs
-                    </Button>
-                    <Button onClick={() => navigate("/update-password")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                        <Lock className="w-4 h-4" />
-                        Update Password
-                    </Button>
-                </>
-            )}
-            {userRole === "department_admin" && (
-                <Button onClick={() => navigate("/department-admin-profile")} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                    <User className="w-4 h-4" />
-                    My Profile
-                </Button>
-            )}
-            <Button onClick={handleLogout} variant="outline" className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base">
-                <Home className="w-4 h-4" />
-                Logout
-            </Button>
-        </div>
-    );
+    const renderContent = () => {
+        switch (activeTab) {
+            case "overview":
+                return (
+                    <OverviewTab
+                        role={userRole}
+                        setActiveTab={setActiveTab}
+                        counts={{
+                            schools: schools.length,
+                            departments: departments.length,
+                            courses: courses.length,
+                            teachers: teachers.length,
+                            venues: venues.length,
+                            sessions: sessions.length,
+                            holidays: holidays.length,
+                            students: students.length,
+                            examDates: examDates.length,
+                        }}
+                    />
+                );
+            case "schools": return <SchoolsTab schools={schools} onRefresh={loadSchools} />;
+            case "departments": return <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />;
+            case "courses": return <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />;
+            case "teachers": return <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />;
+            case "venues": return <VenuesTab venues={venues} onRefresh={loadVenues} userDeptId={profileData?.dept_id} />;
+            case "sessions": return <SessionsTab sessions={sessions} onRefresh={loadSessions} />;
+            case "holidays": return <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />;
+            case "students": return <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />;
+            case "seating": return <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />;
+            default: return null;
+        }
+    };
+
+    const getTabTitle = () => {
+        const titles: {[key: string]: string} = {
+            overview: "Overview",
+            schools: "School Management",
+            departments: "Department Management",
+            courses: "Course Catalog",
+            teachers: "Faculty Directory",
+            venues: "Exam Venues",
+            sessions: "Academic Sessions",
+            holidays: "Holiday Calendar",
+            students: "Student Records",
+            seating: "Seating Arrangement",
+        };
+        return titles[activeTab] || "Dashboard";
+    };
+
+    const getTabDescription = () => {
+        const descs: {[key: string]: string} = {
+            overview: "Quick access to your most important admin tools and stats",
+            schools: "Manage university schools and faculties",
+            departments: "Configure academic departments",
+            courses: "View and manage all course offerings",
+            teachers: "Manage faculty members and assignments",
+            venues: "Configure exam halls and seating capacities",
+            sessions: "Set up academic years and terms",
+            holidays: "Manage non-working days",
+            students: "Manage student enrollments and profiles",
+            seating: "Generate and view exam seating plans",
+        };
+        return descs[activeTab] || "Manage university data";
+    };
 
     return (
-        <div 
-            className="min-h-screen bg-background flex flex-col transition-colors duration-500"
-            style={profileData?.theme_color ? { backgroundColor: profileData.theme_color } : undefined}
-        >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
-                {/* Enhanced Header with Glassmorphism */}
-                <div className="mb-6 md:mb-8 p-4 md:p-6 rounded-xl shadow-sm border border-border/50 bg-white/40 dark:bg-black/40 backdrop-blur-xl animate-fade-in">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                        <div className="text-center md:text-left">
-                            <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
-                                <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-10 h-10" />
-                                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Admin Dashboard</h1>
-                            </div>
-                            <p className="text-muted-foreground text-sm md:text-base">Manage university data and settings</p>
-                        </div>
+        <div className="flex min-h-screen bg-gradient-to-b from-background to-muted/30 overflow-hidden">
+            {/* Mobile Sidebar Sheet */}
+            {isMobile && (
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetContent side="left" className="p-0 w-72">
+                        <AdminSidebar
+                            activeTab={activeTab}
+                            setActiveTab={(tab) => {
+                                setActiveTab(tab);
+                                setIsMobileMenuOpen(false);
+                            }}
+                            userRole={userRole}
+                            isCollapsed={false}
+                            toggleSidebar={() => {}}
+                            onLogout={handleLogout}
+                            onNavigate={(path) => {
+                                navigate(path);
+                                setIsMobileMenuOpen(false);
+                            }}
+                        />
+                    </SheetContent>
+                </Sheet>
+            )}
 
-                    {/* Desktop navigation */}
-                    {!isMobile && navigationButtons}
+            {/* Desktop Sidebar */}
+            {!isMobile && (
+                <AdminSidebar 
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    userRole={userRole}
+                    isCollapsed={isSidebarCollapsed}
+                    toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    onLogout={handleLogout}
+                    onNavigate={navigate}
+                />
+            )}
 
-                    {/* Mobile sheet */}
-                    {isMobile && (
-                        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                            <SheetTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Menu className="w-4 h-4" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="right" className="w-72">
-                                <div className="flex flex-col gap-4 mt-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-8 h-8" />
-                                        <span className="font-semibold">Admin Menu</span>
-                                    </div>
-                                    {navigationButtons}
+            {/* Main Content */}
+            <div className={cn(
+                "flex min-w-0 flex-1 flex-col",
+                !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+            )}>
+                <AdminTopbar
+                    title={getTabTitle()}
+                    description={getTabDescription()}
+                    userLabel={profileData?.full_name || profileData?.email || undefined}
+                    isMobile={isMobile}
+                    onOpenSidebar={() => setIsMobileMenuOpen(true)}
+                    onLogout={handleLogout}
+                    onRefresh={() => loadAllData()}
+                    onNavigate={(path) => navigate(path)}
+                />
+
+                <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+                    <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
+                        <AnimatePresence mode="wait">
+                            <PageTransition key={activeTab}>
+                                <div className="overflow-hidden rounded-2xl border bg-card/70 shadow-sm backdrop-blur">
+                                    {renderContent()}
                                 </div>
-                            </SheetContent>
-                        </Sheet>
-                    )}
+                            </PageTransition>
+                        </AnimatePresence>
                     </div>
-                </div>
-
-                {/* Tabs area: desktop uses Tabs component (controlled), mobile uses Select dropdown */}
-                {isMobile ? (
-                    <div className="mb-4">
-                        <Select value={activeTab} onValueChange={(val) => setActiveTab(val)}>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a section" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {userRole === "admin" && (
-                                    <>
-                                        <SelectItem value="schools">Schools</SelectItem>
-                                        <SelectItem value="departments">Departments</SelectItem>
-                                    </>
-                                )}
-                                <SelectItem value="courses">Courses</SelectItem>
-                                <SelectItem value="teachers">Teachers</SelectItem>
-                                <SelectItem value="venues">Venues</SelectItem>
-                                <SelectItem value="sessions">Sessions</SelectItem>
-                                <SelectItem value="holidays">Holidays</SelectItem>
-                                <SelectItem value="students">Students</SelectItem>
-                                <SelectItem value="seating">Seating</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                ) : (
-                    // Controlled Tabs (activeTab drives which content is visible)
-                    <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)} className="space-y-4 md:space-y-6 animate-fade-in">
-                        <div className="flex justify-center">
-                            <TabsList className="inline-flex flex-wrap justify-center gap-1 h-auto bg-muted/50 p-1 rounded-xl">
-                            {userRole === "admin" && (
-                                <>
-                                    <TabsTrigger 
-                                        value="schools"
-                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                                    >
-                                        Schools
-                                    </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="departments"
-                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                                    >
-                                        Departments
-                                    </TabsTrigger>
-                                </>
-                            )}
-                            <TabsTrigger 
-                                value="courses"
-                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                            >
-                                Courses
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="teachers"
-                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                            >
-                                Teachers
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="venues"
-                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                            >
-                                Venues
-                            </TabsTrigger>
-                            {userRole === "admin" && (
-                                <>
-                                    <TabsTrigger 
-                                        value="sessions"
-                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                                    >
-                                        Sessions
-                                    </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="holidays"
-                                        className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                                    >
-                                        Holidays
-                                    </TabsTrigger>
-                                </>
-                            )}
-                            <TabsTrigger 
-                                value="students"
-                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                            >
-                                Students
-                            </TabsTrigger>
-                            <TabsTrigger 
-                                value="seating"
-                                className="text-xs md:text-sm px-2 py-2 md:px-4 md:py-3 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg"
-                            >
-                                Seating
-                            </TabsTrigger>
-                        </TabsList>
-                        </div>
-                    </Tabs>
-                )}
-
-                <div className="mt-4 animate-fade-in">
-                    {/* Render content based on activeTab */}
-                    {activeTab === "schools" && <SchoolsTab schools={schools} onRefresh={loadSchools} />}
-                    {activeTab === "departments" && <DepartmentsTab departments={departments} schools={schools} onRefresh={loadDepartments} />}
-                    {activeTab === "courses" && <CoursesTab courses={courses} departments={departments} onRefresh={loadCourses} />}
-                    {activeTab === "teachers" && <TeachersTab teachers={teachers} departments={departments} onRefresh={loadTeachers} />}
-                    {activeTab === "venues" && <VenuesTab venues={venues} onRefresh={loadVenues} userDeptId={profileData?.dept_id} />}
-                    {activeTab === "sessions" && <SessionsTab sessions={sessions} onRefresh={loadSessions} />}
-                    {activeTab === "holidays" && <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />}
-                    {activeTab === "students" && <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />}
-                    {activeTab === "seating" && <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />}
-                </div>
+                </main>
             </div>
-
-            <Footer />
         </div>
     );
 };
