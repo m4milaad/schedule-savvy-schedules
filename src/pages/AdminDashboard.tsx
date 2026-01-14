@@ -13,6 +13,7 @@ import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
 import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
+import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -290,6 +291,7 @@ const AdminDashboard: React.FC = () => {
             case "students": return <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />;
             case "seating": return <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />;
             case "logs": return <AuditLogsTab />;
+            case "admins": return <ManageAdminsTab />;
             default: return null;
         }
     };
@@ -307,6 +309,7 @@ const AdminDashboard: React.FC = () => {
             students: "Student Records",
             seating: "Seating Arrangement",
             logs: "System Audit Logs",
+            admins: "Manage Administrators",
         };
         return titles[activeTab] || "Dashboard";
     };
@@ -324,6 +327,7 @@ const AdminDashboard: React.FC = () => {
             students: "Manage student enrollments and profiles",
             seating: "Generate and view exam seating plans",
             logs: "Monitor system activity and changes",
+            admins: "Create and manage admin users and permissions",
         };
         return descs[activeTab] || "Manage university data";
     };
