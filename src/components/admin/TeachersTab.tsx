@@ -363,7 +363,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     };
 
     return (
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
+        <Card className="admin-surface">
             <CardHeader className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <CardTitle className="text-lg font-bold">
@@ -458,7 +458,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                     filteredTeachers.map((teacher) => (
                         <div
                             key={teacher.teacher_id}
-                            className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in ${isSelected(teacher.teacher_id) ? 'bg-primary/5' : ''}`}
+                            className={`admin-row flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 animate-fade-in ${isSelected(teacher.teacher_id) ? 'bg-primary/5' : ''}`}
                         >
                             <div className="flex items-start gap-3">
                                 <Checkbox

@@ -158,13 +158,24 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
     };
 
     return (
-        <Card className="shadow-sm bg-white/40 dark:bg-black/40 backdrop-blur-xl border border-border/50">
-            <CardHeader className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <CardTitle className="text-lg font-bold">
-                        Holidays ({filteredHolidays.length} of {holidays.length})
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2">
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Calendar</div>
+                        <CardTitle className="text-base font-semibold">
+                            Holidays
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{filteredHolidays.length}</span>
+                        <span className="hidden sm:inline">shown</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-medium text-foreground">{holidays.length}</span>
+                        <span className="hidden sm:inline">total</span>
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" /> Bulk Upload
                     </Button>
@@ -221,8 +232,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         </DialogContent>
                     </Dialog>
                 </div>
-                </div>
-                <div className="relative">
+                <div className="relative max-w-md">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                         ref={searchInputRef}
@@ -239,56 +249,77 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                 </div>
             </CardHeader>
 
-            {/* ✅ FIXED: Removed internal scroll */}
-            <CardContent className="overflow-visible space-y-2">
+            <CardContent className="p-0">
                 {filteredHolidays.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        {searchQuery ? 'No holidays match your search.' : 'No holidays added yet. Add one to get started.'}
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">
+                            {searchQuery ? 'No matching holidays' : 'No holidays yet'}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            {searchQuery ? 'Try a different search.' : 'Add holidays to prevent scheduling exams on non-working days.'}
+                        </div>
                     </div>
                 ) : (
-                    filteredHolidays.map((holiday) => (
-                        <div
-                            key={holiday.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border rounded-lg gap-2 animate-fade-in"
-                        >
-                            <div>
-                                <div className="font-medium">{holiday.holiday_name}</div>
-                                <div className="text-sm text-foreground/70">
-                                    {new Date(holiday.holiday_date).toLocaleDateString()}
-                                    {holiday.is_recurring && ' (Recurring)'}
-                                </div>
-                                {holiday.description && (
-                                    <div className="text-sm text-foreground/70">{holiday.description}</div>
-                                )}
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => openEditDialog(holiday)}>
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{holiday.holiday_name}"?
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteHoliday(holiday.id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
+                            <thead>
+                                <tr>
+                                    <th className="linear-th">Holiday</th>
+                                    <th className="linear-th">Date</th>
+                                    <th className="linear-th hidden lg:table-cell">Description</th>
+                                    <th className="linear-th text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredHolidays.map((holiday) => (
+                                    <tr key={holiday.id} className="linear-tr">
+                                        <td className="linear-td">
+                                            <div className="font-medium">
+                                                {holiday.holiday_name}
+                                                {holiday.is_recurring && (
+                                                    <span className="ml-2 text-xs text-muted-foreground">(Recurring)</span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="linear-td text-sm text-muted-foreground">
+                                            {new Date(holiday.holiday_date).toLocaleDateString()}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {holiday.description || '—'}
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(holiday)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{holiday.holiday_name}"?
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteHoliday(holiday.id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </CardContent>
 
