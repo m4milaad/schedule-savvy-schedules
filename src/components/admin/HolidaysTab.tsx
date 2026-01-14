@@ -42,10 +42,10 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
     const [showBulkUpload, setShowBulkUpload] = useState(false);
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    
+
     // Ref for search input
     const searchInputRef = useRef<HTMLInputElement>(null);
-    
+
     // Enable "/" keyboard shortcut to focus search
     useSearchShortcut(searchInputRef);
 
@@ -175,77 +175,79 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         <span className="hidden sm:inline">total</span>
                     </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
-                        <Upload className="w-4 h-4 mr-2" /> Bulk Upload
-                    </Button>
-                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="sm">
-                                <Plus className="w-4 h-4 mr-2" /> Add Holiday
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Add New Holiday</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                                <div>
-                                    <Label htmlFor="holiday-name">Holiday Name *</Label>
-                                    <Input
-                                        id="holiday-name"
-                                        value={newHolidayName}
-                                        onChange={(e) => setNewHolidayName(e.target.value)}
-                                        placeholder="Enter holiday name"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="holiday-date">Date *</Label>
-                                    <Input
-                                        id="holiday-date"
-                                        type="date"
-                                        value={newHolidayDate}
-                                        onChange={(e) => setNewHolidayDate(e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="holiday-description">Description</Label>
-                                    <Input
-                                        id="holiday-description"
-                                        value={newHolidayDescription}
-                                        onChange={(e) => setNewHolidayDescription(e.target.value)}
-                                        placeholder="Enter description (optional)"
-                                    />
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="holiday-recurring"
-                                        checked={newHolidayRecurring}
-                                        onCheckedChange={(checked) => setNewHolidayRecurring(checked as boolean)}
-                                    />
-                                    <Label htmlFor="holiday-recurring">Recurring holiday</Label>
-                                </div>
-                                <Button onClick={handleAddHoliday} className="w-full">
-                                    Add Holiday
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative max-w-md w-full">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            ref={searchInputRef}
+                            placeholder="Search holidays…"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                    searchInputRef.current?.blur();
+                                }
+                            }}
+                            className="w-full pl-10"
+                        />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-2" /> Bulk Upload
+                        </Button>
+                        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="sm">
+                                    <Plus className="w-4 h-4 mr-2" /> Add Holiday
                                 </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                        ref={searchInputRef}
-                        placeholder="Type / to search"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                                searchInputRef.current?.blur();
-                            }
-                        }}
-                        className="w-full pl-10"
-                    />
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New Holiday</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="holiday-name">Holiday Name *</Label>
+                                        <Input
+                                            id="holiday-name"
+                                            value={newHolidayName}
+                                            onChange={(e) => setNewHolidayName(e.target.value)}
+                                            placeholder="Enter holiday name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="holiday-date">Date *</Label>
+                                        <Input
+                                            id="holiday-date"
+                                            type="date"
+                                            value={newHolidayDate}
+                                            onChange={(e) => setNewHolidayDate(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="holiday-description">Description</Label>
+                                        <Input
+                                            id="holiday-description"
+                                            value={newHolidayDescription}
+                                            onChange={(e) => setNewHolidayDescription(e.target.value)}
+                                            placeholder="Enter description (optional)"
+                                        />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="holiday-recurring"
+                                            checked={newHolidayRecurring}
+                                            onCheckedChange={(checked) => setNewHolidayRecurring(checked as boolean)}
+                                        />
+                                        <Label htmlFor="holiday-recurring">Recurring holiday</Label>
+                                    </div>
+                                    <Button onClick={handleAddHoliday} className="w-full">
+                                        Add Holiday
+                                    </Button>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
             </CardHeader>
 

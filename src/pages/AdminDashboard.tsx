@@ -12,6 +12,7 @@ import { SessionsTab } from "@/components/admin/SessionsTab";
 import { HolidaysTab } from "@/components/admin/HolidaysTab";
 import { StudentsTab } from "@/components/admin/StudentsTab";
 import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
+import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -88,7 +89,7 @@ const AdminDashboard: React.FC = () => {
                     navigate("/auth");
                     return;
                 }
-                
+
                 await loadAllData(role, profile);
             } else {
                 await supabase.auth.signOut();
@@ -109,7 +110,7 @@ const AdminDashboard: React.FC = () => {
     const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: any) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
-        
+
         try {
             setLoading(true);
             await Promise.all([
@@ -288,12 +289,13 @@ const AdminDashboard: React.FC = () => {
             case "holidays": return <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />;
             case "students": return <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />;
             case "seating": return <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />;
+            case "logs": return <AuditLogsTab />;
             default: return null;
         }
     };
 
     const getTabTitle = () => {
-        const titles: {[key: string]: string} = {
+        const titles: { [key: string]: string } = {
             overview: "Overview",
             schools: "School Management",
             departments: "Department Management",
@@ -304,12 +306,13 @@ const AdminDashboard: React.FC = () => {
             holidays: "Holiday Calendar",
             students: "Student Records",
             seating: "Seating Arrangement",
+            logs: "System Audit Logs",
         };
         return titles[activeTab] || "Dashboard";
     };
 
     const getTabDescription = () => {
-        const descs: {[key: string]: string} = {
+        const descs: { [key: string]: string } = {
             overview: "Quick access to your most important admin tools and stats",
             schools: "Manage university schools and faculties",
             departments: "Configure academic departments",
@@ -320,12 +323,21 @@ const AdminDashboard: React.FC = () => {
             holidays: "Manage non-working days",
             students: "Manage student enrollments and profiles",
             seating: "Generate and view exam seating plans",
+            logs: "Monitor system activity and changes",
         };
         return descs[activeTab] || "Manage university data";
     };
 
     return (
-        <div className="flex min-h-screen bg-gradient-to-b from-background to-muted/30 overflow-hidden">
+        <div
+            className={cn(
+                "flex min-h-screen overflow-hidden transition-colors duration-300",
+                !profileData?.theme_color && "bg-gradient-to-b from-background to-muted/30"
+            )}
+            style={{
+                backgroundColor: profileData?.theme_color || undefined
+            }}
+        >
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -338,7 +350,7 @@ const AdminDashboard: React.FC = () => {
                             }}
                             userRole={userRole}
                             isCollapsed={false}
-                            toggleSidebar={() => {}}
+                            toggleSidebar={() => { }}
                             onLogout={handleLogout}
                             onNavigate={(path) => {
                                 navigate(path);
@@ -351,7 +363,7 @@ const AdminDashboard: React.FC = () => {
 
             {/* Desktop Sidebar */}
             {!isMobile && (
-                <AdminSidebar 
+                <AdminSidebar
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     userRole={userRole}
@@ -382,7 +394,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
                         <AnimatePresence mode="wait">
                             <PageTransition key={activeTab}>
-                                <div className="overflow-hidden rounded-2xl border bg-card/70 shadow-sm backdrop-blur">
+                                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
                                     {renderContent()}
                                 </div>
                             </PageTransition>

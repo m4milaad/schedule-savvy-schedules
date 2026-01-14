@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Trash2, UserPlus, ArrowLeft, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { cn } from "@/lib/utils";
 
 interface AdminUser {
   email: string;
@@ -37,6 +38,7 @@ const ManageAdmins = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [themeColor, setThemeColor] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -52,6 +54,16 @@ const ManageAdmins = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setCurrentUserId(user.id);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('theme_color')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.theme_color) {
+        setThemeColor(profile.theme_color);
+      }
     }
   };
 
@@ -178,7 +190,7 @@ const ManageAdmins = () => {
 
   const createAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim() || !password.trim() || !fullName.trim()) {
       toast({
         title: "Error",
@@ -346,7 +358,7 @@ const ManageAdmins = () => {
 
   const renderUserList = (users: AdminUser[], userType: 'admin' | 'teacher') => {
     const filteredUsers = users.filter(user => user.user_id !== currentUserId);
-    
+
     if (filteredUsers.length === 0) {
       return (
         <div className="text-center py-8 text-muted-foreground">
@@ -424,7 +436,13 @@ const ManageAdmins = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6 transition-colors duration-500">
+    <div
+      className={cn(
+        "min-h-screen p-6 transition-colors duration-500",
+        !themeColor && "bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      )}
+      style={{ backgroundColor: themeColor || undefined }}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
           <Button
@@ -439,7 +457,7 @@ const ManageAdmins = () => {
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Create User Form */}
-          <Card>
+          <Card className="prof-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5" />
@@ -526,7 +544,7 @@ const ManageAdmins = () => {
           </Card>
 
           {/* User Lists */}
-          <Card>
+          <Card className="prof-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5" />
@@ -538,11 +556,11 @@ const ManageAdmins = () => {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <LoadingScreen 
-                  message="Loading users..." 
-                  variant="cascade" 
-                  size="sm" 
-                  fullScreen={false} 
+                <LoadingScreen
+                  message="Loading users..."
+                  variant="cascade"
+                  size="sm"
+                  fullScreen={false}
                   className="py-8"
                 />
               ) : (
@@ -570,7 +588,7 @@ const ManageAdmins = () => {
         </div>
 
         {/* Info Card */}
-        <Card className="mt-6">
+        <Card className="prof-card mt-6">
           <CardHeader>
             <CardTitle>Role Information</CardTitle>
           </CardHeader>
