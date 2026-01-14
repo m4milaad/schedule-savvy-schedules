@@ -838,7 +838,7 @@ export default function Index() {
       >
         <div className="container mx-auto px-6 py-8 space-y-8">
           {/* Enhanced Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card/50 backdrop-blur-sm p-4 md:p-6 rounded-xl border shadow-sm">
+          <div className="linear-surface flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:p-6 rounded-xl">
             <div className="flex items-center space-x-3 md:space-x-4">
               <img
                 src="/favicon.ico"
@@ -872,7 +872,7 @@ export default function Index() {
                 onClick={loadLastSchedule}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 shadow-sm"
+                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                 disabled={loadingLastSchedule}
               >
                 <RefreshCw
@@ -888,7 +888,7 @@ export default function Index() {
                 onClick={() => navigate("/auth")}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 shadow-sm"
+                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin Panel</span>
@@ -922,7 +922,7 @@ export default function Index() {
             {/* Course Selection Tab */}
             <TabsContent value="selection" className="space-y-6 animate-fade-in">
               {/* Course selection summary */}
-              <Card className="">
+              <Card className="linear-surface overflow-hidden">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
@@ -938,7 +938,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={selectEnrolledCourses}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Select Enrolled</span>
                         <span className="sm:hidden">Enrolled</span>
@@ -947,6 +947,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={selectAllCourses}
+                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Select All</span>
                         <span className="sm:hidden">All</span>
@@ -955,6 +956,7 @@ export default function Index() {
                         variant="outline"
                         size="sm"
                         onClick={deselectAllCourses}
+                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
                       >
                         <span className="hidden sm:inline">Clear All</span>
                         <span className="sm:hidden">Clear</span>

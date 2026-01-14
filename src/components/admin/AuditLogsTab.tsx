@@ -328,52 +328,56 @@ export const AuditLogsTab = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4 max-w-[1600px] mx-auto"
     >
-      <Card className="prof-card">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-                <History className="w-5 h-5 text-primary" />
-                System Audit Logs
+              <div className="linear-kicker">System</div>
+              <CardTitle className="text-base font-semibold">
+                Audit Logs
               </CardTitle>
-              <CardDescription className="mt-1">
-                Track and monitor system-wide activities, data changes, and access records.
-              </CardDescription>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search logs..."
-                  className="pl-8 h-8 text-xs bg-muted/40"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Button onClick={loadLogs} variant="outline" size="sm" className="h-8">
-                <RefreshCw className={cn("w-3.5 h-3.5 mr-2", loading && "animate-spin")} />
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{filteredLogs.length}</span>
+              <span className="hidden sm:inline">shown</span>
+              <span className="text-muted-foreground">/</span>
+              <span className="font-medium text-foreground">{totalCount}</span>
+              <span className="hidden sm:inline">total</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search logs…"
+                className="w-full pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={loadLogs} variant="outline" size="sm">
+                <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
                 Refresh
               </Button>
               <Button
                 onClick={exportToCSV}
                 variant="outline"
                 size="sm"
-                className="h-8"
                 disabled={logs.length === 0}
               >
-                <Download className="w-3.5 h-3.5 mr-2" />
+                <Download className="w-4 h-4 mr-2" />
                 Export
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     disabled={logs.length === 0 || clearing}
                   >
-                    <Trash2 className="w-3.5 h-3.5 mr-2" />
+                    <Trash2 className="w-4 h-4 mr-2" />
                     Clear
                   </Button>
                 </AlertDialogTrigger>
