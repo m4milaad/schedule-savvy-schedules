@@ -1,17 +1,17 @@
 import React from 'react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { 
-    LayoutDashboard, 
-    School, 
-    Building2, 
-    BookOpen, 
-    Users, 
-    MapPin, 
-    Calendar, 
-    CalendarDays, 
-    GraduationCap, 
-    Armchair, 
+import {
+    LayoutDashboard,
+    School,
+    Building2,
+    BookOpen,
+    Users,
+    MapPin,
+    Calendar,
+    CalendarDays,
+    GraduationCap,
+    Armchair,
     LogOut,
     Shield,
     FileText,
@@ -34,16 +34,16 @@ interface AdminSidebarProps {
     onNavigate: (path: string) => void;
 }
 
-export const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
-    activeTab, 
-    setActiveTab, 
-    userRole, 
+export const AdminSidebar: React.FC<AdminSidebarProps> = ({
+    activeTab,
+    setActiveTab,
+    userRole,
     isCollapsed,
     toggleSidebar,
     onLogout,
     onNavigate
 }) => {
-    
+
     const menuItems = [
         { id: "overview", label: "Overview", icon: LayoutDashboard, role: "all" },
         { id: "schools", label: "Schools", icon: School, role: "admin" },
@@ -60,7 +60,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     const filteredItems = menuItems.filter(item => item.role === "all" || item.role === userRole);
 
     return (
-        <motion.div 
+        <motion.div
             className={cn(
                 "fixed left-0 top-0 flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-xl transition-all duration-300 z-20",
                 isCollapsed ? "w-20" : "w-64"
@@ -72,27 +72,27 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <div className="flex items-center justify-between p-4 h-16 border-b border-border/40">
                 <AnimatePresence mode="wait">
                     {!isCollapsed && (
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -10 }}
                             className="flex items-center gap-2 font-bold text-xl text-primary truncate"
                         >
-                             <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
-                             <span className="tracking-tight">Admin Console</span>
+                            <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
+                            <span className="tracking-tight">Admin Console</span>
                         </motion.div>
                     )}
                 </AnimatePresence>
-                 {isCollapsed && (
+                {isCollapsed && (
                     <div className="w-full flex justify-center">
                         <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
                     </div>
-                 )}
-                
+                )}
+
                 {!isCollapsed && (
-                     <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={toggleSidebar}
                         className="h-8 w-8 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground"
                     >
@@ -103,9 +103,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* Toggle button for collapsed state - positioned absolutely */}
             {isCollapsed && (
-                 <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={toggleSidebar}
                     className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md z-50 hover:bg-primary/90"
                 >
@@ -169,10 +169,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* Bottom Actions */}
             <div className="p-3 border-t border-border/40 space-y-1">
-                 {userRole === "admin" && (
+                {userRole === "admin" && (
                     <>
-                        <Button 
-                            variant="ghost" 
+                        {/* Audit Logs Button moved here */}
+                        <Button
+                            variant="ghost"
+                            className={cn(
+                                "w-full justify-start transition-all duration-200",
+                                activeTab === 'logs'
+                                    ? "bg-sidebar-accent text-foreground font-medium"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                                isCollapsed ? "justify-center px-0" : "px-3"
+                            )}
+                            onClick={() => setActiveTab("logs")}
+                            title="Audit Logs"
+                        >
+                            <FileText className={cn(
+                                "h-5 w-5",
+                                !isCollapsed && "mr-3",
+                                activeTab === 'logs' ? "text-primary" : "text-muted-foreground"
+                            )} />
+                            {!isCollapsed && "Logs"}
+                        </Button>
+
+                        <Button
+                            variant="ghost"
                             className={cn("w-full justify-start text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center px-0" : "px-3")}
                             onClick={() => onNavigate("/manage-admins")}
                             title="Manage Admins"
@@ -180,8 +201,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             <Shield className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
                             {!isCollapsed && "Admins"}
                         </Button>
-                        <Button 
-                            variant="ghost" 
+                        <Button
+                            variant="ghost"
                             className={cn("w-full justify-start text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center px-0" : "px-3")}
                             onClick={() => onNavigate("/schedule-generator")}
                             title="Schedule Generator"
@@ -189,42 +210,34 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                             <LayoutDashboard className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
                             {!isCollapsed && "Generator"}
                         </Button>
-                         <Button 
-                            variant="ghost" 
-                            className={cn("w-full justify-start text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center px-0" : "px-3")}
-                            onClick={() => onNavigate("/admin-logs")}
-                            title="Audit Logs"
-                        >
-                            <FileText className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
-                            {!isCollapsed && "Logs"}
-                        </Button>
                     </>
-                 )}
-                 
-                 {userRole === "department_admin" && (
-                    <Button 
-                        variant="ghost" 
+                )}
+
+                {userRole === "department_admin" && (
+                    <Button
+                        variant="ghost"
                         className={cn("w-full justify-start text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center px-0" : "px-3")}
+
                         onClick={() => onNavigate("/department-admin-profile")}
                         title="Profile"
                     >
                         <User className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
                         {!isCollapsed && "Profile"}
                     </Button>
-                 )}
+                )}
 
-                 <div className={cn("flex items-center gap-2 pt-2", isCollapsed ? "flex-col" : "justify-between px-1")}>
-                     <ThemeToggle />
-                     <Button 
-                        variant="ghost" 
+                <div className={cn("flex items-center gap-2 pt-2", isCollapsed ? "flex-col" : "justify-between px-1")}>
+                    <ThemeToggle />
+                    <Button
+                        variant="ghost"
                         size="icon"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={onLogout}
                         title="Logout"
                     >
                         <LogOut className="h-5 w-5" />
-                     </Button>
-                 </div>
+                    </Button>
+                </div>
             </div>
         </motion.div>
     );

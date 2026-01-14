@@ -64,14 +64,14 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-    
+
     // Course assignment state
     const [isCourseDialogOpen, setIsCourseDialogOpen] = useState(false);
     const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
     const [availableCourses, setAvailableCourses] = useState<SimpleCourse[]>([]);
     const [teacherCourses, setTeacherCourses] = useState<Record<string, TeacherCourse[]>>({});
     const [selectedCourseId, setSelectedCourseId] = useState('');
-    
+
     // Bulk selection
     const {
         selectedItems,
@@ -81,10 +81,10 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         clearSelection,
         selectedCount,
     } = useBulkSelection<string>();
-    
+
     // Ref for search input
     const searchInputRef = useRef<HTMLInputElement>(null);
-    
+
     // Enable "/" keyboard shortcut to focus search
     useSearchShortcut(searchInputRef);
 
@@ -98,7 +98,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     const handleBulkDelete = async () => {
         if (selectedCount === 0) return;
-        
+
         try {
             const selectedIds = Array.from(selectedItems);
             const { error } = await supabase
@@ -129,7 +129,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                 .from('courses')
                 .select('course_id, course_code, course_name, dept_id')
                 .order('course_code');
-            
+
             if (error) throw error;
             setAvailableCourses(data || []);
         } catch (error) {
@@ -151,7 +151,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         course_name
                     )
                 `);
-            
+
             if (error) {
                 console.error('Error loading teacher courses:', error);
                 return;
@@ -159,14 +159,14 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
             // Build map by teacher_id
             const coursesMap: Record<string, TeacherCourse[]> = {};
-            
+
             (data || []).forEach((item: any) => {
                 const teacherId = item.teacher_id;
-                
+
                 if (!coursesMap[teacherId]) {
                     coursesMap[teacherId] = [];
                 }
-                
+
                 if (item.courses) {
                     coursesMap[teacherId].push({
                         id: item.id,
@@ -176,7 +176,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                     });
                 }
             });
-            
+
             setTeacherCourses(coursesMap);
         } catch (error) {
             console.error('Error in loadTeacherCourses:', error);
@@ -204,7 +204,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     // Filter courses by teacher's department
     const getCoursesForTeacher = (teacher: Teacher): SimpleCourse[] => {
         const assignedIds = teacherCourses[teacher.teacher_id]?.map(tc => tc.course_id) || [];
-        return availableCourses.filter(c => 
+        return availableCourses.filter(c =>
             c.dept_id === teacher.dept_id && !assignedIds.includes(c.course_id)
         );
     };
@@ -363,13 +363,24 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     };
 
     return (
-        <Card className="admin-surface">
-            <CardHeader className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <CardTitle className="text-lg font-bold">
-                        Teachers ({filteredTeachers.length} of {teachers.length})
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2">
+        <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="linear-kicker">Faculty</div>
+                        <CardTitle className="text-base font-semibold">
+                            Teachers
+                        </CardTitle>
+                    </div>
+                    <div className="linear-pill">
+                        <span className="font-medium text-foreground">{filteredTeachers.length}</span>
+                        <span className="hidden sm:inline">shown</span>
+                        <span className="text-muted-foreground">/</span>
+                        <span className="font-medium text-foreground">{teachers.length}</span>
+                        <span className="hidden sm:inline">total</span>
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
                         Bulk Upload
@@ -422,7 +433,6 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         </DialogContent>
                     </Dialog>
                 </div>
-                </div>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -440,97 +450,109 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                 </div>
             </CardHeader>
 
-            <CardContent className="overflow-visible space-y-2">
-                {filteredTeachers.length > 0 && (
-                    <div className="flex items-center gap-2 pb-2 border-b mb-2">
-                        <Checkbox
-                            checked={filteredTeachers.length > 0 && selectedCount === filteredTeachers.length}
-                            onCheckedChange={handleSelectAll}
-                        />
-                        <span className="text-sm text-muted-foreground">Select all</span>
-                    </div>
-                )}
+            <CardContent className="p-0">
                 {filteredTeachers.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
-                        {searchQuery ? 'No teachers match your search.' : 'No teachers available. Add one to get started.'}
+                    <div className="py-14 text-center">
+                        <div className="text-sm font-medium">
+                            {searchQuery ? 'No matching teachers' : 'No teachers yet'}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                            {searchQuery ? 'Try a different search.' : 'Add teachers to assign them to courses.'}
+                        </div>
                     </div>
                 ) : (
-                    filteredTeachers.map((teacher) => (
-                        <div
-                            key={teacher.teacher_id}
-                            className={`admin-row flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 animate-fade-in ${isSelected(teacher.teacher_id) ? 'bg-primary/5' : ''}`}
-                        >
-                            <div className="flex items-start gap-3">
-                                <Checkbox
-                                    checked={isSelected(teacher.teacher_id)}
-                                    onCheckedChange={() => toggleSelection(teacher.teacher_id)}
-                                    className="mt-1"
-                                />
-                                <div className="flex-1">
-                                    <div className="font-medium">{teacher.teacher_name}</div>
-                                    <div className="text-sm text-foreground/70">
-                                        {teacher.designation && `${teacher.designation} • `}
-                                        {getDepartmentName(teacher.dept_id)}
-                                    </div>
-                                    {teacher.teacher_email && (
-                                        <div className="text-sm text-foreground/70">{teacher.teacher_email}</div>
-                                    )}
-                                    {teacher.contact_no && (
-                                        <div className="text-sm text-foreground/70">{teacher.contact_no}</div>
-                                    )}
-                                    {/* Show assigned courses */}
-                                    {teacherCourses[teacher.teacher_id]?.length > 0 && (
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                            {teacherCourses[teacher.teacher_id].map((tc) => (
-                                                <Badge
-                                                    key={tc.id} 
-                                                    variant="secondary" 
-                                                    className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
-                                                >
-                                                    <BookOpen className="w-3 h-3 mr-1" />
-                                                    {tc.course_code}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => openCourseDialog(teacher)}
-                                    title="Assign Courses"
-                                >
-                                    <BookOpen className="w-4 h-4" />
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={() => openEditDialog(teacher)}>
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Are you sure you want to delete "{teacher.teacher_name}"?
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteTeacher(teacher.teacher_id)}>
-                                                Delete
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-                            </div>
-                        </div>
-                    ))
+                    <div className="overflow-x-auto">
+                        <table className="linear-table">
+                            <thead>
+                                <tr>
+                                    <th className="linear-th w-10">
+                                        <Checkbox
+                                            checked={filteredTeachers.length > 0 && selectedCount === filteredTeachers.length}
+                                            onCheckedChange={handleSelectAll}
+                                        />
+                                    </th>
+                                    <th className="linear-th">Teacher</th>
+                                    <th className="linear-th hidden md:table-cell">Department</th>
+                                    <th className="linear-th hidden lg:table-cell">Email</th>
+                                    <th className="linear-th hidden lg:table-cell">Courses</th>
+                                    <th className="linear-th text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredTeachers.map((teacher) => (
+                                    <tr key={teacher.teacher_id} className={`linear-tr ${isSelected(teacher.teacher_id) ? 'bg-primary/5' : ''}`}>
+                                        <td className="linear-td">
+                                            <Checkbox
+                                                checked={isSelected(teacher.teacher_id)}
+                                                onCheckedChange={() => toggleSelection(teacher.teacher_id)}
+                                            />
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="font-medium">{teacher.teacher_name}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {teacher.designation || 'No designation'}
+                                            </div>
+                                        </td>
+                                        <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                                            {getDepartmentName(teacher.dept_id)}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                                            {teacher.teacher_email || '—'}
+                                        </td>
+                                        <td className="linear-td hidden lg:table-cell">
+                                            {teacherCourses[teacher.teacher_id]?.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {teacherCourses[teacher.teacher_id].slice(0, 3).map((tc) => (
+                                                        <Badge key={tc.id} variant="secondary" className="text-xs">
+                                                            {tc.course_code}
+                                                        </Badge>
+                                                    ))}
+                                                    {teacherCourses[teacher.teacher_id].length > 3 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            +{teacherCourses[teacher.teacher_id].length - 3}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground text-sm">—</span>
+                                            )}
+                                        </td>
+                                        <td className="linear-td">
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => openCourseDialog(teacher)} title="Assign Courses">
+                                                    <BookOpen className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(teacher)}>
+                                                    <Edit2 className="w-4 h-4" />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Are you sure you want to delete "{teacher.teacher_name}"?
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteTeacher(teacher.teacher_id)}>
+                                                                Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </CardContent>
 
@@ -593,9 +615,9 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                 <Label className="text-sm font-medium">Assigned Courses:</Label>
                                 <div className="flex flex-wrap gap-2 mt-2">
                                     {teacherCourses[selectedTeacher.teacher_id].map((tc) => (
-                                        <Badge 
-                                            key={tc.id} 
-                                            variant="secondary" 
+                                        <Badge
+                                            key={tc.id}
+                                            variant="secondary"
                                             className="flex items-center gap-1 pr-1"
                                         >
                                             {tc.course_code} - {tc.course_name}
@@ -612,7 +634,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                 </div>
                             </div>
                         )}
-                        
+
                         {/* Add new course */}
                         <div>
                             <Label>Add Course</Label>
@@ -639,7 +661,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                 </p>
                             )}
                         </div>
-                        
+
                         <Button variant="outline" onClick={() => setIsCourseDialogOpen(false)} className="w-full">
                             Done
                         </Button>
@@ -679,6 +701,6 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </Card>
+        </Card >
     );
 };
