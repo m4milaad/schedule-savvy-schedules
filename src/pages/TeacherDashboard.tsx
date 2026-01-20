@@ -1,24 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Bell, 
-  BookOpen, 
-  ClipboardCheck, 
-  FileText, 
-  FolderOpen, 
-  Calendar, 
-  LogOut, 
-  Building,
-  User,
-  Keyboard,
-  Edit
-} from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
 import { NoticesTab } from '@/components/teacher/NoticesTab';
 import { MarksTab } from '@/components/teacher/MarksTab';
@@ -28,12 +10,16 @@ import { ResourcesTab } from '@/components/teacher/ResourcesTab';
 import { LeaveManagementTab } from '@/components/teacher/LeaveManagementTab';
 import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab';
 import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
-import { Footer } from '@/components/Footer';
-import { NotificationCenter } from '@/components/NotificationCenter';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
-import { getContrastColor } from '@/components/ThemeColorPicker';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { TeacherSidebar } from '@/components/teacher/layout/TeacherSidebar';
+import { TeacherTopbar } from '@/components/teacher/layout/TeacherTopbar';
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { PageTransition } from "@/components/layout/PageTransition";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface Department {
   dept_id: string;
@@ -78,6 +64,9 @@ const TeacherDashboard = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentName, setDepartmentName] = useState<string>('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {
@@ -136,7 +125,7 @@ const TeacherDashboard = () => {
         setDepartments(deptData);
       }
 
-      // First, find the teacher record by matching email (profile email can be null in legacy data)
+      // First, find the teacher record by matching email
       const teacherEmail = profile.email || user?.email;
       const { data: teacherRecord } = teacherEmail
         ? await supabase
@@ -201,177 +190,128 @@ const TeacherDashboard = () => {
     return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
   }
 
+  const getTabTitle = () => {
+    const titles: { [key: string]: string } = {
+      notices: "Notices",
+      marks: "Marks Management",
+      attendance: "Attendance",
+      assignments: "Assignments",
+      resources: "Resources",
+      "leave-management": "Leave Management",
+      "apply-leave": "Apply Leave",
+    };
+    return titles[activeTab] || "Dashboard";
+  };
+
+  const getTabDescription = () => {
+    const descs: { [key: string]: string } = {
+      notices: "Create and manage announcements for students",
+      marks: "Enter and manage student marks",
+      attendance: "Track and record student attendance",
+      assignments: "Create and grade student assignments",
+      resources: "Upload and manage learning materials",
+      "leave-management": "Review and approve student leave requests",
+      "apply-leave": "Submit your own leave applications",
+    };
+    return descs[activeTab] || "";
+  };
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "notices":
+        return <NoticesTab teacherId={profile?.id || ''} courses={teacherCourses} deptId={profile?.dept_id || undefined} />;
+      case "marks":
+        return <MarksTab teacherId={profile?.id || ''} courses={teacherCourses} />;
+      case "attendance":
+        return <AttendanceTab teacherId={profile?.id || ''} courses={teacherCourses} />;
+      case "assignments":
+        return <AssignmentsTab teacherId={profile?.id || ''} courses={teacherCourses} />;
+      case "resources":
+        return <ResourcesTab teacherId={profile?.id || ''} courses={teacherCourses} />;
+      case "leave-management":
+        return <LeaveManagementTab teacherId={profile?.id || ''} />;
+      case "apply-leave":
+        return <TeacherApplyLeaveTab teacherId={profile?.id || ''} />;
+      default:
+        return null;
+    }
+  };
+
   const themeColor = (profile as any)?.theme_color;
 
   return (
-    <div 
-      className="min-h-screen text-foreground transition-colors duration-500 flex flex-col"
-      style={{ backgroundColor: themeColor || undefined }}
+    <div
+      className={cn(
+        "flex min-h-screen overflow-hidden transition-colors duration-300",
+        !themeColor && "bg-gradient-to-b from-background to-muted/30"
+      )}
+      style={{
+        backgroundColor: themeColor || undefined
+      }}
     >
-      <div className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Enhanced Header with Card - Glassmorphism */}
-          <Card className="mb-6 md:mb-8 animate-fade-in shadow-sm border border-border/50 transition-all duration-300 bg-white/40 dark:bg-black/40 backdrop-blur-xl">
-            <CardContent className="p-4 md:p-6">
-              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                <div className="flex items-start gap-3 md:gap-4">
-                  <div className="relative hidden md:block">
-                    <img 
-                      src="/favicon.ico" 
-                      alt="CUK Logo" 
-                      className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0 transition-transform duration-300 hover:scale-110 animate-scale-in rounded-lg shadow-md"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="mb-1">
-                      <h1 className="text-lg md:text-2xl lg:text-3xl font-bold transition-colors duration-300 text-foreground">
-                        Teacher Dashboard
-                      </h1>
-                    </div>
-                    <p className="text-sm md:text-lg font-semibold mb-2 text-primary">
-                      {profile?.full_name}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {departmentName && (
-                        <Badge variant="outline" className="text-xs flex items-center gap-1 bg-white/20 border-white/30">
-                          <Building className="w-3 h-3" />
-                          {departmentName}
-                        </Badge>
-                      )}
-                      {teacherCourses.length > 0 && (
-                        <Badge className="text-xs bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
-                          <BookOpen className="w-3 h-3 mr-1" />
-                          {teacherCourses.length} Course{teacherCourses.length !== 1 ? 's' : ''}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+      {/* Mobile Sidebar Sheet */}
+      {isMobile && (
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          <SheetContent side="left" className="p-0 w-72">
+            <TeacherSidebar
+              activeTab={activeTab}
+              setActiveTab={(tab) => {
+                setActiveTab(tab as TabValue);
+                setIsMobileMenuOpen(false);
+              }}
+              isCollapsed={false}
+              toggleSidebar={() => {}}
+              onLogout={handleSignOut}
+              onEditProfile={() => {
+                setShowProfileDialog(true);
+                setIsMobileMenuOpen(false);
+              }}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <TeacherSidebar
+          activeTab={activeTab}
+          setActiveTab={(tab) => setActiveTab(tab as TabValue)}
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onLogout={handleSignOut}
+          onEditProfile={() => setShowProfileDialog(true)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className={cn(
+        "flex min-w-0 flex-1 flex-col",
+        !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+      )}>
+        <TeacherTopbar
+          title={getTabTitle()}
+          description={getTabDescription()}
+          userLabel={profile?.full_name || profile?.email || undefined}
+          userId={user?.id}
+          isMobile={isMobile}
+          onOpenSidebar={() => setIsMobileMenuOpen(true)}
+          onLogout={handleSignOut}
+          onEditProfile={() => setShowProfileDialog(true)}
+          onShowShortcuts={() => setShowShortcutsHelp(true)}
+        />
+
+        <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+          <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
+            <AnimatePresence mode="wait">
+              <PageTransition key={activeTab}>
+                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
+                  {renderContent()}
                 </div>
-                <div className="flex gap-2 flex-wrap md:flex-nowrap items-center">
-                  <Button
-                    onClick={() => setShowShortcutsHelp(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
-                    title="Keyboard shortcuts (?)"
-                  >
-                    <Keyboard className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Shortcuts</span>
-                  </Button>
-                  <NotificationCenter userId={user?.id} />
-                  <ThemeToggle />
-                  <Button 
-                    onClick={() => setShowProfileDialog(true)}
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
-                    title="Edit profile (E)"
-                  >
-                    <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Edit Profile</span>
-                    <span className="sm:hidden">Edit</span>
-                  </Button>
-                  <Button 
-                    onClick={handleSignOut} 
-                    variant="outline" 
-                    size="sm"
-                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-destructive hover:text-destructive-foreground"
-                  >
-                    <LogOut className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Sign Out</span>
-                    <span className="sm:hidden">Logout</span>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="space-y-4 md:space-y-6 animate-fade-in">
-            <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-auto bg-muted/50 p-1 rounded-xl">
-              <TabsTrigger 
-                value="notices" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <Bell className="w-4 h-4" />
-                <span className="hidden lg:inline">Notices</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="marks" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden lg:inline">Marks</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="attendance" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <ClipboardCheck className="w-4 h-4" />
-                <span className="hidden lg:inline">Attendance</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="assignments" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="hidden lg:inline">Assignments</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="resources" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <FolderOpen className="w-4 h-4" />
-                <span className="hidden lg:inline">Resources</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="leave-management" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <Calendar className="w-4 h-4" />
-                <span className="hidden lg:inline">Leave Mgmt</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="apply-leave" 
-                className="text-xs px-2 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg flex items-center justify-center gap-1"
-              >
-                <User className="w-4 h-4" />
-                <span className="hidden lg:inline">Apply Leave</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="notices" className="space-y-4">
-              <NoticesTab teacherId={profile?.id || ''} courses={teacherCourses} deptId={profile?.dept_id || undefined} />
-            </TabsContent>
-
-            <TabsContent value="marks" className="space-y-4">
-              <MarksTab teacherId={profile?.id || ''} courses={teacherCourses} />
-            </TabsContent>
-
-            <TabsContent value="attendance" className="space-y-4">
-              <AttendanceTab teacherId={profile?.id || ''} courses={teacherCourses} />
-            </TabsContent>
-
-            <TabsContent value="assignments" className="space-y-4">
-              <AssignmentsTab teacherId={profile?.id || ''} courses={teacherCourses} />
-            </TabsContent>
-
-            <TabsContent value="resources" className="space-y-4">
-              <ResourcesTab teacherId={profile?.id || ''} courses={teacherCourses} />
-            </TabsContent>
-
-            <TabsContent value="leave-management" className="space-y-4">
-              <LeaveManagementTab teacherId={profile?.id || ''} />
-            </TabsContent>
-
-            <TabsContent value="apply-leave" className="space-y-4">
-              <TeacherApplyLeaveTab teacherId={profile?.id || ''} />
-            </TabsContent>
-          </Tabs>
-        </div>
+              </PageTransition>
+            </AnimatePresence>
+          </div>
+        </main>
       </div>
-
-      <Footer />
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp
