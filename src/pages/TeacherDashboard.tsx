@@ -250,16 +250,6 @@ const TeacherDashboard = () => {
                 </div>
                 <div className="flex gap-2 flex-wrap md:flex-nowrap items-center">
                   <Button
-                    onClick={() => setShowProfileDialog(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
-                    title="Edit profile (E)"
-                  >
-                    <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden sm:inline">Edit Profile</span>
-                  </Button>
-                  <Button
                     onClick={() => setShowShortcutsHelp(true)}
                     variant="outline"
                     size="sm"
@@ -271,6 +261,17 @@ const TeacherDashboard = () => {
                   </Button>
                   <NotificationCenter userId={user?.id} />
                   <ThemeToggle />
+                  <Button 
+                    onClick={() => setShowProfileDialog(true)}
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2 text-xs md:text-sm bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30"
+                    title="Edit profile (E)"
+                  >
+                    <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Edit Profile</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Button>
                   <Button 
                     onClick={handleSignOut} 
                     variant="outline" 
