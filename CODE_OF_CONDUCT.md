@@ -80,14 +80,10 @@ This Code of Conduct applies within all community spaces, and also applies when 
 If you experience or witness unacceptable behavior, or have any other concerns, please report it by contacting the project maintainers:
 
 #### Primary Contacts
-- **Email**: conduct@cukashmir.ac.in
+- **Email**: [Nimra Wani](nimrawani04@cukashmir.edu.in)
 - **Maintainers**: 
-  - Milad Ajaz Bhat (milad@cukashmir.ac.in)
-  - Nimra Wani (nimra@cukashmir.ac.in)
-
-#### Institutional Contacts
-- **CUK IT Department**: it@cukashmir.ac.in
-- **Academic Office**: academic@cukashmir.ac.in
+  - [Milad Ajaz Bhat](mb4milad.bhattt@cukashmir.edu.in)
+  - [Nimra Wani](nimrawani04@cukashmir.edu.in)
 
 ### What to Include
 
@@ -218,7 +214,7 @@ For technical questions and learning:
 
 ## Acknowledgment
 
-This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1, available at [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org/), version 2.1, available at [code_of_conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct.html).
 
 Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder](https://github.com/mozilla/diversity).
 
@@ -242,18 +238,8 @@ This Code of Conduct may be updated periodically to reflect:
 ## Contact Information
 
 ### Project Maintainers
-- **Milad Ajaz Bhat**: milad@cukashmir.ac.in
-- **Nimra Wani**: nimra@cukashmir.ac.in
-
-### Institutional Contacts
-- **Central University of Kashmir**: info@cukashmir.ac.in
-- **IT Department**: it@cukashmir.ac.in
-- **Code of Conduct Team**: conduct@cukashmir.ac.in
-
-### Emergency Contacts
-- **Campus Security**: +91-XXXX-XXXXXX
-- **Local Emergency Services**: 112
-- **Mental Health Crisis**: 1800-599-0019
+- **Milad Ajaz Bhat**: mb4milad.bhattt@cukashmir.edu.in
+- **Nimra Wani**: nimrawani04@cukashmir.edu.in
 
 ---
 
@@ -262,5 +248,5 @@ This Code of Conduct may be updated periodically to reflect:
 **Together, we can create a welcoming, inclusive, and productive environment for everyone.**
 
 **Last Updated**: January 8, 2026  
-**Version**: 1.0  
+**Version**: 1.1
 **Institution**: Central University of Kashmir
