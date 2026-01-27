@@ -201,16 +201,9 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Leave Applications</h2>
-          <p className="text-muted-foreground">Apply for leave and track your applications</p>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -223,7 +216,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -236,7 +229,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -258,10 +251,10 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
         </TabsList>
 
         <TabsContent value="apply">
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5" />
+          <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+              <div className="linear-kicker">Application</div>
+              <CardTitle className="text-base font-semibold">
                 New Leave Application
               </CardTitle>
               <CardDescription>Fill in the details to apply for leave</CardDescription>
@@ -370,9 +363,10 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
         </TabsContent>
 
         <TabsContent value="applications">
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardHeader>
-              <CardTitle>My Leave Applications</CardTitle>
+          <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+              <div className="linear-kicker">History</div>
+              <CardTitle className="text-base font-semibold">My Leave Applications</CardTitle>
               <CardDescription>Track the status of your leave applications</CardDescription>
             </CardHeader>
             <CardContent>

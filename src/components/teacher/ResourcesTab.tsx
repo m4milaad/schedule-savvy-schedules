@@ -306,21 +306,11 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Resources</h2>
-          <p className="text-muted-foreground">Upload and manage teaching materials</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Upload Resource
-        </Button>
-      </div>
-
       {showForm && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardHeader>
-            <CardTitle>{editingResource ? 'Edit Resource' : 'Upload New Resource'}</CardTitle>
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div className="linear-kicker">Upload</div>
+            <CardTitle className="text-base font-semibold">{editingResource ? 'Edit Resource' : 'Upload New Resource'}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -490,10 +480,21 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       )}
 
       {/* Resources List */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Uploaded Resources</CardTitle>
-          <CardDescription>View and manage all your resources</CardDescription>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Library</div>
+              <CardTitle className="text-base font-semibold">Uploaded Resources</CardTitle>
+              <CardDescription>View and manage all your resources</CardDescription>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {showForm ? 'Cancel' : 'Upload Resource'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {resources.length === 0 ? (

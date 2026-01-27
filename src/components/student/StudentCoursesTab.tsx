@@ -145,7 +145,7 @@ const AvailableCoursesGrid: React.FC<{
 
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {paginatedItems.map((course) => (
-          <Card key={course.course_id} className={`bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50 ${selectedCourses.has(course.course_id) ? 'ring-2 ring-primary' : ''}`}>
+          <Card key={course.course_id} className={`linear-surface overflow-hidden ${selectedCourses.has(course.course_id) ? 'ring-2 ring-primary' : ''}`}>
             <CardContent className="pt-4">
               <div className="flex items-start gap-2 mb-3">
                 <Checkbox
@@ -593,16 +593,9 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">My Courses</h2>
-          <p className="text-muted-foreground">Manage your course enrollments</p>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -615,7 +608,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -628,7 +621,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -641,7 +634,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -663,15 +656,14 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         </TabsList>
 
         <TabsContent value="enrolled">
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-2">
+          <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5" />
-                    Enrolled Courses
+                  <div className="linear-kicker">Enrollment</div>
+                  <CardTitle className="text-base font-semibold">
+                  Enrolled Courses
                   </CardTitle>
-                  <CardDescription>Your current course enrollments with grades and attendance</CardDescription>
                 </div>
                 {selectedEnrolledCourses.size > 0 && (
                   <div className="flex items-center gap-2">
@@ -724,7 +716,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                     {enrollments.map((enrollment) => {
                       const gradeInfo = courseGrades.get(enrollment.course_id);
                       return (
-                        <Card key={enrollment.id} className={`bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50 ${selectedEnrolledCourses.has(enrollment.id) ? 'ring-2 ring-primary' : ''}`}>
+                        <Card key={enrollment.id} className={`linear-surface overflow-hidden ${selectedEnrolledCourses.has(enrollment.id) ? 'ring-2 ring-primary' : ''}`}>
                           <CardContent className="pt-4">
                             <div className="flex items-start gap-2 mb-3">
                               <Checkbox
@@ -790,13 +782,14 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         </TabsContent>
 
         <TabsContent value="available">
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5" />
-                Available Courses
-              </CardTitle>
-              <CardDescription>Browse and enroll in new courses</CardDescription>
+          <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+              <div>
+                <div className="linear-kicker">Catalog</div>
+                <CardTitle className="text-base font-semibold">
+                  Available Courses
+                </CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
