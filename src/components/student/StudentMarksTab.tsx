@@ -86,29 +86,23 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">My Marks</h2>
-          <p className="text-muted-foreground">View your academic performance</p>
-        </div>
-        {marks.length > 0 && (
-          <Card className="px-4 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-green-500" />
-              <span className="font-semibold">{calculateOverallPercentage()}%</span>
-              <span className="text-sm text-muted-foreground">Avg</span>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Assessment</div>
+              <CardTitle className="text-base font-semibold">
+                Subject-wise Marks
+              </CardTitle>
             </div>
-          </Card>
-        )}
-      </div>
-
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            Subject-wise Marks
-          </CardTitle>
-          <CardDescription>Detailed breakdown of your marks in each subject</CardDescription>
+            {marks.length > 0 && (
+              <div className="linear-pill">
+                <TrendingUp className="h-4 w-4 text-green-500" />
+                <span className="font-medium text-foreground">{calculateOverallPercentage()}%</span>
+                <span>average</span>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {marks.length === 0 ? (

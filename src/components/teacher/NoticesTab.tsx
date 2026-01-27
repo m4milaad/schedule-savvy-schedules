@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2, Edit, Eye, Send } from 'lucide-react';
@@ -45,7 +46,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
   const [priority, setPriority] = useState('normal');
   const [targetAudience, setTargetAudience] = useState('all_students');
   const [targetCourseId, setTargetCourseId] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     loadNotices();
@@ -79,7 +80,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority('normal');
     setTargetAudience('all_students');
     setTargetCourseId('');
-    setExpiryDate('');
+    setExpiryDate(undefined);
     setEditingNotice(null);
     setShowForm(false);
   };
@@ -105,7 +106,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
         target_audience: targetAudience,
         target_course_id: targetAudience === 'subject_students' ? targetCourseId : null,
         target_dept_id: targetAudience === 'all_students' ? deptId : null,
-        expiry_date: expiryDate || null,
+        expiry_date: expiryDate ? format(expiryDate, 'yyyy-MM-dd') : null,
       };
 
       if (editingNotice) {
@@ -143,7 +144,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority(notice.priority);
     setTargetAudience(notice.target_audience);
     setTargetCourseId(notice.target_course_id || '');
-    setExpiryDate(notice.expiry_date || '');
+    setExpiryDate(notice.expiry_date ? new Date(notice.expiry_date) : undefined);
     setShowForm(true);
   };
 
@@ -200,21 +201,13 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Notices</h2>
-          <p className="text-muted-foreground">Create and manage notices for students</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Notice
-        </Button>
-      </div>
-
       {showForm && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardHeader>
-            <CardTitle>{editingNotice ? 'Edit Notice' : 'Create New Notice'}</CardTitle>
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div>
+              <div className="linear-kicker">Form</div>
+              <CardTitle className="text-base font-semibold">{editingNotice ? 'Edit Notice' : 'Create New Notice'}</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -283,11 +276,10 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="expiry">Expiry Date</Label>
-                  <Input
-                    id="expiry"
-                    type="date"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
+                  <DatePicker
+                    date={expiryDate}
+                    onDateChange={setExpiryDate}
+                    placeholder="Select expiry date (optional)"
                   />
                 </div>
               </div>
@@ -318,78 +310,107 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       )}
 
       {/* Published Notices */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Published Notices</CardTitle>
-          <CardDescription>View and manage all your notices</CardDescription>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Communication</div>
+              <CardTitle className="text-base font-semibold">
+                Published Notices
+              </CardTitle>
+            </div>
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{notices.length}</span>
+              <span>total</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {showForm ? 'Cancel' : 'Create Notice'}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {notices.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No notices created yet</p>
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No notices created yet</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Create your first notice to communicate with students.
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {notices.map((notice) => (
-                <div
-                  key={notice.id}
-                  className={`p-4 border rounded-lg ${!notice.is_active ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{notice.title}</h3>
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Notice</th>
+                    <th className="linear-th hidden md:table-cell">Priority</th>
+                    <th className="linear-th hidden lg:table-cell">Target</th>
+                    <th className="linear-th hidden lg:table-cell">Views</th>
+                    <th className="linear-th hidden lg:table-cell">Status</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notices.map((notice) => (
+                    <tr key={notice.id} className={`linear-tr ${!notice.is_active ? 'opacity-60' : ''}`}>
+                      <td className="linear-td">
+                        <div className="font-medium">{notice.title}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                          {notice.content}
+                        </div>
+                      </td>
+                      <td className="linear-td hidden md:table-cell">
                         <Badge variant={getPriorityColor(notice.priority)}>
                           {notice.priority}
                         </Badge>
-                        {!notice.is_active && (
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {notice.target_audience.replace('_', ' ')}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" /> {notice.views_count}
+                        </div>
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        {notice.is_active ? (
+                          <Badge variant="default" className="bg-green-600">Active</Badge>
+                        ) : (
                           <Badge variant="outline">Inactive</Badge>
                         )}
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {notice.content}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Target: {notice.target_audience.replace('_', ' ')}</span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> {notice.views_count} views
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Send className="h-3 w-3" /> {notice.notifications_sent} sent
-                        </span>
-                        {notice.expiry_date && (
-                          <span>Expires: {format(new Date(notice.expiry_date), 'MMM dd, yyyy')}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleActive(notice)}
-                      >
-                        {notice.is_active ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(notice)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(notice.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleActive(notice)}
+                          >
+                            {notice.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(notice)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDelete(notice.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

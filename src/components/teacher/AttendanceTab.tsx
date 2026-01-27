@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ClipboardCheck, Save, Calendar, Download, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
@@ -41,7 +42,7 @@ interface BulkUploadResult {
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses }) => {
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [attendance, setAttendance] = useState<StudentAttendance[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,8 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     setLoading(true);
 
     try {
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      
       // Get enrolled students
       const { data: enrollments, error: enrollError } = await supabase
         .from('student_enrollments')
@@ -83,7 +86,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         .from('attendance')
         .select('*')
         .eq('course_id', selectedCourse)
-        .eq('attendance_date', selectedDate);
+        .eq('attendance_date', dateString);
 
       if (attError) throw attError;
 
@@ -126,12 +129,14 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     setSaving(true);
 
     try {
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      
       for (const att of attendance) {
         const attendanceData = {
           student_id: att.student_id,
           course_id: selectedCourse,
           teacher_id: teacherId,
-          attendance_date: selectedDate,
+          attendance_date: dateString,
           status: att.status,
         };
 
@@ -360,14 +365,14 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
             .select('id')
             .eq('student_id', studentId)
             .eq('course_id', selectedCourse)
-            .eq('attendance_date', selectedDate)
+            .eq('attendance_date', format(selectedDate, 'yyyy-MM-dd'))
             .maybeSingle();
 
           const attendanceData = {
             student_id: studentId,
             course_id: selectedCourse,
             teacher_id: teacherId,
-            attendance_date: selectedDate,
+            attendance_date: format(selectedDate, 'yyyy-MM-dd'),
             status,
             remarks,
           };
@@ -425,185 +430,6 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Attendance</h2>
-          <p className="text-muted-foreground">Mark daily attendance for your classes</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={downloadTemplate} disabled={!selectedCourse}>
-            <Download className="h-4 w-4 mr-2" />
-            Download Template
-          </Button>
-          <Button variant="outline" onClick={() => setShowUploadDialog(true)} disabled={!selectedCourse || !selectedDate}>
-            <Upload className="h-4 w-4 mr-2" />
-            Bulk Upload
-          </Button>
-        </div>
-      </div>
-
-      {/* Selection */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Select Class & Date
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Select Course</Label>
-              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Select a course" />
-                </SelectTrigger>
-                <SelectContent className="z-[100] bg-popover border shadow-lg">
-                  {courses.length === 0 ? (
-                    <SelectItem value="no-courses" disabled>
-                      No courses assigned
-                    </SelectItem>
-                  ) : (
-                    courses.map((course) => (
-                      <SelectItem key={course.course_id} value={course.course_id}>
-                        {course.course_code} - {course.course_name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                max={format(new Date(), 'yyyy-MM-dd')}
-              />
-            </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={() => markAllAs('present')} variant="outline" size="sm">
-                Mark All Present
-              </Button>
-              <Button onClick={() => markAllAs('absent')} variant="outline" size="sm">
-                Mark All Absent
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Attendance Stats */}
-      {selectedCourse && attendance.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{attendanceStats.present}</div>
-                <div className="text-sm text-muted-foreground">Present</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{attendanceStats.absent}</div>
-                <div className="text-sm text-muted-foreground">Absent</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{attendanceStats.late}</div>
-                <div className="text-sm text-muted-foreground">Late</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-600">{attendanceStats.on_leave}</div>
-                <div className="text-sm text-muted-foreground">On Leave</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Attendance Table */}
-      {selectedCourse && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Student List</CardTitle>
-                <CardDescription>
-                  {format(new Date(selectedDate), 'EEEE, MMMM dd, yyyy')}
-                </CardDescription>
-              </div>
-              <Button onClick={saveAttendance} disabled={saving || attendance.length === 0}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Attendance'}
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : attendance.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <ClipboardCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No students enrolled in this course</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Enrollment No</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendance.map((student, index) => (
-                    <TableRow key={student.student_id}>
-                      <TableCell className="font-mono text-sm">
-                        {student.student_id.slice(0, 8)}...
-                      </TableCell>
-                      <TableCell className="font-medium">{student.student_name}</TableCell>
-                      <TableCell>{student.enrollment_no}</TableCell>
-                      <TableCell>{getStatusBadge(student.status)}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={student.status}
-                          onValueChange={(value: StudentAttendance['status']) => handleStatusChange(index, value)}
-                        >
-                          <SelectTrigger className="w-32 bg-background">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="z-[100] bg-popover border shadow-lg">
-                            <SelectItem value="present">Present</SelectItem>
-                            <SelectItem value="absent">Absent</SelectItem>
-                            <SelectItem value="late">Late</SelectItem>
-                            <SelectItem value="on_leave">On Leave</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Bulk Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent className="max-w-lg">
@@ -613,7 +439,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
               Bulk Attendance Upload
             </DialogTitle>
             <DialogDescription>
-              Upload an Excel file with attendance data for {format(new Date(selectedDate), 'MMMM dd, yyyy')}
+              Upload an Excel file with attendance data for {format(selectedDate, 'MMMM dd, yyyy')}
             </DialogDescription>
           </DialogHeader>
 
@@ -681,6 +507,184 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Attendance Management */}
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Academics</div>
+              <CardTitle className="text-base font-semibold">
+                Attendance Management
+              </CardTitle>
+            </div>
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{attendance.length}</span>
+              <span>students</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            {/* Context Toolbar */}
+            <div className="flex items-center gap-4">
+              <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <SelectTrigger className="h-9 w-[280px] text-sm">
+                  <SelectValue placeholder="Select Course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.length === 0 ? (
+                    <SelectItem value="no-courses" disabled>
+                      No courses assigned
+                    </SelectItem>
+                  ) : (
+                    courses.map((course) => (
+                      <SelectItem key={course.course_id} value={course.course_id}>
+                        {course.course_code} - {course.course_name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              
+              <DatePicker
+                date={selectedDate}
+                onDateChange={(date) => date && setSelectedDate(date)}
+                placeholder="Select date"
+                className="h-9 w-[160px] text-sm"
+              />
+
+              {selectedCourse && selectedDate && (
+                <>
+                  <Button onClick={() => markAllAs('present')} variant="outline" size="sm">
+                    Mark All Present
+                  </Button>
+                  <Button onClick={() => markAllAs('absent')} variant="outline" size="sm">
+                    Mark All Absent
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            {/* Secondary Actions */}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={downloadTemplate} disabled={!selectedCourse} size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Template
+              </Button>
+              <Button variant="outline" onClick={() => setShowUploadDialog(true)} disabled={!selectedCourse || !selectedDate} size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </Button>
+            </div>
+          </div>
+          
+          {/* Inline Stats */}
+          {selectedCourse && attendance.length > 0 && (
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-green-600">{attendanceStats.present}</span>
+                <span className="text-muted-foreground">Present</span>
+              </div>
+              <span className="text-muted-foreground/40">·</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-red-600">{attendanceStats.absent}</span>
+                <span className="text-muted-foreground">Absent</span>
+              </div>
+              <span className="text-muted-foreground/40">·</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-yellow-600">{attendanceStats.late}</span>
+                <span className="text-muted-foreground">Late</span>
+              </div>
+              <span className="text-muted-foreground/40">·</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-gray-600">{attendanceStats.on_leave}</span>
+                <span className="text-muted-foreground">On Leave</span>
+              </div>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          {!selectedCourse || !selectedDate ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">Select a course and date to start marking attendance</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Choose your course and the date to view and manage student attendance.
+              </div>
+            </div>
+          ) : loading ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">Loading students...</div>
+            </div>
+          ) : attendance.length === 0 ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No enrolled students found</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Students will appear here when they enroll in this course.
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Student</th>
+                    <th className="linear-th hidden md:table-cell">Roll No</th>
+                    <th className="linear-th">Status</th>
+                    <th className="linear-th hidden lg:table-cell">Remarks</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.map((student, index) => (
+                    <tr key={student.student_id} className="linear-tr">
+                      <td className="linear-td">
+                        <div className="font-medium">{student.student_name}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                          {student.enrollment_no}
+                        </div>
+                      </td>
+                      <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                        {student.enrollment_no}
+                      </td>
+                      <td className="linear-td">
+                        {getStatusBadge(student.status)}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        -
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-2">
+                          <Select
+                            value={student.status}
+                            onValueChange={(value: StudentAttendance['status']) => handleStatusChange(index, value)}
+                          >
+                            <SelectTrigger className="w-32 h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="present">Present</SelectItem>
+                              <SelectItem value="absent">Absent</SelectItem>
+                              <SelectItem value="late">Late</SelectItem>
+                              <SelectItem value="on_leave">On Leave</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={saveAttendance}
+                            disabled={saving}
+                          >
+                            <Save className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

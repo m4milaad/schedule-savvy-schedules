@@ -181,16 +181,9 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Performance Analytics</h2>
-          <p className="text-muted-foreground">Track your academic progress</p>
-        </div>
-      </div>
-
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -207,7 +200,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -224,7 +217,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -244,9 +237,10 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </div>
 
       {/* GPA Trend Chart */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>GPA Trend</CardTitle>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">Analytics</div>
+          <CardTitle className="text-base font-semibold">GPA Trend</CardTitle>
           <CardDescription>Your performance over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
@@ -277,9 +271,10 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </Card>
 
       {/* Subject-wise Performance */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Subject-wise Performance</CardTitle>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">Breakdown</div>
+          <CardTitle className="text-base font-semibold">Subject-wise Performance</CardTitle>
           <CardDescription>Detailed breakdown by subject</CardDescription>
         </CardHeader>
         <CardContent>
@@ -291,7 +286,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {performance.map((p) => (
-                <Card key={p.courseId} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+                <Card key={p.courseId} className="linear-surface overflow-hidden">
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -334,9 +329,10 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
       </Card>
 
       {/* Recommendations */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Personalized Recommendations</CardTitle>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">Insights</div>
+          <CardTitle className="text-base font-semibold">Personalized Recommendations</CardTitle>
           <CardDescription>Tips to improve your performance</CardDescription>
         </CardHeader>
         <CardContent>

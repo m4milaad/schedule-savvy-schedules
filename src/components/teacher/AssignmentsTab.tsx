@@ -212,21 +212,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Assignments</h2>
-          <p className="text-muted-foreground">Create and manage student assignments</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Assignment
-        </Button>
-      </div>
-
       {showForm && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardHeader>
-            <CardTitle>{editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}</CardTitle>
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div>
+              <div className="linear-kicker">Form</div>
+              <CardTitle className="text-base font-semibold">{editingAssignment ? 'Edit Assignment' : 'Create New Assignment'}</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -308,84 +300,111 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       )}
 
       {/* Assignments List */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Existing Assignments</CardTitle>
-          <CardDescription>View and manage all your assignments</CardDescription>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Tasks</div>
+              <CardTitle className="text-base font-semibold">Existing Assignments</CardTitle>
+            </div>
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{assignments.length}</span>
+              <span>total</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              {showForm ? 'Cancel' : 'Create Assignment'}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {assignments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No assignments created yet</p>
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No assignments created yet</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Create your first assignment to start managing student tasks.
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className={`p-4 border rounded-lg ${!assignment.is_active ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{assignment.title}</h3>
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Assignment</th>
+                    <th className="linear-th hidden md:table-cell">Course</th>
+                    <th className="linear-th hidden lg:table-cell">Due Date</th>
+                    <th className="linear-th hidden lg:table-cell">Marks</th>
+                    <th className="linear-th hidden lg:table-cell">Submissions</th>
+                    <th className="linear-th hidden lg:table-cell">Status</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignments.map((assignment) => (
+                    <tr key={assignment.id} className={`linear-tr ${!assignment.is_active ? 'opacity-60' : ''}`}>
+                      <td className="linear-td">
+                        <div className="font-medium">{assignment.title}</div>
+                        {assignment.description && (
+                          <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                            {assignment.description}
+                          </div>
+                        )}
+                      </td>
+                      <td className="linear-td hidden md:table-cell">
                         <Badge variant="outline">
                           {assignment.course?.course_code}
                         </Badge>
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {format(new Date(assignment.due_date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {assignment.max_marks}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {assignment.submissions_count || 0}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
                         {isOverdue(assignment.due_date) ? (
                           <Badge variant="destructive">Overdue</Badge>
+                        ) : assignment.is_active ? (
+                          <Badge variant="default" className="bg-green-600">Active</Badge>
                         ) : (
-                          <Badge variant="secondary">Active</Badge>
-                        )}
-                        {!assignment.is_active && (
                           <Badge variant="outline">Inactive</Badge>
                         )}
-                      </div>
-                      {assignment.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                          {assignment.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Due: {format(new Date(assignment.due_date), 'MMM dd, yyyy')}
-                        </span>
-                        <span>Max Marks: {assignment.max_marks}</span>
-                        <span className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          {assignment.submissions_count} Submitted
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleActive(assignment)}
-                      >
-                        {assignment.is_active ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(assignment)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(assignment.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleActive(assignment)}
+                          >
+                            {assignment.is_active ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(assignment)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDelete(assignment.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

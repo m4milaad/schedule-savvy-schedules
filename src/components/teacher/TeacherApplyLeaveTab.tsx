@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
@@ -35,8 +36,8 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
 
   // Form state
   const [leaveType, setLeaveType] = useState('personal');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [reason, setReason] = useState('');
   const [contactInfo, setContactInfo] = useState('');
 
@@ -69,8 +70,8 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
 
   const resetForm = () => {
     setLeaveType('personal');
-    setStartDate('');
-    setEndDate('');
+    setStartDate(undefined);
+    setEndDate(undefined);
     setReason('');
     setContactInfo('');
     setShowForm(false);
@@ -88,7 +89,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
       return;
     }
 
-    if (new Date(endDate) < new Date(startDate)) {
+    if (endDate < startDate) {
       toast({
         title: 'Error',
         description: 'End date cannot be before start date',
@@ -104,8 +105,8 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
           applicant_id: teacherId,
           applicant_type: 'teacher',
           leave_type: leaveType,
-          start_date: startDate,
-          end_date: endDate,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd'),
           reason: reason.trim(),
           contact_info: contactInfo.trim(),
           status: 'pending',
@@ -161,22 +162,14 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Apply for Leave</h2>
-          <p className="text-muted-foreground">Submit leave applications for admin approval</p>
-        </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Application
-        </Button>
-      </div>
-
       {showForm && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardHeader>
-            <CardTitle>New Leave Application</CardTitle>
-            <CardDescription>Fill in the details for your leave request</CardDescription>
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div>
+              <div className="linear-kicker">Application</div>
+              <CardTitle className="text-base font-semibold">New Leave Application</CardTitle>
+              <CardDescription>Fill in the details for your leave request</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -210,24 +203,18 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="startDate">Start Date *</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    required
+                  <DatePicker
+                    date={startDate}
+                    onDateChange={setStartDate}
+                    placeholder="Select start date"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="endDate">End Date *</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    min={startDate || format(new Date(), 'yyyy-MM-dd')}
-                    required
+                  <DatePicker
+                    date={endDate}
+                    onDateChange={setEndDate}
+                    placeholder="Select end date"
                   />
                 </div>
               </div>
@@ -256,10 +243,21 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
       )}
 
       {/* My Applications */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>My Leave Applications</CardTitle>
-          <CardDescription>View the status of your leave requests</CardDescription>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">History</div>
+              <CardTitle className="text-base font-semibold">My Leave Applications</CardTitle>
+              <CardDescription>View the status of your leave requests</CardDescription>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {showForm ? 'Cancel' : 'New Application'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {myApplications.length === 0 ? (

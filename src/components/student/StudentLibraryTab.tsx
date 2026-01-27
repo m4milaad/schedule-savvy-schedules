@@ -130,16 +130,9 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Library</h2>
-          <p className="text-muted-foreground">Manage your library books</p>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -152,7 +145,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500/10 rounded-lg">
@@ -165,7 +158,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-yellow-500/10 rounded-lg">
@@ -178,7 +171,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+        <Card className="linear-surface overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -196,10 +189,10 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       </div>
 
       {/* Search Books */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">Catalog</div>
+          <CardTitle className="text-base font-semibold">
             Search & Request Books
           </CardTitle>
           <CardDescription>Browse available books in the library</CardDescription>
@@ -268,10 +261,10 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       </Card>
 
       {/* Currently Issued Books */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">Active</div>
+          <CardTitle className="text-base font-semibold">
             Currently Issued Books
           </CardTitle>
           <CardDescription>Books you have currently checked out</CardDescription>

@@ -195,7 +195,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
   }
 
   const ResourceCard = ({ resource }: { resource: Resource }) => (
-    <Card key={resource.id} className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+    <Card key={resource.id} className="linear-surface overflow-hidden">
       <CardContent className="pt-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -249,19 +249,6 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Learning Resources</h2>
-          <p className="text-muted-foreground">Access study materials from your courses</p>
-        </div>
-        <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4" />
-            <span className="text-sm">{resources.length} Resources</span>
-          </div>
-        </Card>
-      </div>
-
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">All Resources ({resources.length})</TabsTrigger>
@@ -270,7 +257,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
 
         <TabsContent value="all">
           {/* Filters */}
-          <Card className="mb-4 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+          <Card className="mb-4 linear-surface overflow-hidden">
             <CardContent className="pt-4">
               <div className="flex flex-wrap gap-4">
                 <div className="flex-1 min-w-[200px]">
@@ -311,7 +298,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
           </Card>
 
           {filteredResources.length === 0 ? (
-            <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+            <Card className="linear-surface overflow-hidden">
               <CardContent className="py-8">
                 <div className="text-center text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -331,7 +318,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
 
         <TabsContent value="bookmarked">
           {bookmarkedResources.length === 0 ? (
-            <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
+            <Card className="linear-surface overflow-hidden">
               <CardContent className="py-8">
                 <div className="text-center text-muted-foreground">
                   <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />

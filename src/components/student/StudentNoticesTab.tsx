@@ -179,32 +179,29 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Notices</h2>
-          <p className="text-muted-foreground">Stay updated with announcements</p>
-        </div>
-        <div className="flex gap-3">
-          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="text-sm">{notices.length} Total</span>
+      {/* Notices List */}
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Announcements</div>
+              <CardTitle className="text-base font-semibold">
+                Notices
+              </CardTitle>
             </div>
-          </Card>
-          {unreadCount > 0 && (
-            <Card className="px-3 py-2 border-primary bg-white/40 dark:bg-black/40 backdrop-blur-xl">
-              <div className="flex items-center gap-2">
-                <Badge variant="default">{unreadCount}</Badge>
-                <span className="text-sm">Unread</span>
+            <div className="flex gap-2">
+              <div className="linear-pill">
+                <span className="font-medium text-foreground">{notices.length}</span>
+                <span>total</span>
               </div>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      {/* Filters */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardContent className="pt-4">
+              {unreadCount > 0 && (
+                <div className="linear-pill border-primary/50 bg-primary/10">
+                  <span className="font-medium text-primary">{unreadCount}</span>
+                  <span>unread</span>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -239,61 +236,71 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Notices List */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            All Notices
-          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredNotices.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No notices found</p>
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No notices found</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {searchTerm || priorityFilter !== 'all' || statusFilter !== 'all' 
+                  ? 'Try adjusting your filters.' 
+                  : 'You\'ll see announcements here when they\'re posted.'}
+              </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredNotices.map((notice) => (
-                <div
-                  key={notice.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                    !notice.isRead ? 'bg-primary/5 border-primary/30' : ''
-                  }`}
-                  onClick={() => openNotice(notice)}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {!notice.isRead && (
-                          <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                        )}
-                        <h3 className={`font-semibold truncate ${!notice.isRead ? 'text-primary' : ''}`}>
-                          {notice.title}
-                        </h3>
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Notice</th>
+                    <th className="linear-th hidden md:table-cell">Priority</th>
+                    <th className="linear-th hidden lg:table-cell">Posted By</th>
+                    <th className="linear-th hidden lg:table-cell">Date</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredNotices.map((notice) => (
+                    <tr 
+                      key={notice.id} 
+                      className={`linear-tr cursor-pointer ${!notice.isRead ? 'bg-primary/5' : ''}`}
+                      onClick={() => openNotice(notice)}
+                    >
+                      <td className="linear-td">
+                        <div className="flex items-center gap-2">
+                          {!notice.isRead && (
+                            <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                          )}
+                          <div>
+                            <div className={`font-medium ${!notice.isRead ? 'text-primary' : ''}`}>
+                              {notice.title}
+                            </div>
+                            <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                              {notice.content}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="linear-td hidden md:table-cell">
                         {getPriorityBadge(notice.priority)}
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                        {notice.content}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>By: {notice.teacher?.full_name || 'Admin'}</span>
-                        <span>{format(new Date(notice.created_at), 'MMM dd, yyyy')}</span>
-                        {notice.expiry_date && (
-                          <span>Expires: {format(new Date(notice.expiry_date), 'MMM dd, yyyy')}</span>
-                        )}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {notice.teacher?.full_name || 'Admin'}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {format(new Date(notice.created_at), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end">
+                          <Button variant="ghost" size="icon">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

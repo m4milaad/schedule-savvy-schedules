@@ -17,7 +17,6 @@ import {
     ChevronRight,
     User
 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { motion, AnimatePresence } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
 
@@ -174,8 +173,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                     {!isCollapsed && "Profile"}
                 </Button>
 
-                <div className={cn("flex items-center gap-2 pt-2", isCollapsed ? "flex-col" : "justify-between px-1")}>
-                    <ThemeToggle />
+                <div className={cn("flex items-center gap-2 pt-2", isCollapsed ? "flex-col" : "justify-end px-1")}>
                     <Button
                         variant="ghost"
                         size="icon"
