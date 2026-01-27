@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserProfile } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
-import { Lock } from 'lucide-react';
+import { User, Lock, X } from 'lucide-react';
 import { ThemeColorPicker } from '@/components/ThemeColorPicker';
 
 interface Department {
@@ -248,7 +248,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
               }}
             >
               <Lock className="w-4 h-4" />
-              Update Password
+              Change Password
             </Button>
           </div>
 

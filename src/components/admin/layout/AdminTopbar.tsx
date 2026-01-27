@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -18,9 +18,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { ThemeToggle } from "@/components/ThemeToggle";
+
 import { cn } from "@/lib/utils";
 import { Menu, RefreshCw, LogOut, UserRound, Settings2 } from "lucide-react";
+import { AdminProfileDialog } from "@/components/admin/AdminProfileDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface AdminTopbarProps {
   title: string;
@@ -52,6 +54,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   isMobile,
   className,
 }) => {
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   return (
     <header
       className={cn(
@@ -128,7 +131,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             </Button>
           )}
 
-          <ThemeToggle />
+          <ThemeToggle minimal />
 
           <Separator orientation="vertical" className="mx-1 hidden h-8 md:block" />
 
@@ -163,11 +166,11 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                     onClick={() => onNavigate("/update-password")}
                   >
                     <Settings2 className="mr-2 h-4 w-4" />
-                    Update password
+                    Change password
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="cursor-pointer"
-                    onClick={() => onNavigate("/department-admin-profile")}
+                    onClick={() => setIsProfileDialogOpen(true)}
                   >
                     <UserRound className="mr-2 h-4 w-4" />
                     Profile
@@ -186,6 +189,11 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           </DropdownMenu>
         </div>
       </div>
+
+      <AdminProfileDialog
+        isOpen={isProfileDialogOpen}
+        onClose={() => setIsProfileDialogOpen(false)}
+      />
     </header>
   );
 };

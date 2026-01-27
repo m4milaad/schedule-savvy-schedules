@@ -153,31 +153,50 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="p-3 border-t border-border/40 space-y-1">
-                <Button
-                    variant="ghost"
-                    className={cn(
-                        "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/40",
-                        isCollapsed ? "justify-center px-0" : "px-3"
-                    )}
-                    onClick={onEditProfile}
-                    title="Edit Profile"
-                >
-                    <User className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
-                    {!isCollapsed && "Profile"}
-                </Button>
-
-                <div className={cn("flex items-center gap-2 pt-2", isCollapsed ? "flex-col" : "justify-end px-1")}>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={onLogout}
-                        title="Logout"
-                    >
-                        <LogOut className="h-5 w-5" />
-                    </Button>
-                </div>
+            <div className="p-3 border-t border-border/40">
+                {isCollapsed ? (
+                    <div className="space-y-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-full justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                            onClick={onEditProfile}
+                            title="Edit Profile"
+                        >
+                            <User className="h-5 w-5" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="w-full justify-center text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={onLogout}
+                            title="Logout"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-between">
+                        <Button
+                            variant="ghost"
+                            className="flex-1 justify-start text-muted-foreground hover:text-foreground hover:bg-muted/40 px-3"
+                            onClick={onEditProfile}
+                            title="Edit Profile"
+                        >
+                            <User className="h-5 w-5 mr-3" />
+                            Profile
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2"
+                            onClick={onLogout}
+                            title="Logout"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                    </div>
+                )}
             </div>
         </motion.div>
     );
