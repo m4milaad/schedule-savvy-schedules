@@ -14,6 +14,7 @@ import { StudentsTab } from "@/components/admin/StudentsTab";
 import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
+import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -267,6 +268,7 @@ const AdminDashboard: React.FC = () => {
                 return (
                     <OverviewTab
                         role={userRole}
+                        adminName={profileData?.full_name}
                         setActiveTab={setActiveTab}
                         counts={{
                             schools: schools.length,
@@ -292,6 +294,7 @@ const AdminDashboard: React.FC = () => {
             case "seating": return <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />;
             case "logs": return <AuditLogsTab />;
             case "admins": return <ManageAdminsTab />;
+            case "profile": return <AdminProfileTab />;
             default: return null;
         }
     };
@@ -310,6 +313,7 @@ const AdminDashboard: React.FC = () => {
             seating: "Seating Arrangement",
             logs: "System Audit Logs",
             admins: "Manage Administrators",
+            profile: "Profile Settings",
         };
         return titles[activeTab] || "Dashboard";
     };
@@ -328,6 +332,7 @@ const AdminDashboard: React.FC = () => {
             seating: "Generate and view exam seating plans",
             logs: "Monitor system activity and changes",
             admins: "Create and manage admin users and permissions",
+            profile: "Manage your account settings and preferences",
         };
         return descs[activeTab] || "Manage university data";
     };

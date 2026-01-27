@@ -411,6 +411,28 @@
     font-size: 0.75rem;
     color: hsl(var(--muted-foreground));
   }
+
+  .linear-input {
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border) / 0.40);
+    background: hsl(var(--background) / 0.60);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: all 120ms ease;
+  }
+
+  .linear-input:focus {
+    border-color: hsl(var(--primary) / 0.60);
+    background: hsl(var(--background) / 0.80);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.10);
+  }
+
+  .linear-button {
+    border-radius: 0.5rem;
+    transition: all 120ms ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
 }
 
 /* Loading animations */
