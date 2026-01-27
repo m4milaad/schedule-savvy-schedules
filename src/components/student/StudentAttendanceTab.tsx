@@ -163,27 +163,23 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">My Attendance</h2>
-          <p className="text-muted-foreground">Track your class attendance</p>
-        </div>
-        {courseStats.length > 0 && (
-          <Card className="px-4 py-2">
-            <div className="flex items-center gap-2">
-              <CalendarCheck className="h-5 w-5 text-primary" />
-              <span className="font-semibold">{overallAttendance.toFixed(1)}%</span>
-              <span className="text-sm text-muted-foreground">Overall</span>
-            </div>
-          </Card>
-        )}
-      </div>
-
       {/* Course-wise Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Subject-wise Attendance</CardTitle>
-          <CardDescription>Your attendance percentage for each subject</CardDescription>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Overview</div>
+              <CardTitle className="text-base font-semibold">Subject-wise Attendance</CardTitle>
+              <CardDescription>Your attendance percentage for each subject</CardDescription>
+            </div>
+            {courseStats.length > 0 && (
+              <div className="linear-pill">
+                <CalendarCheck className="h-4 w-4 text-primary" />
+                <span className="font-medium text-foreground">{overallAttendance.toFixed(1)}%</span>
+                <span>overall</span>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {courseStats.length === 0 ? (
@@ -232,9 +228,10 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
       </Card>
 
       {/* Recent Attendance Records */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Attendance</CardTitle>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="linear-kicker">History</div>
+          <CardTitle className="text-base font-semibold">Recent Attendance</CardTitle>
           <CardDescription>Your latest attendance records</CardDescription>
         </CardHeader>
         <CardContent>
@@ -242,31 +239,31 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
             <p className="text-center py-4 text-muted-foreground">No records found</p>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Remarks</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="linear-table">
+                <thead>
+                  <tr className="linear-tr">
+                    <th className="linear-th">Date</th>
+                    <th className="linear-th">Subject</th>
+                    <th className="linear-th">Status</th>
+                    <th className="linear-th">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {attendance.slice(0, 20).map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{format(new Date(record.attendance_date), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>
+                    <tr key={record.id} className="linear-tr">
+                      <td className="linear-td">{format(new Date(record.attendance_date), 'MMM dd, yyyy')}</td>
+                      <td className="linear-td">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(record.status)}
                           <span>{record.course?.course_code}</span>
                         </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(record.status)}</TableCell>
-                      <TableCell className="text-muted-foreground">{record.remarks || '-'}</TableCell>
-                    </TableRow>
+                      </td>
+                      <td className="linear-td">{getStatusBadge(record.status)}</td>
+                      <td className="linear-td text-muted-foreground">{record.remarks || '-'}</td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
