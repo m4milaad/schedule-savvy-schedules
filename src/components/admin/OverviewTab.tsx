@@ -28,6 +28,7 @@ type AdminRole = "admin" | "department_admin" | null;
 
 interface OverviewTabProps {
   role: AdminRole;
+  adminName?: string;
   counts: {
     schools: number;
     departments: number;
@@ -45,6 +46,7 @@ interface OverviewTabProps {
 
 export const OverviewTab: React.FC<OverviewTabProps> = ({
   role,
+  adminName,
   counts,
   setActiveTab,
   className,
@@ -166,7 +168,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
       <motion.div variants={item} className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/40">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            {greeting}, Admin
+            {greeting}, {adminName || 'Admin'}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Overview of your system performance and academic data.

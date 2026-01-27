@@ -8,8 +8,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/ThemeProvider"
 
-export function ThemeToggle() {
+export function ThemeToggle({ minimal = false }: { minimal?: boolean }) {
   const { setTheme, theme } = useTheme()
+
+  const buttonClass = minimal 
+    ? "h-9 w-9 border-border/40 hover:bg-muted/50 bg-transparent"
+    : "relative overflow-hidden bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30 group";
+
+  const iconClass = minimal
+    ? "h-4 w-4"
+    : "h-[1.2rem] w-[1.2rem]";
 
   return (
     <DropdownMenu>
@@ -17,10 +25,10 @@ export function ThemeToggle() {
         <Button 
           variant="outline" 
           size="icon"
-          className="relative overflow-hidden bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30 group"
+          className={buttonClass}
         >
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all duration-500 dark:-rotate-90 dark:scale-0 group-hover:rotate-12" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all duration-500 dark:rotate-0 dark:scale-100 group-hover:-rotate-12" />
+          <Sun className={`${iconClass} rotate-0 scale-100 transition-all duration-500 dark:-rotate-90 dark:scale-0 ${!minimal && 'group-hover:rotate-12'}`} />
+          <Moon className={`absolute ${iconClass} rotate-90 scale-0 transition-all duration-500 dark:rotate-0 dark:scale-100 ${!minimal && 'group-hover:-rotate-12'}`} />
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
