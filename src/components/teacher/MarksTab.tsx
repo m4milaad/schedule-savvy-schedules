@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Download, Upload, Save, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Download, Upload, Save, FileSpreadsheet, Edit, Lock } from 'lucide-react';
 import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 
 interface MarksTabProps {
@@ -34,6 +35,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
   const [marks, setMarks] = useState<StudentMark[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [courseModalOpen, setCourseModalOpen] = useState(false);
+  const [tempSelectedCourse, setTempSelectedCourse] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -261,47 +264,102 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     await downloadWorkbook(workbook, `marks_export_${selectedCourse}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const handleCourseSelection = () => {
+    if (tempSelectedCourse) {
+      setSelectedCourse(tempSelectedCourse);
+      setCourseModalOpen(false);
+      setTempSelectedCourse('');
+    }
+  };
+
+  const handleModalCancel = () => {
+    setCourseModalOpen(false);
+    setTempSelectedCourse('');
+  };
+
+  const getGradeBadge = (grade: string | null) => {
+    if (!grade) return null;
+    
+    const gradeColors: Record<string, string> = {
+      'A+': 'bg-green-600',
+      'A': 'bg-blue-600', 
+      'B+': 'bg-purple-600',
+      'B': 'bg-yellow-600',
+      'C': 'bg-orange-600',
+      'D': 'bg-red-600',
+      'F': 'bg-red-800'
+    };
+    
+    return <Badge className={gradeColors[grade] || 'bg-gray-600'}>{grade}</Badge>;
+  };
+
+  const getStatusBadge = (mark: StudentMark) => {
+    const total = mark.total_marks;
+    if (total === null) return <Badge variant="outline">Pending</Badge>;
+    if (total >= 40) return <Badge className="bg-green-600">Pass</Badge>;
+    return <Badge variant="destructive">Fail</Badge>;
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Manage Marks</h2>
-          <p className="text-muted-foreground">Enter and manage student marks</p>
-        </div>
-      </div>
+      {/* Course Selection Modal */}
+      <Dialog open={courseModalOpen} onOpenChange={setCourseModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Course</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Course</Label>
+              <Select value={tempSelectedCourse} onValueChange={setTempSelectedCourse}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a course" />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((course) => (
+                    <SelectItem key={course.course_id} value={course.course_id}>
+                      {course.course_code} - {course.course_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleModalCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handleCourseSelection} disabled={!tempSelectedCourse}>
+                Apply
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Select Course
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a course" />
-            </SelectTrigger>
-            <SelectContent>
-              {courses.map((course) => (
-                <SelectItem key={course.course_id} value={course.course_id}>
-                  {course.course_code} - {course.course_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {selectedCourse && (
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5" />
-                Student Marks
+      {/* Marks Management */}
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Academics</div>
+              <CardTitle className="text-base font-semibold">
+                Marks Management
               </CardTitle>
-              <div className="flex gap-2">
+            </div>
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{marks.length}</span>
+              <span>students</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setCourseModalOpen(true)} size="sm">
+              {selectedCourse ? 
+                `${courses.find(c => c.course_id === selectedCourse)?.course_code || 'Course'}` : 
+                'Select Course'
+              }
+            </Button>
+            {selectedCourse && (
+              <>
                 <Button
                   variant="outline"
                   size="sm"
@@ -335,149 +393,196 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Export
                 </Button>
-                <Button
-                  onClick={saveMarks}
-                  disabled={saving || marks.length === 0}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save'}
-                </Button>
+              </>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {!selectedCourse ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">Select a course to start entering marks</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Choose a course from your assigned subjects to begin assessment.
               </div>
             </div>
-            <CardDescription>
-              Marks are out of 20 for each component. Total: 100 marks
-            </CardDescription>
+          ) : loading ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">Loading students...</div>
+            </div>
+          ) : marks.length === 0 ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No enrolled students found</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Students will appear here when they enroll in this course.
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Student</th>
+                    <th className="linear-th hidden md:table-cell">Roll No</th>
+                    <th className="linear-th hidden lg:table-cell">Test I</th>
+                    <th className="linear-th hidden lg:table-cell">Test II</th>
+                    <th className="linear-th hidden lg:table-cell">Present</th>
+                    <th className="linear-th hidden lg:table-cell">Assignment</th>
+                    <th className="linear-th hidden lg:table-cell">Attendance</th>
+                    <th className="linear-th">Total</th>
+                    <th className="linear-th">Grade</th>
+                    <th className="linear-th">Status</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {marks.map((mark, index) => (
+                    <tr key={mark.student_id} className="linear-tr">
+                      <td className="linear-td">
+                        <div className="font-medium">{mark.student_name}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                          {mark.enrollment_no}
+                        </div>
+                      </td>
+                      <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                        {mark.enrollment_no}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={mark.test_1_marks ?? ''}
+                          onChange={(e) => handleMarkChange(index, 'test_1_marks', e.target.value)}
+                          className="w-16 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={mark.test_2_marks ?? ''}
+                          onChange={(e) => handleMarkChange(index, 'test_2_marks', e.target.value)}
+                          className="w-16 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={mark.presentation_marks ?? ''}
+                          onChange={(e) => handleMarkChange(index, 'presentation_marks', e.target.value)}
+                          className="w-16 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={mark.assignment_marks ?? ''}
+                          onChange={(e) => handleMarkChange(index, 'assignment_marks', e.target.value)}
+                          className="w-16 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="20"
+                          value={mark.attendance_marks ?? ''}
+                          onChange={(e) => handleMarkChange(index, 'attendance_marks', e.target.value)}
+                          className="w-16 h-8 text-center text-sm"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="linear-td text-sm font-semibold">
+                        {mark.total_marks ?? '-'}
+                      </td>
+                      <td className="linear-td">
+                        {getGradeBadge(mark.grade)}
+                      </td>
+                      <td className="linear-td">
+                        {getStatusBadge(mark)}
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={saveMarks}
+                            disabled={saving}
+                          >
+                            <Save className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {}}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {}}
+                          >
+                            <Lock className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Attendance Guide - Only show when course is selected and has data */}
+      {selectedCourse && marks.length > 0 && (
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div>
+              <div className="linear-kicker">Reference</div>
+              <CardTitle className="text-base font-semibold">Assessment Guide</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading students...</div>
-            ) : marks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No enrolled students found for this course
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div>Each component is marked out of 20 points. Total: 100 marks</div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+                <div className="text-center">
+                  <div className="font-semibold">Test I</div>
+                  <div className="text-xs">20 marks</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold">Test II</div>
+                  <div className="text-xs">20 marks</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold">Presentation</div>
+                  <div className="text-xs">20 marks</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold">Assignment</div>
+                  <div className="text-xs">20 marks</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-semibold">Attendance</div>
+                  <div className="text-xs">20 marks</div>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Enrollment No</TableHead>
-                      <TableHead>Student Name</TableHead>
-                      <TableHead className="text-center">Test I (20)</TableHead>
-                      <TableHead className="text-center">Test II (20)</TableHead>
-                      <TableHead className="text-center">Presentation (20)</TableHead>
-                      <TableHead className="text-center">Assignment (20)</TableHead>
-                      <TableHead className="text-center">Attendance (20)</TableHead>
-                      <TableHead className="text-center">Total</TableHead>
-                      <TableHead className="text-center">Grade</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {marks.map((mark, index) => (
-                      <TableRow key={mark.student_id}>
-                        <TableCell className="font-medium">{mark.enrollment_no}</TableCell>
-                        <TableCell>{mark.student_name}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={mark.test_1_marks ?? ''}
-                            onChange={(e) => handleMarkChange(index, 'test_1_marks', e.target.value)}
-                            className="w-16 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={mark.test_2_marks ?? ''}
-                            onChange={(e) => handleMarkChange(index, 'test_2_marks', e.target.value)}
-                            className="w-16 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={mark.presentation_marks ?? ''}
-                            onChange={(e) => handleMarkChange(index, 'presentation_marks', e.target.value)}
-                            className="w-16 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={mark.assignment_marks ?? ''}
-                            onChange={(e) => handleMarkChange(index, 'assignment_marks', e.target.value)}
-                            className="w-16 text-center"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={mark.attendance_marks ?? ''}
-                            onChange={(e) => handleMarkChange(index, 'attendance_marks', e.target.value)}
-                            className="w-16 text-center"
-                          />
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {mark.total_marks ?? '-'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            mark.grade === 'A+' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            mark.grade === 'A' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                            mark.grade === 'B+' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
-                            mark.grade === 'B' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                            mark.grade === 'C' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
-                            mark.grade === 'D' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                            mark.grade === 'F' ? 'bg-red-200 text-red-900 dark:bg-red-800 dark:text-red-100' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                          }`}>
-                            {mark.grade ?? '-'}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       )}
-
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-white/20">
-        <CardHeader>
-          <CardTitle>Attendance Marks Guide</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="p-3 rounded-lg bg-background/50">
-              <div className="font-semibold">90-100%</div>
-              <div className="text-muted-foreground">20 marks</div>
-            </div>
-            <div className="p-3 rounded-lg bg-background/50">
-              <div className="font-semibold">80-89%</div>
-              <div className="text-muted-foreground">18 marks</div>
-            </div>
-            <div className="p-3 rounded-lg bg-background/50">
-              <div className="font-semibold">70-79%</div>
-              <div className="text-muted-foreground">16 marks</div>
-            </div>
-            <div className="p-3 rounded-lg bg-background/50">
-              <div className="font-semibold">60-69%</div>
-              <div className="text-muted-foreground">14 marks</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

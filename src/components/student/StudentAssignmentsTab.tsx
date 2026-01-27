@@ -237,42 +237,32 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">My Assignments</h2>
-          <p className="text-muted-foreground">View and submit your assignments</p>
-        </div>
-        <div className="flex gap-4">
-          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-yellow-500" />
-              <span className="text-sm">{pendingCount} Pending</span>
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Tasks</div>
+              <CardTitle className="text-base font-semibold">
+                Assignments
+              </CardTitle>
             </div>
-          </Card>
-          <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">{submittedCount} Submitted</span>
-            </div>
-          </Card>
-          {overdueCount > 0 && (
-            <Card className="px-3 py-2 bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm">{overdueCount} Overdue</span>
+            <div className="flex gap-2">
+              <div className="linear-pill">
+                <span className="font-medium text-foreground">{pendingCount}</span>
+                <span>pending</span>
               </div>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Assignments
-          </CardTitle>
-          <CardDescription>All assignments from your enrolled courses</CardDescription>
+              <div className="linear-pill">
+                <span className="font-medium text-foreground">{submittedCount}</span>
+                <span>submitted</span>
+              </div>
+              {overdueCount > 0 && (
+                <div className="linear-pill border-red-500/50 bg-red-500/10">
+                  <span className="font-medium text-red-600">{overdueCount}</span>
+                  <span>overdue</span>
+                </div>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {assignments.length === 0 ? (

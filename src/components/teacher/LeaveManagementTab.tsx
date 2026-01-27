@@ -1,14 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Filter } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface LeaveManagementTabProps {
@@ -89,29 +85,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-600">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'revoked':
-        return <Badge variant="outline">Revoked</Badge>;
-      default:
-        return <Badge className="bg-yellow-600">Pending</Badge>;
-    }
-  };
 
-  const getLeaveTypeBadge = (type: string) => {
-    const colors: Record<string, string> = {
-      sick_leave: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-      personal: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      medical: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      emergency: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-      other: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
-    };
-    return <Badge className={colors[type] || colors.other}>{type.replace('_', ' ')}</Badge>;
-  };
 
   const filteredApplications = applications.filter(app => {
     if (statusFilter !== 'all' && app.status !== statusFilter) return false;
@@ -136,64 +110,45 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Leave Management</h2>
-          <p className="text-muted-foreground">Review and manage student leave applications</p>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-              <div className="text-sm text-muted-foreground">Pending</div>
+      {/* Leave Applications */}
+      <Card className="linear-surface overflow-hidden">
+        <CardHeader className="linear-toolbar flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Management</div>
+              <CardTitle className="text-base font-semibold">
+                Leave Management
+              </CardTitle>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-              <div className="text-sm text-muted-foreground">Approved</div>
+            <div className="linear-pill">
+              <span className="font-medium text-foreground">{filteredApplications.length}</span>
+              <span>found</span>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-              <div className="text-sm text-muted-foreground">Rejected</div>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            {/* Inline Metrics */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{stats.pending}</span>
+                <span className="text-muted-foreground">Pending</span>
+              </div>
+              <span className="text-muted-foreground/40">·</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{stats.approved}</span>
+                <span className="text-muted-foreground">Approved</span>
+              </div>
+              <span className="text-muted-foreground/40">·</span>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{stats.rejected}</span>
+                <span className="text-muted-foreground">Rejected</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <div className="text-sm text-muted-foreground">Total</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
+            
+            {/* Filters on the right */}
+            <div className="flex items-center gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-[140px] text-sm">
+                  <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
@@ -203,12 +158,10 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
                   <SelectItem value="revoked">Revoked</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Leave Type</Label>
+              
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-[140px] text-sm">
+                  <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
@@ -219,85 +172,128 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+
+              {(statusFilter !== 'all' || typeFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setTypeFilter('all');
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Applications List */}
-      <Card className="bg-white/40 dark:bg-black/40 backdrop-blur-xl border-border/50">
-        <CardHeader>
-          <CardTitle>Leave Applications</CardTitle>
-          <CardDescription>
-            {filteredApplications.length} application(s) found
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredApplications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No leave applications found</p>
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No leave requests yet</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Student leave applications will appear here.
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredApplications.map((application) => (
-                <div key={application.id} className="p-4 border rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Student</th>
+                    <th className="linear-th hidden md:table-cell">Type</th>
+                    <th className="linear-th hidden lg:table-cell">Duration</th>
+                    <th className="linear-th hidden lg:table-cell">Reason</th>
+                    <th className="linear-th">Status</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredApplications.map((application) => (
+                    <tr key={application.id} className="linear-tr group">
+                      <td className="linear-td">
+                        <div className="font-medium">
                           {(application.applicant as any)?.full_name || 'Unknown Student'}
-                        </h3>
-                        {getStatusBadge(application.status)}
-                        {getLeaveTypeBadge(application.leave_type)}
-                      </div>
-                      <div className="text-sm text-muted-foreground mb-2">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(application.start_date), 'MMM dd, yyyy')} - {format(new Date(application.end_date), 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                      <p className="text-sm mb-2">{application.reason}</p>
-                      {application.contact_info && (
-                        <p className="text-xs text-muted-foreground">
-                          Contact: {application.contact_info}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      {application.status === 'pending' && (
-                        <>
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={() => updateStatus(application.id, 'approved')}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => updateStatus(application.id, 'rejected')}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                      {application.status === 'approved' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateStatus(application.id, 'revoked')}
-                        >
-                          Revoke
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        </div>
+                        {application.contact_info && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {application.contact_info}
+                          </div>
+                        )}
+                      </td>
+                      <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                        {application.leave_type.replace('_', ' ')}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {format(new Date(application.start_date), 'MMM dd')} – {format(new Date(application.end_date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm">
+                        <div className="max-w-xs truncate">{application.reason}</div>
+                      </td>
+                      <td className="linear-td">
+                        {application.status === 'pending' && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
+                            <span className="text-sm">Pending</span>
+                          </div>
+                        )}
+                        {application.status === 'approved' && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                            <span className="text-sm">Approved</span>
+                          </div>
+                        )}
+                        {application.status === 'rejected' && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                            <span className="text-sm">Rejected</span>
+                          </div>
+                        )}
+                        {application.status === 'revoked' && (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></div>
+                            <span className="text-sm">Revoked</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-2">
+                          {application.status === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => updateStatus(application.id, 'approved')}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => updateStatus(application.id, 'rejected')}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {application.status === 'approved' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateStatus(application.id, 'revoked')}
+                            >
+                              Revoke
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
