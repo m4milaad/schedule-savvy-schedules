@@ -248,7 +248,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
   );
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">All Resources ({resources.length})</TabsTrigger>
