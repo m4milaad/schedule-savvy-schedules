@@ -197,7 +197,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
           </CardTitle>
           <CardDescription>Browse available books in the library</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
