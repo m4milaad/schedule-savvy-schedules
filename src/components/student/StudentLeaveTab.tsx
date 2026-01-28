@@ -200,7 +200,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="linear-surface overflow-hidden">

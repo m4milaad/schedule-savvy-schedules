@@ -198,16 +198,14 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
           <CardDescription>Browse available books in the library</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-              <Input
-                placeholder="Search by title, author, or ISBN..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/80 backdrop-blur-sm border-border/50"
-              />
-            </div>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search by title, author, or ISBN..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-background backdrop-blur-sm border-border"
+            />
           </div>
           {filteredBooks.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
