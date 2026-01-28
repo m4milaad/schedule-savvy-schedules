@@ -305,7 +305,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {showForm && (
         <Card className="linear-surface overflow-hidden">
           <CardHeader className="linear-toolbar flex flex-col gap-3">
