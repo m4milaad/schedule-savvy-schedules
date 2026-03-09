@@ -268,9 +268,9 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
                       <SelectValue placeholder="Select leave type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sick">Sick Leave</SelectItem>
+                      <SelectItem value="sick_leave">Sick Leave</SelectItem>
                       <SelectItem value="personal">Personal Leave</SelectItem>
-                      <SelectItem value="family">Family Emergency</SelectItem>
+                      <SelectItem value="emergency">Emergency</SelectItem>
                       <SelectItem value="medical">Medical Appointment</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
