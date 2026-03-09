@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, TrendingDown, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface StudentPerformanceTabProps {
   studentId: string;
@@ -155,16 +154,6 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
     }
   };
 
-  // Mock GPA trend data
-  const gpaTrendData = [
-    { month: 'Aug', gpa: 3.2 },
-    { month: 'Sep', gpa: 3.4 },
-    { month: 'Oct', gpa: 3.3 },
-    { month: 'Nov', gpa: 3.5 },
-    { month: 'Dec', gpa: 3.6 },
-    { month: 'Jan', gpa: 3.7 },
-  ];
-
   const recommendations = [
     { icon: BookOpen, text: 'Focus on subjects with attendance below 75%', type: 'warning' },
     { icon: Target, text: 'Complete pending assignments to improve scores', type: 'info' },
@@ -180,181 +169,134 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
   }
 
   return (
-    <div className="space-y-6">
-      {/* Overall Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Average Marks</p>
-                <p className="text-3xl font-bold">{overallStats.avgMarks}%</p>
-                <div className="flex items-center gap-1 text-sm text-green-500">
-                  <TrendingUp className="h-3 w-3" />
-                  <span>+2.5% from last sem</span>
-                </div>
-              </div>
-              <div className="p-3 bg-primary/10 rounded-full">
-                <TrendingUp className="h-6 w-6 text-primary" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Average Attendance</p>
-                <p className="text-3xl font-bold">{overallStats.avgAttendance}%</p>
-                <div className={`flex items-center gap-1 text-sm ${overallStats.avgAttendance >= 75 ? 'text-green-500' : 'text-yellow-500'}`}>
-                  {overallStats.avgAttendance >= 75 ? <CheckCircle className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                  <span>{overallStats.avgAttendance >= 75 ? 'Above minimum' : 'Below 75%'}</span>
-                </div>
-              </div>
-              <div className="p-3 bg-blue-500/10 rounded-full">
-                <Calendar className="h-6 w-6 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Assignment Score</p>
-                <p className="text-3xl font-bold">{overallStats.avgAssignment}%</p>
-                <div className="flex items-center gap-1 text-sm text-green-500">
-                  <CheckCircle className="h-3 w-3" />
-                  <span>All on track</span>
-                </div>
-              </div>
-              <div className="p-3 bg-green-500/10 rounded-full">
-                <Target className="h-6 w-6 text-green-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* GPA Trend Chart */}
-      <Card className="linear-surface overflow-hidden">
-        <CardHeader className="linear-toolbar flex flex-col gap-3">
-          <div className="linear-kicker">Analytics</div>
-          <CardTitle className="text-base font-semibold">GPA Trend</CardTitle>
-          <CardDescription>Your performance over the last 6 months</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={gpaTrendData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" />
-                <YAxis domain={[0, 4]} className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="gpa" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+    <Card className="linear-surface overflow-hidden">
+      <CardHeader className="linear-toolbar flex flex-col gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="linear-kicker">Analytics</div>
+            <CardTitle className="text-base font-semibold">
+              Academic Performance
+            </CardTitle>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Subject-wise Performance */}
-      <Card className="linear-surface overflow-hidden">
-        <CardHeader className="linear-toolbar flex flex-col gap-3">
-          <div className="linear-kicker">Breakdown</div>
-          <CardTitle className="text-base font-semibold">Subject-wise Performance</CardTitle>
-          <CardDescription>Detailed breakdown by subject</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {performance.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No performance data available</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{overallStats.avgMarks}%</p>
+                <p className="text-[11px] text-muted-foreground">Avg Marks</p>
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {performance.map((p) => (
-                <Card key={p.courseId} className="linear-surface overflow-hidden">
-                  <CardContent className="pt-4">
-                    <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Calendar className="h-4 w-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{overallStats.avgAttendance}%</p>
+                <p className="text-[11px] text-muted-foreground">Attendance</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <Target className="h-4 w-4 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{overallStats.avgAssignment}%</p>
+                <p className="text-[11px] text-muted-foreground">Assignments</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {performance.length === 0 ? (
+          <div className="py-14 text-center">
+            <div className="text-sm font-medium">No performance data available</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Your performance data will appear here once grades are posted.
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="linear-table">
+              <thead>
+                <tr>
+                  <th className="linear-th">Course</th>
+                  <th className="linear-th hidden md:table-cell">Grade</th>
+                  <th className="linear-th hidden lg:table-cell">Marks</th>
+                  <th className="linear-th hidden lg:table-cell">Attendance</th>
+                  <th className="linear-th hidden xl:table-cell">Assignments</th>
+                  <th className="linear-th">Performance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {performance.map((p) => (
+                  <tr key={p.courseId} className="linear-tr">
+                    <td className="linear-td">
                       <div>
-                        <Badge variant="outline">{p.courseCode}</Badge>
-                        <h3 className="font-semibold mt-1">{p.courseName}</h3>
+                        <Badge variant="outline" className="mb-1">{p.courseCode}</Badge>
+                        <div className="font-medium">{p.courseName}</div>
                       </div>
+                    </td>
+                    <td className="linear-td hidden md:table-cell">
+                      <Badge>{p.grade}</Badge>
+                    </td>
+                    <td className="linear-td hidden lg:table-cell">
+                      <span className="text-sm font-medium">{p.totalMarks}%</span>
+                    </td>
+                    <td className="linear-td hidden lg:table-cell">
+                      <div className="flex items-center gap-2">
+                        <Progress value={p.attendance} className="h-2 w-20" />
+                        <span className={`text-sm ${p.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {p.attendance}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="linear-td hidden xl:table-cell">
+                      <div className="flex items-center gap-2">
+                        <Progress value={p.assignmentCompletion} className="h-2 w-20" />
+                        <span className="text-sm">{p.assignmentCompletion}%</span>
+                      </div>
+                    </td>
+                    <td className="linear-td">
                       <Badge className={getLevelColor(p.level)}>
                         {getLevelIcon(p.level)}
                         <span className="ml-1">{p.level}</span>
                       </Badge>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span>Grade</span>
-                          <Badge>{p.grade}</Badge>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span>Attendance</span>
-                          <span className={p.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}>{p.attendance}%</span>
-                        </div>
-                        <Progress value={p.attendance} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span>Assignments</span>
-                          <span>{p.assignmentCompletion}%</span>
-                        </div>
-                        <Progress value={p.assignmentCompletion} className="h-2" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
 
-      {/* Recommendations */}
-      <Card className="linear-surface overflow-hidden">
-        <CardHeader className="linear-toolbar flex flex-col gap-3">
-          <div className="linear-kicker">Insights</div>
-          <CardTitle className="text-base font-semibold">Personalized Recommendations</CardTitle>
-          <CardDescription>Tips to improve your performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
+      {/* Recommendations at the bottom */}
+      <CardContent className="border-t">
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground">Personalized Recommendations</div>
+          <div className="space-y-2">
             {recommendations.map((rec, idx) => (
               <div 
                 key={idx} 
-                className={`flex items-center gap-3 p-3 rounded-lg ${
+                className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
                   rec.type === 'success' ? 'bg-green-500/10' : 
                   rec.type === 'warning' ? 'bg-yellow-500/10' : 'bg-blue-500/10'
                 }`}
               >
-                <rec.icon className={`h-5 w-5 ${
+                <rec.icon className={`h-4 w-4 ${
                   rec.type === 'success' ? 'text-green-500' : 
                   rec.type === 'warning' ? 'text-yellow-500' : 'text-blue-500'
                 }`} />
-                <span className="text-sm">{rec.text}</span>
+                <span>{rec.text}</span>
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

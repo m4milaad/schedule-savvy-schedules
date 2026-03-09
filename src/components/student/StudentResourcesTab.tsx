@@ -41,6 +41,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [subjectFilter, setSubjectFilter] = useState<string>('all');
   const [courses, setCourses] = useState<{ course_id: string; course_code: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<'all' | 'bookmarked'>('all');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -194,147 +195,295 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
     );
   }
 
-  const ResourceCard = ({ resource }: { resource: Resource }) => (
-    <Card key={resource.id} className="linear-surface overflow-hidden">
-      <CardContent className="pt-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
-            {getTypeIcon(resource.resource_type)}
-            <Badge variant="outline">{resource.course?.course_code}</Badge>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => toggleBookmark(resource.id)}
-          >
-            {resource.isBookmarked ? (
-              <BookmarkCheck className="h-4 w-4 text-primary" />
-            ) : (
-              <Bookmark className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-        <h3 className="font-semibold mb-1">{resource.title}</h3>
-        {resource.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-            {resource.description}
-          </p>
-        )}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-          <Badge className={getTypeBadgeColor(resource.resource_type)}>
-            {resource.resource_type}
-          </Badge>
-          <span>{formatFileSize(resource.file_size)}</span>
-          <span>{format(new Date(resource.created_at), 'MMM dd')}</span>
-        </div>
-        <div className="flex gap-2">
-          {resource.file_url && (
-            <>
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => window.open(resource.file_url, '_blank')}>
-                <Eye className="h-4 w-4 mr-1" />
-                Preview
-              </Button>
-              <Button size="sm" className="flex-1" asChild>
-                <a href={resource.file_url} download>
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </a>
-              </Button>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <div className="p-6 space-y-6">
-      <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All Resources ({resources.length})</TabsTrigger>
-          <TabsTrigger value="bookmarked">Bookmarked ({bookmarkedResources.length})</TabsTrigger>
-        </TabsList>
+    <div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'all' | 'bookmarked')}
+        className="w-full"
+      >
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="linear-kicker">Resources</div>
+                <CardTitle className="text-base font-semibold">
+                  Study Materials
+                </CardTitle>
+              </div>
+              <div className="flex gap-2">
+                <div className="linear-pill">
+                  <span className="font-medium text-foreground">{resources.length}</span>
+                  <span>total</span>
+                </div>
+                {bookmarkedResources.length > 0 && (
+                  <div className="linear-pill border-primary/50 bg-primary/10">
+                    <span className="font-medium text-primary">{bookmarkedResources.length}</span>
+                    <span>bookmarked</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  All:{' '}
+                  <span className="font-medium text-foreground">
+                    {resources.length}
+                  </span>
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span>
+                  Bookmarked:{' '}
+                  <span className="font-medium text-foreground">
+                    {bookmarkedResources.length}
+                  </span>
+                </span>
+              </div>
+              <TabsList className="bg-muted/40 rounded-full h-9 px-1 py-1 w-full sm:w-auto">
+                <TabsTrigger
+                  value="all"
+                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
+                >
+                  All Resources ({resources.length})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="bookmarked"
+                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
+                >
+                  Bookmarked ({bookmarkedResources.length})
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[200px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search resources..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {resourceTypes.map(type => (
+                    <SelectItem key={type} value={type.toLowerCase()}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subjects</SelectItem>
+                  {courses.map(c => (
+                    <SelectItem key={c.course_id} value={c.course_code}>{c.course_code}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
 
-        <TabsContent value="all">
-          {/* Filters */}
-          <Card className="mb-4 linear-surface overflow-hidden">
-            <CardContent className="pt-4">
-              <div className="flex flex-wrap gap-4">
-                <div className="flex-1 min-w-[200px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search resources..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+          <CardContent className="p-0">
+            <TabsContent value="all" className="mt-0">
+              {filteredResources.length === 0 ? (
+                <div className="py-14 text-center">
+                  <div className="text-sm font-medium">No resources found</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {searchTerm || typeFilter !== 'all' || subjectFilter !== 'all' 
+                      ? 'Try adjusting your filters.' 
+                      : 'Resources from your enrolled courses will appear here.'}
                   </div>
                 </div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {resourceTypes.map(type => (
-                      <SelectItem key={type} value={type.toLowerCase()}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={subjectFilter} onValueChange={setSubjectFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Subject" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subjects</SelectItem>
-                    {courses.map(c => (
-                      <SelectItem key={c.course_id} value={c.course_code}>{c.course_code}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {filteredResources.length === 0 ? (
-            <Card className="linear-surface overflow-hidden">
-              <CardContent className="py-8">
-                <div className="text-center text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No resources found</p>
-                  <p className="text-sm">Resources from your enrolled courses will appear here</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="linear-table">
+                    <thead>
+                      <tr>
+                        <th className="linear-th">Resource</th>
+                        <th className="linear-th hidden md:table-cell">Type</th>
+                        <th className="linear-th hidden lg:table-cell">Course</th>
+                        <th className="linear-th hidden lg:table-cell">Size</th>
+                        <th className="linear-th hidden xl:table-cell">Date</th>
+                        <th className="linear-th text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredResources.map((resource) => (
+                        <tr key={resource.id} className="linear-tr">
+                          <td className="linear-td">
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(resource.resource_type)}
+                              <div>
+                                <div className="font-medium">{resource.title}</div>
+                                {resource.description && (
+                                  <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                    {resource.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="linear-td hidden md:table-cell">
+                            <Badge className={getTypeBadgeColor(resource.resource_type)}>
+                              {resource.resource_type}
+                            </Badge>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell">
+                            <Badge variant="outline">{resource.course?.course_code}</Badge>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                            {formatFileSize(resource.file_size)}
+                          </td>
+                          <td className="linear-td hidden xl:table-cell text-sm text-muted-foreground">
+                            {format(new Date(resource.created_at), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="linear-td">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleBookmark(resource.id)}
+                              >
+                                {resource.isBookmarked ? (
+                                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <Bookmark className="h-4 w-4" />
+                                )}
+                              </Button>
+                              {resource.file_url && (
+                                <>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => window.open(resource.file_url, '_blank')}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    asChild
+                                  >
+                                    <a href={resource.file_url} download>
+                                      <Download className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredResources.map(resource => (
-                <ResourceCard key={resource.id} resource={resource} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              )}
+            </TabsContent>
 
-        <TabsContent value="bookmarked">
-          {bookmarkedResources.length === 0 ? (
-            <Card className="linear-surface overflow-hidden">
-              <CardContent className="py-8">
-                <div className="text-center text-muted-foreground">
-                  <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No bookmarked resources</p>
-                  <p className="text-sm">Click the bookmark icon on any resource to save it here</p>
+            <TabsContent value="bookmarked" className="mt-0">
+              {bookmarkedResources.length === 0 ? (
+                <div className="py-14 text-center">
+                  <div className="text-sm font-medium">No bookmarked resources</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    Click the bookmark icon on any resource to save it here.
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {bookmarkedResources.map(resource => (
-                <ResourceCard key={resource.id} resource={resource} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="linear-table">
+                    <thead>
+                      <tr>
+                        <th className="linear-th">Resource</th>
+                        <th className="linear-th hidden md:table-cell">Type</th>
+                        <th className="linear-th hidden lg:table-cell">Course</th>
+                        <th className="linear-th hidden lg:table-cell">Size</th>
+                        <th className="linear-th hidden xl:table-cell">Date</th>
+                        <th className="linear-th text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookmarkedResources.map((resource) => (
+                        <tr key={resource.id} className="linear-tr">
+                          <td className="linear-td">
+                            <div className="flex items-center gap-2">
+                              {getTypeIcon(resource.resource_type)}
+                              <div>
+                                <div className="font-medium">{resource.title}</div>
+                                {resource.description && (
+                                  <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                    {resource.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="linear-td hidden md:table-cell">
+                            <Badge className={getTypeBadgeColor(resource.resource_type)}>
+                              {resource.resource_type}
+                            </Badge>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell">
+                            <Badge variant="outline">{resource.course?.course_code}</Badge>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                            {formatFileSize(resource.file_size)}
+                          </td>
+                          <td className="linear-td hidden xl:table-cell text-sm text-muted-foreground">
+                            {format(new Date(resource.created_at), 'MMM dd, yyyy')}
+                          </td>
+                          <td className="linear-td">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => toggleBookmark(resource.id)}
+                              >
+                                {resource.isBookmarked ? (
+                                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <Bookmark className="h-4 w-4" />
+                                )}
+                              </Button>
+                              {resource.file_url && (
+                                <>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    onClick={() => window.open(resource.file_url, '_blank')}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    asChild
+                                  >
+                                    <a href={resource.file_url} download>
+                                      <Download className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
+          </CardContent>
+        </Card>
       </Tabs>
     </div>
   );
