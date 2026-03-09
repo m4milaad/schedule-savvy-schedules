@@ -65,141 +65,6 @@ interface AvailableCourse {
 
 const COURSES_PER_PAGE = 12;
 
-// Paginated grid component for available courses with bulk selection
-const AvailableCoursesGrid: React.FC<{
-  courses: AvailableCourse[];
-  enrolling: string | null;
-  onEnroll: (courseId: string) => void;
-  selectedCourses: Set<string>;
-  onToggleSelect: (courseId: string) => void;
-  onSelectAll: () => void;
-  onClearSelection: () => void;
-  onBulkEnroll: () => void;
-  isBulkEnrolling: boolean;
-}> = ({ courses, enrolling, onEnroll, selectedCourses, onToggleSelect, onSelectAll, onClearSelection, onBulkEnroll, isBulkEnrolling }) => {
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems,
-    goToPage,
-    canGoNext,
-    canGoPrevious,
-    startIndex,
-    endIndex,
-    totalItems,
-  } = usePagination({ items: courses, itemsPerPage: COURSES_PER_PAGE });
-
-  if (courses.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>No available courses found</p>
-      </div>
-    );
-  }
-
-  const allCurrentPageSelected = paginatedItems.every(c => selectedCourses.has(c.course_id));
-
-  return (
-    <div className="space-y-4">
-      {/* Bulk actions bar */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={allCurrentPageSelected && paginatedItems.length > 0}
-            onCheckedChange={() => {
-              if (allCurrentPageSelected) {
-                onClearSelection();
-              } else {
-                paginatedItems.forEach(c => {
-                  if (!selectedCourses.has(c.course_id)) {
-                    onToggleSelect(c.course_id);
-                  }
-                });
-              }
-            }}
-          />
-          <span className="text-sm text-muted-foreground">
-            {selectedCourses.size > 0 ? `${selectedCourses.size} selected` : 'Select all on page'}
-          </span>
-        </div>
-        {selectedCourses.size > 0 && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={onBulkEnroll}
-              disabled={isBulkEnrolling}
-            >
-              <CheckSquare className="h-4 w-4 mr-1" />
-              {isBulkEnrolling ? 'Enrolling...' : `Enroll ${selectedCourses.size} courses`}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onClearSelection}
-            >
-              Clear
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {paginatedItems.map((course) => (
-          <Card key={course.course_id} className={`linear-surface overflow-hidden ${selectedCourses.has(course.course_id) ? 'ring-2 ring-primary' : ''}`}>
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-2 mb-3">
-                <Checkbox
-                  checked={selectedCourses.has(course.course_id)}
-                  onCheckedChange={() => onToggleSelect(course.course_id)}
-                  className="mt-1"
-                />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <Badge variant="outline">{course.course_code}</Badge>
-                    <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
-                  </div>
-                  <h3 className="font-semibold text-sm">{course.course_name}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Semester {course.semester} • {course.course_credits} Credits
-                  </p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => onEnroll(course.course_id)}
-                disabled={enrolling === course.course_id}
-              >
-                {enrolling === course.course_id ? (
-                  'Enrolling...'
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Enroll
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      
-      {totalPages > 1 && (
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          canGoNext={canGoNext}
-          canGoPrevious={canGoPrevious}
-          onPageChange={goToPage}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          totalItems={totalItems}
-        />
-      )}
-    </div>
-  );
-};
-
 export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({ 
   studentId, 
   profileDeptId,
@@ -683,6 +548,37 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                 </TabsTrigger>
               </TabsList>
             </div>
+
+            {/* Search and filters - shown only on available tab */}
+            {activeTab === 'available' && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+                  <Input
+                    placeholder="Search courses..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="All Departments" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {uniqueDepartments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </CardHeader>
 
           <CardContent className="p-0">
@@ -817,45 +713,122 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
               )}
             </TabsContent>
 
-            <TabsContent value="available" className="mt-0 space-y-4 p-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                  <Input
-                    placeholder="Search courses..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+            <TabsContent value="available" className="mt-0">
+              {selectedAvailableCourses.size > 0 && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-6 py-3 border-b bg-muted/30">
+                  <div className="text-sm text-muted-foreground">
+                    {selectedAvailableCourses.size} selected
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleBulkEnroll}
+                      disabled={isBulkEnrolling}
+                    >
+                      <CheckSquare className="h-4 w-4 mr-1" />
+                      {isBulkEnrolling ? 'Enrolling...' : `Enroll ${selectedAvailableCourses.size} courses`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedAvailableCourses(new Set())}
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {uniqueDepartments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
+              )}
+
+              {filteredAvailable.length === 0 ? (
+                <div className="py-14 text-center">
+                  <div className="text-sm font-medium">No available courses found</div>
+                  <div className="mt-1 text-sm text-muted-foreground">
+                    {searchTerm || departmentFilter !== 'all' 
+                      ? 'Try adjusting your filters.' 
+                      : 'All courses are currently enrolled or no courses available.'}
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="linear-table">
+                    <thead>
+                      <tr>
+                        <th className="linear-th w-12">
+                          <Checkbox
+                            checked={filteredAvailable.length > 0 && filteredAvailable.every(c => selectedAvailableCourses.has(c.course_id))}
+                            onCheckedChange={() => {
+                              if (filteredAvailable.every(c => selectedAvailableCourses.has(c.course_id))) {
+                                setSelectedAvailableCourses(new Set());
+                              } else {
+                                setSelectedAvailableCourses(new Set(filteredAvailable.map(c => c.course_id)));
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className="linear-th">Course</th>
+                        <th className="linear-th hidden md:table-cell">Department</th>
+                        <th className="linear-th hidden lg:table-cell">Semester</th>
+                        <th className="linear-th hidden lg:table-cell">Credits</th>
+                        <th className="linear-th hidden xl:table-cell">Type</th>
+                        <th className="linear-th text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAvailable.map((course) => (
+                        <tr 
+                          key={course.course_id} 
+                          className={`linear-tr ${selectedAvailableCourses.has(course.course_id) ? 'bg-primary/5' : ''}`}
+                        >
+                          <td className="linear-td">
+                            <Checkbox
+                              checked={selectedAvailableCourses.has(course.course_id)}
+                              onCheckedChange={() => toggleAvailableCourseSelection(course.course_id)}
+                            />
+                          </td>
+                          <td className="linear-td">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline">{course.course_code}</Badge>
+                              </div>
+                              <div className="font-medium">{course.course_name}</div>
+                            </div>
+                          </td>
+                          <td className="linear-td hidden md:table-cell">
+                            <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell">
+                            <span className="text-sm">Semester {course.semester}</span>
+                          </td>
+                          <td className="linear-td hidden lg:table-cell">
+                            <span className="text-sm">{course.course_credits}</span>
+                          </td>
+                          <td className="linear-td hidden xl:table-cell">
+                            <span className="text-sm text-muted-foreground">{course.course_type}</span>
+                          </td>
+                          <td className="linear-td">
+                            <div className="flex justify-end">
+                              <Button
+                                size="sm"
+                                onClick={() => enrollInCourse(course.course_id)}
+                                disabled={enrolling === course.course_id}
+                              >
+                                {enrolling === course.course_id ? (
+                                  'Enrolling...'
+                                ) : (
+                                  <>
+                                    <Plus className="h-4 w-4 mr-1" />
+                                    Enroll
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-              <AvailableCoursesGrid 
-                courses={filteredAvailable}
-                enrolling={enrolling}
-                onEnroll={enrollInCourse}
-                selectedCourses={selectedAvailableCourses}
-                onToggleSelect={toggleAvailableCourseSelection}
-                onSelectAll={() => setSelectedAvailableCourses(new Set(filteredAvailable.map(c => c.course_id)))}
-                onClearSelection={() => setSelectedAvailableCourses(new Set())}
-                onBulkEnroll={handleBulkEnroll}
-                isBulkEnrolling={isBulkEnrolling}
-              />
+              )}
             </TabsContent>
           </CardContent>
         </Card>
