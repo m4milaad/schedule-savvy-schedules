@@ -100,8 +100,26 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
     setCourseId('');
     setDueDate('');
     setMaxMarks('100');
+    setAttachmentFile(null);
     setEditingAssignment(null);
     setShowForm(false);
+  };
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${teacherId}/${Date.now()}-${file.name}`;
+    
+    const { error } = await supabase.storage
+      .from('assignment-files')
+      .upload(filePath, file, { contentType: file.type });
+
+    if (error) throw error;
+
+    const { data: publicUrl } = supabase.storage
+      .from('assignment-files')
+      .getPublicUrl(filePath);
+
+    return publicUrl.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
