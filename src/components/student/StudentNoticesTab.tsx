@@ -308,28 +308,64 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       {/* Notice Detail Dialog */}
       <Dialog open={!!selectedNotice} onOpenChange={() => setSelectedNotice(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <DialogTitle>{selectedNotice?.title}</DialogTitle>
-              {selectedNotice && getPriorityBadge(selectedNotice.priority)}
-            </div>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Posted by: {selectedNotice?.teacher?.full_name || 'Admin'}</span>
-              <span>{selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy')}</span>
-            </div>
-            <div className="prose dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap">{selectedNotice?.content}</p>
-            </div>
-            {selectedNotice?.isRead && (
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>Read</span>
+        <DialogContent className="max-w-3xl linear-surface p-0 gap-0 overflow-hidden">
+          {/* Header Section */}
+          <div className="linear-toolbar px-6 py-5 border-b">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-2">
+                  {selectedNotice && getPriorityBadge(selectedNotice.priority)}
+                  {selectedNotice?.isRead && (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Read
+                    </Badge>
+                  )}
+                </div>
+                <h2 className="text-xl font-semibold leading-tight pr-8">
+                  {selectedNotice?.title}
+                </h2>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-xs font-medium text-primary">
+                        {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {selectedNotice?.teacher?.full_name || 'Admin'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Content Section */}
+          <div className="px-6 py-6">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
+                {selectedNotice?.content}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Section */}
+          {selectedNotice?.expiry_date && (
+            <div className="px-6 py-4 bg-muted/30 border-t">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span>
+                  This notice expires on {format(new Date(selectedNotice.expiry_date), 'MMMM dd, yyyy')}
+                </span>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
