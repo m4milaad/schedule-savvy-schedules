@@ -363,8 +363,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
               </div>
 
               <div className="flex gap-2">
-                <Button type="submit">
-                  {editingAssignment ? 'Update Assignment' : 'Create Assignment'}
+                <Button type="submit" disabled={uploadingFile}>
+                  {uploadingFile ? 'Uploading...' : editingAssignment ? 'Update Assignment' : 'Create Assignment'}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancel
