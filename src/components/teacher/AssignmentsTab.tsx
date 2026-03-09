@@ -45,6 +45,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
   const [courseId, setCourseId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [maxMarks, setMaxMarks] = useState('100');
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadAssignments();
