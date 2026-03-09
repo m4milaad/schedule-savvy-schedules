@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Plus, Trash2, Edit, Clock, Che, Upload, Paperclip, XckCircle } from 'lucide-react';
+import { FileText, Plus, Trash2, Edit, Clock, Che, UploadckCircle, Upload, Paperclip, X'lucide-react';
 import { format } from 'date-fns';
 
 interface AssignmentsTabProps {
