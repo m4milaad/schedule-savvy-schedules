@@ -185,7 +185,11 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative bg-white/20 border-white/30 backdrop-blur-sm hover:bg-white/30">
+        <Button
+          variant="outline"
+          size="icon"
+          className="relative bg-background/20 border-white/20 dark:border-white/10 backdrop-blur-xl hover:bg-background/30 shadow-[0_18px_60px_rgba(15,23,42,0.45)] transition-colors"
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
@@ -196,9 +200,12 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 md:w-96 p-0" align="end">
-        <div className="flex items-center justify-between p-3 border-b">
-          <h3 className="font-semibold text-sm">Notifications</h3>
+      <PopoverContent
+        className="w-80 md:w-96 p-0 border border-white/15 dark:border-white/5 bg-background/20 backdrop-blur-2xl shadow-[0_22px_80px_rgba(15,23,42,0.65)] rounded-2xl overflow-hidden"
+        align="end"
+      >
+        <div className="flex items-center justify-between p-3 border-b border-white/10/10 bg-background/10">
+          <h3 className="font-semibold text-sm tracking-tight">Notifications</h3>
           <div className="flex gap-1">
             {unreadCount > 0 && (
               <Button
