@@ -172,14 +172,14 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
 
   const getLeaveTypeBadge = (type: string) => {
     switch (type?.toLowerCase()) {
-      case 'sick':
+      case 'sick_leave':
         return <Badge variant="outline" className="border-red-500 text-red-500">Sick Leave</Badge>;
       case 'personal':
         return <Badge variant="outline" className="border-blue-500 text-blue-500">Personal</Badge>;
-      case 'family':
-        return <Badge variant="outline" className="border-purple-500 text-purple-500">Family</Badge>;
       case 'emergency':
         return <Badge variant="outline" className="border-orange-500 text-orange-500">Emergency</Badge>;
+      case 'medical':
+        return <Badge variant="outline" className="border-purple-500 text-purple-500">Medical</Badge>;
       default:
         return <Badge variant="outline">{type}</Badge>;
     }
