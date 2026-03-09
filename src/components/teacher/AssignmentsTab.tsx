@@ -180,6 +180,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
         description: error.message || 'Failed to save assignment',
         variant: 'destructive',
       });
+    } finally {
+      setUploadingFile(false);
     }
   };
 
