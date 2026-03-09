@@ -320,6 +320,48 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Attachment (PDF, Image, Document)</Label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                />
+                {attachmentFile ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm flex-1 truncate">{attachmentFile.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {(attachmentFile.size / 1024 / 1024).toFixed(2)} MB
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        setAttachmentFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Reference Material
+                  </Button>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button type="submit">
                   {editingAssignment ? 'Update Assignment' : 'Create Assignment'}
