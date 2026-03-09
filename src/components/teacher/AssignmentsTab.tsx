@@ -135,7 +135,14 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
     }
 
     try {
-      const assignmentData = {
+      let fileUrl: string | null = null;
+      
+      if (attachmentFile) {
+        setUploadingFile(true);
+        fileUrl = await uploadFile(attachmentFile);
+      }
+
+      const assignmentData: any = {
         teacher_id: teacherId,
         title: title.trim(),
         description: description.trim(),
@@ -143,6 +150,10 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
         due_date: dueDate,
         max_marks: parseInt(maxMarks) || 100,
       };
+
+      if (fileUrl) {
+        assignmentData.file_url = fileUrl;
+      }
 
       if (editingAssignment) {
         const { error } = await supabase
