@@ -74,6 +74,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           due_date: string
+          file_url: string | null
           id: string
           is_active: boolean | null
           max_marks: number
@@ -86,6 +87,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           due_date: string
+          file_url?: string | null
           id?: string
           is_active?: boolean | null
           max_marks?: number
@@ -98,6 +100,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           due_date?: string
+          file_url?: string | null
           id?: string
           is_active?: boolean | null
           max_marks?: number
