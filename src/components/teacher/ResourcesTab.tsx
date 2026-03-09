@@ -305,7 +305,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {showForm && (
         <Card className="linear-surface overflow-hidden">
           <CardHeader className="linear-toolbar flex flex-col gap-3">
@@ -486,7 +486,12 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
             <div>
               <div className="linear-kicker">Library</div>
               <CardTitle className="text-base font-semibold">Uploaded Resources</CardTitle>
-              <CardDescription>View and manage all your resources</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <div className="linear-pill">
+                <span className="font-medium text-foreground">{resources.length}</span>
+                <span>total</span>
+              </div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -496,80 +501,101 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {resources.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No resources uploaded yet</p>
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">No resources uploaded yet</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Click "Upload Resource" to add study materials for your students.
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {resources.map((resource) => (
-                <div
-                  key={resource.id}
-                  className={`p-4 border rounded-lg ${!resource.is_active ? 'opacity-60' : ''}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 bg-muted rounded-lg">
-                      {getResourceIcon(resource.resource_type)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{resource.title}</h3>
-                        <Badge variant="outline">
-                          {resource.course?.course_code}
-                        </Badge>
+            <div className="overflow-x-auto">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Resource</th>
+                    <th className="linear-th hidden md:table-cell">Type</th>
+                    <th className="linear-th hidden lg:table-cell">Course</th>
+                    <th className="linear-th hidden lg:table-cell">Access</th>
+                    <th className="linear-th hidden xl:table-cell">Stats</th>
+                    <th className="linear-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resources.map((resource) => (
+                    <tr key={resource.id} className={`linear-tr ${!resource.is_active ? 'opacity-60' : ''}`}>
+                      <td className="linear-td">
+                        <div className="flex items-center gap-2">
+                          {getResourceIcon(resource.resource_type)}
+                          <div>
+                            <div className="font-medium">{resource.title}</div>
+                            {resource.description && (
+                              <div className="text-sm text-muted-foreground line-clamp-1 mt-1">
+                                {resource.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="linear-td hidden md:table-cell">
                         <Badge variant="secondary">
                           {resource.resource_type.replace('_', ' ')}
                         </Badge>
-                      </div>
-                      {resource.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                          {resource.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Access: {resource.access_level.replace('_', ' ')}</span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> {resource.view_count} views
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Download className="h-3 w-3" /> {resource.download_count} downloads
-                        </span>
-                        {resource.file_size > 0 && (
-                          <span>{formatFileSize(resource.file_size)}</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {resource.file_url && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => window.open(resource.file_url, '_blank')}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(resource)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => handleDelete(resource.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="linear-td hidden lg:table-cell">
+                        <Badge variant="outline">
+                          {resource.course?.course_code}
+                        </Badge>
+                      </td>
+                      <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
+                        {resource.access_level.replace('_', ' ')}
+                      </td>
+                      <td className="linear-td hidden xl:table-cell">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" /> {resource.view_count}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Download className="h-3 w-3" /> {resource.download_count}
+                          </span>
+                          {resource.file_size > 0 && (
+                            <span>{formatFileSize(resource.file_size)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="linear-td">
+                        <div className="flex justify-end gap-1">
+                          {resource.file_url && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => window.open(resource.file_url, '_blank')}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(resource)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() => handleDelete(resource.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>

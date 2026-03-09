@@ -457,78 +457,99 @@ const StudentDashboard = () => {
         );
       case "exams":
         return (
-          <Card className="bg-card/50 backdrop-blur-sm border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Exam Schedule & Seating
-              </CardTitle>
+          <Card className="linear-surface overflow-hidden">
+            <CardHeader className="linear-toolbar flex flex-col gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="linear-kicker">Exams</div>
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Exam Schedule & Seating
+                  </CardTitle>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span>
+                    Total exams:{' '}
+                    <span className="font-medium text-foreground">
+                      {examSchedule.length}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {examSchedule.length === 0 ? (
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Upcoming Exams</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Your exam schedule will appear here once it's published.
+                <div className="py-10 text-center text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm font-medium">No upcoming exams</p>
+                  <p className="mt-1 text-xs">
+                    Your exam schedule will appear here once it&apos;s published.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {examSchedule.map((exam, index) => (
-                    <Card key={`${exam.exam_date}-${exam.course_id}-${index}`} className="overflow-hidden border-border/50">
-                      <div className="flex flex-col sm:flex-row">
-                        <div className={`p-6 flex flex-col items-center justify-center min-w-[140px] ${
-                          exam.seat_label 
-                            ? 'bg-primary/10' 
-                            : 'bg-muted/50'
-                        }`}>
-                          {exam.seat_label ? (
-                            <>
-                              <div className="text-2xl font-bold text-primary">{exam.seat_label}</div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Row {exam.row_number}, Col {exam.column_number}
+                <div className="overflow-x-auto">
+                  <table className="linear-table">
+                    <thead>
+                      <tr>
+                        <th className="linear-th">Course</th>
+                        <th className="linear-th hidden md:table-cell">Date</th>
+                        <th className="linear-th hidden lg:table-cell">Venue & Session</th>
+                        <th className="linear-th text-right">Seat</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {examSchedule.map((exam, index) => (
+                        <tr key={`${exam.exam_date}-${exam.course_id}-${index}`} className="linear-tr align-top">
+                          <td className="linear-td">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">{exam.course_code}</Badge>
                               </div>
-                            </>
-                          ) : (
-                            <>
-                              <MapPin className="h-8 w-8 text-muted-foreground" />
-                              <div className="text-xs text-muted-foreground mt-1">Not Assigned</div>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="flex-1 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                            <div>
-                              <h3 className="font-semibold text-lg">{exam.course_code}</h3>
-                              <p className="text-sm text-muted-foreground">{exam.course_name}</p>
+                              <p className="text-sm font-medium">{exam.course_name}</p>
                             </div>
-                            <Badge variant="outline" className="text-xs">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {new Date(exam.exam_date).toLocaleDateString('en-US', { 
-                                weekday: 'short', 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })}
-                            </Badge>
-                          </div>
-
-                          <div className="flex flex-wrap gap-4 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Building className="h-4 w-4" />
-                              <span>{exam.venue_name}</span>
+                          </td>
+                          <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
+                            {new Date(exam.exam_date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </td>
+                          <td className="linear-td hidden lg:table-cell text-sm">
+                            <div className="flex flex-col gap-1 text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Building className="h-3 w-3" />
+                                <span>{exam.venue_name}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <GraduationCap className="h-3 w-3" />
+                                <span>{exam.session_name}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <GraduationCap className="h-4 w-4" />
-                              <span>{exam.session_name}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
+                          </td>
+                          <td className="linear-td text-right">
+                            {exam.seat_label ? (
+                              <div className="inline-flex flex-col items-end gap-1">
+                                <Badge variant="outline" className="text-xs">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  Seat {exam.seat_label}
+                                </Badge>
+                                <span className="text-[11px] text-muted-foreground">
+                                  Row {exam.row_number}, Col {exam.column_number}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                                <MapPin className="h-3 w-3" />
+                                Not assigned
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
@@ -598,10 +619,12 @@ const StudentDashboard = () => {
       )}
 
       {/* Main Content */}
-      <div className={cn(
-        "flex min-w-0 flex-1 flex-col",
-        !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-      )}>
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
+          !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+        )}
+      >
         <StudentTopbar
           title={getTabTitle()}
           description={getTabDescription()}
