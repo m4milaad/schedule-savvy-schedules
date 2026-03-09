@@ -225,6 +225,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   const [bulkUnenrollConfirmOpen, setBulkUnenrollConfirmOpen] = useState(false);
   const [pendingUnenrollId, setPendingUnenrollId] = useState<string | null>(null);
   const [pendingUnenrollName, setPendingUnenrollName] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'enrolled' | 'available'>('enrolled');
   
   const { toast } = useToast();
 
@@ -559,6 +560,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   };
 
   const enrolledCourseIds = new Set(enrollments.map(e => e.course_id));
+  const availableCount = availableCourses.filter(c => !enrolledCourseIds.has(c.course_id)).length;
   
   // Get unique departments for filter
   const uniqueDepartments = useMemo(() => {
@@ -592,80 +594,104 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'enrolled' | 'available')}
+        className="w-full"
+      >
         <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <BookOpen className="h-5 w-5 text-primary" />
-              </div>
+          <CardHeader className="linear-toolbar flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-2xl font-bold">{enrollments.length}</p>
-                <p className="text-xs text-muted-foreground">Enrolled Courses</p>
+                <div className="linear-kicker">Courses</div>
+                <CardTitle className="text-base font-semibold">
+                  My Courses & Enrollment
+                </CardTitle>
+                <CardDescription>
+                  See what you&apos;re enrolled in and discover new courses to add.
+                </CardDescription>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <GraduationCap className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalCredits}</p>
-                <p className="text-xs text-muted-foreground">Total Credits</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-500/10 rounded-lg">
-                <Clock className="h-5 w-5 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{avgAttendance}%</p>
-                <p className="text-xs text-muted-foreground">Avg Attendance</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="linear-surface overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">--</p>
-                <p className="text-xs text-muted-foreground">Current GPA</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="enrolled" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="enrolled">Currently Enrolled ({enrollments.length})</TabsTrigger>
-          <TabsTrigger value="available">Available Courses</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="enrolled">
-          <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="linear-kicker">Enrollment</div>
-                  <CardTitle className="text-base font-semibold">
-                  Enrolled Courses
-                  </CardTitle>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-[220px]">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{enrollments.length}</p>
+                    <p className="text-[11px] text-muted-foreground">Enrolled</p>
+                  </div>
                 </div>
-                {selectedEnrolledCourses.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <GraduationCap className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{totalCredits}</p>
+                    <p className="text-[11px] text-muted-foreground">Credits</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-yellow-500/10 rounded-lg">
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{avgAttendance}%</p>
+                    <p className="text-[11px] text-muted-foreground">Attendance</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">--</p>
+                    <p className="text-[11px] text-muted-foreground">GPA</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  Enrolled:{' '}
+                  <span className="font-medium text-foreground">
+                    {enrollments.length}
+                  </span>
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span>
+                  Available:{' '}
+                  <span className="font-medium text-foreground">
+                    {availableCount}
+                  </span>
+                </span>
+              </div>
+              <TabsList className="bg-muted/40 rounded-full h-9 px-1 py-1 w-full sm:w-auto">
+                <TabsTrigger
+                  value="enrolled"
+                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
+                >
+                  Currently Enrolled ({enrollments.length})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="available"
+                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
+                >
+                  Available Courses
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            <TabsContent value="enrolled" className="mt-0">
+              {selectedEnrolledCourses.size > 0 && (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-6 py-3 border-b bg-muted/30">
+                  <div className="text-sm text-muted-foreground">
+                    {selectedEnrolledCourses.size} selected
+                  </div>
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
@@ -674,7 +700,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                       disabled={isBulkUnenrolling}
                     >
                       <X className="h-4 w-4 mr-1" />
-                      {isBulkUnenrolling ? 'Unenrolling...' : `Unenroll ${selectedEnrolledCourses.size} courses`}
+                      {isBulkUnenrolling ? 'Unenrolling...' : `Unenroll ${selectedEnrolledCourses.size}`}
                     </Button>
                     <Button
                       size="sm"
@@ -684,122 +710,122 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                       Clear
                     </Button>
                   </div>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
+                </div>
+              )}
+
               {enrollments.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No courses enrolled yet</p>
-                  <p className="text-sm">Browse available courses to get started</p>
+                <div className="text-center py-14">
+                  <div className="text-sm font-medium">No courses enrolled yet</div>
+                  <div className="mt-1 text-sm text-muted-foreground">Browse available courses to get started</div>
                 </div>
               ) : (
-                <>
-                  {/* Select all for enrolled */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <Checkbox
-                      checked={selectedEnrolledCourses.size === enrollments.length && enrollments.length > 0}
-                      onCheckedChange={() => {
-                        if (selectedEnrolledCourses.size === enrollments.length) {
-                          setSelectedEnrolledCourses(new Set());
-                        } else {
-                          setSelectedEnrolledCourses(new Set(enrollments.map(e => e.id)));
-                        }
-                      }}
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {selectedEnrolledCourses.size > 0 ? `${selectedEnrolledCourses.size} selected` : 'Select all'}
-                    </span>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {enrollments.map((enrollment) => {
-                      const gradeInfo = courseGrades.get(enrollment.course_id);
-                      return (
-                        <Card key={enrollment.id} className={`linear-surface overflow-hidden ${selectedEnrolledCourses.has(enrollment.id) ? 'ring-2 ring-primary' : ''}`}>
-                          <CardContent className="pt-4">
-                            <div className="flex items-start gap-2 mb-3">
+                <div className="overflow-x-auto">
+                  <table className="linear-table">
+                    <thead>
+                      <tr>
+                        <th className="linear-th w-12">
+                          <Checkbox
+                            checked={selectedEnrolledCourses.size === enrollments.length && enrollments.length > 0}
+                            onCheckedChange={() => {
+                              if (selectedEnrolledCourses.size === enrollments.length) {
+                                setSelectedEnrolledCourses(new Set());
+                              } else {
+                                setSelectedEnrolledCourses(new Set(enrollments.map(e => e.id)));
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className="linear-th">Course</th>
+                        <th className="linear-th hidden md:table-cell">Type</th>
+                        <th className="linear-th hidden lg:table-cell">Credits</th>
+                        <th className="linear-th hidden lg:table-cell">Grade</th>
+                        <th className="linear-th hidden xl:table-cell">Attendance</th>
+                        <th className="linear-th">Status</th>
+                        <th className="linear-th text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {enrollments.map((enrollment) => {
+                        const gradeInfo = courseGrades.get(enrollment.course_id);
+                        return (
+                          <tr 
+                            key={enrollment.id} 
+                            className={`linear-tr ${selectedEnrolledCourses.has(enrollment.id) ? 'bg-primary/5' : ''}`}
+                          >
+                            <td className="linear-td">
                               <Checkbox
                                 checked={selectedEnrolledCourses.has(enrollment.id)}
                                 onCheckedChange={() => toggleEnrolledCourseSelection(enrollment.id)}
-                                className="mt-1"
                               />
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <Badge variant="outline" className="mb-1">{enrollment.course.course_code}</Badge>
-                                    <h3 className="font-semibold">{enrollment.course.course_name}</h3>
-                                    <p className="text-xs text-muted-foreground">
-                                      {enrollment.course.course_type} • {enrollment.course.course_credits} Credits
-                                    </p>
-                                  </div>
-                                  <Badge className="bg-green-500 shrink-0">Active</Badge>
+                            </td>
+                            <td className="linear-td">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge variant="outline">{enrollment.course.course_code}</Badge>
                                 </div>
+                                <div className="font-medium">{enrollment.course.course_name}</div>
                               </div>
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between text-sm">
-                                <span>Grade</span>
-                                <Badge variant={gradeInfo?.grade && gradeInfo.grade !== 'N/A' ? 'default' : 'outline'}>
-                                  {gradeInfo?.grade || 'N/A'}
-                                </Badge>
+                            </td>
+                            <td className="linear-td hidden md:table-cell">
+                              <span className="text-sm text-muted-foreground">{enrollment.course.course_type}</span>
+                            </td>
+                            <td className="linear-td hidden lg:table-cell">
+                              <span className="text-sm">{enrollment.course.course_credits}</span>
+                            </td>
+                            <td className="linear-td hidden lg:table-cell">
+                              <Badge variant={gradeInfo?.grade && gradeInfo.grade !== 'N/A' ? 'default' : 'outline'}>
+                                {gradeInfo?.grade || 'N/A'}
+                              </Badge>
+                            </td>
+                            <td className="linear-td hidden xl:table-cell">
+                              <div className="flex items-center gap-2">
+                                <Progress value={gradeInfo?.attendance || 0} className="h-2 w-20" />
+                                <span className={`text-sm ${gradeInfo?.attendance && gradeInfo.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}`}>
+                                  {gradeInfo?.attendance || 0}%
+                                </span>
                               </div>
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between text-sm">
-                                  <span>Attendance</span>
-                                  <span className={gradeInfo?.attendance && gradeInfo.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}>
-                                    {gradeInfo?.attendance || 0}%
-                                  </span>
-                                </div>
-                                <Progress value={gradeInfo?.attendance || 0} className="h-2" />
+                            </td>
+                            <td className="linear-td">
+                              <Badge className="bg-green-500">Active</Badge>
+                            </td>
+                            <td className="linear-td">
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => confirmUnenroll(enrollment.id, enrollment.course.course_name)}
+                                  disabled={unenrolling === enrollment.id}
+                                >
+                                  {unenrolling === enrollment.id ? (
+                                    'Unenrolling...'
+                                  ) : (
+                                    <>
+                                      <X className="h-4 w-4 mr-1" />
+                                      Unenroll
+                                    </>
+                                  )}
+                                </Button>
                               </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full mt-3 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => confirmUnenroll(enrollment.id, enrollment.course.course_name)}
-                              disabled={unenrolling === enrollment.id}
-                            >
-                              {unenrolling === enrollment.id ? (
-                                'Unenrolling...'
-                              ) : (
-                                <>
-                                  <X className="h-4 w-4 mr-1" />
-                                  Unenroll
-                                </>
-                              )}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        <TabsContent value="available">
-          <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-              <div>
-                <div className="linear-kicker">Catalog</div>
-                <CardTitle className="text-base font-semibold">
-                  Available Courses
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <TabsContent value="available" className="mt-0 space-y-4 p-6">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                   <Input
                     placeholder="Search courses..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background/80 backdrop-blur-sm border-border/50"
+                    className="pl-10"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -830,9 +856,9 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                 onBulkEnroll={handleBulkEnroll}
                 isBulkEnrolling={isBulkEnrolling}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
+          </CardContent>
+        </Card>
       </Tabs>
 
       {/* Single unenroll confirmation dialog */}
