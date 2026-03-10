@@ -77,6 +77,7 @@ const AdminDashboard: React.FC = () => {
                 .single();
 
             setProfileData(profile || null);
+            setAuthUserId(user.id);
 
             if (roles && roles.length > 0) {
                 const role = roles[0].role as "admin" | "department_admin";
