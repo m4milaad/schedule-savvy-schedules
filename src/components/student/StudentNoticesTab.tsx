@@ -294,7 +294,15 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                         {getPriorityBadge(notice.priority)}
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
-                        {notice.teacher?.full_name || 'Admin'}
+                        <div>
+                          <span className="font-medium text-foreground">{notice.teacher?.full_name || 'Admin'}</span>
+                          <span className="text-xs ml-1 text-muted-foreground">
+                            ({notice.teacher?.user_type === 'teacher' ? 'Teacher' : notice.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
+                          </span>
+                          {notice.course && (
+                            <div className="text-xs text-muted-foreground mt-0.5">{notice.course.course_code}</div>
+                          )}
+                        </div>
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
                         {format(new Date(notice.created_at), 'MMM dd, yyyy')}
