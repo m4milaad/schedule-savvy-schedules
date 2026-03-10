@@ -208,8 +208,24 @@ const Auth = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <img src="/favicon.ico" alt="CUK Logo" className="w-12 h-12 mx-auto mb-3" />
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">CUK Exam System</h1>
+          <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+            <img 
+              src="/CUKLogo.ico" 
+              alt="CUK Logo" 
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                // Try multiple fallbacks
+                if (target.src.includes('CUKLogo.ico')) {
+                  target.src = '/favicon.ico';
+                } else if (target.src.includes('favicon.ico')) {
+                  // If both fail, hide the image
+                  target.style.display = 'none';
+                }
+              }}
+            />
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">CUK Acadex</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Central University of Kashmir</p>
         </motion.div>
 
