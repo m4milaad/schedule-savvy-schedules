@@ -343,21 +343,27 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                   {selectedNotice?.title}
                 </h2>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">
-                        {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {selectedNotice?.teacher?.full_name || 'Admin'}
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-medium text-primary">
+                          {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {selectedNotice?.teacher?.full_name || 'Admin'}
+                          <span className="text-xs font-normal text-muted-foreground ml-1">
+                            ({selectedNotice?.teacher?.user_type === 'teacher' ? 'Teacher' : selectedNotice?.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {selectedNotice?.course && (
+                            <span className="mr-2">{selectedNotice.course.course_code} — {selectedNotice.course.course_name}</span>
+                          )}
+                          {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                        </div>
                       </div>
                     </div>
-                  </div>
                 </div>
               </div>
             </div>
