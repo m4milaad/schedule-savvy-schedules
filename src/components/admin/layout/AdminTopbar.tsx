@@ -29,6 +29,7 @@ interface AdminTopbarProps {
   title: string;
   description?: string;
   userLabel?: string;
+  userId?: string;
   onLogout: () => void;
   onRefresh?: () => void;
   onOpenSidebar?: () => void;
