@@ -37,6 +37,7 @@ const AdminDashboard: React.FC = () => {
     const [examDates, setExamDates] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
+    const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
     const [profileData, setProfileData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<string>("overview");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -76,6 +77,7 @@ const AdminDashboard: React.FC = () => {
                 .single();
 
             setProfileData(profile || null);
+            setAuthUserId(user.id);
 
             if (roles && roles.length > 0) {
                 const role = roles[0].role as "admin" | "department_admin";
@@ -392,6 +394,7 @@ const AdminDashboard: React.FC = () => {
                     title={getTabTitle()}
                     description={getTabDescription()}
                     userLabel={profileData?.full_name || profileData?.email || undefined}
+                    userId={authUserId}
                     isMobile={isMobile}
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}
                     onLogout={handleLogout}
