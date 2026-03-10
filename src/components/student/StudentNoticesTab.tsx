@@ -21,12 +21,19 @@ interface Notice {
   title: string;
   content: string;
   priority: string;
+  target_audience: string;
+  target_course_id?: string | null;
   created_at: string;
   expiry_date: string | null;
   views_count?: number;
   teacher?: {
     full_name: string;
+    user_type: string;
   };
+  course?: {
+    course_code: string;
+    course_name: string;
+  } | null;
   isRead?: boolean;
 }
 
@@ -60,7 +67,8 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
         .from('notices')
         .select(`
           *,
-          profiles:teacher_id (full_name)
+          profiles:teacher_id (full_name, user_type),
+          courses:target_course_id (course_code, course_name)
         `)
         .eq('is_active', true)
         .or('expiry_date.is.null,expiry_date.gte.' + new Date().toISOString().split('T')[0])
@@ -107,7 +115,8 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
-        teacher: notice.profiles,
+        teacher: notice.profiles as any,
+        course: notice.courses as any,
         isRead: readIds.has(notice.id)
       }));
 
@@ -285,7 +294,15 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                         {getPriorityBadge(notice.priority)}
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
-                        {notice.teacher?.full_name || 'Admin'}
+                        <div>
+                          <span className="font-medium text-foreground">{notice.teacher?.full_name || 'Admin'}</span>
+                          <span className="text-xs ml-1 text-muted-foreground">
+                            ({notice.teacher?.user_type === 'teacher' ? 'Teacher' : notice.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
+                          </span>
+                          {notice.course && (
+                            <div className="text-xs text-muted-foreground mt-0.5">{notice.course.course_code}</div>
+                          )}
+                        </div>
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
                         {format(new Date(notice.created_at), 'MMM dd, yyyy')}
@@ -326,21 +343,27 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                   {selectedNotice?.title}
                 </h2>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">
-                        {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {selectedNotice?.teacher?.full_name || 'Admin'}
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-medium text-primary">
+                          {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                      <div>
+                        <div className="font-medium text-foreground">
+                          {selectedNotice?.teacher?.full_name || 'Admin'}
+                          <span className="text-xs font-normal text-muted-foreground ml-1">
+                            ({selectedNotice?.teacher?.user_type === 'teacher' ? 'Teacher' : selectedNotice?.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {selectedNotice?.course && (
+                            <span className="mr-2">{selectedNotice.course.course_code} — {selectedNotice.course.course_name}</span>
+                          )}
+                          {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                        </div>
                       </div>
                     </div>
-                  </div>
                 </div>
               </div>
             </div>
