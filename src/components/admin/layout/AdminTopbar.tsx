@@ -23,11 +23,13 @@ import { cn } from "@/lib/utils";
 import { Menu, RefreshCw, LogOut, UserRound, Settings2 } from "lucide-react";
 import { AdminProfileDialog } from "@/components/admin/AdminProfileDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 interface AdminTopbarProps {
   title: string;
   description?: string;
   userLabel?: string;
+  userId?: string;
   onLogout: () => void;
   onRefresh?: () => void;
   onOpenSidebar?: () => void;
@@ -47,6 +49,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   title,
   description,
   userLabel,
+  userId,
   onLogout,
   onRefresh,
   onOpenSidebar,
@@ -130,6 +133,8 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
               Refresh
             </Button>
           )}
+
+          <NotificationCenter userId={userId} />
 
           <ThemeToggle minimal />
 
