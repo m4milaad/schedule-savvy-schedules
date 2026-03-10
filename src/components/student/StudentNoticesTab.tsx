@@ -67,7 +67,8 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
         .from('notices')
         .select(`
           *,
-          profiles:teacher_id (full_name)
+          profiles:teacher_id (full_name, user_type),
+          courses:target_course_id (course_code, course_name)
         `)
         .eq('is_active', true)
         .or('expiry_date.is.null,expiry_date.gte.' + new Date().toISOString().split('T')[0])
