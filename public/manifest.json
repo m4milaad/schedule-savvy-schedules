@@ -1,7 +1,7 @@
 {
-  "name": "CUK Date Sheet Management System",
-  "short_name": "CUK DateSheet",
-  "description": "Advanced exam scheduling and date sheet management system for Central University of Kashmir",
+  "name": "CUK Acadex - Academic Management System",
+  "short_name": "CUK Acadex",
+  "description": "Comprehensive academic management system for Central University of Kashmir with exam scheduling, marks, attendance, assignments, library, and performance tracking",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
