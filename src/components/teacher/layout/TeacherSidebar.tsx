@@ -63,14 +63,34 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                             exit={{ opacity: 0, x: -10 }}
                             className="flex items-center gap-2 font-bold text-xl text-primary truncate"
                         >
-                            <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
+                            <img 
+                                src="/CUKLogo.ico" 
+                                alt="CUK Logo" 
+                                className="w-8 h-8 object-contain"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    if (target.src.includes('CUKLogo')) {
+                                        target.src = '/favicon.ico';
+                                    }
+                                }}
+                            />
                             <span className="tracking-tight">Teacher Portal</span>
                         </motion.div>
                     )}
                 </AnimatePresence>
                 {isCollapsed && (
                     <div className="w-full flex justify-center">
-                        <img src="/favicon.ico" alt="Logo" className="w-8 h-8" />
+                        <img 
+                            src="/CUKLogo.ico" 
+                            alt="CUK Logo" 
+                            className="w-8 h-8 object-contain"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (target.src.includes('CUKLogo')) {
+                                    target.src = '/favicon.ico';
+                                }
+                            }}
+                        />
                     </div>
                 )}
 
