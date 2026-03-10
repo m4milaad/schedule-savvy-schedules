@@ -134,6 +134,8 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             </Button>
           )}
 
+          <NotificationCenter userId={userId} />
+
           <ThemeToggle minimal />
 
           <Separator orientation="vertical" className="mx-1 hidden h-8 md:block" />
