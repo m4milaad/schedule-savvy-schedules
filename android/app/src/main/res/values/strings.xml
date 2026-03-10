@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CUK Acadex</string>
+    <string name="title_activity_main">CUK Acadex</string>
+    <string name="package_name">com.cukacadex.app</string>
+    <string name="custom_url_scheme">com.cukacadex.app</string>
+</resources>

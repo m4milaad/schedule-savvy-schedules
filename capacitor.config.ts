@@ -1,17 +1,9 @@
-
-import { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.cuk.examschedule',
-  appName: 'CUK Academic Compass.',
-  webDir: 'dist',
-  server: {
-    url: 'https://cuk-examschedule.netlify.app',
-    cleartext: true
-  },
-  android: {
-    allowMixedContent: true
-  }
+  appId: 'com.cukacadex.app',
+  appName: 'CUK Acadex',
+  webDir: 'dist'
 };
 
 export default config;
