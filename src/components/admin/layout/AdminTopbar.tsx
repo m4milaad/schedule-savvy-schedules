@@ -49,6 +49,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   title,
   description,
   userLabel,
+  userId,
   onLogout,
   onRefresh,
   onOpenSidebar,
