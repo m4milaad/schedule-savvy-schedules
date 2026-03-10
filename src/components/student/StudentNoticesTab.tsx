@@ -115,7 +115,8 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
-        teacher: notice.profiles,
+        teacher: notice.profiles as any,
+        course: notice.courses as any,
         isRead: readIds.has(notice.id)
       }));
 
