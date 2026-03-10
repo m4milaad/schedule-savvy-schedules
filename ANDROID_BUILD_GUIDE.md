@@ -1,7 +1,6 @@
+# Android App Build Guide - CUK Acadex
 
-# Android App Build Guide - CUK Exam Schedule
-
-This guide will help you build the Android app for the Central University of Kashmir Exam Scheduling System.
+This guide will help you build the Android app for the Central University of Kashmir Academic Management System.
 
 ## Prerequisites
 
@@ -93,10 +92,10 @@ This will open Android Studio with your project loaded.
 2. **Configure app details** in `android/app/src/main/res/values/strings.xml`:
    ```xml
    <resources>
-       <string name="app_name">CUK Exam Schedule</string>
-       <string name="title_activity_main">CUK Exam Schedule</string>
-       <string name="package_name">app.lovable.c26871e166834556bc27845d5db5696e</string>
-       <string name="custom_url_scheme">app.lovable.c26871e166834556bc27845d5db5696e</string>
+       <string name="app_name">CUK Acadex</string>
+       <string name="title_activity_main">CUK Acadex</string>
+       <string name="package_name">com.cukacadex.app</string>
+       <string name="custom_url_scheme">com.cukacadex.app</string>
    </resources>
    ```
 
@@ -144,7 +143,7 @@ APK location: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 1. **Generate keystore** (do this once):
    ```bash
-   keytool -genkey -v -keystore cuk-exam-schedule.keystore -alias cuk-app -keyalg RSA -keysize 2048 -validity 10000
+   keytool -genkey -v -keystore cuk-acadex.keystore -alias cuk-acadex -keyalg RSA -keysize 2048 -validity 10000
    ```
 
 2. **Create signing config** in `android/app/build.gradle`:
@@ -153,9 +152,9 @@ APK location: `android/app/build/outputs/apk/debug/app-debug.apk`
      ...
      signingConfigs {
        release {
-         storeFile file('../../cuk-exam-schedule.keystore')
+         storeFile file('../../cuk-acadex.keystore')
          storePassword 'your-keystore-password'
-         keyAlias 'cuk-app'
+         keyAlias 'cuk-acadex'
          keyPassword 'your-key-password'
        }
      }
@@ -177,13 +176,20 @@ APK location: `android/app/build/outputs/apk/debug/app-debug.apk`
 
 ## App Features
 
-The mobile app includes:
-- **Mobile-optimized interface** for viewing exam schedules
-- **Semester filtering** to view specific semester exams
-- **Offline-capable** once data is loaded
-- **Pull-to-refresh** functionality
-- **Responsive design** for different screen sizes
-- **Real-time data** from Supabase database
+The Android app includes the complete student dashboard with:
+- **Notices**: View important announcements and updates
+- **My Courses**: Browse and manage course enrollments
+- **Exam Schedule**: View exam dates, venues, and seat assignments
+- **Marks**: Check grades and academic performance
+- **Performance Analytics**: Track progress with charts and visualizations
+- **Resources**: Access learning materials and study resources
+- **Assignments**: View and submit assignments
+- **Library**: Browse and manage library books
+- **Leave Applications**: Apply for leave and track status
+- **Real-time Notifications**: Get instant updates on important events
+- **Profile Management**: Update personal information and preferences
+- **Offline Support**: Access previously loaded data without internet
+- **Dark Mode**: Toggle between light and dark themes
 
 ## Troubleshooting
 
@@ -227,4 +233,4 @@ To distribute your app:
 
 ---
 
-**Note**: This app fetches data from your live Supabase database, so students will always see the most current exam schedule.
+**Note**: The Android app provides the complete student dashboard experience with all features available on the web version. Students can access their full academic information on the go.

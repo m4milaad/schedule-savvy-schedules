@@ -25,10 +25,6 @@ import { AuditLogsPage } from "@/pages/AuditLogsPage";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Check if running in Capacitor (mobile app)
-  const isCapacitor = window.location.protocol === 'capacitor:' ||
-    (window.location.hostname === 'localhost' && window.location.port === '');
-
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
@@ -41,10 +37,9 @@ const App = () => {
               <Route
                 path="/"
                 element={
-                  isCapacitor ? <Navigate to="/mobile-schedule" replace /> :
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentDashboard />
-                    </ProtectedRoute>
+                  <ProtectedRoute allowedRoles={['student']}>
+                    <StudentDashboard />
+                  </ProtectedRoute>
                 }
               />
               <Route path="/auth" element={<Auth />} />
