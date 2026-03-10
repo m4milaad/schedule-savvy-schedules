@@ -21,12 +21,19 @@ interface Notice {
   title: string;
   content: string;
   priority: string;
+  target_audience: string;
+  target_course_id?: string | null;
   created_at: string;
   expiry_date: string | null;
   views_count?: number;
   teacher?: {
     full_name: string;
+    user_type: string;
   };
+  course?: {
+    course_code: string;
+    course_name: string;
+  } | null;
   isRead?: boolean;
 }
 
