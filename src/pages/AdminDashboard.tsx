@@ -394,6 +394,7 @@ const AdminDashboard: React.FC = () => {
                     title={getTabTitle()}
                     description={getTabDescription()}
                     userLabel={profileData?.full_name || profileData?.email || undefined}
+                    userId={authUserId}
                     isMobile={isMobile}
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}
                     onLogout={handleLogout}
