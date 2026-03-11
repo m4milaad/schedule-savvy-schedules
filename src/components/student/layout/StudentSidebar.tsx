@@ -56,15 +56,20 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
         <motion.div
             layout
             className={cn(
-                "fixed left-0 top-0 flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-2xl z-30 shadow-[0_28px_80px_rgba(15,23,42,0.70)]",
-                isCollapsed ? "w-20" : "w-64"
+                "flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-2xl z-30",
+                isInsideSheet
+                    ? "relative w-full"
+                    : cn(
+                        "fixed left-0 top-0 shadow-[0_28px_80px_rgba(15,23,42,0.70)]",
+                        isCollapsed ? "w-20" : "w-64"
+                    )
             )}
             initial={false}
-            animate={{
+            animate={isInsideSheet ? undefined : {
                 width: isCollapsed ? 80 : 256,
                 opacity: 1,
             }}
-            transition={{
+            transition={isInsideSheet ? undefined : {
                 width: {
                     type: "spring",
                     stiffness: 220,
