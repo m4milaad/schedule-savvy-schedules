@@ -23,9 +23,25 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { SplashScreen } from "@/components/mobile/SplashScreen";
+import { useState, useEffect } from "react";
+import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // Hide native splash screen immediately when app loads
+    CapacitorSplash.hide().catch(() => {
+      // Ignore errors if not running in Capacitor
+    });
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="system" storageKey="cuk-exam-theme">
