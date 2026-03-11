@@ -176,8 +176,8 @@ export const AuditLogsTab = () => {
     );
   };
 
-  const exportToCSV = () => {
-    if (logs.length === 0) {
+  const exportToCSV = async () => {
+    if (totalCount === 0) {
       toast({
         title: "No Data",
         description: "No logs available to export",
@@ -186,32 +186,84 @@ export const AuditLogsTab = () => {
       return;
     }
 
-    const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
-    const csvData = logs.map(log => [
-      format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
-      log.profiles?.full_name || 'Unknown',
-      log.profiles?.email || log.user_id,
-      log.user_type,
-      log.action,
-      log.table_name,
-      log.description || ''
-    ]);
+    try {
+      setExporting(true);
+      toast({ title: "Exporting...", description: `Fetching all ${totalCount} log entries...` });
 
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+      // Fetch ALL logs in batches of 1000
+      let allLogs: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `audit_logs_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-    link.click();
+      while (true) {
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .range(from, from + batchSize - 1);
 
-    toast({
-      title: "Export Complete",
-      description: `Exported ${logs.length} log entries to CSV`,
-    });
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allLogs = [...allLogs, ...data];
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+
+      // Fetch all related profiles
+      const userIds = [...new Set(allLogs.map(log => log.user_id))];
+      const profileMap = new Map<string, { full_name: string; email: string }>();
+
+      // Fetch profiles in batches (in() has limits)
+      for (let i = 0; i < userIds.length; i += 50) {
+        const batch = userIds.slice(i, i + 50);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', batch);
+
+        profilesData?.forEach(p => profileMap.set(p.user_id, { full_name: p.full_name, email: p.email || '' }));
+      }
+
+      const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
+      const csvData = allLogs.map(log => {
+        const profile = profileMap.get(log.user_id);
+        return [
+          format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+          profile?.full_name || 'Unknown',
+          profile?.email || log.user_id,
+          log.user_type,
+          log.action,
+          log.table_name,
+          log.description || ''
+        ];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+      link.click();
+
+      toast({
+        title: "Export Complete",
+        description: `Exported all ${allLogs.length} log entries to CSV`,
+      });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export logs",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const clearAllLogs = async () => {
