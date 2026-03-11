@@ -43,9 +43,14 @@ export const AuditLogsTab = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
   const { toast } = useToast();
+
+  const PAGE_SIZE = 100;
 
   useEffect(() => {
     loadLogs();
@@ -64,41 +69,26 @@ export const AuditLogsTab = () => {
         setTotalCount(count);
       }
 
-      // Fetch audit logs (latest 100)
+      // Fetch audit logs (first page)
       const { data: logsData, error: logsError } = await supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(0, PAGE_SIZE - 1);
 
       if (logsError) throw logsError;
 
       if (!logsData || logsData.length === 0) {
         setLogs([]);
         setTotalCount(0);
+        setHasMore(false);
         return;
       }
 
-      // Get unique user IDs
-      const userIds = [...new Set(logsData.map(log => log.user_id))];
+      setHasMore(logsData.length >= PAGE_SIZE);
 
-      // Fetch profiles for these users
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', userIds);
-
-      if (profilesError) {
-        console.warn('Could not load profile data:', profilesError);
-      }
-
-      // Merge profile data with logs
-      const logsWithProfiles = logsData.map(log => ({
-        ...log,
-        profiles: profilesData?.find(p => p.user_id === log.user_id) || null
-      }));
-
-      setLogs(logsWithProfiles as any);
+      const logsWithProfiles = await attachProfiles(logsData);
+      setLogs(logsWithProfiles);
     } catch (error: any) {
       console.error('Error loading audit logs:', error);
       toast({
@@ -110,6 +100,54 @@ export const AuditLogsTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const from = logs.length;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data: logsData, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      if (!logsData || logsData.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setHasMore(logsData.length >= PAGE_SIZE);
+      const logsWithProfiles = await attachProfiles(logsData);
+      setLogs(prev => [...prev, ...logsWithProfiles]);
+    } catch (error: any) {
+      console.error('Error loading more logs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load more logs",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const attachProfiles = async (logsData: any[]): Promise<AuditLog[]> => {
+    const userIds = [...new Set(logsData.map(log => log.user_id))];
+
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+
+    return logsData.map(log => ({
+      ...log,
+      profiles: profilesData?.find(p => p.user_id === log.user_id) || null
+    }));
   };
 
   const getActionBadge = (action: string) => {
