@@ -454,10 +454,10 @@ export const AuditLogsTab = () => {
                 onClick={exportToCSV}
                 variant="outline"
                 size="sm"
-                disabled={logs.length === 0}
+                disabled={totalCount === 0 || exporting}
               >
-                <Download className="w-4 h-4 mr-2" />
-                Export
+                <Download className={cn("w-4 h-4 mr-2", exporting && "animate-spin")} />
+                {exporting ? 'Exporting...' : `Export All (${totalCount})`}
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
