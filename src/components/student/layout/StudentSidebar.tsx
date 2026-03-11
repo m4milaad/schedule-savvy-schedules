@@ -27,6 +27,7 @@ interface StudentSidebarProps {
     toggleSidebar: () => void;
     onLogout: () => void;
     onEditProfile: () => void;
+    isInsideSheet?: boolean;
 }
 
 export const StudentSidebar: React.FC<StudentSidebarProps> = ({
