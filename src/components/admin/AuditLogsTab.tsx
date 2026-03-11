@@ -43,9 +43,14 @@ export const AuditLogsTab = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
   const { toast } = useToast();
+
+  const PAGE_SIZE = 100;
 
   useEffect(() => {
     loadLogs();
@@ -64,41 +69,26 @@ export const AuditLogsTab = () => {
         setTotalCount(count);
       }
 
-      // Fetch audit logs (latest 100)
+      // Fetch audit logs (first page)
       const { data: logsData, error: logsError } = await supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(0, PAGE_SIZE - 1);
 
       if (logsError) throw logsError;
 
       if (!logsData || logsData.length === 0) {
         setLogs([]);
         setTotalCount(0);
+        setHasMore(false);
         return;
       }
 
-      // Get unique user IDs
-      const userIds = [...new Set(logsData.map(log => log.user_id))];
+      setHasMore(logsData.length >= PAGE_SIZE);
 
-      // Fetch profiles for these users
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', userIds);
-
-      if (profilesError) {
-        console.warn('Could not load profile data:', profilesError);
-      }
-
-      // Merge profile data with logs
-      const logsWithProfiles = logsData.map(log => ({
-        ...log,
-        profiles: profilesData?.find(p => p.user_id === log.user_id) || null
-      }));
-
-      setLogs(logsWithProfiles as any);
+      const logsWithProfiles = await attachProfiles(logsData);
+      setLogs(logsWithProfiles);
     } catch (error: any) {
       console.error('Error loading audit logs:', error);
       toast({
@@ -110,6 +100,54 @@ export const AuditLogsTab = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadMore = async () => {
+    try {
+      setLoadingMore(true);
+      const from = logs.length;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data: logsData, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      if (!logsData || logsData.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setHasMore(logsData.length >= PAGE_SIZE);
+      const logsWithProfiles = await attachProfiles(logsData);
+      setLogs(prev => [...prev, ...logsWithProfiles]);
+    } catch (error: any) {
+      console.error('Error loading more logs:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load more logs",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const attachProfiles = async (logsData: any[]): Promise<AuditLog[]> => {
+    const userIds = [...new Set(logsData.map(log => log.user_id))];
+
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', userIds);
+
+    return logsData.map(log => ({
+      ...log,
+      profiles: profilesData?.find(p => p.user_id === log.user_id) || null
+    }));
   };
 
   const getActionBadge = (action: string) => {
@@ -138,8 +176,8 @@ export const AuditLogsTab = () => {
     );
   };
 
-  const exportToCSV = () => {
-    if (logs.length === 0) {
+  const exportToCSV = async () => {
+    if (totalCount === 0) {
       toast({
         title: "No Data",
         description: "No logs available to export",
@@ -148,32 +186,84 @@ export const AuditLogsTab = () => {
       return;
     }
 
-    const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
-    const csvData = logs.map(log => [
-      format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
-      log.profiles?.full_name || 'Unknown',
-      log.profiles?.email || log.user_id,
-      log.user_type,
-      log.action,
-      log.table_name,
-      log.description || ''
-    ]);
+    try {
+      setExporting(true);
+      toast({ title: "Exporting...", description: `Fetching all ${totalCount} log entries...` });
 
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+      // Fetch ALL logs in batches of 1000
+      let allLogs: any[] = [];
+      let from = 0;
+      const batchSize = 1000;
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `audit_logs_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-    link.click();
+      while (true) {
+        const { data, error } = await supabase
+          .from('audit_logs')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .range(from, from + batchSize - 1);
 
-    toast({
-      title: "Export Complete",
-      description: `Exported ${logs.length} log entries to CSV`,
-    });
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allLogs = [...allLogs, ...data];
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+
+      // Fetch all related profiles
+      const userIds = [...new Set(allLogs.map(log => log.user_id))];
+      const profileMap = new Map<string, { full_name: string; email: string }>();
+
+      // Fetch profiles in batches (in() has limits)
+      for (let i = 0; i < userIds.length; i += 50) {
+        const batch = userIds.slice(i, i + 50);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', batch);
+
+        profilesData?.forEach(p => profileMap.set(p.user_id, { full_name: p.full_name, email: p.email || '' }));
+      }
+
+      const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
+      const csvData = allLogs.map(log => {
+        const profile = profileMap.get(log.user_id);
+        return [
+          format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
+          profile?.full_name || 'Unknown',
+          profile?.email || log.user_id,
+          log.user_type,
+          log.action,
+          log.table_name,
+          log.description || ''
+        ];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+      link.click();
+
+      toast({
+        title: "Export Complete",
+        description: `Exported all ${allLogs.length} log entries to CSV`,
+      });
+    } catch (error: any) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: error.message || "Failed to export logs",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const clearAllLogs = async () => {
@@ -364,10 +454,10 @@ export const AuditLogsTab = () => {
                 onClick={exportToCSV}
                 variant="outline"
                 size="sm"
-                disabled={logs.length === 0}
+                disabled={totalCount === 0 || exporting}
               >
-                <Download className="w-4 h-4 mr-2" />
-                Export
+                <Download className={cn("w-4 h-4 mr-2", exporting && "animate-spin")} />
+                {exporting ? 'Exporting...' : `Export All (${totalCount})`}
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -477,11 +567,29 @@ export const AuditLogsTab = () => {
               </Table>
             </div>
           )}
+
+          {/* Load More Button */}
+          {!loading && hasMore && filteredLogs.length > 0 && !searchTerm && (
+            <div className="flex justify-center py-6 border-t border-border/40">
+              <Button
+                onClick={loadMore}
+                variant="outline"
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                <RefreshCw className={cn("w-4 h-4 mr-2", loadingMore && "animate-spin")} />
+                {loadingMore ? 'Loading...' : `Load More (${logs.length} of ${totalCount})`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="text-xs text-center text-muted-foreground py-2">
         Showing {filteredLogs.length} of {totalCount} total records
+        {logs.length < totalCount && !searchTerm && hasMore && (
+          <span> · Click "Load More" to see older logs</span>
+        )}
       </div>
     </motion.div>
   );
