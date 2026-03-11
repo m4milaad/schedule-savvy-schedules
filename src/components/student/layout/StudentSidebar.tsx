@@ -119,30 +119,28 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                     </div>
                 )}
 
-                {!isCollapsed && (
-                        <motion.button
-                            whileHover={{ scale: 1.04, rotate: -3 }}
-                            whileTap={{ scale: 0.96, rotate: 0 }}
+                {!isCollapsed && !isInsideSheet && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={toggleSidebar}
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/60 hover:bg-muted text-muted-foreground shadow-md ring-1 ring-black/5"
-                            aria-label="Collapse sidebar"
+                            className="h-8 w-8 rounded-full bg-muted/60 hover:bg-muted text-muted-foreground shadow-md"
                         >
                             <ChevronLeft className="h-4 w-4" />
-                        </motion.button>
+                        </Button>
                 )}
             </div>
 
             {/* Toggle button for collapsed state - positioned absolutely */}
-            {isCollapsed && (
-                <motion.button
-                    whileHover={{ scale: 1.04, x: 2 }}
-                    whileTap={{ scale: 0.97 }}
+            {isCollapsed && !isInsideSheet && (
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={toggleSidebar}
-                    className="absolute -right-4 top-24 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/40 border border-white/25 dark:border-white/10 text-primary shadow-[0_12px_35px_rgba(15,23,42,0.55)] backdrop-blur-xl z-50"
-                    aria-label="Expand sidebar"
+                    className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-primary text-primary-foreground shadow-md z-50 hover:bg-primary/90"
                 >
-                    <ChevronRight className="h-4 w-4" />
-                </motion.button>
+                    <ChevronRight className="h-3 w-3" />
+                </Button>
             )}
 
             {/* Navigation Items */}
@@ -224,26 +222,24 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                     </div>
                 ) : (
                     <div className="flex items-center justify-between">
-                        <motion.button
-                            whileHover={{ x: 3 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="inline-flex flex-1 items-center justify-start rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                        <Button
+                            variant="ghost"
+                            className="flex-1 justify-start text-muted-foreground hover:text-foreground hover:bg-muted/40 px-3 rounded-xl"
                             onClick={onEditProfile}
                             title="Edit Profile"
                         >
                             <User className="h-5 w-5 mr-3" />
                             Profile
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.04, rotate: 2 }}
-                            whileTap={{ scale: 0.95, rotate: 0 }}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 ml-2"
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2 rounded-full h-9 w-9"
                             onClick={onLogout}
                             title="Logout"
-                            aria-label="Logout"
                         >
                             <LogOut className="h-5 w-5" />
-                        </motion.button>
+                        </Button>
                     </div>
                 )}
             </div>
