@@ -325,26 +325,26 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       {/* Notice Detail Dialog */}
       <Dialog open={!!selectedNotice} onOpenChange={() => setSelectedNotice(null)}>
-        <DialogContent className="max-w-3xl linear-surface p-0 gap-0 overflow-hidden">
-          {/* Header Section */}
-          <div className="linear-toolbar px-6 py-5 border-b">
+        <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden rounded-2xl border-white/10 bg-gradient-to-br from-white/10 to-white/5 dark:from-black/40 dark:to-black/20 backdrop-blur-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]">
+          {/* Header Section with Glass Effect */}
+          <div className="relative px-6 py-5 border-b border-white/10 bg-gradient-to-b from-white/5 to-transparent backdrop-blur-xl">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-2">
                   {selectedNotice && getPriorityBadge(selectedNotice.priority)}
                   {selectedNotice?.isRead && (
-                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                    <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30 backdrop-blur-sm">
                       <CheckCircle className="h-3 w-3 mr-1" />
                       Read
                     </Badge>
                   )}
                 </div>
-                <h2 className="text-xl font-semibold leading-tight pr-8">
+                <h2 className="text-xl font-semibold leading-tight pr-8 text-foreground">
                   {selectedNotice?.title}
                 </h2>
                 <div className="flex items-center gap-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/20">
                         <span className="text-xs font-medium text-primary">
                           {(selectedNotice?.teacher?.full_name || 'Admin').charAt(0).toUpperCase()}
                         </span>
@@ -369,8 +369,8 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
             </div>
           </div>
 
-          {/* Content Section */}
-          <div className="px-6 py-6">
+          {/* Content Section with Glass Background */}
+          <div className="px-6 py-6 bg-white/5 dark:bg-black/10 backdrop-blur-sm">
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <div className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
                 {selectedNotice?.content}
@@ -378,9 +378,9 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
             </div>
           </div>
 
-          {/* Footer Section */}
+          {/* Footer Section with Glass Effect */}
           {selectedNotice?.expiry_date && (
-            <div className="px-6 py-4 bg-muted/30 border-t">
+            <div className="px-6 py-4 bg-white/5 dark:bg-black/10 backdrop-blur-md border-t border-white/10">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
                 <span>
