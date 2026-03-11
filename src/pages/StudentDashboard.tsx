@@ -601,6 +601,7 @@ const StudentDashboard = () => {
                 setShowProfileDialog(true);
                 setIsMobileMenuOpen(false);
               }}
+              isInsideSheet
             />
           </SheetContent>
         </Sheet>
