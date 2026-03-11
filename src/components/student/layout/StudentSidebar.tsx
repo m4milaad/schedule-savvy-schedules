@@ -36,7 +36,8 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
     isCollapsed,
     toggleSidebar,
     onLogout,
-    onEditProfile
+    onEditProfile,
+    isInsideSheet = false
 }) => {
 
     const menuItems = [
