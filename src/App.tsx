@@ -22,6 +22,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 const queryClient = new QueryClient();
 
 const App = () => {
