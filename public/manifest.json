@@ -7,6 +7,7 @@
   "background_color": "#ffffff",
   "theme_color": "#1e40af",
   "orientation": "portrait-primary",
+  "id": "/",
   "icons": [
     {
       "src": "/favicon.ico",
