@@ -567,11 +567,29 @@ export const AuditLogsTab = () => {
               </Table>
             </div>
           )}
+
+          {/* Load More Button */}
+          {!loading && hasMore && filteredLogs.length > 0 && !searchTerm && (
+            <div className="flex justify-center py-6 border-t border-border/40">
+              <Button
+                onClick={loadMore}
+                variant="outline"
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                <RefreshCw className={cn("w-4 h-4 mr-2", loadingMore && "animate-spin")} />
+                {loadingMore ? 'Loading...' : `Load More (${logs.length} of ${totalCount})`}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <div className="text-xs text-center text-muted-foreground py-2">
         Showing {filteredLogs.length} of {totalCount} total records
+        {logs.length < totalCount && !searchTerm && hasMore && (
+          <span> · Click "Load More" to see older logs</span>
+        )}
       </div>
     </motion.div>
   );
