@@ -1,34 +1,35 @@
 import { useState, useEffect } from 'react';
-import { WifiOff, RefreshCw } from 'lucide-react';
+import { WifiOff, RefreshCw, CloudOff } from 'lucide-react';
+import { Network } from '@capacitor/network';
+import { getLastSyncTimestamp } from '@/lib/offlineCache';
 
 export const OfflineIndicator = () => {
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(false);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
 
   useEffect(() => {
-    const goOffline = () => setIsOffline(true);
-    const goOnline = () => {
-      setIsOffline(false);
-      setLastSynced(new Date().toLocaleTimeString());
-    };
+    // Check initial status
+    Network.getStatus().then((status) => {
+      setIsOffline(!status.connected);
+    });
 
-    window.addEventListener('offline', goOffline);
-    window.addEventListener('online', goOnline);
+    // Load last sync timestamp
+    getLastSyncTimestamp().then((ts) => {
+      if (ts) {
+        setLastSynced(new Date(ts).toLocaleTimeString());
+      }
+    });
 
-    // Load last sync time from localStorage
-    const stored = localStorage.getItem('cuk-last-sync');
-    if (stored) setLastSynced(stored);
-
-    // Update sync time periodically when online
-    if (navigator.onLine) {
-      const now = new Date().toLocaleTimeString();
-      setLastSynced(now);
-      localStorage.setItem('cuk-last-sync', now);
-    }
+    // Listen for changes
+    const handler = Network.addListener('networkStatusChange', (status) => {
+      setIsOffline(!status.connected);
+      if (status.connected) {
+        setLastSynced(new Date().toLocaleTimeString());
+      }
+    });
 
     return () => {
-      window.removeEventListener('offline', goOffline);
-      window.removeEventListener('online', goOnline);
+      handler.then((h) => h.remove());
     };
   }, []);
 
