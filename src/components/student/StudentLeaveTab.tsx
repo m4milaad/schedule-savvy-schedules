@@ -320,6 +320,8 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
                           selected={startDate}
                           onSelect={setStartDate}
                           initialFocus
+                          disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
