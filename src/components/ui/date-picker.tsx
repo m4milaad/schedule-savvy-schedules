@@ -26,7 +26,10 @@ export function DatePicker({
   placeholder = "Pick a date",
   className,
   disabled = false,
+  disablePastDates = false,
 }: DatePickerProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   return (
     <Popover>
       <PopoverTrigger asChild>
