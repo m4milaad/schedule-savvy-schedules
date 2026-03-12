@@ -367,6 +367,7 @@ const AdminDashboard: React.FC = () => {
                                 navigate(path);
                                 setIsMobileMenuOpen(false);
                             }}
+                            isInsideSheet
                         />
                     </SheetContent>
                 </Sheet>

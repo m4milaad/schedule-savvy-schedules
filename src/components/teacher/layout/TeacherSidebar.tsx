@@ -23,6 +23,7 @@ interface TeacherSidebarProps {
     toggleSidebar: () => void;
     onLogout: () => void;
     onEditProfile: () => void;
+    isInsideSheet?: boolean;
 }
 
 export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
@@ -31,7 +32,8 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
     isCollapsed,
     toggleSidebar,
     onLogout,
-    onEditProfile
+    onEditProfile,
+    isInsideSheet = false,
 }) => {
 
     const menuItems = [
@@ -47,11 +49,12 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
     return (
         <motion.div
             className={cn(
-                "fixed left-0 top-0 flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-xl transition-all duration-300 z-20",
-                isCollapsed ? "w-20" : "w-64"
+                "flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-xl transition-all duration-300 z-20",
+                isInsideSheet ? "relative w-full" : "fixed left-0 top-0",
+                isInsideSheet ? "" : (isCollapsed ? "w-20" : "w-64")
             )}
             initial={false}
-            animate={{ width: isCollapsed ? 80 : 256 }}
+            animate={{ width: isInsideSheet ? "100%" : (isCollapsed ? 80 : 256) }}
         >
             {/* Header */}
             <div className="flex items-center justify-between p-4 h-16 border-b border-border/40">
