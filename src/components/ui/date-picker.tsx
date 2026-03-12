@@ -17,6 +17,7 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  disablePastDates?: boolean;
 }
 
 export function DatePicker({
