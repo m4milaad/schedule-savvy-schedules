@@ -28,6 +28,7 @@ interface AdminSidebarProps {
     isCollapsed: boolean;
     toggleSidebar: () => void;
     onLogout: () => void;
+    isInsideSheet?: boolean;
     onNavigate: (path: string) => void;
     onEditProfile?: () => void;
 }

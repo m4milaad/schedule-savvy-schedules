@@ -23,6 +23,7 @@ interface TeacherSidebarProps {
     toggleSidebar: () => void;
     onLogout: () => void;
     onEditProfile: () => void;
+    isInsideSheet?: boolean;
 }
 
 export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
