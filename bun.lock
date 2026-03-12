@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "cuk-exam-schedule",
+      "name": "cuk-acadex",
       "dependencies": {
         "@capacitor/android": "^7.4.0",
         "@capacitor/cli": "^7.4.0",

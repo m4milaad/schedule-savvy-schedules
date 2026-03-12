@@ -17,6 +17,7 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  disablePastDates?: boolean;
 }
 
 export function DatePicker({
@@ -25,7 +26,10 @@ export function DatePicker({
   placeholder = "Pick a date",
   className,
   disabled = false,
+  disablePastDates = false,
 }: DatePickerProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -48,7 +52,7 @@ export function DatePicker({
           selected={date}
           onSelect={onDateChange}
           initialFocus
-          disabled={(date) => date < new Date("1900-01-01")}
+          disabled={(date) => disablePastDates ? date < today : date < new Date("1900-01-01")}
         />
       </PopoverContent>
     </Popover>

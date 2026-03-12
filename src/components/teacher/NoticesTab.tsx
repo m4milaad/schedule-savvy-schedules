@@ -280,6 +280,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
                     date={expiryDate}
                     onDateChange={setExpiryDate}
                     placeholder="Select expiry date (optional)"
+                    disablePastDates
                   />
                 </div>
               </div>
