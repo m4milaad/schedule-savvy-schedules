@@ -35,10 +35,16 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Persist auth session for offline access
+          persistAuthSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }).catch(() => {});
           setTimeout(() => {
             loadUserProfile(session.user.id);
           }, 0);
         } else {
+          clearPersistedAuthSession().catch(() => {});
           setProfile(null);
           setLoading(false);
         }
