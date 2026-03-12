@@ -266,6 +266,7 @@ const TeacherDashboard = () => {
                 setShowProfileDialog(true);
                 setIsMobileMenuOpen(false);
               }}
+              isInsideSheet
             />
           </SheetContent>
         </Sheet>
