@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
 import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
 
 export type UserProfile = Profile;
 
@@ -34,10 +35,16 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          // Persist auth session for offline access
+          persistAuthSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }).catch(() => {});
           setTimeout(() => {
             loadUserProfile(session.user.id);
           }, 0);
         } else {
+          clearPersistedAuthSession().catch(() => {});
           setProfile(null);
           setLoading(false);
         }
