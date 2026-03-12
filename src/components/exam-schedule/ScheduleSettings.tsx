@@ -91,6 +91,8 @@ export const ScheduleSettings = ({
                 selected={startDate}
                 onSelect={onStartDateChange}
                 initialFocus
+                disabled={(date) => { const today = new Date(); today.setHours(0,0,0,0); return date < today; }}
+                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
