@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
 import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
 
 export type UserProfile = Profile;
 
