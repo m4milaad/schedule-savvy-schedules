@@ -97,7 +97,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                     </div>
                 )}
 
-                {!isCollapsed && !isInsideSheet && (
+                {!isCollapsed && (
                     <Button
                         variant="ghost"
                         size="icon"
