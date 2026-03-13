@@ -30,7 +30,7 @@ import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(Capacitor.isNativePlatform());
 
   useEffect(() => {
     // Hide native splash screen immediately when app loads
