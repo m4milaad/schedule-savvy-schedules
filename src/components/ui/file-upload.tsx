@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X, FileText, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';import logger from '@/lib/logger';
+
 
 interface FileUploadProps {
   bucket: string;
@@ -72,7 +73,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       setUploadComplete(true);
       onUploadComplete(urlData.publicUrl, file.name, file.size);
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       onError?.(error.message || 'Failed to upload file');
       setFileName(null);
     } finally {

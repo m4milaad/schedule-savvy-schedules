@@ -1,4 +1,5 @@
-import { exportToExcel as excelJsExport, createWorkbook, addWorksheetFromJson, downloadWorkbook, autoSizeColumns } from './excelUtils';
+import { exportToExcel as excelJsExport, createWorkbook, addWorksheetFromJson, downloadWorkbook, autoSizeColumns } from './excelUtils';import logger from '@/lib/logger';
+
 
 /**
  * Export data to CSV format
@@ -114,7 +115,7 @@ export async function exportTableData<T extends Record<string, any>>(
     }
     return true;
   } catch (error) {
-    console.error('Export error:', error);
+    logger.error('Export error:', error);
     throw error;
   }
 }

@@ -40,11 +40,12 @@ User-agent: *
 Allow: /
 Crawl-delay: 2
 
-# Disallow admin and private areas (if needed for security)
-# Uncomment these if you want to prevent indexing of sensitive areas
-# Disallow: /admin-dashboard
-# Disallow: /manage-admins
-# Disallow: /admin-logs
+# Disallow admin and private areas
+Disallow: /admin-dashboard
+Disallow: /manage-admins
+Disallow: /admin-logs
+Disallow: /department-admin-profile
+Disallow: /schedule-generator
 
 # Sitemap location
 Sitemap: https://ds-cuk.vercel.app/sitemap.xml

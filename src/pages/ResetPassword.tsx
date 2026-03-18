@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import Squares from "@/components/Squares";
+import logger from '@/lib/logger';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -37,7 +38,7 @@ const ResetPassword = () => {
           url.includes('code=');
 
         if (!hasRecoveryParams) {
-          console.warn('Reset password page opened without recovery parameters.');
+          logger.warn('Reset password page opened without recovery parameters.');
           toast({
             title: "Link Required",
             description: "Please use the password reset link sent to your email.",
@@ -52,7 +53,7 @@ const ResetPassword = () => {
         } else {
           const { error } = await supabase.auth.exchangeCodeForSession(url);
           if (error) {
-            console.error('Password reset session exchange failed:', error);
+            logger.error('Password reset session exchange failed:', error);
             toast({
               title: "Session Error",
               description: error.message || "We couldn't validate your reset link. Please request a new one.",
@@ -65,7 +66,7 @@ const ResetPassword = () => {
 
         setIsSessionReady(true);
       } catch (error: any) {
-        console.error('Unexpected session error:', error);
+        logger.error('Unexpected session error:', error);
         toast({
           title: "Error",
           description: error.message || "Something went wrong while preparing the reset form.",

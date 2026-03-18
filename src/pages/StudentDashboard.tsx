@@ -33,7 +33,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';import logger from '@/lib/logger';
+
 
 const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
 type TabValue = typeof TAB_VALUES[number];
@@ -202,7 +203,7 @@ const StudentDashboard = () => {
         .maybeSingle();
 
       if (studentError) {
-        console.error('Error loading student record:', studentError);
+        logger.error('Error loading student record:', studentError);
       } else {
         setStudentData(student);
       }
@@ -214,7 +215,7 @@ const StudentDashboard = () => {
         loadExamSchedule()
       ]);
     } catch (error) {
-      console.error('Error loading student data:', error);
+      logger.error('Error loading student data:', error);
       toast({
         title: "Error",
         description: "Failed to load student data",
@@ -232,7 +233,7 @@ const StudentDashboard = () => {
       .order('dept_name');
 
     if (error) {
-      console.error('Error loading departments:', error);
+      logger.error('Error loading departments:', error);
       return;
     }
 
@@ -267,7 +268,7 @@ const StudentDashboard = () => {
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error loading enrollments:', error);
+      logger.error('Error loading enrollments:', error);
       return;
     }
 
@@ -304,7 +305,7 @@ const StudentDashboard = () => {
       .order('course_name');
 
     if (error) {
-      console.error('Error loading courses:', error);
+      logger.error('Error loading courses:', error);
       return;
     }
 
@@ -326,7 +327,7 @@ const StudentDashboard = () => {
       .eq('is_active', true);
 
     if (enrollmentError) {
-      console.error('Error loading student courses:', enrollmentError);
+      logger.error('Error loading student courses:', enrollmentError);
       return;
     }
 
@@ -358,7 +359,7 @@ const StudentDashboard = () => {
       .order('exam_date');
 
     if (error) {
-      console.error('Error loading exam schedule:', error);
+      logger.error('Error loading exam schedule:', error);
       return;
     }
 
@@ -620,11 +621,13 @@ const StudentDashboard = () => {
       )}
 
       {/* Main Content */}
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
-          !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-        )}
+      <motion.div
+        className="flex min-w-0 flex-1 flex-col"
+        animate={{
+          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 80 : 256)
+        }}
+        initial={false}
+        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       >
         <StudentTopbar
           title={getTabTitle()}
@@ -660,7 +663,7 @@ const StudentDashboard = () => {
             </AnimatePresence>
           </div>
         </main>
-      </div>
+      </motion.div>
 
       {/* Profile Edit Dialog */}
       <ProfileEditDialog

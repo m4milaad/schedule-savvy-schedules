@@ -2,6 +2,7 @@
  * App Reset Utility
  * Clears all cached data, service workers, and storage to fix offline/404 loops
  */
+import logger from '@/lib/logger';
 
 export interface ResetOptions {
   reloadAfterReset?: boolean;
@@ -22,7 +23,7 @@ export async function resetApp(options: ResetOptions = {}): Promise<void> {
   } = options;
 
   const logProgress = (message: string) => {
-    console.log(`[App Reset] ${message}`);
+    logger.info(`[App Reset] ${message}`);
     onProgress?.(message);
   };
 
@@ -81,7 +82,7 @@ export async function resetApp(options: ResetOptions = {}): Promise<void> {
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
                 request.onblocked = () => {
-                  console.warn(`Database ${db.name} deletion blocked`);
+                  logger.warn(`Database ${db.name} deletion blocked`);
                   resolve(); // Continue anyway
                 };
               });

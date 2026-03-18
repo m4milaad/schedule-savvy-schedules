@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
+import logger from '@/lib/logger';
 
 export const useExamData = () => {
   const [courseTeachers, setCourseTeachers] = useState<CourseTeacher[]>([]);
@@ -49,7 +50,7 @@ export const useExamData = () => {
 
       setCourseTeachers(transformedData);
     } catch (error) {
-      console.error("Error loading course teachers:", error);
+      logger.error("Error loading course teachers:", error);
       toast({
         title: "Error",
         description: "Failed to load course data",
@@ -79,7 +80,7 @@ export const useExamData = () => {
       const holidayDates = transformedHolidays.map(holiday => new Date(holiday.holiday_date));
       setHolidays(holidayDates);
     } catch (error) {
-      console.error("Error loading holidays:", error);
+      logger.error("Error loading holidays:", error);
       toast({
         title: "Error",
         description: "Failed to load holidays data",
@@ -198,7 +199,7 @@ export const useExamData = () => {
         return scheduleItems;
       }
     } catch (error) {
-      console.error("Error loading last schedule:", error);
+      logger.error("Error loading last schedule:", error);
     } finally {
       setLoadingLastSchedule(false);
     }
@@ -217,7 +218,7 @@ export const useExamData = () => {
         description: "Gap days updated successfully",
       });
     } catch (error) {
-      console.error("Error updating gap:", error);
+      logger.error("Error updating gap:", error);
       toast({
         title: "Error",
         description: "Failed to update gap days",
@@ -281,7 +282,7 @@ export const useExamData = () => {
         .eq('session_id', sessionData.session_id);
 
       if (deleteError) {
-        console.error("Error deleting old datesheets:", deleteError);
+        logger.error("Error deleting old datesheets:", deleteError);
         throw deleteError;
       }
 
@@ -313,13 +314,13 @@ export const useExamData = () => {
         }
 
         if (courseError) {
-          console.error(`Error finding course ${exam.course_code}:`, courseError);
+          logger.error(`Error finding course ${exam.course_code}:`, courseError);
           skippedCourses.push(`${exam.course_code} (database error)`);
           continue;
         }
 
         if (!courseData) {
-          console.warn(`Course ${exam.course_code} not found in database`);
+          logger.warn(`Course ${exam.course_code} not found in database`);
           skippedCourses.push(`${exam.course_code} (not found in database)`);
           continue;
         }
@@ -339,7 +340,7 @@ export const useExamData = () => {
           .insert(datasheetInserts);
 
         if (insertError) {
-          console.error("Error inserting datesheets:", insertError);
+          logger.error("Error inserting datesheets:", insertError);
           throw insertError;
         }
       }
@@ -357,7 +358,7 @@ export const useExamData = () => {
         });
       }
     } catch (error) {
-      console.error("Error saving schedule:", error);
+      logger.error("Error saving schedule:", error);
       toast({
         title: "Error",
         description: "Failed to save exam schedule",

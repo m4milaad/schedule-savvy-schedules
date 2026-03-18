@@ -7,7 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarCheck, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';
+import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface StudentAttendanceTabProps {
   studentId: string;
@@ -104,7 +105,7 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
 
       setCourseStats(Array.from(statsMap.values()));
     } catch (error: any) {
-      console.error('Error loading attendance:', error);
+      logger.error('Error loading attendance:', error);
       toast({
         title: 'Error',
         description: 'Failed to load attendance',

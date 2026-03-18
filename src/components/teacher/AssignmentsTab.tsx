@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Plus, Trash2, Edit, Clock, CheckCircle, Upload, Paperclip, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format } from 'date-fns';import logger from '@/lib/logger';
+
 
 interface AssignmentsTabProps {
   teacherId: string;
@@ -83,7 +84,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
 
       setAssignments(assignmentsWithCounts);
     } catch (error: any) {
-      console.error('Error loading assignments:', error);
+      logger.error('Error loading assignments:', error);
       toast({
         title: 'Error',
         description: 'Failed to load assignments',

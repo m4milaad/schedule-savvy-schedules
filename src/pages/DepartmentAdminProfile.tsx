@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock } from 'lucide-react';
 import { ThemeColorPicker, getContrastColor } from '@/components/ThemeColorPicker';
-import { LoadingScreen } from '@/components/ui/loading-screen';
+import { LoadingScreen } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface Department {
   dept_id: string;
@@ -45,7 +46,7 @@ const DepartmentAdminProfile = () => {
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
-      console.error('Error loading departments:', error);
+      logger.error('Error loading departments:', error);
     }
   };
 
@@ -74,7 +75,7 @@ const DepartmentAdminProfile = () => {
         theme_color: (profileData as any).theme_color || '#020817'  // Default theme color
       });
     } catch (error: any) {
-      console.error('Error loading profile:', error);
+      logger.error('Error loading profile:', error);
       toast({
         title: "Error",
         description: "Failed to load profile",
@@ -116,7 +117,7 @@ const DepartmentAdminProfile = () => {
       
       loadProfile();
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",

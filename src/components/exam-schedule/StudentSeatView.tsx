@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Calendar, Building, Grid3X3, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInDays, differenceInHours, isToday, isTomorrow, isPast } from 'date-fns';
+import { format, differenceInDays, differenceInHours, isToday, isTomorrow, isPast } from 'date-fns';import logger from '@/lib/logger';
+
 
 const CountdownTimer = ({ examDate }: { examDate: string }) => {
   const examDateTime = new Date(examDate);
@@ -109,7 +110,7 @@ export const StudentSeatView = ({ studentId }: StudentSeatViewProps) => {
         .order('exam_date');
 
       if (error) {
-        console.error('Error loading seat assignments:', error);
+        logger.error('Error loading seat assignments:', error);
         return;
       }
 
@@ -126,7 +127,7 @@ export const StudentSeatView = ({ studentId }: StudentSeatViewProps) => {
 
       setSeats(transformed);
     } catch (error) {
-      console.error('Error loading seats:', error);
+      logger.error('Error loading seats:', error);
     } finally {
       setLoading(false);
     }

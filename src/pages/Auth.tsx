@@ -12,7 +12,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import { useTheme } from '@/components/ThemeProvider';
+import { useTheme } from '@/components/ThemeProvider';import logger from '@/lib/logger';
+
 
 interface Department {
   dept_id: string;
@@ -76,14 +77,14 @@ const Auth = () => {
         .order('dept_name');
 
       if (error) {
-        console.error('Error loading departments:', error);
+        logger.error('Error loading departments:', error);
         toast({ title: "Warning", description: "Could not load departments.", variant: "destructive" });
         setDepartments([]);
       } else {
         setDepartments(data || []);
       }
     } catch (error) {
-      console.error('Exception loading departments:', error);
+      logger.error('Exception loading departments:', error);
       setDepartments([]);
     } finally {
       setLoadingDepartments(false);
@@ -167,7 +168,7 @@ const Auth = () => {
         await signIn(email, password);
       }
     } catch (error) {
-      console.error('Auth error:', error);
+      logger.error('Auth error:', error);
     } finally {
       setLoading(false);
     }

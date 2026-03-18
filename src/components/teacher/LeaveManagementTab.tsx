@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format } from 'date-fns';import logger from '@/lib/logger';
+
 
 interface LeaveManagementTabProps {
   teacherId: string;
@@ -50,7 +51,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
       if (error) throw error;
       setApplications(data as any || []);
     } catch (error: any) {
-      console.error('Error loading leave applications:', error);
+      logger.error('Error loading leave applications:', error);
       toast({
         title: 'Error',
         description: 'Failed to load leave applications',

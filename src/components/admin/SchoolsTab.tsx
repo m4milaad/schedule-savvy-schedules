@@ -15,7 +15,8 @@ import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { School } from "@/types/examSchedule";
-import BulkUploadModal from "./BulkUploadModal";
+import BulkUploadModal from "./BulkUploadModal";import logger from '@/lib/logger';
+
 
 interface SchoolsTabProps {
     schools: School[];
@@ -48,7 +49,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding school:', error);
+            logger.error('Error adding school:', error);
             toast.error('Failed to add school');
         }
     };
@@ -73,7 +74,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating school:', error);
+            logger.error('Error updating school:', error);
             toast.error('Failed to update school');
         }
     };
@@ -90,7 +91,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
             toast.success('School deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting school:', error);
+            logger.error('Error deleting school:', error);
             toast.error('Failed to delete school');
         }
     };
@@ -101,7 +102,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };
