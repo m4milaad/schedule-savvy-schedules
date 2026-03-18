@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';
+import { FolderOpen, Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';import logger from '@/lib/logger';
+
 
 interface ResourcesTabProps {
   teacherId: string;
@@ -77,7 +78,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       if (error) throw error;
       setResources(data || []);
     } catch (error: any) {
-      console.error('Error loading resources:', error);
+      logger.error('Error loading resources:', error);
       toast({
         title: 'Error',
         description: 'Failed to load resources',
@@ -160,7 +161,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       setUploadComplete(true);
       return urlData.publicUrl;
     } catch (error: any) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: 'Upload Error',
         description: error.message || 'Failed to upload file',

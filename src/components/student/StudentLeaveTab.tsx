@@ -16,7 +16,8 @@ import {
   AlertCircle, FileText, Calendar as CalendarIcon, Edit, Trash2 
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';import logger from '@/lib/logger';
+
 
 interface StudentLeaveTabProps {
   studentId: string;
@@ -64,7 +65,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
       if (error) throw error;
       setApplications(data || []);
     } catch (error: any) {
-      console.error('Error loading applications:', error);
+      logger.error('Error loading applications:', error);
       toast({
         title: 'Error',
         description: 'Failed to load leave applications',
@@ -124,7 +125,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
       setContactInfo('');
       loadApplications();
     } catch (error: any) {
-      console.error('Error submitting application:', error);
+      logger.error('Error submitting application:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit application',
@@ -151,7 +152,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
       });
       loadApplications();
     } catch (error: any) {
-      console.error('Error cancelling application:', error);
+      logger.error('Error cancelling application:', error);
       toast({
         title: 'Error',
         description: 'Failed to cancel application',

@@ -3,7 +3,8 @@
  * Run this to populate venues with realistic test data
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';import logger from '@/lib/logger';
+
 
 export interface DummyVenue {
   venue_name: string;
@@ -144,7 +145,7 @@ export async function generateDummyVenues(departmentId?: string): Promise<{
 
     return { success: true, count: venuesToInsert.length };
   } catch (error: any) {
-    console.error('Error generating dummy venues:', error);
+    logger.error('Error generating dummy venues:', error);
     return { success: false, count: 0, error: error.message };
   }
 }
@@ -162,7 +163,7 @@ export async function clearAllVenues(): Promise<{
     if (error) throw error;
     return { success: true };
   } catch (error: any) {
-    console.error('Error clearing venues:', error);
+    logger.error('Error clearing venues:', error);
     return { success: false, error: error.message };
   }
 }

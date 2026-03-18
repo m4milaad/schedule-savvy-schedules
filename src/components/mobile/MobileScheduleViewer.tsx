@@ -9,7 +9,8 @@ import { ExamScheduleItem } from "@/types/examSchedule";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { useToast } from "@/hooks/use-toast";
-import { SplashScreen } from "./SplashScreen";
+import { SplashScreen } from "./SplashScreen";import logger from '@/lib/logger';
+
 
 export const MobileScheduleViewer = () => {
   const [schedule, setSchedule] = useState<ExamScheduleItem[]>([]);
@@ -69,7 +70,7 @@ export const MobileScheduleViewer = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching schedule:", error);
+      logger.error("Error fetching schedule:", error);
       toast({
         title: "Error",
         description: "Failed to fetch exam schedule. Please check your internet connection.",

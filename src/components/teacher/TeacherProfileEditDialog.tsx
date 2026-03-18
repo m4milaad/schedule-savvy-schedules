@@ -10,7 +10,8 @@ import { UserProfile } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, X } from 'lucide-react';
-import { ThemeColorPicker } from '@/components/ThemeColorPicker';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';import logger from '@/lib/logger';
+
 
 interface Department {
   dept_id: string;
@@ -62,7 +63,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
         .maybeSingle();
 
       if (error) {
-        console.error('Error loading teacher data:', error);
+        logger.error('Error loading teacher data:', error);
         return;
       }
 
@@ -75,7 +76,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
         }));
       }
     } catch (error) {
-      console.error('Error in loadTeacherData:', error);
+      logger.error('Error in loadTeacherData:', error);
     }
   };
 
@@ -117,7 +118,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
         .eq('teacher_id', profile.id);
 
       if (teacherError) {
-        console.error('Error updating teacher data:', teacherError);
+        logger.error('Error updating teacher data:', teacherError);
         toast({
           title: "Warning",
           description: "Profile updated but teacher details may not have saved",
@@ -131,7 +132,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
       });
       onClose();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast({
         title: "Error",
         description: "Failed to update profile",

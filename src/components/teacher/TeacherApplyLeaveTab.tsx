@@ -10,7 +10,8 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format } from 'date-fns';import logger from '@/lib/logger';
+
 
 interface TeacherApplyLeaveTabProps {
   teacherId: string;
@@ -57,7 +58,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
       if (error) throw error;
       setMyApplications(data || []);
     } catch (error: any) {
-      console.error('Error loading applications:', error);
+      logger.error('Error loading applications:', error);
       toast({
         title: 'Error',
         description: 'Failed to load your leave applications',

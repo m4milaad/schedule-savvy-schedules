@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';
+import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';import logger from '@/lib/logger';
+
 
 interface StudentPerformanceTabProps {
   studentId: string;
@@ -125,7 +126,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
         });
       }
     } catch (error: any) {
-      console.error('Error loading performance:', error);
+      logger.error('Error loading performance:', error);
       toast({
         title: 'Error',
         description: 'Failed to load performance data',

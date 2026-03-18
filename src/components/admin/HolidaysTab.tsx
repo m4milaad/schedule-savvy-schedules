@@ -21,7 +21,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Holiday } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
-import { useSearchShortcut } from "@/hooks/useSearchShortcut";
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";import logger from '@/lib/logger';
+
 
 interface HolidaysTabProps {
     holidays: Holiday[];
@@ -86,7 +87,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding holiday:', error);
+            logger.error('Error adding holiday:', error);
             toast.error('Failed to add holiday');
         }
     };
@@ -115,7 +116,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating holiday:', error);
+            logger.error('Error updating holiday:', error);
             toast.error('Failed to update holiday');
         }
     };
@@ -132,7 +133,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
             toast.success('Holiday deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting holiday:', error);
+            logger.error('Error deleting holiday:', error);
             toast.error('Failed to delete holiday');
         }
     };
@@ -143,7 +144,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };

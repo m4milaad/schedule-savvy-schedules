@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Network } from '@capacitor/network';
-import { setCachedData, getCachedData, isOnline } from '@/lib/offlineCache';
+import { setCachedData, getCachedData, isOnline } from '@/lib/offlineCache';import logger from '@/lib/logger';
+
 
 interface UseOfflineDataOptions<T> {
   /** Unique cache key for this data */

@@ -19,7 +19,8 @@ import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@/types/examSchedule";
-import BulkUploadModal from "./BulkUploadModal";
+import BulkUploadModal from "./BulkUploadModal";import logger from '@/lib/logger';
+
 
 interface SessionsTabProps {
     sessions: Session[];
@@ -58,7 +59,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding session:', error);
+            logger.error('Error adding session:', error);
             toast.error('Failed to add session');
         }
     };
@@ -85,7 +86,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating session:', error);
+            logger.error('Error updating session:', error);
             toast.error('Failed to update session');
         }
     };
@@ -102,7 +103,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
             toast.success('Session deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting session:', error);
+            logger.error('Error deleting session:', error);
             toast.error('Failed to delete session');
         }
     };
@@ -113,7 +114,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };

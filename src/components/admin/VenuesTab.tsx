@@ -25,7 +25,8 @@ import { Venue, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
-import { generateDummyVenues } from "@/utils/dummyVenueData";
+import { generateDummyVenues } from "@/utils/dummyVenueData";import logger from '@/lib/logger';
+
 
 interface VenuesTabProps {
     venues: Venue[];
@@ -109,7 +110,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             clearSelection();
             onRefresh();
         } catch (error: any) {
-            console.error('Error bulk deleting venues:', error);
+            logger.error('Error bulk deleting venues:', error);
             toast.error(error.message || 'Failed to delete venues');
         }
     };
@@ -147,7 +148,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding venue:', error);
+            logger.error('Error adding venue:', error);
             toast.error('Failed to add venue');
         }
     };
@@ -182,7 +183,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating venue:', error);
+            logger.error('Error updating venue:', error);
             toast.error('Failed to update venue');
         }
     };
@@ -199,7 +200,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             toast.success('Venue deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting venue:', error);
+            logger.error('Error deleting venue:', error);
             toast.error('Failed to delete venue');
         }
     };
@@ -210,7 +211,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };

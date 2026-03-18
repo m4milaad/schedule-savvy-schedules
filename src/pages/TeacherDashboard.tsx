@@ -19,7 +19,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+
 
 interface Department {
   dept_id: string;
@@ -175,7 +176,7 @@ const TeacherDashboard = () => {
         }
       }
     } catch (error) {
-      console.error('Error loading teacher data:', error);
+      logger.error('Error loading teacher data:', error);
     } finally {
       setLoading(false);
     }

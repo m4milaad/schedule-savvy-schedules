@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Search, Eye, Download, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';
+import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface StudentNoticesTabProps {
   studentId: string;
@@ -122,7 +123,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       setNotices(noticesWithRead);
     } catch (error: any) {
-      console.error('Error loading notices:', error);
+      logger.error('Error loading notices:', error);
       toast({
         title: 'Error',
         description: 'Failed to load notices',
@@ -150,7 +151,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
       setReadNotices(prev => new Set([...prev, noticeId]));
       setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, isRead: true } : n));
     } catch (error) {
-      console.error('Error marking notice as read:', error);
+      logger.error('Error marking notice as read:', error);
     }
   };
 

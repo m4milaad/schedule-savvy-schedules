@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';import logger from '@/lib/logger';
+
 
 interface UseDataFetchOptions<T> {
   fetchFn: () => Promise<T>;

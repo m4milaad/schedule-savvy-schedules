@@ -24,7 +24,8 @@ import { Course, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+
 
 interface CoursesTabProps {
     courses: Course[];
@@ -90,7 +91,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             clearSelection();
             onRefresh();
         } catch (error: any) {
-            console.error('Error bulk deleting courses:', error);
+            logger.error('Error bulk deleting courses:', error);
             toast.error(error.message || 'Failed to delete courses');
         }
     };
@@ -140,7 +141,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding course:', error);
+            logger.error('Error adding course:', error);
             toast.error('Failed to add course');
         }
     };
@@ -170,7 +171,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating course:', error);
+            logger.error('Error updating course:', error);
             toast.error('Failed to update course');
         }
     };
@@ -187,7 +188,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             toast.success('Course deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting course:', error);
+            logger.error('Error deleting course:', error);
             toast.error('Failed to delete course');
         }
     };
@@ -198,7 +199,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };

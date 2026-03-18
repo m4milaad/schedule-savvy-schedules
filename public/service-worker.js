@@ -1,10 +1,12 @@
 // CUK Acadex Service Worker - Offline-First Caching
-const CACHE_VERSION = 'v1';
+// Cache version and Supabase URL are injected at build time by vite.config.ts.
+// In development the placeholders remain as-is, but the SW is only registered in production.
+const CACHE_VERSION = '__BUILD_HASH__';
 const STATIC_CACHE = `cuk-static-${CACHE_VERSION}`;
 const API_CACHE = `cuk-api-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cuk-images-${CACHE_VERSION}`;
 
-const SUPABASE_URL = 'https://hhhcesxsxtuqnnmaspdc.supabase.co';
+const SUPABASE_URL = '__SUPABASE_URL__';
 
 // Static assets to precache on install
 const PRECACHE_ASSETS = [

@@ -1,4 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";import logger from '@/lib/logger';
+
 
 export interface SeatPosition {
   row: number;
@@ -266,7 +267,7 @@ export async function generateSeatingArrangement(
 
     return { success: true, venues: result, unassigned };
   } catch (error: any) {
-    console.error('Seating generation error:', error);
+    logger.error('Seating generation error:', error);
     return { success: false, venues: [], unassigned: [], error: error.message };
   }
 }
@@ -326,7 +327,7 @@ export async function saveSeatingArrangement(
 
     return { success: true };
   } catch (error: any) {
-    console.error('Save seating error:', error);
+    logger.error('Save seating error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -401,7 +402,7 @@ export async function getSavedSeatingArrangement(
 
     return Array.from(venueMap.values());
   } catch (error) {
-    console.error('Get seating error:', error);
+    logger.error('Get seating error:', error);
     return [];
   }
 }
