@@ -621,11 +621,13 @@ const StudentDashboard = () => {
       )}
 
       {/* Main Content */}
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
-          !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-        )}
+      <motion.div
+        className="flex min-w-0 flex-1 flex-col"
+        animate={{
+          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 80 : 256)
+        }}
+        initial={false}
+        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
       >
         <StudentTopbar
           title={getTabTitle()}
@@ -661,7 +663,7 @@ const StudentDashboard = () => {
             </AnimatePresence>
           </div>
         </main>
-      </div>
+      </motion.div>
 
       {/* Profile Edit Dialog */}
       <ProfileEditDialog
