@@ -286,10 +286,14 @@ const TeacherDashboard = () => {
       )}
 
       {/* Main Content */}
-      <div className={cn(
-        "flex min-w-0 flex-1 flex-col",
-        !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-      )}>
+      <motion.div
+        className="flex min-w-0 flex-1 flex-col"
+        animate={{
+          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 80 : 256)
+        }}
+        initial={false}
+        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      >
         <TeacherTopbar
           title={getTabTitle()}
           description={getTabDescription()}
@@ -313,7 +317,7 @@ const TeacherDashboard = () => {
             </AnimatePresence>
           </div>
         </main>
-      </div>
+      </motion.div>
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp

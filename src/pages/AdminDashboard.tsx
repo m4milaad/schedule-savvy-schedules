@@ -388,10 +388,12 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {/* Main Content */}
-            <div className={cn(
-                "flex min-w-0 flex-1 flex-col",
-                !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-            )}>
+            <div
+                className={cn(
+                    "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
+                    !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+                )}
+            >
                 <AdminTopbar
                     title={getTabTitle()}
                     description={getTabDescription()}
@@ -408,9 +410,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
                         <AnimatePresence mode="wait">
                             <PageTransition key={activeTab}>
-                                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
-                                    {renderContent()}
-                                </div>
+                                {renderContent()}
                             </PageTransition>
                         </AnimatePresence>
                     </div>

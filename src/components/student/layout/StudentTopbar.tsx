@@ -120,7 +120,7 @@ export const StudentTopbar: React.FC<StudentTopbarProps> = ({
 
           <NotificationCenter userId={userId} />
 
-          <ThemeToggle />
+          <ThemeToggle minimal />
 
           <Separator orientation="vertical" className="mx-1 hidden h-8 md:block" />
 
