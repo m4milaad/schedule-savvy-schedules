@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import FaultyTerminal from '@/components/Faultyterminal'
 import FuzzyText from '@/components/ui/FuzzyText';
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { AppResetDialog } from '@/components/AppResetDialog';
+import { AppResetDialog } from '@/components/AppResetDialog';import logger from '@/lib/logger';
+
 
 const App = () => {
   // In a real application with react-router-dom, you would use useLocation here.
@@ -12,7 +13,7 @@ const App = () => {
 
   React.useEffect(() => {
     // This console error logging is kept as per your original request.
-    console.error(
+    logger.error(
       "404 Error: User attempted to access non-existent route:",
       simulatedPath
     );

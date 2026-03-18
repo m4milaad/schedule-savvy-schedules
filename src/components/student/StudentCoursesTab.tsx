@@ -27,7 +27,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';
+import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';import logger from '@/lib/logger';
+
 
 interface StudentCoursesTabProps {
   studentId: string;
@@ -126,7 +127,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       .eq('is_active', true);
 
     if (error) {
-      console.error('Error loading enrollments:', error);
+      logger.error('Error loading enrollments:', error);
       return;
     }
 
@@ -150,7 +151,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       .order('course_code');
 
     if (error) {
-      console.error('Error loading courses:', error);
+      logger.error('Error loading courses:', error);
       return;
     }
 

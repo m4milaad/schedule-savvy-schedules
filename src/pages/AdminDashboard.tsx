@@ -23,7 +23,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { OverviewTab } from "@/components/admin/OverviewTab";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+
 
 const AdminDashboard: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
@@ -101,7 +102,7 @@ const AdminDashboard: React.FC = () => {
                 return;
             }
         } catch (err) {
-            console.error("Error checking user role:", err);
+            logger.error("Error checking user role:", err);
             toast({
                 title: "Error",
                 description: "Unable to verify user role.",
@@ -129,7 +130,7 @@ const AdminDashboard: React.FC = () => {
                 loadExamDates(),
             ]);
         } catch (err) {
-            console.error("Error loading data:", err);
+            logger.error("Error loading data:", err);
             toast({
                 title: "Error",
                 description: "Failed to load some data",
@@ -240,7 +241,7 @@ const AdminDashboard: React.FC = () => {
             const allStudents = [...(studentsData || []), ...profileOnlyStudents];
             setStudents(allStudents);
         } catch (error) {
-            console.error('Failed to load students:', error);
+            logger.error('Failed to load students:', error);
             toast({
                 title: "Error",
                 description: "Failed to load students data",
@@ -387,10 +388,12 @@ const AdminDashboard: React.FC = () => {
             )}
 
             {/* Main Content */}
-            <div className={cn(
-                "flex min-w-0 flex-1 flex-col",
-                !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
-            )}>
+            <div
+                className={cn(
+                    "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
+                    !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+                )}
+            >
                 <AdminTopbar
                     title={getTabTitle()}
                     description={getTabDescription()}
@@ -407,9 +410,7 @@ const AdminDashboard: React.FC = () => {
                     <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
                         <AnimatePresence mode="wait">
                             <PageTransition key={activeTab}>
-                                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
-                                    {renderContent()}
-                                </div>
+                                {renderContent()}
                             </PageTransition>
                         </AnimatePresence>
                     </div>

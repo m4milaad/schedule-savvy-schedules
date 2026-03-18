@@ -21,7 +21,8 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion";import logger from '@/lib/logger';
+
 
 interface AuditLog {
   id: string;
@@ -90,7 +91,7 @@ export const AuditLogsTab = () => {
       const logsWithProfiles = await attachProfiles(logsData);
       setLogs(logsWithProfiles);
     } catch (error: any) {
-      console.error('Error loading audit logs:', error);
+      logger.error('Error loading audit logs:', error);
       toast({
         title: "Error",
         description: "Failed to load audit logs",
@@ -125,7 +126,7 @@ export const AuditLogsTab = () => {
       const logsWithProfiles = await attachProfiles(logsData);
       setLogs(prev => [...prev, ...logsWithProfiles]);
     } catch (error: any) {
-      console.error('Error loading more logs:', error);
+      logger.error('Error loading more logs:', error);
       toast({
         title: "Error",
         description: "Failed to load more logs",
@@ -255,7 +256,7 @@ export const AuditLogsTab = () => {
         description: `Exported all ${allLogs.length} log entries to CSV`,
       });
     } catch (error: any) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       toast({
         title: "Export Failed",
         description: error.message || "Failed to export logs",
@@ -283,7 +284,7 @@ export const AuditLogsTab = () => {
         description: "All audit logs have been deleted",
       });
     } catch (error: any) {
-      console.error('Error clearing logs:', error);
+      logger.error('Error clearing logs:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to clear logs",

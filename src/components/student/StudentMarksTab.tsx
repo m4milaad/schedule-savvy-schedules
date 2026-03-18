@@ -5,7 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, TrendingUp } from 'lucide-react';
-import { TabLoader } from '@/components/ui/loading-screen';
+import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface StudentMarksTabProps {
   studentId: string;
@@ -51,7 +52,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
       if (error) throw error;
       setMarks(data || []);
     } catch (error: any) {
-      console.error('Error loading marks:', error);
+      logger.error('Error loading marks:', error);
       toast({
         title: 'Error',
         description: 'Failed to load marks',

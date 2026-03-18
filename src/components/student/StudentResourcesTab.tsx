@@ -11,7 +11,8 @@ import {
   BookOpen, Search, Download, Eye, Bookmark, BookmarkCheck, 
   FileText, Video, Presentation, File, FolderOpen 
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format } from 'date-fns';import logger from '@/lib/logger';
+
 
 interface StudentResourcesTabProps {
   studentId: string;
@@ -101,7 +102,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
 
       setResources(resourcesWithBookmarks);
     } catch (error: any) {
-      console.error('Error loading resources:', error);
+      logger.error('Error loading resources:', error);
       toast({
         title: 'Error',
         description: 'Failed to load resources',
@@ -145,7 +146,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
         description: isCurrentlyBookmarked ? 'Resource removed from bookmarks' : 'Resource added to bookmarks',
       });
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
+      logger.error('Error toggling bookmark:', error);
     }
   };
 

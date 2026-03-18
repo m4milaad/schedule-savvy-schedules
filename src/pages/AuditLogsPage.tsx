@@ -7,7 +7,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";import logger from '@/lib/logger';
+
 
 export const AuditLogsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ export const AuditLogsPage: React.FC = () => {
 
       setProfileData(profile || null);
     } catch (err) {
-      console.error("Error loading profile:", err);
+      logger.error("Error loading profile:", err);
     }
   };
 

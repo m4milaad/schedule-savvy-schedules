@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, RefreshCw, Trash2, Database, Cookie, HardDrive, Server } from 'lucide-react';
 import { resetApp } from '@/utils/appReset';
 import { useToast } from '@/components/ui/use-toast';
+import logger from '@/lib/logger';
 
 interface AppResetDialogProps {
   /**
@@ -78,10 +79,10 @@ export function AppResetDialog({
       await resetApp({
         reloadAfterReset: true,
         onProgress: (message) => {
-          console.log(message);
+          logger.info(message);
         },
         onError: (error) => {
-          console.error('Reset error:', error);
+          logger.error('Reset error:', error);
         },
       });
     } catch (error) {
@@ -137,9 +138,9 @@ export function AppResetDialog({
                     The following will be cleared:
                   </p>
                   <div className="grid gap-2">
-                    {dataItems.map((item, index) => (
+                    {dataItems.map((item) => (
                       <div
-                        key={index}
+                        key={item.label}
                         className="flex items-center gap-3 rounded-md border bg-card p-3 transition-colors hover:bg-accent"
                       >
                         <item.icon className="h-4 w-4 text-muted-foreground" />

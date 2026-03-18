@@ -19,7 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';import logger from '@/lib/logger';
+
 
 interface AttendanceTabProps {
   teacherId: string;
@@ -107,7 +108,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       setAttendance(studentAttendance);
     } catch (error: any) {
-      console.error('Error loading attendance:', error);
+      logger.error('Error loading attendance:', error);
       toast({
         title: 'Error',
         description: 'Failed to load attendance',
@@ -302,7 +303,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         description: 'Fill in the attendance and upload it back',
       });
     } catch (error: any) {
-      console.error('Error downloading template:', error);
+      logger.error('Error downloading template:', error);
       toast({
         title: 'Error',
         description: 'Failed to download template',
@@ -407,7 +408,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         loadAttendance();
       }
     } catch (error: any) {
-      console.error('Error uploading file:', error);
+      logger.error('Error uploading file:', error);
       toast({
         title: 'Upload Failed',
         description: error.message || 'Failed to process the file',

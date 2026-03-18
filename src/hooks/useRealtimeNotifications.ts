@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import logger from '@/lib/logger';
 
 interface UseRealtimeNotificationsProps {
   studentId?: string;
@@ -26,7 +27,7 @@ async function storeNotification(
       metadata: metadata || {}
     });
   } catch (error) {
-    console.error('Failed to store notification:', error);
+    logger.error(' Failed to store notification:', error);
   }
 }
 
@@ -51,7 +52,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
           filter: `student_id=eq.${studentId}`
         },
         async (payload) => {
-          console.log('New seat assignment:', payload);
+          logger.debug('New seat assignment:', payload);
           
           // Fetch additional details
           const { data } = await supabase
@@ -102,7 +103,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
           filter: `student_id=eq.${studentId}`
         },
         async (payload) => {
-          console.log('Seat assignment updated:', payload);
+          logger.debug('Seat assignment updated:', payload);
           
           const { data } = await supabase
             .from('seat_assignments')
@@ -147,7 +148,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
           table: 'datesheets'
         },
         async (payload) => {
-          console.log('New datesheet entry:', payload);
+          logger.debug('New datesheet entry:', payload);
           
           // Check if this affects the student's enrolled courses
           const { data: enrollment } = await supabase
@@ -197,7 +198,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
           table: 'datesheets'
         },
         async (payload) => {
-          console.log('Datesheet updated:', payload);
+          logger.debug('Datesheet updated:', payload);
           
           // Check if this affects the student's enrolled courses
           const { data: enrollment } = await supabase
@@ -266,7 +267,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
           table: 'datesheets'
         },
         async (payload) => {
-          console.log('Datesheet deleted:', payload);
+          logger.debug('Datesheet deleted:', payload);
           
           if (payload.old?.course_id) {
             const { data: enrollment } = await supabase
@@ -304,7 +305,7 @@ export function useRealtimeNotifications({ studentId, userId, enabled = true }: 
         }
       )
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+        logger.debug('Realtime subscription status:', status);
       });
 
     channelRef.current = channel;

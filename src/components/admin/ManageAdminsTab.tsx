@@ -29,6 +29,7 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog";
+import logger from '@/lib/logger';
 
 interface AdminUser {
     email: string;
@@ -84,7 +85,7 @@ export const ManageAdminsTab = () => {
             if (error) throw error;
             setDepartments(data || []);
         } catch (error) {
-            console.error('Error loading departments:', error);
+            logger.error('Error loading departments:', error);
         }
     };
 
@@ -132,7 +133,7 @@ export const ManageAdminsTab = () => {
 
             setAdmins(combinedData);
         } catch (error: any) {
-            console.error('Error loading admins:', error);
+            logger.error('Error loading admins:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to load admin users",
@@ -185,7 +186,7 @@ export const ManageAdminsTab = () => {
 
             setTeachers(combinedData);
         } catch (error: any) {
-            console.error('Error loading teachers:', error);
+            logger.error('Error loading teachers:', error);
         }
     };
 
@@ -261,7 +262,7 @@ export const ManageAdminsTab = () => {
                 });
 
             if (profileError) {
-                console.error('Profile error:', profileError);
+                logger.error('Profile error:', profileError);
             }
 
             toast({
@@ -277,7 +278,7 @@ export const ManageAdminsTab = () => {
             setIsAddDialogOpen(false);
             loadData();
         } catch (error: any) {
-            console.error('Error creating user:', error);
+            logger.error('Error creating user:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to create user",
@@ -304,7 +305,7 @@ export const ManageAdminsTab = () => {
 
             loadData();
         } catch (error: any) {
-            console.error('Error approving user:', error);
+            logger.error('Error approving user:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to approve user",
@@ -329,7 +330,7 @@ export const ManageAdminsTab = () => {
 
             loadData();
         } catch (error: any) {
-            console.error('Error revoking user:', error);
+            logger.error('Error revoking user:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to revoke access",
@@ -355,7 +356,7 @@ export const ManageAdminsTab = () => {
 
             loadData();
         } catch (error: any) {
-            console.error('Error removing user:', error);
+            logger.error('Error removing user:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to remove access",

@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Users, Clock, User, Building2, Edit2, Check, X } from "lucide-react";
 import { CourseTeacher } from "@/types/examSchedule";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";import logger from '@/lib/logger';
+
 
 interface CourseEnrollmentCardProps {
   courseTeacher: CourseTeacher;
@@ -60,7 +61,7 @@ export const CourseEnrollmentCard = ({
         .eq('is_active', true);
 
       if (enrollErr) {
-        console.error('Error loading enrolled students (enrollments):', enrollErr);
+        logger.error('Error loading enrolled students (enrollments):', enrollErr);
         setEnrolledStudents([]);
         return;
       }
@@ -81,7 +82,7 @@ export const CourseEnrollmentCard = ({
         .in('student_id', studentIds);
 
       if (studentsErr) {
-        console.error('Error loading enrolled students (details):', studentsErr);
+        logger.error('Error loading enrolled students (details):', studentsErr);
         setEnrolledStudents([]);
         return;
       }
@@ -95,7 +96,7 @@ export const CourseEnrollmentCard = ({
 
       setEnrolledStudents(students);
     } catch (error) {
-      console.error('Error loading enrolled students:', error);
+      logger.error('Error loading enrolled students:', error);
       setEnrolledStudents([]);
     } finally {
       setLoading(false);

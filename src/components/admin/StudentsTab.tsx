@@ -16,7 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+
 
 interface Student {
     student_id: string;
@@ -105,7 +106,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 .eq('is_active', true);
 
             if (enrollmentsError) {
-                console.error('Error loading enrollments:', enrollmentsError);
+                logger.error('Error loading enrollments:', enrollmentsError);
                 return;
             }
 
@@ -129,7 +130,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
             setStudentEnrollments(enrollmentsMap);
         } catch (error) {
-            console.error('Error in loadStudentEnrollments:', error);
+            logger.error('Error in loadStudentEnrollments:', error);
         }
     };
 
@@ -204,7 +205,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             resetForm();
             onRefresh();
         } catch (error: any) {
-            console.error('Error saving student:', error);
+            logger.error('Error saving student:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to save student",
@@ -243,7 +244,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             });
             onRefresh();
         } catch (error: any) {
-            console.error('Error deleting student:', error);
+            logger.error('Error deleting student:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to delete student",
@@ -271,7 +272,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             clearSelection();
             onRefresh();
         } catch (error: any) {
-            console.error('Error bulk deleting students:', error);
+            logger.error('Error bulk deleting students:', error);
             toast({
                 title: "Error",
                 description: error.message || "Failed to delete students",
@@ -303,7 +304,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             if (error) throw error;
             onRefresh();
         } catch (error: any) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };

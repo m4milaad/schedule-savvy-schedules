@@ -11,7 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Trash2, UserPlus, ArrowLeft, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '@/components/ui/loading-screen';
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+
 
 interface AdminUser {
   email: string;
@@ -77,7 +78,7 @@ const ManageAdmins = () => {
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
-      console.error('Error loading departments:', error);
+      logger.error('Error loading departments:', error);
     }
   };
 
@@ -128,7 +129,7 @@ const ManageAdmins = () => {
 
       setAdmins(combinedData);
     } catch (error: any) {
-      console.error('Error loading admins:', error);
+      logger.error('Error loading admins:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to load admin users",
@@ -184,7 +185,7 @@ const ManageAdmins = () => {
 
       setTeachers(combinedData);
     } catch (error: any) {
-      console.error('Error loading teachers:', error);
+      logger.error('Error loading teachers:', error);
     }
   };
 
@@ -255,7 +256,7 @@ const ManageAdmins = () => {
       // Reload data
       loadData();
     } catch (error: any) {
-      console.error('Error creating user:', error);
+      logger.error('Error creating user:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create user",
@@ -282,7 +283,7 @@ const ManageAdmins = () => {
 
       loadData();
     } catch (error: any) {
-      console.error('Error approving user:', error);
+      logger.error('Error approving user:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to approve user",
@@ -307,7 +308,7 @@ const ManageAdmins = () => {
 
       loadData();
     } catch (error: any) {
-      console.error('Error revoking user:', error);
+      logger.error('Error revoking user:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to revoke user",
@@ -347,7 +348,7 @@ const ManageAdmins = () => {
 
       loadData();
     } catch (error: any) {
-      console.error('Error removing user:', error);
+      logger.error('Error removing user:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to remove access",
