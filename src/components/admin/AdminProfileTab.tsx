@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { Lock, RefreshCw, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';import logger from '@/lib/logger';
+
 
 interface Department {
   dept_id: string;
@@ -70,7 +71,7 @@ export const AdminProfileTab: React.FC = () => {
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
-      console.error('Error loading departments:', error);
+      logger.error('Error loading departments:', error);
     }
   };
 
@@ -96,7 +97,7 @@ export const AdminProfileTab: React.FC = () => {
         theme_color: (profileData as any).theme_color || '#020817'
       });
     } catch (error: any) {
-      console.error('Error loading profile:', error);
+      logger.error('Error loading profile:', error);
       toast({
         title: "Error",
         description: "Failed to load profile",
@@ -138,7 +139,7 @@ export const AdminProfileTab: React.FC = () => {
       // Reload the page to apply theme changes
       window.location.reload();
     } catch (error: any) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",
@@ -250,7 +251,7 @@ export const AdminProfileTab: React.FC = () => {
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
-      console.error('Error updating password:', error);
+      logger.error('Error updating password:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update password",

@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Upload, Download } from 'lucide-react';
 import { toast } from "sonner";
-import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';import logger from '@/lib/logger';
+
 
 interface BulkUploadModalProps {
   isOpen: boolean;
@@ -95,7 +96,7 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
       onClose();
       setFile(null);
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast.error('Failed to upload file. Please check the format.');
     } finally {
       setUploading(false);

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
+
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -34,7 +36,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
 
       setIsAdmin(roles && roles.length > 0);
     } catch (error) {
-      console.error('Error checking admin access:', error);
+      logger.error('Error checking admin access:', error);
       setIsAdmin(false);
     } finally {
       setLoading(false);

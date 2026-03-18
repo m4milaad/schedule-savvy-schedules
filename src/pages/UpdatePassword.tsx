@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
-import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';import logger from '@/lib/logger';
+
 
 const UpdatePassword = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -119,7 +120,7 @@ const UpdatePassword = () => {
         navigate('/admin-dashboard');
       }
     } catch (error: any) {
-      console.error('Error updating password:', error);
+      logger.error('Error updating password:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update password",

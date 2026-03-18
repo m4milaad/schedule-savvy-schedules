@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import logger from './logger';
 
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
@@ -32,7 +33,7 @@ export function registerServiceWorker() {
       const registration = await navigator.serviceWorker.register('/service-worker.js', {
         scope: '/',
       });
-      console.log('[SW] Registered with scope:', registration.scope);
+      logger.info('[SW] Registered with scope:', registration.scope);
 
       // Check for updates periodically (every 5 minutes)
       setInterval(() => {
@@ -47,7 +48,7 @@ export function registerServiceWorker() {
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // New version available — activate immediately
-            console.log('[SW] New version available, activating...');
+            logger.info('[SW] New version available, activating...');
             newWorker.postMessage('SKIP_WAITING');
           }
         });
@@ -62,7 +63,7 @@ export function registerServiceWorker() {
         }
       });
     } catch (error) {
-      console.error('[SW] Registration failed:', error);
+      logger.error('[SW] Registration failed:', error);
     }
   });
 }

@@ -43,7 +43,7 @@ export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   fullName: fullNameSchema,
-  userType: z.enum(['student', 'department_admin', 'admin']),
+  userType: z.enum(['student', 'department_admin', 'admin', 'teacher']),
   enrollmentNumber: enrollmentNumberSchema.optional(),
   deptId: z.string().uuid('Invalid department ID').optional(),
 });

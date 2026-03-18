@@ -25,7 +25,8 @@ import { Teacher, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+
 
 interface TeachersTabProps {
     teachers: Teacher[];
@@ -112,7 +113,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             clearSelection();
             onRefresh();
         } catch (error: any) {
-            console.error('Error bulk deleting teachers:', error);
+            logger.error('Error bulk deleting teachers:', error);
             toast.error(error.message || 'Failed to delete teachers');
         }
     };
@@ -133,7 +134,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             if (error) throw error;
             setAvailableCourses(data || []);
         } catch (error) {
-            console.error('Error loading courses:', error);
+            logger.error('Error loading courses:', error);
         }
     };
 
@@ -153,7 +154,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                 `);
 
             if (error) {
-                console.error('Error loading teacher courses:', error);
+                logger.error('Error loading teacher courses:', error);
                 return;
             }
 
@@ -179,7 +180,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
             setTeacherCourses(coursesMap);
         } catch (error) {
-            console.error('Error in loadTeacherCourses:', error);
+            logger.error('Error in loadTeacherCourses:', error);
         }
     };
 
@@ -237,7 +238,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             setIsAddDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error adding teacher:', error);
+            logger.error('Error adding teacher:', error);
             toast.error('Failed to add teacher');
         }
     };
@@ -267,7 +268,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             setIsEditDialogOpen(false);
             onRefresh();
         } catch (error) {
-            console.error('Error updating teacher:', error);
+            logger.error('Error updating teacher:', error);
             toast.error('Failed to update teacher');
         }
     };
@@ -284,7 +285,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             toast.success('Teacher deleted successfully');
             onRefresh();
         } catch (error) {
-            console.error('Error deleting teacher:', error);
+            logger.error('Error deleting teacher:', error);
             toast.error('Failed to delete teacher');
         }
     };
@@ -295,7 +296,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             if (error) throw error;
             onRefresh();
         } catch (error) {
-            console.error('Bulk upload error:', error);
+            logger.error('Bulk upload error:', error);
             throw error;
         }
     };
@@ -336,7 +337,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             setSelectedCourseId('');
             loadTeacherCourses();
         } catch (error: any) {
-            console.error('Error assigning course:', error);
+            logger.error('Error assigning course:', error);
             if (error.code === '23505') {
                 toast.error('This course is already assigned to this teacher');
             } else {
@@ -357,7 +358,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             toast.success(`Removed ${courseName}`);
             loadTeacherCourses();
         } catch (error) {
-            console.error('Error removing course:', error);
+            logger.error('Error removing course:', error);
             toast.error('Failed to remove course');
         }
     };

@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Library, Search, BookOpen, Calendar, AlertCircle, RefreshCw, RotateCcw, Clock } from 'lucide-react';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { format, differenceInDays, addDays } from 'date-fns';import logger from '@/lib/logger';
+
 
 interface StudentLibraryTabProps {
   studentId: string;
@@ -71,7 +72,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       .order('issued_date', { ascending: false });
 
     if (error) {
-      console.error('Error loading book issues:', error);
+      logger.error('Error loading book issues:', error);
       return;
     }
 
@@ -91,7 +92,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       .order('title');
 
     if (error) {
-      console.error('Error loading books:', error);
+      logger.error('Error loading books:', error);
       return;
     }
 

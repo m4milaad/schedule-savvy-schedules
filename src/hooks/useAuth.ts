@@ -6,6 +6,8 @@ import { Profile } from '@/types/database';
 import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
 import { z } from 'zod';
 import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
+import logger from '@/lib/logger';
+
 
 export type UserProfile = Profile;
 
@@ -63,7 +65,7 @@ export const useAuth = () => {
         .single();
 
       if (error) {
-        console.error('Error loading profile:', error);
+        logger.error('Error loading profile:', error);
         if (error.code !== 'PGRST116') { // Not found error
           toast({
             title: "Error",
@@ -75,7 +77,7 @@ export const useAuth = () => {
         setProfile(data as UserProfile);
       }
     } catch (error) {
-      console.error('Profile loading error:', error);
+      logger.error('Profile loading error:', error);
     } finally {
       setLoading(false);
     }
@@ -126,7 +128,7 @@ export const useAuth = () => {
 
       return { data, error: null };
     } catch (error: any) {
-      console.error('Sign up error:', error);
+      logger.error('Sign up error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create account",
@@ -194,7 +196,7 @@ export const useAuth = () => {
 
       return { data, error: null };
     } catch (error: any) {
-      console.error('Sign in error:', error);
+      logger.error('Sign in error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to sign in",
@@ -217,7 +219,7 @@ export const useAuth = () => {
       // Force page reload for clean state
       window.location.href = '/auth';
     } catch (error: any) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
       toast({
         title: "Error",
         description: "Failed to sign out",
@@ -274,7 +276,7 @@ export const useAuth = () => {
 
       return { data, error: null };
     } catch (error: any) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to update profile",

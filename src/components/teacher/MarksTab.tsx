@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, Save, FileSpreadsheet, Edit, Lock } from 'lucide-react';
-import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';import logger from '@/lib/logger';
+
 
 interface MarksTabProps {
   teacherId: string;
@@ -99,7 +100,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       setMarks(studentMarks);
     } catch (error: any) {
-      console.error('Error loading marks:', error);
+      logger.error('Error loading marks:', error);
       toast({
         title: 'Error',
         description: 'Failed to load student marks',

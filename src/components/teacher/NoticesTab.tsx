@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2, Edit, Eye, Send } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';
+import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface NoticesTabProps {
   teacherId: string;
@@ -63,7 +64,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       if (error) throw error;
       setNotices(data || []);
     } catch (error: any) {
-      console.error('Error loading notices:', error);
+      logger.error('Error loading notices:', error);
       toast({
         title: 'Error',
         description: 'Failed to load notices',

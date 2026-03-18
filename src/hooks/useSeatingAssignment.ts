@@ -9,6 +9,7 @@ import {
   VenueSeatingPlan,
   SeatingResult
 } from '@/utils/seatingAlgorithm';
+import logger from '@/lib/logger';
 
 export function useSeatingAssignment(examDate: string | null, deptId?: string) {
   const queryClient = useQueryClient();

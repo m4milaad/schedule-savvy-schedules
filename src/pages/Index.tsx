@@ -29,7 +29,8 @@ import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmentCard";
-import { Footer } from "@/components/Footer";
+import { Footer } from "@/components/Footer";import logger from '@/lib/logger';
+
 
 export default function Index() {
   // State management for various scheduling parameters and data
@@ -187,7 +188,7 @@ export default function Index() {
 
       setSelectedCourseTeachers(coursesWithStudents);
     } catch (error) {
-      console.error('Error loading enrollment counts:', error);
+      logger.error('Error loading enrollment counts:', error);
     }
   };
 
@@ -433,7 +434,7 @@ export default function Index() {
         .eq('is_active', true);
 
       if (enrollmentError) {
-        console.error('Error loading student enrollments:', enrollmentError);
+        logger.error('Error loading student enrollments:', enrollmentError);
         toast({
           title: "Warning",
           description: "Could not load student enrollment data. Student overlap prevention may not work properly.",
@@ -481,7 +482,7 @@ export default function Index() {
         description: `Generated schedule for ${schedule.length} exams using enhanced algorithm with priority scheduling and conflict resolution`,
       });
     } catch (error) {
-      console.error("Error generating schedule:", error);
+      logger.error("Error generating schedule:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to generate exam schedule",
@@ -708,7 +709,7 @@ export default function Index() {
       setLoading(true);
       await saveScheduleToDatabase(generatedSchedule);
     } catch (error) {
-      console.error("Error saving schedule:", error);
+      logger.error("Error saving schedule:", error);
       toast({
         title: "Error",
         description: "Failed to save exam schedule",
@@ -779,7 +780,7 @@ export default function Index() {
         description: "Excel file downloaded successfully!",
       });
     } catch (error) {
-      console.error("Error generating Excel:", error);
+      logger.error("Error generating Excel:", error);
       toast({
         title: "Error",
         description: "Failed to generate Excel file",

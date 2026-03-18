@@ -23,7 +23,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { OverviewTab } from "@/components/admin/OverviewTab";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+
 
 const AdminDashboard: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
@@ -101,7 +102,7 @@ const AdminDashboard: React.FC = () => {
                 return;
             }
         } catch (err) {
-            console.error("Error checking user role:", err);
+            logger.error("Error checking user role:", err);
             toast({
                 title: "Error",
                 description: "Unable to verify user role.",
@@ -129,7 +130,7 @@ const AdminDashboard: React.FC = () => {
                 loadExamDates(),
             ]);
         } catch (err) {
-            console.error("Error loading data:", err);
+            logger.error("Error loading data:", err);
             toast({
                 title: "Error",
                 description: "Failed to load some data",
@@ -240,7 +241,7 @@ const AdminDashboard: React.FC = () => {
             const allStudents = [...(studentsData || []), ...profileOnlyStudents];
             setStudents(allStudents);
         } catch (error) {
-            console.error('Failed to load students:', error);
+            logger.error('Failed to load students:', error);
             toast({
                 title: "Error",
                 description: "Failed to load students data",

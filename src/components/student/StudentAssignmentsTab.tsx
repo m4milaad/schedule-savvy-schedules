@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Upload, Clock, CheckCircle, AlertCircle, Download, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';
+import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+
 
 interface StudentAssignmentsTabProps {
   studentId: string;
@@ -110,7 +111,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
 
       setAssignments(assignmentsWithSubmissions);
     } catch (error: any) {
-      console.error('Error loading assignments:', error);
+      logger.error('Error loading assignments:', error);
       toast({
         title: 'Error',
         description: 'Failed to load assignments',
@@ -203,7 +204,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
       setSelectedAssignment(null);
       loadAssignments();
     } catch (error: any) {
-      console.error('Error submitting assignment:', error);
+      logger.error('Error submitting assignment:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to submit assignment',
