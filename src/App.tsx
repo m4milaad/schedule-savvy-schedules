@@ -25,23 +25,18 @@ import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 
+// Kill the native splash immediately before anything renders
+const isNativeApp = Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios';
+if (isNativeApp) {
+  CapacitorSplash.hide({ fadeOutDuration: 0 }).catch(() => {});
+}
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient());
-  const isNativeApp = Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios';
   const [showSplash, setShowSplash] = useState(isNativeApp);
-
-  useEffect(() => {
-    if (!isNativeApp) return;
-
-    // Hide native splash screen immediately when app loads
-    CapacitorSplash.hide().catch(() => {
-      // Ignore errors in non-native contexts
-    });
-  }, [isNativeApp]);
 
   if (showSplash && isNativeApp) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;

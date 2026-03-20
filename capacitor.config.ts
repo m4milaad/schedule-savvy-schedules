@@ -9,9 +9,9 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       launchAutoHide: true,
       showSpinner: false,
-      splashFullScreen: false,
-      splashImmersive: false,
-      backgroundColor: '#FFFFFF'
+      splashFullScreen: true,
+      splashImmersive: true,
+      backgroundColor: '#0a0a0b'
     }
   }
 };
