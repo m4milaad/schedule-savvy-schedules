@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';import logger from '@/lib/logger';
+import { useToast } from '@/hooks/use-toast';
+import { getCachedData, isOnline, setCachedData, DEFAULT_TTL } from '@/lib/offlineCache';
+import { queryKeys } from '@/lib/queryKeys';
 
 
 interface Student {
@@ -19,20 +21,41 @@ interface Student {
 
 export function useStudents(deptId?: string) {
   return useQuery({
-    queryKey: ['students', deptId],
+    queryKey: deptId ? queryKeys.students.byDept(deptId) : queryKeys.students.all,
     queryFn: async () => {
+      const cacheKey = deptId ? `students_${deptId}` : 'students_all';
+
+      if (!(await isOnline())) {
+        const cached = await getCachedData<Student[]>(cacheKey, DEFAULT_TTL.ADMIN_TABLES);
+        if (cached) {
+          return cached.data;
+        }
+      }
+
       let query = supabase.from('students').select('*');
       
       if (deptId) {
         query = query.eq('dept_id', deptId);
       }
-      
-      const { data, error } = await query.order('student_name');
-      
-      if (error) throw error;
-      return data as Student[];
+
+      try {
+        const { data, error } = await query.order('student_name');
+        if (error) throw error;
+
+        const students = (data || []) as Student[];
+        await setCachedData(cacheKey, students);
+        return students;
+      } catch (error) {
+        const cached = await getCachedData<Student[]>(cacheKey, DEFAULT_TTL.ADMIN_TABLES);
+        if (cached) {
+          return cached.data;
+        }
+        throw error;
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    select: (data) => data, // Minimize re-renders by ensuring stable reference
   });
 }
 
@@ -52,7 +75,7 @@ export function useAddStudent() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
       toast({
         title: 'Success',
         description: 'Student added successfully',
@@ -85,7 +108,7 @@ export function useUpdateStudent() {
       return updated;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
       toast({
         title: 'Success',
         description: 'Student updated successfully',
@@ -115,7 +138,7 @@ export function useDeleteStudent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.students.all });
       toast({
         title: 'Success',
         description: 'Student deleted successfully',

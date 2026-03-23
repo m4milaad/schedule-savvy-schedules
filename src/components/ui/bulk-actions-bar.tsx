@@ -26,7 +26,7 @@ export function BulkActionsBar({
   return createPortal(
     <div
       className={cn(
-        "fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5",
+        "fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0))] left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5",
         className
       )}
     >

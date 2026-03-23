@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,15 +17,14 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Upload, Building2, Database } from 'lucide-react';
+import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Venue, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
-import { generateDummyVenues } from "@/utils/dummyVenueData";import logger from '@/lib/logger';
+import logger from '@/lib/logger';
 
 
 interface VenuesTabProps {
@@ -51,7 +50,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-    const [generatingDummy, setGeneratingDummy] = useState(false);
 
     // Load departments on mount
     useEffect(() => {
@@ -229,23 +227,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
     // Use filtered venues list for display
     const filteredVenues = filteredVenuesList;
 
-    const handleGenerateDummyVenues = async () => {
-        setGeneratingDummy(true);
-        try {
-            const result = await generateDummyVenues(userDeptId || undefined);
-            if (result.success) {
-                toast.success(`Generated ${result.count} dummy venues for testing`);
-                onRefresh();
-            } else {
-                toast.error(result.error || 'Failed to generate venues');
-            }
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to generate venues');
-        } finally {
-            setGeneratingDummy(false);
-        }
-    };
-
     return (
         <div className="space-y-6">
             <Card className="linear-surface overflow-hidden">
@@ -263,17 +244,6 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {!userDeptId && (
-                            <Button
-                                onClick={handleGenerateDummyVenues}
-                                variant="outline"
-                                size="sm"
-                                disabled={generatingDummy}
-                            >
-                                <Database className="w-4 h-4 mr-2" />
-                                {generatingDummy ? 'Generating...' : 'Add Test Venues'}
-                            </Button>
-                        )}
                         <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                             <Upload className="w-4 h-4 mr-2" />
                             Bulk Upload

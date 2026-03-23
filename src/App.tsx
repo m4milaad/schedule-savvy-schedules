@@ -35,7 +35,26 @@ if (isNativeApp) {
 }
 
 const App = () => {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Global defaults for all queries
+        staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
+        gcTime: 30 * 60 * 1000, // 30 minutes - cache retention
+        refetchOnWindowFocus: false, // Reduce noisy refetches
+        retry: (failureCount, error: any) => {
+          // Don't retry on auth errors (401, 403)
+          if (error?.status === 401 || error?.status === 403) return false;
+          // Retry up to 2 times for other errors
+          return failureCount < 2;
+        },
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      },
+      mutations: {
+        retry: false, // Don't retry mutations by default
+      },
+    },
+  }));
   const [showSplash, setShowSplash] = useState(isNativeApp);
 
   if (showSplash && isNativeApp) {

@@ -63,8 +63,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     return (
         <motion.div
             className={cn(
-                "flex flex-col h-screen border-r bg-sidebar/80 backdrop-blur-xl z-20 shadow-lg",
-                isInsideSheet ? "relative w-full" : "fixed left-0 top-0",
+                "flex flex-col border-r bg-sidebar/80 backdrop-blur-xl z-20 shadow-lg",
+                isInsideSheet ? "relative w-full h-screen" : "fixed left-0 top-[env(safe-area-inset-top,0)] bottom-[env(safe-area-inset-bottom,0)]",
                 isInsideSheet ? "" : (isCollapsed ? "w-20" : "w-64")
             )}
             initial={false}

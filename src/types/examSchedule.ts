@@ -55,9 +55,9 @@ export interface School {
 export interface Department {
   dept_id: string;
   dept_name: string;
-  school_id: string;
-  created_at: string;
-  updated_at: string;
+  school_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Course {

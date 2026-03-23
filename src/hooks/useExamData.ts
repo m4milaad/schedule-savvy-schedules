@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
+import { getCachedData, isOnline, setCachedData } from "@/lib/offlineCache";
 import logger from '@/lib/logger';
 
 export const useExamData = () => {
@@ -14,7 +15,26 @@ export const useExamData = () => {
   const [loadingLastSchedule, setLoadingLastSchedule] = useState(false);
   const { toast } = useToast();
 
+  const COURSE_TEACHERS_CACHE_KEY = 'exam_course_teachers';
+  const HOLIDAYS_CACHE_KEY = 'exam_holidays';
+  const LAST_SCHEDULE_CACHE_KEY = 'exam_last_schedule';
+
+  const hydrateScheduleDates = (items: ExamScheduleItem[]) => {
+    return items.map((item) => ({
+      ...item,
+      date: new Date(item.date),
+    }));
+  };
+
   const loadCourseTeachers = async () => {
+    if (!(await isOnline())) {
+      const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY);
+      if (cached) {
+        setCourseTeachers(cached.data);
+        return cached.data;
+      }
+    }
+
     try {
       // Get courses data - courses are independent, teachers are optional
       const { data: coursesData, error: coursesError } = await supabase
@@ -49,17 +69,39 @@ export const useExamData = () => {
       }));
 
       setCourseTeachers(transformedData);
+      await setCachedData(COURSE_TEACHERS_CACHE_KEY, transformedData);
+      return transformedData;
     } catch (error) {
+      const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY);
+      if (cached) {
+        setCourseTeachers(cached.data);
+        toast({
+          title: 'Offline Mode',
+          description: 'Showing last synced course data',
+        });
+        return cached.data;
+      }
+
       logger.error("Error loading course teachers:", error);
       toast({
         title: "Error",
         description: "Failed to load course data",
         variant: "destructive",
       });
+      return [];
     }
   };
 
   const loadHolidays = async () => {
+    if (!(await isOnline())) {
+      const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY);
+      if (cached) {
+        setHolidaysData(cached.data);
+        setHolidays(cached.data.map((holiday) => new Date(holiday.holiday_date)));
+        return cached.data;
+      }
+    }
+
     try {
       const { data, error } = await supabase
         .from('holidays')
@@ -79,19 +121,44 @@ export const useExamData = () => {
       setHolidaysData(transformedHolidays);
       const holidayDates = transformedHolidays.map(holiday => new Date(holiday.holiday_date));
       setHolidays(holidayDates);
+      await setCachedData(HOLIDAYS_CACHE_KEY, transformedHolidays);
+      return transformedHolidays;
     } catch (error) {
+      const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY);
+      if (cached) {
+        setHolidaysData(cached.data);
+        setHolidays(cached.data.map((holiday) => new Date(holiday.holiday_date)));
+        toast({
+          title: 'Offline Mode',
+          description: 'Showing last synced holiday data',
+        });
+        return cached.data;
+      }
+
       logger.error("Error loading holidays:", error);
       toast({
         title: "Error",
         description: "Failed to load holidays data",
         variant: "destructive",
       });
+      return [];
     }
   };
 
   const loadLastSchedule = async () => {
     try {
       setLoadingLastSchedule(true);
+
+      if (!(await isOnline())) {
+        const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY);
+        if (cached) {
+          const hydrated = hydrateScheduleDates(cached.data);
+          setGeneratedSchedule(hydrated);
+          setIsScheduleGenerated(hydrated.length > 0);
+          return hydrated;
+        }
+      }
+
       const { data, error } = await supabase.rpc('get_exam_schedule_data');
 
       if (error) throw error;
@@ -190,6 +257,7 @@ export const useExamData = () => {
 
         setGeneratedSchedule(scheduleItems);
         setIsScheduleGenerated(true);
+        await setCachedData(LAST_SCHEDULE_CACHE_KEY, scheduleItems);
 
         toast({
           title: "Schedule Loaded",
@@ -199,6 +267,18 @@ export const useExamData = () => {
         return scheduleItems;
       }
     } catch (error) {
+      const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY);
+      if (cached) {
+        const hydrated = hydrateScheduleDates(cached.data);
+        setGeneratedSchedule(hydrated);
+        setIsScheduleGenerated(hydrated.length > 0);
+        toast({
+          title: 'Offline Mode',
+          description: 'Showing last synced exam schedule',
+        });
+        return hydrated;
+      }
+
       logger.error("Error loading last schedule:", error);
     } finally {
       setLoadingLastSchedule(false);

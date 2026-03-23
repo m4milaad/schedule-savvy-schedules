@@ -9,7 +9,8 @@ import {
   VenueSeatingPlan,
   SeatingResult
 } from '@/utils/seatingAlgorithm';
-import logger from '@/lib/logger';
+import { getCachedData, isOnline, setCachedData, DEFAULT_TTL } from '@/lib/offlineCache';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useSeatingAssignment(examDate: string | null, deptId?: string) {
   const queryClient = useQueryClient();
@@ -17,12 +18,38 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
 
   // Fetch saved seating arrangement
   const { data: savedSeating, isLoading: loadingSaved, refetch } = useQuery({
-    queryKey: ['seat_assignments', examDate, deptId],
+    queryKey: deptId 
+      ? queryKeys.seatAssignments.byDateAndDept(examDate!, deptId)
+      : queryKeys.seatAssignments.byDate(examDate!),
     queryFn: async () => {
       if (!examDate) return [];
-      return getSavedSeatingArrangement(examDate, deptId);
+
+      const cacheKey = deptId
+        ? `seat_assignments_${examDate}_${deptId}`
+        : `seat_assignments_${examDate}_all`;
+
+      if (!(await isOnline())) {
+        const cached = await getCachedData<VenueSeatingPlan[]>(cacheKey, DEFAULT_TTL.SEAT_ASSIGNMENT);
+        if (cached) {
+          return cached.data;
+        }
+      }
+
+      try {
+        const seating = await getSavedSeatingArrangement(examDate, deptId);
+        await setCachedData(cacheKey, seating);
+        return seating;
+      } catch (error) {
+        const cached = await getCachedData<VenueSeatingPlan[]>(cacheKey, DEFAULT_TTL.SEAT_ASSIGNMENT);
+        if (cached) {
+          return cached.data;
+        }
+        throw error;
+      }
     },
-    enabled: !!examDate
+    enabled: !!examDate,
+    staleTime: 10 * 60 * 1000, // 10 minutes - seat assignments change less frequently
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   // Generate new seating arrangement
@@ -58,7 +85,7 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
     onSuccess: (result) => {
       if (result.success) {
         toast.success('Seating arrangement saved successfully');
-        queryClient.invalidateQueries({ queryKey: ['seat_assignments'] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
         setGeneratedPlan(null);
         refetch();
       } else {
@@ -82,7 +109,7 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
     },
     onSuccess: () => {
       toast.success('Seating arrangement cleared');
-      queryClient.invalidateQueries({ queryKey: ['seat_assignments'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
       setGeneratedPlan(null);
       refetch();
     },

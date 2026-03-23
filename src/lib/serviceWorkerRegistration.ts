@@ -5,24 +5,30 @@ export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
 
   const isNativeApp = Capacitor.isNativePlatform();
-  const shouldRegister = import.meta.env.PROD && !isNativeApp;
+  const isSecureLikeContext = window.isSecureContext || window.location.hostname === 'localhost';
+  const shouldRegister = import.meta.env.PROD && isSecureLikeContext;
 
-  // In web preview/dev, remove stale SW + caches so latest code always loads
+  // In web preview/dev, remove stale SW + caches so latest code always loads.
+  // Keep native caches intact so supported runtimes can keep offline data.
   if (!shouldRegister) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => {
-        registration.unregister();
+    if (!isNativeApp) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+        });
       });
-    });
 
-    if ('caches' in window) {
-      caches.keys().then((cacheNames) => {
-        cacheNames
-          .filter((name) => name.startsWith('cuk-'))
-          .forEach((name) => {
-            caches.delete(name);
-          });
-      });
+      if ('caches' in window) {
+        caches.keys().then((cacheNames) => {
+          cacheNames
+            .filter((name) => name.startsWith('cuk-'))
+            .forEach((name) => {
+              caches.delete(name);
+            });
+        });
+      }
+    } else {
+      logger.info('[SW] Skipping registration: secure context unavailable for current native runtime.');
     }
 
     return;
@@ -47,7 +53,7 @@ export function registerServiceWorker() {
 
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version available — activate immediately
+            // New version available - activate immediately
             logger.info('[SW] New version available, activating...');
             newWorker.postMessage('SKIP_WAITING');
           }
