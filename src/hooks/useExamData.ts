@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
-import { getCachedData, isOnline, setCachedData } from "@/lib/offlineCache";
+import { getCachedData, isOnline, setCachedData, DEFAULT_TTL } from "@/lib/offlineCache";
 import logger from '@/lib/logger';
 
 export const useExamData = () => {
@@ -27,12 +27,10 @@ export const useExamData = () => {
   };
 
   const loadCourseTeachers = async () => {
+    const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY, DEFAULT_TTL.ADMIN_TABLES);
+
     if (!(await isOnline())) {
-      const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY);
-      if (cached) {
-        setCourseTeachers(cached.data);
-        return cached.data;
-      }
+      if (cached) { setCourseTeachers(cached.data); return cached.data; }
     }
 
     try {
@@ -72,7 +70,7 @@ export const useExamData = () => {
       await setCachedData(COURSE_TEACHERS_CACHE_KEY, transformedData);
       return transformedData;
     } catch (error) {
-      const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY);
+      const cached = await getCachedData<CourseTeacher[]>(COURSE_TEACHERS_CACHE_KEY, DEFAULT_TTL.ADMIN_TABLES);
       if (cached) {
         setCourseTeachers(cached.data);
         toast({
@@ -93,11 +91,12 @@ export const useExamData = () => {
   };
 
   const loadHolidays = async () => {
+    const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY, DEFAULT_TTL.SCHEDULE);
+
     if (!(await isOnline())) {
-      const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY);
       if (cached) {
         setHolidaysData(cached.data);
-        setHolidays(cached.data.map((holiday) => new Date(holiday.holiday_date)));
+        setHolidays(cached.data.map((h) => new Date(h.holiday_date)));
         return cached.data;
       }
     }
@@ -124,7 +123,7 @@ export const useExamData = () => {
       await setCachedData(HOLIDAYS_CACHE_KEY, transformedHolidays);
       return transformedHolidays;
     } catch (error) {
-      const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY);
+      const cached = await getCachedData<Holiday[]>(HOLIDAYS_CACHE_KEY, DEFAULT_TTL.SCHEDULE);
       if (cached) {
         setHolidaysData(cached.data);
         setHolidays(cached.data.map((holiday) => new Date(holiday.holiday_date)));
@@ -150,7 +149,7 @@ export const useExamData = () => {
       setLoadingLastSchedule(true);
 
       if (!(await isOnline())) {
-        const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY);
+        const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY, DEFAULT_TTL.SCHEDULE);
         if (cached) {
           const hydrated = hydrateScheduleDates(cached.data);
           setGeneratedSchedule(hydrated);
@@ -267,7 +266,7 @@ export const useExamData = () => {
         return scheduleItems;
       }
     } catch (error) {
-      const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY);
+      const cached = await getCachedData<ExamScheduleItem[]>(LAST_SCHEDULE_CACHE_KEY, DEFAULT_TTL.SCHEDULE);
       if (cached) {
         const hydrated = hydrateScheduleDates(cached.data);
         setGeneratedSchedule(hydrated);

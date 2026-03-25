@@ -18,5 +18,7 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>
 );
 
-// Register service worker for offline-first caching
-registerServiceWorker();
+// Register service worker for offline-first caching (web only, not native Capacitor)
+if (!Capacitor.isNativePlatform()) {
+  registerServiceWorker();
+}

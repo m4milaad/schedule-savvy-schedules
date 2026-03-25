@@ -1,39 +1,31 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Settings, RefreshCw, Calendar, FileSpreadsheet, Save, Download } from "lucide-react";
+import { Save, Download, RefreshCw, Calendar, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { DropResult } from "react-beautiful-dnd";
 import { createWorkbook, addWorksheetFromJson, downloadWorkbook } from "@/utils/excelUtils";
-import { normalizeCourseCode, shouldMergeCourses } from "@/utils/courseUtils";
-
+import { normalizeCourseCode } from "@/utils/courseUtils";
 import { useExamData } from "@/hooks/useExamData";
-import { CourseTeacher, ExamScheduleItem, Holiday } from "@/types/examSchedule";
-import {
-  generateExamDates,
-  getExamTimeSlot,
-} from "@/utils/scheduleUtils";
-import { ScheduleStatusCard } from "@/components/exam-schedule/ScheduleStatusCard";
+import { CourseTeacher, Holiday } from "@/types/examSchedule";
+import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmentCard";
-import { Footer } from "@/components/Footer";import logger from '@/lib/logger';
-
+import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/layout/PageTransition";
+import logger from "@/lib/logger";
 
 export default function Index() {
-  // State management for various scheduling parameters and data
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<string[]>([]);
@@ -42,30 +34,30 @@ export default function Index() {
   const [tempGapValue, setTempGapValue] = useState<number>(0);
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
-  const [activeTab, setActiveTab] = useState<string>("selection");
-  const [themeColor, setThemeColor] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"selection" | "schedule">("selection");
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    const loadThemeColor = async () => {
+    const loadProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('theme_color')
-          .eq('user_id', user.id)
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
           .single();
-
-        if (profile?.theme_color) {
-          setThemeColor(profile.theme_color);
-        }
+        setProfileData(profile || null);
       }
     };
-    loadThemeColor();
+    loadProfile();
   }, []);
 
-  // Custom hook to manage exam data, schedule generation, and persistence
   const {
     courseTeachers,
     holidays,
@@ -80,667 +72,294 @@ export default function Index() {
     saveScheduleToDatabase,
   } = useExamData();
 
-  /**
-   * Effect to load enrollment counts and auto-select courses with enrolled students
-   */
   useEffect(() => {
-    if (courseTeachers.length > 0) {
-      loadEnrollmentCounts();
-    }
+    if (courseTeachers.length > 0) loadEnrollmentCounts();
   }, [courseTeachers]);
 
-  /**
-   * Calculate minimum days needed without requiring end date
-   */
   const calculateMinimumDaysForEndDate = () => {
-    const allSelectedCourses = courseTeachers.filter((ct) =>
-      selectedCourseTeachers.includes(ct.id)
-    );
-
-    if (allSelectedCourses.length === 0) {
-      // Default to 30 days if no courses selected
-      return 30;
-    }
-
-    // Group courses by normalized code to handle BT/BTCS merging
-    const uniqueCourses = new Map<string, CourseTeacher>();
-    allSelectedCourses.forEach(course => {
-      const normalizedCode = normalizeCourseCode(course.course_code);
-      if (!uniqueCourses.has(normalizedCode)) {
-        uniqueCourses.set(normalizedCode, course);
-      }
+    const allSelected = courseTeachers.filter(ct => selectedCourseTeachers.includes(ct.id));
+    if (allSelected.length === 0) return 30;
+    const unique = new Map<string, CourseTeacher>();
+    allSelected.forEach(c => {
+      const code = normalizeCourseCode(c.course_code);
+      if (!unique.has(code)) unique.set(code, c);
     });
-
-    const mergedCourses = Array.from(uniqueCourses.values());
-
-    // Group courses by semester
-    const coursesBySemester = mergedCourses.reduce((acc, course) => {
-      if (!acc[course.semester]) {
-        acc[course.semester] = [];
-      }
-      acc[course.semester].push(course);
+    const merged = Array.from(unique.values());
+    const bySem = merged.reduce((acc, c) => {
+      if (!acc[c.semester]) acc[c.semester] = [];
+      acc[c.semester].push(c);
       return acc;
     }, {} as Record<number, CourseTeacher[]>);
-
-    // Calculate minimum days for each semester
-    const semesterRequirements = Object.keys(coursesBySemester).map(semester => {
-      const semesterCourses = coursesBySemester[semester];
-      if (semesterCourses.length === 0) return 0;
-
-      const maxGap = Math.max(...semesterCourses.map(c => c.gap_days || 2));
-      const minDays = Math.max(
-        semesterCourses.length,
-        (semesterCourses.length - 1) * maxGap + 1
-      );
-
-      return minDays;
+    const reqs = Object.values(bySem).map(cs => {
+      const maxGap = Math.max(...cs.map(c => c.gap_days || 2));
+      return Math.max(cs.length, (cs.length - 1) * maxGap + 1);
     });
-
-    const maxSemesterRequirement = Math.max(...semesterRequirements);
-    return maxSemesterRequirement;
+    return Math.max(...reqs);
   };
 
-  /**
-   * Effect to auto-calculate end date when start date changes
-   */
   useEffect(() => {
     if (startDate && !endDate) {
-      const minimumDays = calculateMinimumDaysForEndDate();
-      // Calculate end date by adding required working days plus buffer for weekends/holidays
-      const bufferMultiplier = 1.5; // Add 50% buffer for weekends and holidays
-      const estimatedTotalDays = Math.ceil(minimumDays * bufferMultiplier);
-      const calculatedEndDate = new Date(startDate);
-      calculatedEndDate.setDate(calculatedEndDate.getDate() + estimatedTotalDays);
-      setEndDate(calculatedEndDate);
+      const days = calculateMinimumDaysForEndDate();
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + Math.ceil(days * 1.5));
+      setEndDate(end);
     }
   }, [startDate, selectedCourseTeachers]);
 
   const loadEnrollmentCounts = async () => {
     try {
       const { data, error } = await supabase
-        .from('student_enrollments')
-        .select('course_id, student_id')
-        .eq('is_active', true);
-
+        .from("student_enrollments")
+        .select("course_id, student_id")
+        .eq("is_active", true);
       if (error) throw error;
-
-      // Count enrollments per course with unique students
       const counts: Record<string, Set<string>> = {};
-      data?.forEach((enrollment: any) => {
-        if (!counts[enrollment.course_id]) {
-          counts[enrollment.course_id] = new Set();
-        }
-        counts[enrollment.course_id].add(enrollment.student_id);
+      data?.forEach((e: any) => {
+        if (!counts[e.course_id]) counts[e.course_id] = new Set();
+        counts[e.course_id].add(e.student_id);
       });
-
-      // Convert sets to counts
-      const countNumbers: Record<string, number> = {};
-      Object.keys(counts).forEach((courseId) => {
-        countNumbers[courseId] = counts[courseId].size;
-      });
-
-      setCourseEnrollmentCounts(countNumbers);
-
-      // Auto-select only courses with enrolled students (use course_id for lookup)
-      const coursesWithStudents = courseTeachers
-        .filter((ct) => countNumbers[ct.course_id] > 0)
-        .map((ct) => ct.id);
-
-      setSelectedCourseTeachers(coursesWithStudents);
-    } catch (error) {
-      logger.error('Error loading enrollment counts:', error);
+      const nums: Record<string, number> = {};
+      Object.keys(counts).forEach(id => { nums[id] = counts[id].size; });
+      setCourseEnrollmentCounts(nums);
+      setSelectedCourseTeachers(
+        courseTeachers.filter(ct => nums[ct.course_id] > 0).map(ct => ct.id)
+      );
+    } catch (err) {
+      logger.error("Error loading enrollment counts:", err);
     }
   };
 
-  /**
-   * Calculates and returns information about the selected date range,
-   * including total days, working days, weekend days, and holidays within the range.
-   * @returns {object | null} Date range information or null if dates are not set.
-   */
   const getDateRangeInfo = () => {
     if (!startDate || !endDate) return null;
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    let totalDays = 0;
-    let workingDays = 0;
-    let weekendDays = 0;
-    let holidaysInRange: Holiday[] = [];
-
-    let currentDate = new Date(start);
-
-    while (currentDate <= end) {
+    let totalDays = 0, workingDays = 0, weekendDays = 0;
+    const holidaysInRange: Holiday[] = [];
+    const cur = new Date(startDate);
+    while (cur <= endDate) {
       totalDays++;
-
-      const dayOfWeek = currentDate.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-      const holidayOnDate = holidaysData.find((holiday) => {
-        const holidayDate = new Date(holiday.holiday_date);
-        return holidayDate.toDateString() === currentDate.toDateString();
-      });
-
-      if (holidayOnDate) {
-        holidaysInRange.push(holidayOnDate);
-      }
-
-      if (isWeekend) {
-        weekendDays++;
-      } else if (!holidayOnDate) {
-        workingDays++;
-      }
-
-      currentDate.setDate(currentDate.getDate() + 1);
+      const dow = cur.getDay();
+      const isWeekend = dow === 0 || dow === 6;
+      const holiday = holidaysData.find(h => new Date(h.holiday_date).toDateString() === cur.toDateString());
+      if (holiday) holidaysInRange.push(holiday);
+      if (isWeekend) weekendDays++;
+      else if (!holiday) workingDays++;
+      cur.setDate(cur.getDate() + 1);
     }
-
-    return {
-      totalDays,
-      workingDays,
-      weekendDays,
-      holidaysInRange,
-      holidayCount: holidaysInRange.length,
-    };
+    return { totalDays, workingDays, weekendDays, holidaysInRange, holidayCount: holidaysInRange.length };
   };
 
-  /**
-   * Calculates the minimum number of working days required to schedule all selected courses
-   * based on student enrollments and gap requirements.
-   * @returns {object | null} Minimum day requirements or null if no courses are selected.
-   */
   const calculateMinimumRequiredDays = () => {
     if (!startDate || !endDate) return null;
-
-    const allSelectedCourses = courseTeachers.filter((ct) =>
-      selectedCourseTeachers.includes(ct.id)
-    );
-
-    if (allSelectedCourses.length === 0) return null;
-
-    // Group courses by normalized code to handle BT/BTCS merging
-    const uniqueCourses = new Map<string, CourseTeacher>();
-    allSelectedCourses.forEach(course => {
-      const normalizedCode = normalizeCourseCode(course.course_code);
-      if (!uniqueCourses.has(normalizedCode)) {
-        uniqueCourses.set(normalizedCode, course);
-      }
+    const allSelected = courseTeachers.filter(ct => selectedCourseTeachers.includes(ct.id));
+    if (allSelected.length === 0) return null;
+    const unique = new Map<string, CourseTeacher>();
+    allSelected.forEach(c => {
+      const code = normalizeCourseCode(c.course_code);
+      if (!unique.has(code)) unique.set(code, c);
     });
-
-    const mergedCourses = Array.from(uniqueCourses.values());
-
-    // Calculate based on student enrollments
-    const studentBreakdown = mergedCourses.map(course => {
-      const enrollmentCount = courseEnrollmentCounts[course.course_id] || 0;
-      return {
-        courseCode: course.course_code,
-        studentCount: enrollmentCount,
-        gapDays: course.gap_days || 2
-      };
-    });
-
-    // Calculate minimum days needed
-    // For accurate calculation: we need 1 day per course + gap days between them
-    const totalCourses = mergedCourses.length;
-    const avgGap = mergedCourses.reduce((sum, c) => sum + (c.gap_days || 2), 0) / totalCourses;
-
-    // More realistic calculation: courses + (average gap * (courses - 1))
-    const minimumDays = totalCourses === 1
-      ? 1
-      : Math.ceil(totalCourses + (avgGap * (totalCourses - 1)) / 2);
-
+    const merged = Array.from(unique.values());
+    const totalCourses = merged.length;
+    const avgGap = merged.reduce((s, c) => s + (c.gap_days || 2), 0) / totalCourses;
+    const minimumDays = totalCourses === 1 ? 1 : Math.ceil(totalCourses + (avgGap * (totalCourses - 1)) / 2);
     return {
-      totalCourses: mergedCourses.length,
-      minimumDays: minimumDays,
-      studentBreakdown: studentBreakdown
+      totalCourses,
+      minimumDays,
+      studentBreakdown: merged.map(c => ({
+        courseCode: c.course_code,
+        studentCount: courseEnrollmentCounts[c.course_id] || 0,
+        gapDays: c.gap_days || 2,
+      })),
     };
   };
 
-  /**
-   * Gets all courses sorted by selection status first, then by enrollment count
-   * @returns {CourseTeacher[]} An array of all available courses sorted by selection and enrollment.
-   */
-  const getAllAvailableCourses = () => {
-    return [...courseTeachers].sort((a, b) => {
-      const aSelected = selectedCourseTeachers.includes(a.id);
-      const bSelected = selectedCourseTeachers.includes(b.id);
-
-      // Sort by selection status first (selected courses on top)
-      if (aSelected !== bSelected) {
-        return aSelected ? -1 : 1;
-      }
-
-      // Then sort by enrollment count descending (courses with students first)
-      const aCount = courseEnrollmentCounts[a.course_id] || 0;
-      const bCount = courseEnrollmentCounts[b.course_id] || 0;
-      return bCount - aCount;
-    });
-  };
-
-  /**
-   * Calculate total unique students enrolled in selected courses
-   */
-  const getTotalEnrolledStudents = () => {
-    const uniqueStudents = new Set<string>();
-
-    selectedCourseTeachers.forEach(courseId => {
-      Object.entries(studentCourseMap).forEach(([studentId, courses]) => {
-        const course = courseTeachers.find(ct => ct.id === courseId);
-        if (course && courses.some(c => normalizeCourseCode(c) === normalizeCourseCode(course.course_code))) {
-          uniqueStudents.add(studentId);
-        }
-      });
+  const getAllAvailableCourses = () =>
+    [...courseTeachers].sort((a, b) => {
+      const aS = selectedCourseTeachers.includes(a.id);
+      const bS = selectedCourseTeachers.includes(b.id);
+      if (aS !== bS) return aS ? -1 : 1;
+      return (courseEnrollmentCounts[b.course_id] || 0) - (courseEnrollmentCounts[a.course_id] || 0);
     });
 
-    return uniqueStudents.size;
-  };
-
-  /**
-   * Initiates the editing state for a course's gap days.
-   * @param {string} courseId - The ID of the course to edit.
-   * @param {number} currentGap - The current gap value of the course.
-   */
   const handleEditGap = (courseId: string, currentGap: number) => {
     setEditingGap(courseId);
     setTempGapValue(currentGap);
   };
 
-  /**
-   * Saves the updated gap days for a course.
-   * Validates the input before updating.
-   * @param {string} courseId - The ID of the course to update.
-   */
   const handleSaveGap = async (courseId: string) => {
     if (tempGapValue < 0 || tempGapValue > 10) {
-      toast({
-        title: "Invalid Value",
-        description: "Gap days must be between 0 and 10",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid Value", description: "Gap days must be between 0 and 10", variant: "destructive" });
       return;
     }
-
     await updateCourseGap(courseId, tempGapValue);
     setEditingGap(null);
   };
 
-  /**
-   * Cancels the gap day editing process.
-   */
-  const handleCancelGap = () => {
-    setEditingGap(null);
-    setTempGapValue(0);
-  };
+  const handleCancelGap = () => { setEditingGap(null); setTempGapValue(0); };
 
-  /**
-   * Generates the exam schedule using the enhanced algorithm with priority scheduling,
-   * backtracking, and optimized conflict resolution.
-   */
   const generateSchedule = async () => {
     if (!startDate || !endDate) {
-      toast({
-        title: "Error",
-        description: "Please select both start and end dates",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please select both start and end dates", variant: "destructive" });
       return;
     }
-
     if (endDate < startDate) {
+      toast({ title: "Error", description: "End date must be after start date", variant: "destructive" });
+      return;
+    }
+    const minInfo = calculateMinimumRequiredDays();
+    const rangeInfo = getDateRangeInfo();
+    if (minInfo && rangeInfo && rangeInfo.workingDays < minInfo.minimumDays) {
+      const shortfall = minInfo.minimumDays - rangeInfo.workingDays;
       toast({
-        title: "Error",
-        description: "End date must be after start date",
+        title: "Insufficient Time Range",
+        description: `Need at least ${minInfo.minimumDays} working days for ${minInfo.totalCourses} courses, but only ${rangeInfo.workingDays} available. Extend end date by ${shortfall} more working days.`,
         variant: "destructive",
       });
       return;
     }
-
-    const minimumDaysInfo = calculateMinimumRequiredDays();
-    const dateRangeInfo = getDateRangeInfo();
-
-    // Validate if the selected date range has enough working days for scheduling
-    if (minimumDaysInfo && dateRangeInfo) {
-      if (dateRangeInfo.workingDays < minimumDaysInfo.minimumDays) {
-        const shortfall = minimumDaysInfo.minimumDays - dateRangeInfo.workingDays;
-        toast({
-          title: "Insufficient Time Range",
-          description: `You need at least ${minimumDaysInfo.minimumDays} working days to schedule ${minimumDaysInfo.totalCourses} courses with their gap requirements, but only have ${dateRangeInfo.workingDays} working days available. Please extend your end date by at least ${shortfall} more working days.`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    // Collect all selected courses
-    const allSelectedCourses = courseTeachers.filter((ct) =>
-      selectedCourseTeachers.includes(ct.id)
-    );
-
-    if (allSelectedCourses.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select at least one course",
-        variant: "destructive",
-      });
+    const allSelected = courseTeachers.filter(ct => selectedCourseTeachers.includes(ct.id));
+    if (allSelected.length === 0) {
+      toast({ title: "Error", description: "Please select at least one course", variant: "destructive" });
       return;
     }
-
     try {
       setLoading(true);
-
-      // Load student enrollment data to prevent overlaps
-      const { data: enrollments, error: enrollmentError } = await supabase
-        .from('student_enrollments')
-        .select('student_id, course_id')
-        .eq('is_active', true);
-
-      if (enrollmentError) {
-        logger.error('Error loading student enrollments:', enrollmentError);
-        toast({
-          title: "Warning",
-          description: "Could not load student enrollment data. Student overlap prevention may not work properly.",
-          variant: "destructive",
-        });
-      }
-
-      // Build a map of actual course_id -> course_code from loaded courseTeachers
-      const courseCodeById = new Map(courseTeachers.map(ct => [ct.course_id, ct.course_code]));
-
-      // Create student-course mapping for overlap detection
-      const newStudentCourseMap: Record<string, string[]> = {};
-      if (enrollments) {
-        enrollments.forEach((enrollment: any) => {
-          const studentId = enrollment.student_id;
-          const courseCode = courseCodeById.get(enrollment.course_id);
-          if (studentId && courseCode) {
-            if (!newStudentCourseMap[studentId]) {
-              newStudentCourseMap[studentId] = [];
-            }
-            newStudentCourseMap[studentId].push(courseCode);
-          }
-        });
-      }
-
-      // Store in state for drag-and-drop validation
-      setStudentCourseMap(newStudentCourseMap);
-
-      // Use the enhanced scheduling algorithm
+      const { data: enrollments, error: enrollErr } = await supabase
+        .from("student_enrollments").select("student_id, course_id").eq("is_active", true);
+      if (enrollErr) logger.error("Enrollment load error:", enrollErr);
+      const codeById = new Map(courseTeachers.map(ct => [ct.course_id, ct.course_code]));
+      const newMap: Record<string, string[]> = {};
+      enrollments?.forEach((e: any) => {
+        const code = codeById.get(e.course_id);
+        if (e.student_id && code) {
+          if (!newMap[e.student_id]) newMap[e.student_id] = [];
+          newMap[e.student_id].push(code);
+        }
+      });
+      setStudentCourseMap(newMap);
       const { generateEnhancedSchedule } = await import("@/utils/scheduleAlgorithm");
-      const schedule = await generateEnhancedSchedule(
-        allSelectedCourses,
-        startDate,
-        endDate,
-        holidays,
-        newStudentCourseMap
-      );
-
+      const schedule = await generateEnhancedSchedule(allSelected, startDate, endDate, holidays, newMap);
       setGeneratedSchedule(schedule);
       setIsScheduleGenerated(true);
-      setActiveTab("schedule"); // Switch to schedule tab after generation
-
-      toast({
-        title: "Success",
-        description: `Generated schedule for ${schedule.length} exams using enhanced algorithm with priority scheduling and conflict resolution`,
-      });
-    } catch (error) {
-      logger.error("Error generating schedule:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate exam schedule",
-        variant: "destructive",
-      });
+      setActiveTab("schedule");
+      toast({ title: "Success", description: `Generated schedule for ${schedule.length} exams` });
+    } catch (err) {
+      logger.error("Schedule generation error:", err);
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to generate schedule", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Performs the actual move of an exam to a new target date in the schedule.
-   * Updates the exam's date, day of week, and time slot.
-   * @param {string} draggableId - The ID of the draggable exam.
-   * @param {Date} targetDate - The new date for the exam.
-   */
   const performMove = (draggableId: string, targetDate: Date) => {
-    const updatedSchedule = generatedSchedule.map((exam) => {
-      if (exam.id === draggableId) {
-        return {
-          ...exam,
-          date: targetDate,
-          exam_date: targetDate.toISOString().split("T")[0],
-          dayOfWeek: targetDate.toLocaleDateString("en-US", {
-            weekday: "long",
-          }),
-          day_of_week: targetDate.toLocaleDateString("en-US", {
-            weekday: "long",
-          }),
-          timeSlot: getExamTimeSlot(targetDate),
-          time_slot: getExamTimeSlot(targetDate),
-        };
-      }
-      return exam;
-    });
-
-    // Sort the schedule by date after moving an exam
-    updatedSchedule.sort((a, b) => a.date.getTime() - b.date.getTime());
-    setGeneratedSchedule(updatedSchedule);
-
-    const draggedExam = generatedSchedule.find(
-      (exam) => exam.id === draggableId
+    const updated = generatedSchedule.map(exam =>
+      exam.id === draggableId
+        ? {
+            ...exam,
+            date: targetDate,
+            exam_date: targetDate.toISOString().split("T")[0],
+            dayOfWeek: targetDate.toLocaleDateString("en-US", { weekday: "long" }),
+            day_of_week: targetDate.toLocaleDateString("en-US", { weekday: "long" }),
+            timeSlot: getExamTimeSlot(targetDate),
+            time_slot: getExamTimeSlot(targetDate),
+          }
+        : exam
     );
-    toast({
-      title: "Exam Moved Successfully",
-      description: `${draggedExam?.courseCode
-        } moved to ${targetDate.toLocaleDateString()}`,
-    });
+    updated.sort((a, b) => a.date.getTime() - b.date.getTime());
+    setGeneratedSchedule(updated);
+    const moved = generatedSchedule.find(e => e.id === draggableId);
+    toast({ title: "Exam Moved", description: `${moved?.courseCode} moved to ${targetDate.toLocaleDateString()}` });
   };
 
-  /**
-   * Handles the end of a drag-and-drop operation for exams.
-   * Includes validation for maximum exams per day, semester conflicts, and gap requirements.
-   * @param {DropResult} result - The result object from react-beautiful-dnd.
-   */
   const onDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
-
-    if (!destination) return; // Dropped outside a valid droppable area
-
-    // If dropped in the same place, no action needed
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
-
-    const draggedExam = generatedSchedule.find(
-      (exam) => exam.id === draggableId
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+    const dragged = generatedSchedule.find(e => e.id === draggableId);
+    if (!dragged) return;
+    const targetDate = new Date(destination.droppableId.replace("date-", ""));
+    const onTarget = generatedSchedule.filter(e => e.date.toDateString() === targetDate.toDateString() && e.id !== dragged.id);
+    const draggedCode = normalizeCourseCode(dragged.course_code);
+    const draggedStudents = Object.keys(studentCourseMap).filter(sid =>
+      studentCourseMap[sid].some(c => normalizeCourseCode(c) === draggedCode)
     );
-    if (!draggedExam) return;
-
-    const targetDateString = destination.droppableId.replace("date-", "");
-    const targetDate = new Date(targetDateString);
-
-    // Check for existing exams on the target date, excluding the dragged exam itself
-    const examsOnTargetDate = generatedSchedule.filter(
-      (exam) =>
-        exam.date.toDateString() === targetDate.toDateString() &&
-        exam.id !== draggedExam.id
-    );
-
-    // Check for student enrollment conflicts - ensure no student has two exams on the same day
-    const draggedCourseCode = normalizeCourseCode(draggedExam.course_code);
-    const studentsInDraggedCourse = Object.keys(studentCourseMap).filter(studentId =>
-      studentCourseMap[studentId].some(code => normalizeCourseCode(code) === draggedCourseCode)
-    );
-
-    let conflictingExam = null;
-    let conflictingStudentsCount = 0;
-
-    for (const exam of examsOnTargetDate) {
-      const examCourseCode = normalizeCourseCode(exam.course_code);
-      const studentsInExam = Object.keys(studentCourseMap).filter(studentId =>
-        studentCourseMap[studentId].some(code => normalizeCourseCode(code) === examCourseCode)
+    for (const exam of onTarget) {
+      const examCode = normalizeCourseCode(exam.course_code);
+      const examStudents = Object.keys(studentCourseMap).filter(sid =>
+        studentCourseMap[sid].some(c => normalizeCourseCode(c) === examCode)
       );
-
-      // Find students enrolled in both courses
-      const conflictingStudents = studentsInDraggedCourse.filter(studentId =>
-        studentsInExam.includes(studentId)
-      );
-
-      if (conflictingStudents.length > 0) {
-        conflictingExam = exam;
-        conflictingStudentsCount = conflictingStudents.length;
-        break;
+      const conflicts = draggedStudents.filter(sid => examStudents.includes(sid));
+      if (conflicts.length > 0) {
+        toast({
+          title: "Cannot Move Exam",
+          description: `${conflicts.length} student(s) enrolled in both courses. Would create a conflict.`,
+          variant: "destructive",
+          action: <Button variant="outline" size="sm" onClick={() => performMove(draggableId, targetDate)}>Override</Button>,
+        });
+        return;
       }
     }
-
-    if (conflictingExam) {
+    if (onTarget.length >= 4) {
       toast({
         title: "Cannot Move Exam",
-        description: `${conflictingStudentsCount} student${conflictingStudentsCount > 1 ? 's are' : ' is'} enrolled in both ${draggedExam.course_code} and ${conflictingExam.course_code}. Moving would create an exam conflict on ${targetDate.toLocaleDateString()}.`,
+        description: `Maximum 4 exams per day. ${targetDate.toLocaleDateString()} is full.`,
         variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
-            onClick={() => performMove(draggableId, targetDate)}
-          >
-            Override
-          </Button>
-        ),
+        action: <Button variant="outline" size="sm" onClick={() => performMove(draggableId, targetDate)}>Override</Button>,
       });
       return;
     }
-
-    // Enforce maximum exams per day
-    if (examsOnTargetDate.length >= 4) {
-      toast({
-        title: "Cannot Move Exam",
-        description: `Maximum 4 exams allowed per day. ${targetDate.toLocaleDateString()} is full.`,
-        variant: "destructive",
-        action: (
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
-            onClick={() => performMove(draggableId, targetDate)}
-          >
-            Override
-          </Button>
-        ),
-      });
-      return;
-    }
-
-    // Validate gap requirements based on student enrollments
-    if (!draggedExam.is_first_paper) {
-      const draggedCourseNormalized = normalizeCourseCode(draggedExam.course_code);
-      const studentsInDraggedCourse = Object.keys(studentCourseMap).filter(studentId =>
-        studentCourseMap[studentId].some(code => normalizeCourseCode(code) === draggedCourseNormalized)
+    if (!dragged.is_first_paper) {
+      const draggedNorm = normalizeCourseCode(dragged.course_code);
+      const draggedStu = Object.keys(studentCourseMap).filter(sid =>
+        studentCourseMap[sid].some(c => normalizeCourseCode(c) === draggedNorm)
       );
-
-      // Check gap for all exams that share students with the dragged course
-      let minGapViolation: { exam: ExamScheduleItem; daysDiff: number; studentCount: number } | null = null;
-
       for (const exam of generatedSchedule) {
-        if (exam.id === draggedExam.id) continue;
-
-        const examCourseNormalized = normalizeCourseCode(exam.course_code);
-        const studentsInExam = Object.keys(studentCourseMap).filter(studentId =>
-          studentCourseMap[studentId].some(code => normalizeCourseCode(code) === examCourseNormalized)
+        if (exam.id === dragged.id) continue;
+        const examNorm = normalizeCourseCode(exam.course_code);
+        const examStu = Object.keys(studentCourseMap).filter(sid =>
+          studentCourseMap[sid].some(c => normalizeCourseCode(c) === examNorm)
         );
-
-        // Find students enrolled in both courses
-        const sharedStudents = studentsInDraggedCourse.filter(studentId =>
-          studentsInExam.includes(studentId)
-        );
-
-        if (sharedStudents.length > 0) {
-          const daysDiff = Math.abs(Math.floor(
-            (targetDate.getTime() - new Date(exam.exam_date).getTime()) /
-            (1000 * 60 * 60 * 24)
-          ));
-
-          if (daysDiff < draggedExam.gap_days) {
-            if (!minGapViolation || daysDiff < minGapViolation.daysDiff) {
-              minGapViolation = { exam, daysDiff, studentCount: sharedStudents.length };
-            }
+        const shared = draggedStu.filter(sid => examStu.includes(sid));
+        if (shared.length > 0) {
+          const diff = Math.abs(Math.floor((targetDate.getTime() - new Date(exam.exam_date).getTime()) / 86400000));
+          if (diff < dragged.gap_days) {
+            toast({
+              title: "Gap Requirement Not Met",
+              description: `${shared.length} student(s) have ${exam.course_code} with only ${diff} day gap. Requires ${dragged.gap_days}.`,
+              variant: "destructive",
+              action: <Button variant="outline" size="sm" onClick={() => performMove(draggableId, targetDate)}>Override</Button>,
+            });
+            return;
           }
         }
       }
-
-      if (minGapViolation) {
-        toast({
-          title: "Gap Requirement Not Met",
-          description: `${minGapViolation.studentCount} student${minGapViolation.studentCount > 1 ? 's have' : ' has'} ${minGapViolation.exam.course_code} with only ${minGapViolation.daysDiff} day${minGapViolation.daysDiff !== 1 ? 's' : ''} gap. Requires ${draggedExam.gap_days} days.`,
-          variant: "destructive",
-          action: (
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-background text-foreground hover:bg-destructive hover:text-destructive-foreground border-border"
-              onClick={() => performMove(draggableId, targetDate)}
-            >
-              Override
-            </Button>
-          ),
-        });
-        return;
-      }
     }
-
     performMove(draggableId, targetDate);
   };
 
-  /**
-   * Handles saving the generated schedule to the database.
-   */
   const handleSaveSchedule = async () => {
     if (generatedSchedule.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please generate a schedule first",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please generate a schedule first", variant: "destructive" });
       return;
     }
-
     try {
       setLoading(true);
       await saveScheduleToDatabase(generatedSchedule);
-    } catch (error) {
-      logger.error("Error saving schedule:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save exam schedule",
-        variant: "destructive",
-      });
+    } catch (err) {
+      logger.error("Save error:", err);
+      toast({ title: "Error", description: "Failed to save exam schedule", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Handles downloading the generated schedule as an Excel file.
-   */
   const handleDownloadExcel = async () => {
     if (generatedSchedule.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please generate a schedule first",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please generate a schedule first", variant: "destructive" });
       return;
     }
-
     try {
-      // Prepare data for Excel export, sorting by date
-      const excelData = generatedSchedule
-        .sort(
-          (a, b) =>
-            new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
-        )
-        .map((exam) => ({
+      const excelData = [...generatedSchedule]
+        .sort((a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime())
+        .map(exam => ({
           Date: new Date(exam.exam_date).toLocaleDateString(),
           Day: exam.day_of_week,
           Time: exam.time_slot,
@@ -752,77 +371,39 @@ export default function Index() {
           "First Paper": exam.is_first_paper ? "Yes" : "No",
           Venue: exam.venue_name,
         }));
-
-      // Create workbook with custom column widths
       const columns = [
-        { key: 'Date', label: 'Date', width: 12 },
-        { key: 'Day', label: 'Day', width: 10 },
-        { key: 'Time', label: 'Time', width: 18 },
-        { key: 'Course Code', label: 'Course Code', width: 12 },
-        { key: 'Teacher Name', label: 'Teacher Name', width: 15 },
-        { key: 'Semester', label: 'Semester', width: 10 },
-        { key: 'Program', label: 'Program', width: 10 },
-        { key: 'Gap Days', label: 'Gap Days', width: 10 },
-        { key: 'First Paper', label: 'First Paper', width: 12 },
-        { key: 'Venue', label: 'Venue', width: 15 },
+        { key: "Date", label: "Date", width: 12 },
+        { key: "Day", label: "Day", width: 10 },
+        { key: "Time", label: "Time", width: 18 },
+        { key: "Course Code", label: "Course Code", width: 12 },
+        { key: "Teacher Name", label: "Teacher Name", width: 15 },
+        { key: "Semester", label: "Semester", width: 10 },
+        { key: "Program", label: "Program", width: 10 },
+        { key: "Gap Days", label: "Gap Days", width: 10 },
+        { key: "First Paper", label: "First Paper", width: 12 },
+        { key: "Venue", label: "Venue", width: 15 },
       ];
-
       const workbook = createWorkbook();
       addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as any);
-
-      // Generate filename and download the Excel file
-      const filename = `exam-schedule-${new Date().toISOString().split("T")[0]
-        }.xlsx`;
-      await downloadWorkbook(workbook, filename);
-
-      toast({
-        title: "Success",
-        description: "Excel file downloaded successfully!",
-      });
-    } catch (error) {
-      logger.error("Error generating Excel:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate Excel file",
-        variant: "destructive",
-      });
+      await downloadWorkbook(workbook, `exam-schedule-${new Date().toISOString().split("T")[0]}.xlsx`);
+      toast({ title: "Success", description: "Excel file downloaded successfully!" });
+    } catch (err) {
+      logger.error("Excel error:", err);
+      toast({ title: "Error", description: "Failed to generate Excel file", variant: "destructive" });
     }
   };
 
-  /**
-   * Toggles the selection state of a course teacher.
-   * @param {string} id - The ID of the course teacher.
-   */
-  const toggleCourseTeacher = (id: string) => {
-    setSelectedCourseTeachers((prev) =>
-      prev.includes(id)
-        ? prev.filter((ctId) => ctId !== id)
-        : [...prev, id]
-    );
-  };
+  const toggleCourseTeacher = (id: string) =>
+    setSelectedCourseTeachers(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
-  /**
-   * Selects all course teachers
-   */
-  const selectAllCourses = () => {
-    setSelectedCourseTeachers(courseTeachers.map((ct) => ct.id));
-  };
+  const selectAllCourses = () => setSelectedCourseTeachers(courseTeachers.map(ct => ct.id));
+  const deselectAllCourses = () => setSelectedCourseTeachers([]);
+  const selectEnrolledCourses = () =>
+    setSelectedCourseTeachers(courseTeachers.filter(ct => (courseEnrollmentCounts[ct.course_id] || 0) > 0).map(ct => ct.id));
 
-  /**
-   * Deselects all course teachers
-   */
-  const deselectAllCourses = () => {
-    setSelectedCourseTeachers([]);
-  };
-
-  /**
-   * Selects only courses with enrolled students
-   */
-  const selectEnrolledCourses = () => {
-    const coursesWithStudents = courseTeachers
-      .filter((ct) => (courseEnrollmentCounts[ct.course_id] || 0) > 0)
-      .map((ct) => ct.id);
-    setSelectedCourseTeachers(coursesWithStudents);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
   };
 
   const dateRangeInfo = getDateRangeInfo();
@@ -832,225 +413,205 @@ export default function Index() {
     <TooltipProvider>
       <div
         className={cn(
-          "min-h-screen transition-colors duration-500",
-          !themeColor && "bg-gradient-to-br from-background via-muted/20 to-background"
+          "flex min-h-screen overflow-hidden transition-colors duration-300",
+          !profileData?.theme_color && "bg-gradient-to-b from-background to-muted/30"
         )}
-        style={{ backgroundColor: themeColor || undefined }}
+        style={{ backgroundColor: profileData?.theme_color || undefined }}
       >
-        <div className="container mx-auto px-6 py-8 space-y-8">
-          {/* Enhanced Header Section */}
-          <div className="linear-surface flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 md:p-6 rounded-xl">
-            <div className="flex items-center space-x-3 md:space-x-4">
-              <img
-                src="/favicon.ico"
-                alt="CUK Logo"
-                className="hidden md:block w-12 h-12 md:w-16 md:h-16"
+        {/* Mobile Sidebar Sheet */}
+        {isMobile && (
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+              <AdminSidebar
+                activeTab="generator"
+                setActiveTab={(tab) => { navigate(`/admin-dashboard?tab=${tab}`); setIsMobileMenuOpen(false); }}
+                userRole={profileData?.user_type === "admin" ? "admin" : "department_admin"}
+                isCollapsed={false}
+                toggleSidebar={() => setIsMobileMenuOpen(false)}
+                onLogout={handleLogout}
+                onNavigate={(path) => { navigate(path); setIsMobileMenuOpen(false); }}
+                isInsideSheet
               />
-              <div className="space-y-1">
-                <h1 className="text-xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Central University of Kashmir
-                </h1>
-                <p className="text-muted-foreground text-sm md:text-lg">
-                  Exam Schedule Generator
-                </p>
-                <p className="text-xs text-muted-foreground hidden md:block">
-                  Developed by{" "}
-                  <a
-                    href="https://m4milaad.github.io/Resume/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-primary hover:underline"
-                  >
-                  Milad Ajaz Bhat
-                  </a> & <a
-                    href="https://nimrawani.vercel.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-primary hover:underline"
-                  >
-                    Nimra Wani
-                  </a>
-                </p>
-              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <AdminSidebar
+            activeTab="generator"
+            setActiveTab={(tab) => navigate(`/admin-dashboard?tab=${tab}`)}
+            userRole={profileData?.user_type === "admin" ? "admin" : "department_admin"}
+            isCollapsed={isSidebarCollapsed}
+            toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            onLogout={handleLogout}
+            onNavigate={navigate}
+          />
+        )}
+
+        {/* Main Content */}
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
+            !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+          )}
+        >
+          <AdminTopbar
+            title="Schedule Generator"
+            description="Generate and manage exam schedules"
+            userLabel={profileData?.full_name || profileData?.email || undefined}
+            userId={profileData?.user_id}
+            isMobile={isMobile}
+            onOpenSidebar={() => setIsMobileMenuOpen(true)}
+            onLogout={handleLogout}
+            onRefresh={loadLastSchedule}
+            onNavigate={navigate}
+          />
+
+          <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
+            <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
+              <AnimatePresence mode="wait">
+                <PageTransition key="generator">
+                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "selection" | "schedule")}>
+
+                    {/* ── Toolbar card with tabs + actions ── */}
+                    <Card className="linear-surface overflow-hidden mb-6">
+                      <CardHeader className="linear-toolbar">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <div className="linear-kicker">Exam Planner</div>
+                            <CardTitle className="text-base font-semibold">Schedule Generator</CardTitle>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <TabsList>
+                              <TabsTrigger value="selection" className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                <span className="hidden sm:inline">Course Selection</span>
+                                <span className="sm:hidden">Courses</span>
+                              </TabsTrigger>
+                              <TabsTrigger value="schedule" disabled={!isScheduleGenerated} className="flex items-center gap-2">
+                                <FileSpreadsheet className="w-4 h-4" />
+                                <span className="hidden sm:inline">Date Sheet</span>
+                                <span className="sm:hidden">Sheet</span>
+                                {isScheduleGenerated && (
+                                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full leading-none">
+                                    {generatedSchedule.length}
+                                  </span>
+                                )}
+                              </TabsTrigger>
+                            </TabsList>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" onClick={loadLastSchedule} disabled={loadingLastSchedule}>
+                                <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
+                                <span className="hidden sm:inline ml-2">Reload Last</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+
+                    {/* ── Course Selection Tab ── */}
+                    <TabsContent value="selection" className="mt-0">
+                      <Card className="linear-surface overflow-hidden">
+                        <CardHeader className="linear-toolbar">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="linear-pill">
+                              <span className="font-medium text-foreground">{selectedCourseTeachers.length}</span>
+                              <span className="text-muted-foreground">/</span>
+                              <span className="font-medium text-foreground">{courseTeachers.length}</span>
+                              <span className="hidden sm:inline text-muted-foreground">courses selected</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="outline" size="sm" onClick={selectEnrolledCourses}>With Students</Button>
+                              <Button variant="outline" size="sm" onClick={selectAllCourses}>Select All</Button>
+                              <Button variant="outline" size="sm" onClick={deselectAllCourses}>Clear</Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 md:p-6">
+                          <div className="grid lg:grid-cols-4 gap-6">
+                            <ScheduleSettings
+                              startDate={startDate}
+                              endDate={endDate}
+                              holidays={holidays}
+                              dateRangeInfo={dateRangeInfo}
+                              minimumDaysInfo={minimumDaysInfo}
+                              isScheduleGenerated={isScheduleGenerated}
+                              loading={loading}
+                              onStartDateChange={setStartDate}
+                              onEndDateChange={setEndDate}
+                              onGenerateSchedule={generateSchedule}
+                              onSaveSchedule={handleSaveSchedule}
+                              onDownloadExcel={handleDownloadExcel}
+                            />
+                            <div className="lg:col-span-3">
+                              {courseTeachers.length === 0 ? (
+                                <div className="py-14 text-center">
+                                  <div className="text-sm font-medium">No courses found</div>
+                                  <div className="mt-1 text-sm text-muted-foreground">Add courses in the admin panel first.</div>
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                                  {getAllAvailableCourses().map(ct => (
+                                    <CourseEnrollmentCard
+                                      key={ct.id}
+                                      courseTeacher={ct}
+                                      isSelected={selectedCourseTeachers.includes(ct.id)}
+                                      onToggle={() => toggleCourseTeacher(ct.id)}
+                                      editingGap={editingGap}
+                                      tempGapValue={tempGapValue}
+                                      onEditGap={handleEditGap}
+                                      onSaveGap={handleSaveGap}
+                                      onCancelGap={handleCancelGap}
+                                      onTempGapChange={setTempGapValue}
+                                      enrollmentCount={courseEnrollmentCounts[ct.course_id] || 0}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    {/* ── Date Sheet Tab ── */}
+                    <TabsContent value="schedule" className="mt-0">
+                      <Card className="linear-surface overflow-hidden">
+                        <CardHeader className="linear-toolbar">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <div className="linear-kicker">Output</div>
+                              <CardTitle className="text-base font-semibold">Generated Date Sheet</CardTitle>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" onClick={handleSaveSchedule} disabled={loading}>
+                                <Save className="w-4 h-4 mr-2" />Save
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={handleDownloadExcel}>
+                                <Download className="w-4 h-4 mr-2" />Excel
+                              </Button>
+                              <div className="linear-pill">
+                                <span className="font-medium text-foreground">{generatedSchedule.length}</span>
+                                <span className="hidden sm:inline text-muted-foreground">exams</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <ScheduleTable generatedSchedule={generatedSchedule} onDragEnd={onDragEnd} />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                  </Tabs>
+                </PageTransition>
+              </AnimatePresence>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <ThemeToggle />
-              <Button
-                onClick={loadLastSchedule}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
-                disabled={loadingLastSchedule}
-              >
-                <RefreshCw
-                  className={cn(
-                    "w-4 h-4",
-                    loadingLastSchedule && "animate-spin"
-                  )}
-                />
-                <span className="hidden sm:inline">Reload Last Schedule</span>
-                <span className="sm:hidden">Reload</span>
-              </Button>
-              <Button
-                onClick={() => navigate("/auth")}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
-              >
-                <Settings className="w-4 h-4" />
-                <span className="hidden sm:inline">Admin Panel</span>
-                <span className="sm:hidden">Admin</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Tabbed Interface */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-6">
-              <TabsTrigger value="selection" className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Course Selection
-              </TabsTrigger>
-              <TabsTrigger
-                value="schedule"
-                className="flex items-center gap-2"
-                disabled={!isScheduleGenerated}
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                Generated Schedule
-                {isScheduleGenerated && (
-                  <span className="ml-1 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
-                    {generatedSchedule.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Course Selection Tab */}
-            <TabsContent value="selection" className="space-y-6 animate-fade-in">
-              {/* Course selection summary */}
-              <Card className="linear-surface overflow-hidden">
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                      <CardTitle className="dark:text-gray-100 transition-colors duration-300 text-lg md:text-xl">
-                        Course Selection
-                      </CardTitle>
-                      <CardDescription className="dark:text-gray-400 transition-colors duration-300 text-xs md:text-sm">
-                        {selectedCourseTeachers.length} of {courseTeachers.length} courses • {getTotalEnrolledStudents()} students
-                      </CardDescription>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={selectEnrolledCourses}
-                        className="flex items-center gap-1 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
-                      >
-                        <span className="hidden sm:inline">Select Enrolled</span>
-                        <span className="sm:hidden">Enrolled</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={selectAllCourses}
-                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
-                      >
-                        <span className="hidden sm:inline">Select All</span>
-                        <span className="sm:hidden">All</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={deselectAllCourses}
-                        className="bg-background/50 backdrop-blur-sm border-border/50 hover:bg-background/70"
-                      >
-                        <span className="hidden sm:inline">Clear All</span>
-                        <span className="sm:hidden">Clear</span>
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-
-              {/* Main content grid for schedule settings and course cards */}
-              <div className="grid lg:grid-cols-4 gap-4 md:gap-6">
-                <ScheduleSettings
-                  startDate={startDate}
-                  endDate={endDate}
-                  holidays={holidays}
-                  dateRangeInfo={dateRangeInfo}
-                  minimumDaysInfo={minimumDaysInfo}
-                  isScheduleGenerated={isScheduleGenerated}
-                  loading={loading}
-                  onStartDateChange={setStartDate}
-                  onEndDateChange={setEndDate}
-                  onGenerateSchedule={generateSchedule}
-                  onSaveSchedule={handleSaveSchedule}
-                  onDownloadExcel={handleDownloadExcel}
-                />
-
-                {/* Course selection by course code */}
-                <div className="lg:col-span-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-                    {getAllAvailableCourses().map((courseTeacher) => (
-                      <CourseEnrollmentCard
-                        key={courseTeacher.id}
-                        courseTeacher={courseTeacher}
-                        isSelected={selectedCourseTeachers.includes(courseTeacher.id)}
-                        onToggle={() => toggleCourseTeacher(courseTeacher.id)}
-                        editingGap={editingGap}
-                        tempGapValue={tempGapValue}
-                        onEditGap={handleEditGap}
-                        onSaveGap={handleSaveGap}
-                        onCancelGap={handleCancelGap}
-                        onTempGapChange={setTempGapValue}
-                        enrollmentCount={courseEnrollmentCounts[courseTeacher.course_id] || 0}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Generated Schedule Tab */}
-            <TabsContent value="schedule" className="space-y-6 animate-fade-in">
-              {isScheduleGenerated && (
-                <>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <ScheduleStatusCard scheduleCount={generatedSchedule.length} />
-                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                      <Button
-                        onClick={handleSaveSchedule}
-                        variant="default"
-                        className="flex-1 sm:flex-none"
-                        disabled={loading}
-                      >
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Schedule
-                      </Button>
-                      <Button
-                        onClick={handleDownloadExcel}
-                        variant="outline"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download Excel
-                      </Button>
-                    </div>
-                  </div>
-                  <ScheduleTable
-                    generatedSchedule={generatedSchedule}
-                    onDragEnd={onDragEnd}
-                  />
-                </>
-              )}
-            </TabsContent>
-          </Tabs>
+          </main>
         </div>
       </div>
-      <Footer />
     </TooltipProvider>
   );
 }

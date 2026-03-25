@@ -395,6 +395,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                                 variant="ghost"
                                 className={cn(
                                     "w-full transition-all duration-200 text-muted-foreground/70 hover:text-foreground hover:bg-muted/20",
+                                    activeTab === "generator" && "bg-muted/40 text-foreground",
                                     isCollapsed
                                         ? "h-10 w-10 p-0 mx-auto rounded-md flex items-center justify-center"
                                         : "h-8 px-3 rounded-md justify-start"

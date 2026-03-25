@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -46,6 +46,7 @@ const AdminDashboard: React.FC = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { toast } = useToast();
     const isMobile = useIsMobile();
 
@@ -55,7 +56,8 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         if (!userRole) return;
-        setActiveTab("overview");
+        const tab = searchParams.get("tab");
+        setActiveTab(tab || "overview");
     }, [userRole]);
 
     const checkUserRole = async () => {
