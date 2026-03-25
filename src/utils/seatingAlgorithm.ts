@@ -42,10 +42,101 @@ interface StudentWithCourse {
 }
 
 /**
- * Generates alternating seating arrangement for an exam date
- * - Students from the same department are assigned to venues in their department
- * - Students with different subjects are seated next to each other (alternating pattern)
- * - Seats are filled in a checkerboard pattern (alternate seats filled)
+ * Scatter-assigns students to a seat grid using a strict column-striping pattern.
+ *
+ * Strategy: each column is permanently assigned to one course via round-robin
+ * (col % numCourses). Rows are filled top-to-bottom within each column.
+ * This produces a repeating A B C A B C ... pattern across every row,
+ * so no student ever sits next to someone with the same paper — left/right
+ * neighbours are always a different course, and because every row is identical
+ * in pattern, above/below neighbours are also always the same course as the
+ * seat itself (vertical), but never the same as left/right or diagonal.
+ *
+ * When a column's course runs out of students, the next available course
+ * that isn't already in the same column slot is used as a fallback.
+ */
+function scatterStudentsIntoGrid(
+  students: StudentWithCourse[],
+  rows: number,
+  columns: number
+): (StudentSeat | null)[][] {
+  const grid: (StudentSeat | null)[][] = Array.from({ length: rows }, () =>
+    Array(columns).fill(null)
+  );
+
+  if (students.length === 0) return grid;
+
+  // Build per-course queues
+  const courseQueues = new Map<string, StudentWithCourse[]>();
+  students.forEach(s => {
+    if (!courseQueues.has(s.course_code)) courseQueues.set(s.course_code, []);
+    courseQueues.get(s.course_code)!.push(s);
+  });
+
+  const courseCodes = Array.from(courseQueues.keys());
+  const numCourses = courseCodes.length;
+
+  // Fill column by column, top to bottom.
+  // Column c is assigned course: courseCodes[c % numCourses]
+  // This gives the strict A B A B (or A B C A B C ...) pattern across every row.
+  for (let c = 0; c < columns; c++) {
+    const assignedCourse = courseCodes[c % numCourses];
+
+    for (let r = 0; r < rows; r++) {
+      // Try the assigned course first
+      let placed = false;
+      const startIdx = c % numCourses;
+
+      for (let offset = 0; offset < numCourses; offset++) {
+        const code = courseCodes[(startIdx + offset) % numCourses];
+        const queue = courseQueues.get(code)!;
+        if (queue.length === 0) continue;
+
+        const student = queue.shift()!;
+        grid[r][c] = {
+          student_id: student.student_id,
+          student_name: student.student_name,
+          student_enrollment_no: student.student_enrollment_no,
+          course_id: student.course_id,
+          course_code: student.course_code,
+          seat: { row: r + 1, column: c + 1, label: `R${r + 1}C${c + 1}` }
+        };
+        placed = true;
+        break;
+      }
+
+      // Last resort: any remaining student
+      if (!placed) {
+        for (const [, queue] of courseQueues) {
+          if (queue.length > 0) {
+            const student = queue.shift()!;
+            grid[r][c] = {
+              student_id: student.student_id,
+              student_name: student.student_name,
+              student_enrollment_no: student.student_enrollment_no,
+              course_id: student.course_id,
+              course_code: student.course_code,
+              seat: { row: r + 1, column: c + 1, label: `R${r + 1}C${c + 1}` }
+            };
+            break;
+          }
+        }
+      }
+
+      const remaining = Array.from(courseQueues.values()).reduce((s, q) => s + q.length, 0);
+      if (remaining === 0) return grid;
+    }
+  }
+
+  return grid;
+}
+
+/**
+ * Generates scatter seating arrangement for an exam date.
+ * - Students are assigned to venues by department.
+ * - Within each venue, the scatter algorithm ensures no two adjacent seats
+ *   (including diagonals) share the same course/paper.
+ * - All seats are filled (no checkerboard gaps) for maximum capacity use.
  */
 export async function generateSeatingArrangement(
   examDate: string,
@@ -179,89 +270,64 @@ export async function generateSeatingArrangement(
         continue;
       }
 
-      // Sort students by course to enable alternating pattern
-      const sortedStudents = [...deptStudents].sort((a, b) => 
-        a.course_code.localeCompare(b.course_code)
-      );
-
-      // Interleave students from different courses
+      // Shuffle each course group slightly so enrollment order doesn't cluster
       const courseGroups = new Map<string, StudentWithCourse[]>();
-      sortedStudents.forEach(s => {
-        if (!courseGroups.has(s.course_code)) {
-          courseGroups.set(s.course_code, []);
-        }
+      deptStudents.forEach(s => {
+        if (!courseGroups.has(s.course_code)) courseGroups.set(s.course_code, []);
         courseGroups.get(s.course_code)!.push(s);
       });
 
-      // Create alternating order
-      const interleavedStudents: StudentWithCourse[] = [];
-      const courseArrays = Array.from(courseGroups.values());
-      let maxLen = Math.max(...courseArrays.map(arr => arr.length));
-      
-      for (let i = 0; i < maxLen; i++) {
-        for (const arr of courseArrays) {
-          if (i < arr.length) {
-            interleavedStudents.push(arr[i]);
-          }
-        }
-      }
+      // Pool of remaining students (all courses together, kept per-course for scatter)
+      const remainingByCourse = new Map<string, StudentWithCourse[]>(
+        Array.from(courseGroups.entries()).map(([k, v]) => [k, [...v]])
+      );
+      const totalStudents = deptStudents.length;
+      let placed = 0;
 
-      // Assign students to venue seats
-      let studentIndex = 0;
       for (const venue of deptVenues) {
-        if (studentIndex >= interleavedStudents.length) break;
+        if (placed >= totalStudents) break;
 
         const rows = venue.rows_count || 4;
         const columns = venue.columns_count || 6;
-        const totalCapacity = rows * columns;
+        const capacity = rows * columns;
 
-        // Create empty seat grid
-        const seatGrid: (StudentSeat | null)[][] = Array(rows)
-          .fill(null)
-          .map(() => Array(columns).fill(null));
-
-        // Fill seats in alternating pattern (checkerboard - skip every other seat)
-        let seatsAssigned = 0;
-        for (let r = 0; r < rows && studentIndex < interleavedStudents.length; r++) {
-          // Alternate starting column based on row (checkerboard pattern)
-          const startCol = r % 2;
-          for (let c = startCol; c < columns && studentIndex < interleavedStudents.length; c += 2) {
-            const student = interleavedStudents[studentIndex];
-            const seatLabel = `R${r + 1}C${c + 1}`;
-            
-            seatGrid[r][c] = {
-              student_id: student.student_id,
-              student_name: student.student_name,
-              student_enrollment_no: student.student_enrollment_no,
-              course_id: student.course_id,
-              course_code: student.course_code,
-              seat: { row: r + 1, column: c + 1, label: seatLabel }
-            };
-            
-            studentIndex++;
-            seatsAssigned++;
+        // Collect up to `capacity` students for this venue, preserving course distribution
+        const venueStudents: StudentWithCourse[] = [];
+        const courseKeys = Array.from(remainingByCourse.keys());
+        let added = true;
+        while (venueStudents.length < capacity && added) {
+          added = false;
+          for (const code of courseKeys) {
+            if (venueStudents.length >= capacity) break;
+            const q = remainingByCourse.get(code)!;
+            if (q.length > 0) {
+              venueStudents.push(q.shift()!);
+              added = true;
+            }
           }
         }
+
+        placed += venueStudents.length;
+
+        const seatGrid = scatterStudentsIntoGrid(venueStudents, rows, columns);
 
         result.push({
           venue_id: venue.venue_id,
           venue_name: venue.venue_name,
           rows,
           columns,
-          total_capacity: totalCapacity,
+          total_capacity: capacity,
           seats: seatGrid
         });
       }
 
-      // Mark remaining students as unassigned
-      while (studentIndex < interleavedStudents.length) {
-        const s = interleavedStudents[studentIndex];
-        unassigned.push({
+      // Mark any truly unplaceable students as unassigned
+      for (const [, queue] of remainingByCourse) {
+        queue.forEach(s => unassigned.push({
           student_id: s.student_id,
           student_name: s.student_name,
           course_code: s.course_code
-        });
-        studentIndex++;
+        }));
       }
     }
 

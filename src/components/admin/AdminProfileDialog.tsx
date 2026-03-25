@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, X } from 'lucide-react';
-import { ThemeColorPicker } from '@/components/ThemeColorPicker';import logger from '@/lib/logger';
+import { User, Lock } from 'lucide-react';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';
+import logger from '@/lib/logger';
 
 
 interface Department {
@@ -144,7 +145,7 @@ export const AdminProfileDialog: React.FC<AdminProfileDialogProps> = ({
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="linear-surface max-w-md">
+        <DialogContent className="linear-surface max-w-md p-0">
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
@@ -155,28 +156,18 @@ export const AdminProfileDialog: React.FC<AdminProfileDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="linear-surface max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="linear-toolbar">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <DialogTitle className="text-lg font-semibold">Profile Settings</DialogTitle>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 rounded-full"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+      <DialogContent className="linear-surface max-w-md max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="linear-toolbar px-6 py-4 rounded-t-lg">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            <DialogTitle className="text-lg font-semibold">Profile Settings</DialogTitle>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1 text-left">
             Manage your account settings and preferences
           </p>
         </DialogHeader>
 
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 pt-4">
           {!profile?.is_approved && (
             <div className="linear-pill bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200">
               <div className="flex items-center gap-2">
