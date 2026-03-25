@@ -23,7 +23,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { OverviewTab } from "@/components/admin/OverviewTab";
-import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+import { cn } from "@/lib/utils";
+import logger from '@/lib/logger';
 
 
 const AdminDashboard: React.FC = () => {
@@ -362,7 +363,7 @@ const AdminDashboard: React.FC = () => {
                             }}
                             userRole={userRole}
                             isCollapsed={false}
-                            toggleSidebar={() => { }}
+                            toggleSidebar={() => setIsMobileMenuOpen(false)}
                             onLogout={handleLogout}
                             onNavigate={(path) => {
                                 navigate(path);

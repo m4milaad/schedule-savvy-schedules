@@ -19,7 +19,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+import { cn } from "@/lib/utils";
+import logger from '@/lib/logger';
 
 
 interface Department {
@@ -261,7 +262,7 @@ const TeacherDashboard = () => {
                 setIsMobileMenuOpen(false);
               }}
               isCollapsed={false}
-              toggleSidebar={() => {}}
+              toggleSidebar={() => setIsMobileMenuOpen(false)}
               onLogout={handleSignOut}
               onEditProfile={() => {
                 setShowProfileDialog(true);

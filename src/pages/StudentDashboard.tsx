@@ -33,7 +33,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useNavigate } from 'react-router-dom';import logger from '@/lib/logger';
+import { useNavigate } from 'react-router-dom';
+import logger from '@/lib/logger';
 
 
 const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
@@ -596,7 +597,7 @@ const StudentDashboard = () => {
                 setIsMobileMenuOpen(false);
               }}
               isCollapsed={false}
-              toggleSidebar={() => {}}
+              toggleSidebar={() => setIsMobileMenuOpen(false)}
               onLogout={handleSignOut}
               onEditProfile={() => {
                 setShowProfileDialog(true);
