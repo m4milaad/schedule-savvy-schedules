@@ -150,12 +150,9 @@ export const useAuth = () => {
         throw validationError;
       }
 
-      // Clean up any existing auth state
-      cleanupAuthState();
-      
-      // Attempt to sign out first
+      // Attempt to sign out first to clear any stale state
       try {
-        await supabase.auth.signOut({ scope: 'global' });
+        await supabase.auth.signOut({ scope: 'local' });
       } catch (err) {
         // Continue even if this fails
       }
@@ -208,7 +205,7 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      cleanupAuthState();
+      await cleanupAuthState();
       
       try {
         await supabase.auth.signOut({ scope: 'global' });
@@ -228,20 +225,30 @@ export const useAuth = () => {
     }
   };
 
-  const cleanupAuthState = () => {
-    // Remove all Supabase auth keys from localStorage
+  const cleanupAuthState = async () => {
+    // Clear Supabase auth keys from localStorage and sessionStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
       }
     });
-    
-    // Remove from sessionStorage if in use
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
       }
     });
+    // Also clear from Capacitor Preferences
+    try {
+      const { Preferences } = await import('@capacitor/preferences');
+      const { keys } = await Preferences.keys();
+      for (const key of keys) {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          await Preferences.remove({ key });
+        }
+      }
+    } catch {
+      // not on native, ignore
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

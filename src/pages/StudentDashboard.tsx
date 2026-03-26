@@ -448,7 +448,7 @@ const StudentDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "notices":
-        return <StudentNoticesTab studentId={profile?.id || ''} studentDeptId={profile?.dept_id || undefined} />;
+        return <StudentNoticesTab studentId={profile?.id || ''} studentDeptId={profile?.dept_id || undefined} studentSemester={profile?.semester} />;
       case "courses":
         return (
           <StudentCoursesTab 

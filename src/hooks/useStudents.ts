@@ -25,15 +25,14 @@ export function useStudents(deptId?: string) {
     queryFn: async () => {
       const cacheKey = deptId ? `students_${deptId}` : 'students_all';
 
+      // Serve from cache immediately if available, then revalidate in background
+      const cached = await getCachedData<Student[]>(cacheKey, DEFAULT_TTL.ADMIN_TABLES);
+
       if (!(await isOnline())) {
-        const cached = await getCachedData<Student[]>(cacheKey, DEFAULT_TTL.ADMIN_TABLES);
-        if (cached) {
-          return cached.data;
-        }
+        if (cached) return cached.data;
       }
 
       let query = supabase.from('students').select('*');
-      
       if (deptId) {
         query = query.eq('dept_id', deptId);
       }
@@ -46,10 +45,7 @@ export function useStudents(deptId?: string) {
         await setCachedData(cacheKey, students);
         return students;
       } catch (error) {
-        const cached = await getCachedData<Student[]>(cacheKey, DEFAULT_TTL.ADMIN_TABLES);
-        if (cached) {
-          return cached.data;
-        }
+        if (cached) return cached.data;
         throw error;
       }
     },

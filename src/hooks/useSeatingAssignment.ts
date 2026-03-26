@@ -28,11 +28,10 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
         ? `seat_assignments_${examDate}_${deptId}`
         : `seat_assignments_${examDate}_all`;
 
+      const cached = await getCachedData<VenueSeatingPlan[]>(cacheKey, DEFAULT_TTL.SEAT_ASSIGNMENT);
+
       if (!(await isOnline())) {
-        const cached = await getCachedData<VenueSeatingPlan[]>(cacheKey, DEFAULT_TTL.SEAT_ASSIGNMENT);
-        if (cached) {
-          return cached.data;
-        }
+        if (cached) return cached.data;
       }
 
       try {
@@ -40,10 +39,7 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
         await setCachedData(cacheKey, seating);
         return seating;
       } catch (error) {
-        const cached = await getCachedData<VenueSeatingPlan[]>(cacheKey, DEFAULT_TTL.SEAT_ASSIGNMENT);
-        if (cached) {
-          return cached.data;
-        }
+        if (cached) return cached.data;
         throw error;
       }
     },

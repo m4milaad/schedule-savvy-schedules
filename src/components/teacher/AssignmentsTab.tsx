@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Plus, Trash2, Edit, Clock, CheckCircle, Upload, Paperclip, X } from 'lucide-react';
-import { format } from 'date-fns';import logger from '@/lib/logger';
+import { format } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
+import logger from '@/lib/logger';
 
 
 interface AssignmentsTabProps {
@@ -44,8 +46,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [courseId, setCourseId] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [maxMarks, setMaxMarks] = useState('100');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [maxMarks, setMaxMarks] = useState('5');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,8 +101,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
     setTitle('');
     setDescription('');
     setCourseId('');
-    setDueDate('');
-    setMaxMarks('100');
+    setDueDate(undefined);
+    setMaxMarks('5');
     setAttachmentFile(null);
     setEditingAssignment(null);
     setShowForm(false);
@@ -148,8 +150,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
         title: title.trim(),
         description: description.trim(),
         course_id: courseId,
-        due_date: dueDate,
-        max_marks: parseInt(maxMarks) || 100,
+        due_date: format(dueDate, 'yyyy-MM-dd'),
+        max_marks: parseInt(maxMarks) || 5,
       };
 
       if (fileUrl) {
@@ -191,7 +193,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
     setTitle(assignment.title);
     setDescription(assignment.description || '');
     setCourseId(assignment.course_id);
-    setDueDate(assignment.due_date);
+    setDueDate(assignment.due_date ? new Date(assignment.due_date) : undefined);
     setMaxMarks(assignment.max_marks.toString());
     setShowForm(true);
   };
@@ -288,13 +290,11 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dueDate">Due Date *</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    required
+                  <DatePicker
+                    date={dueDate}
+                    onDateChange={setDueDate}
+                    placeholder="Select due date"
+                    disablePastDates
                   />
                 </div>
                 <div className="space-y-2">
@@ -305,7 +305,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
                     min="1"
                     value={maxMarks}
                     onChange={(e) => setMaxMarks(e.target.value)}
-                    placeholder="100"
+                    placeholder="5"
                   />
                 </div>
               </div>

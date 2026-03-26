@@ -9,12 +9,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Search, Eye, Download, AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+import { TabLoader } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
 
 
 interface StudentNoticesTabProps {
   studentId: string;
   studentDeptId?: string;
+  studentSemester?: number | null;
 }
 
 interface Notice {
@@ -35,10 +37,11 @@ interface Notice {
     course_code: string;
     course_name: string;
   } | null;
+  teacher_course_code?: string | null;
   isRead?: boolean;
 }
 
-export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId, studentDeptId }) => {
+export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId, studentDeptId, studentSemester }) => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [readNotices, setReadNotices] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -94,12 +97,13 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
           return notice.target_course_id && enrolledCourseIds.includes(notice.target_course_id);
         }
         
-        // specific_class: Show if matches student's dept (or semester in future)
+        // specific_class: match dept AND semester (if notice has target_semester set)
         if (notice.target_audience === 'specific_class') {
-          if (notice.target_dept_id) {
-            return notice.target_dept_id === studentDeptId;
-          }
-          return true;
+          const deptMatch = notice.target_dept_id ? notice.target_dept_id === studentDeptId : true;
+          const semMatch = notice.target_semester != null
+            ? notice.target_semester === studentSemester
+            : true;
+          return deptMatch && semMatch;
         }
         
         return true;
@@ -114,14 +118,33 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
       const readIds = new Set((readsData || []).map(r => r.notice_id));
       setReadNotices(readIds);
 
+      // Fetch teacher course codes for display
+      const teacherIds = [...new Set(filteredNotices.map(n => (n as any).teacher_id).filter(Boolean))];
+      const teacherCourseMap = new Map<string, string>();
+      if (teacherIds.length > 0) {
+        const { data: tcData } = await supabase
+          .from('teacher_courses')
+          .select('teacher_id, courses:course_id (course_code)')
+          .in('teacher_id', teacherIds);
+        // Use first course per teacher
+        (tcData || []).forEach((tc: any) => {
+          if (!teacherCourseMap.has(tc.teacher_id)) {
+            teacherCourseMap.set(tc.teacher_id, tc.courses?.course_code || '');
+          }
+        });
+      }
+
       const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
-        teacher: notice.profiles as any,
-        course: notice.courses as any,
+        teacher: (notice as any).profiles as any,
+        course: (notice as any).courses as any,
+        teacher_course_code: (notice as any).target_course_id
+          ? ((notice as any).courses as any)?.course_code
+          : teacherCourseMap.get((notice as any).teacher_id) || null,
         isRead: readIds.has(notice.id)
       }));
 
-      setNotices(noticesWithRead);
+      setNotices(noticesWithRead as any);
     } catch (error: any) {
       logger.error('Error loading notices:', error);
       toast({
@@ -296,12 +319,9 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
                         <div>
-                          <span className="font-medium text-foreground">{notice.teacher?.full_name || 'Admin'}</span>
-                          <span className="text-xs ml-1 text-muted-foreground">
-                            ({notice.teacher?.user_type === 'teacher' ? 'Teacher' : notice.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
-                          </span>
-                          {notice.course && (
-                            <div className="text-xs text-muted-foreground mt-0.5">{notice.course.course_code}</div>
+                          <span className="font-medium text-foreground">{notice.teacher?.full_name || 'Unknown'}</span>
+                          {notice.teacher_course_code && (
+                            <span className="text-xs ml-1 text-muted-foreground">({notice.teacher_course_code})</span>
                           )}
                         </div>
                       </td>
@@ -352,15 +372,14 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                       </div>
                       <div>
                         <div className="font-medium text-foreground">
-                          {selectedNotice?.teacher?.full_name || 'Admin'}
-                          <span className="text-xs font-normal text-muted-foreground ml-1">
-                            ({selectedNotice?.teacher?.user_type === 'teacher' ? 'Teacher' : selectedNotice?.teacher?.user_type === 'department_admin' ? 'Dept Admin' : 'Admin'})
-                          </span>
+                          {selectedNotice?.teacher?.full_name || 'Unknown'}
+                          {selectedNotice?.teacher_course_code && (
+                            <span className="text-xs font-normal text-muted-foreground ml-1">
+                              ({selectedNotice.teacher_course_code})
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {selectedNotice?.course && (
-                            <span className="mr-2">{selectedNotice.course.course_code} — {selectedNotice.course.course_name}</span>
-                          )}
                           {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
                         </div>
                       </div>
