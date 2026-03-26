@@ -11,7 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Bell, Plus, Trash2, Edit, Eye, Send } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+import { TabLoader } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
 
 
 interface NoticesTabProps {
@@ -26,11 +27,11 @@ interface Notice {
   content: string;
   priority: string;
   target_audience: string;
-  target_course_id?: string;
-  expiry_date?: string;
-  views_count: number;
-  notifications_sent: number;
-  is_active: boolean;
+  target_course_id?: string | null;
+  expiry_date?: string | null;
+  views_count: number | null;
+  notifications_sent: number | null;
+  is_active: boolean | null;
   created_at: string;
 }
 
@@ -47,6 +48,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
   const [priority, setPriority] = useState('normal');
   const [targetAudience, setTargetAudience] = useState('all_students');
   const [targetCourseId, setTargetCourseId] = useState('');
+  const [targetSemesters, setTargetSemesters] = useState<number[]>([]);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotices(data || []);
+      setNotices((data || []) as any);
     } catch (error: any) {
       logger.error('Error loading notices:', error);
       toast({
@@ -81,6 +83,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority('normal');
     setTargetAudience('all_students');
     setTargetCourseId('');
+    setTargetSemesters([]);
     setExpiryDate(undefined);
     setEditingNotice(null);
     setShowForm(false);
@@ -99,34 +102,41 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     }
 
     try {
-      const noticeData = {
-        teacher_id: teacherId,
-        title: title.trim(),
-        content: content.trim(),
-        priority,
-        target_audience: targetAudience,
-        target_course_id: targetAudience === 'subject_students' ? targetCourseId : null,
-        target_dept_id: targetAudience === 'all_students' ? deptId : null,
-        expiry_date: expiryDate ? format(expiryDate, 'yyyy-MM-dd') : null,
-      };
+      const semestersToSave = targetAudience === 'specific_class' && targetSemesters.length > 0
+        ? targetSemesters
+        : [null];
 
-      if (editingNotice) {
-        const { error } = await supabase
-          .from('notices')
-          .update(noticeData)
-          .eq('id', editingNotice.id);
+      for (const sem of semestersToSave) {
+        const noticeData = {
+          teacher_id: teacherId,
+          title: title.trim(),
+          content: content.trim(),
+          priority,
+          target_audience: targetAudience,
+          target_course_id: targetAudience === 'subject_students' ? targetCourseId : null,
+          target_dept_id: targetAudience === 'all_students' ? deptId : targetAudience === 'specific_class' ? deptId : null,
+          target_semester: sem,
+          expiry_date: expiryDate ? format(expiryDate, 'yyyy-MM-dd') : null,
+        };
 
-        if (error) throw error;
-        toast({ title: 'Success', description: 'Notice updated successfully' });
-      } else {
-        const { error } = await supabase
-          .from('notices')
-          .insert(noticeData);
-
-        if (error) throw error;
-        toast({ title: 'Success', description: 'Notice created successfully' });
+        if (editingNotice && semestersToSave.length === 1) {
+          const { error } = await supabase
+            .from('notices')
+            .update(noticeData)
+            .eq('id', editingNotice.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('notices')
+            .insert(noticeData);
+          if (error) throw error;
+        }
       }
 
+      toast({
+        title: 'Success',
+        description: editingNotice ? 'Notice updated successfully' : `Notice${semestersToSave.length > 1 ? 's' : ''} created successfully`,
+      });
       resetForm();
       loadNotices();
     } catch (error: any) {
@@ -145,6 +155,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority(notice.priority);
     setTargetAudience(notice.target_audience);
     setTargetCourseId(notice.target_course_id || '');
+    setTargetSemesters((notice as any).target_semester ? [(notice as any).target_semester] : []);
     setExpiryDate(notice.expiry_date ? new Date(notice.expiry_date) : undefined);
     setShowForm(true);
   };
@@ -252,6 +263,40 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
                     </SelectContent>
                   </Select>
                 </div>
+                {targetAudience === 'specific_class' && (
+                  <div className="space-y-2">
+                    <Label>Semesters</Label>
+                    <div className="flex flex-wrap gap-2 p-3 border border-border/50 rounded-md bg-white/60 dark:bg-black/40 min-h-[42px]">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+                        const selected = targetSemesters.includes(sem);
+                        return (
+                          <button
+                            key={sem}
+                            type="button"
+                            onClick={() =>
+                              setTargetSemesters(prev =>
+                                selected ? prev.filter(s => s !== sem) : [...prev, sem]
+                              )
+                            }
+                            className={`px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                              selected
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                            }`}
+                          >
+                            Sem {sem}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {targetSemesters.length === 0 && (
+                      <p className="text-xs text-muted-foreground">Select one or more semesters — all students in those semesters will see this notice.</p>
+                    )}
+                    {targetSemesters.length > 0 && (
+                      <p className="text-xs text-muted-foreground">Selected: Semester {targetSemesters.sort((a,b)=>a-b).join(', ')}</p>
+                    )}
+                  </div>
+                )}
                 {targetAudience === 'subject_students' && (
                   <div className="space-y-2">
                     <Label htmlFor="course">Select Course</Label>

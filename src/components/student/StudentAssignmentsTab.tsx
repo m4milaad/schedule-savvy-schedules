@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Upload, Clock, CheckCircle, AlertCircle, Download, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+import { TabLoader } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
 
 
 interface StudentAssignmentsTabProps {
@@ -70,13 +71,12 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
       }
 
       const courseIds = enrollments.map(e => e.course_id);
-
       // Get active assignments for enrolled courses
       const { data: assignmentsData, error } = await supabase
         .from('assignments')
         .select(`
           *,
-          courses:course_id (course_code, course_name)
+          course:courses!assignments_course_id_fkey (course_code, course_name)
         `)
         .in('course_id', courseIds)
         .eq('is_active', true)
@@ -84,18 +84,21 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
 
       if (error) throw error;
 
-      // Get submissions for these assignments
       const assignmentIds = (assignmentsData || []).map(a => a.id);
-      
-      const { data: submissions } = await supabase
-        .from('assignment_submissions')
-        .select('*')
-        .eq('student_id', studentId)
-        .in('assignment_id', assignmentIds);
+
+      // Only fetch submissions if there are assignments
+      const submissions = assignmentIds.length > 0
+        ? (await supabase
+            .from('assignment_submissions')
+            .select('*')
+            .eq('student_id', studentId)
+            .in('assignment_id', assignmentIds)
+          ).data
+        : [];
 
       // Merge submissions with assignments
       const assignmentsWithSubmissions = (assignmentsData || []).map(assignment => {
-        const submission = submissions?.find(s => s.assignment_id === assignment.id);
+        const submission = (submissions || []).find(s => s.assignment_id === assignment.id);
         return {
           ...assignment,
           submission: submission ? {
@@ -297,9 +300,9 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
                           Due: {format(new Date(assignment.due_date), 'MMM dd, yyyy')}
                         </span>
                         <span>Max Marks: {assignment.max_marks}</span>
-                        {assignment.submission?.marks_obtained !== null && (
+                        {assignment.submission?.marks_obtained != null && (
                           <span className="font-medium text-green-600">
-                            Score: {assignment.submission.marks_obtained}/{assignment.max_marks}
+                            Score: {assignment.submission?.marks_obtained}/{assignment.max_marks}
                           </span>
                         )}
                       </div>
@@ -319,7 +322,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
                           <Download className="h-4 w-4" />
                         </Button>
                       )}
-                      {!assignment.submission?.marks_obtained && (
+                      {assignment.submission?.marks_obtained == null && (
                         <Dialog open={submitDialogOpen && selectedAssignment?.id === assignment.id} onOpenChange={(open) => {
                           setSubmitDialogOpen(open);
                           if (!open) {
