@@ -14,6 +14,35 @@
 
 CUK Acadex is a complete academic management system for Central University of Kashmir. It provides a unified platform for students, teachers, and administrators to manage all aspects of academic life - from exam scheduling and marks to assignments, library, and performance tracking.
 
+
+## 🗒️ Change Log (v5.0.0 → v6.0.0)
+
+This section summarizes major user-visible improvements delivered between the README `5.0.0` milestone and `6.0.0`.
+
+#### 📱 Mobile Navigation & Dashboard UX
+- Full Student Dashboard support in Android builds.
+- Repeated fixes for mobile sidebar issues (duplicate sidebar, overlay layering, layout, and toggle behavior).
+- Sidebars extended into mobile sheet navigation for cleaner small-screen interaction.
+- Dashboard and topbar interaction polish across Student, Teacher, and Admin experiences.
+
+#### 🌐 Offline-First Reliability
+- Offline-first service worker integration.
+- Capacitor-based offline caching rollout and follow-up fixes.
+- Improved offline state feedback through cached-data behavior and synchronization handling.
+
+#### 🔔 Student Notice Experience
+- Notice detail popup upgraded with a modern glassmorphism-style reading dialog.
+- Improved readability and context in notice detail view.
+
+#### 📅 Date & Form Safety
+- Past-date selection prevention introduced in date-picker based flows (e.g., leave/scheduling related forms).
+
+#### 🛠️ Admin & System Usability
+- “Load more” enhancements in admin audit logs for better large-history navigation.
+- Ongoing seating/dashboard tuning and broader UX refinements in final v6 preparation commits.
+
+#### 🏷️ Version Milestone
+- `6.0.0` reflects consolidated UX, offline, and dashboard improvements captured above.
 ## ✨ Key Features
 
 ### 🎓 Student Portal
