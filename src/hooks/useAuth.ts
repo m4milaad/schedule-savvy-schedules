@@ -150,12 +150,10 @@ export const useAuth = () => {
         throw validationError;
       }
 
-      // Attempt to sign out first to clear any stale state
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-      } catch (err) {
-        // Continue even if this fails
-      }
+      // ✅ FIX: Removed the pre-signIn signOut() call.
+      // It was making an extra network request on every login attempt,
+      // which could timeout on slow/mobile networks and was not necessary.
+      // Stale local auth state is now cleaned up only on explicit signOut.
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -194,9 +192,16 @@ export const useAuth = () => {
       return { data, error: null };
     } catch (error: any) {
       logger.error('Sign in error:', error);
+      const isTimeout =
+        error?.message?.toLowerCase().includes('timed out') ||
+        error?.name === 'AbortError' ||
+        error?.message?.toLowerCase().includes('network');
+
       toast({
         title: "Error",
-        description: error.message || "Failed to sign in",
+        description: isTimeout
+          ? "Connection timed out. Please check your internet connection and try again."
+          : error.message || "Failed to sign in",
         variant: "destructive",
       });
       return { data: null, error };
