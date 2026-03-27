@@ -241,7 +241,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                                 {activeTab === item.id && !isCollapsed && (
                                     <motion.div
                                         layoutId="activeTabIndicator"
-                                        layoutTransition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                                         className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary/80 rounded-r-full"
                                     />
                                 )}

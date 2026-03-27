@@ -13,6 +13,8 @@ dist-ssr
 
 # Editor directories and files
 .vscode/*
+.github/*
+.vscode/*
 .claude
 !.vscode/extensions.json
 .idea
