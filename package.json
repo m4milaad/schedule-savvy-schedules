@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:chatbot-kb": "node scripts/generate-chatbot-kb.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

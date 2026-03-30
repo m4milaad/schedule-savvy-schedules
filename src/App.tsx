@@ -25,6 +25,8 @@ import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
+import ChatbotAssistant from "@/pages/ChatbotAssistant";
+import { ChatbotLauncher } from "@/components/chatbot/ChatbotLauncher";
 import { useState } from "react";
 import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 
@@ -140,10 +142,19 @@ const App = () => {
                   <MobileSchedule />
                 </ProtectedRoute>
               } />
+              <Route
+                path="/assistant"
+                element={
+                  <ProtectedRoute allowedRoles={['student', 'teacher', 'admin', 'department_admin']}>
+                    <ChatbotAssistant />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+              <OfflineIndicator />
+              <ChatbotLauncher />
             </BrowserRouter>
-            <OfflineIndicator />
           </TooltipProvider>
         </QueryClientProvider>
         <Analytics />
