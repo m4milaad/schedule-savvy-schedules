@@ -23,6 +23,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { OverviewTab } from "@/components/admin/OverviewTab";
+import Index from "@/pages/Index";
+import ChatbotAssistant from "@/pages/ChatbotAssistant";
 import { cn } from "@/lib/utils";
 import logger from '@/lib/logger';
 
@@ -298,6 +300,8 @@ const AdminDashboard: React.FC = () => {
             case "holidays": return <HolidaysTab holidays={holidays} onRefresh={loadHolidays} />;
             case "students": return <StudentsTab students={students} departments={departments} onRefresh={loadStudents} />;
             case "seating": return <SeatingArrangement examDates={examDates} userDeptId={profileData?.dept_id} />;
+            case "generator": return <Index embedded />;
+            case "assistant": return <ChatbotAssistant embedded />;
             case "logs": return <AuditLogsTab />;
             case "admins": return <ManageAdminsTab />;
             case "profile": return <AdminProfileTab />;
@@ -317,6 +321,8 @@ const AdminDashboard: React.FC = () => {
             holidays: "Holiday Calendar",
             students: "Student Records",
             seating: "Seating Arrangement",
+            generator: "Schedule Generator",
+            assistant: "CUK Knowledge Assistant",
             logs: "System Audit Logs",
             admins: "Manage Administrators",
             profile: "Profile Settings",
@@ -336,6 +342,8 @@ const AdminDashboard: React.FC = () => {
             holidays: "Manage non-working days",
             students: "Manage student enrollments and profiles",
             seating: "Generate and view exam seating plans",
+            generator: "Generate and manage exam schedules in one place",
+            assistant: "Ask questions from crawled CUK and UGC data with citations",
             logs: "Monitor system activity and changes",
             admins: "Create and manage admin users and permissions",
             profile: "Manage your account settings and preferences",

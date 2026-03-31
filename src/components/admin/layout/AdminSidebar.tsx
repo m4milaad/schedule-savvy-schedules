@@ -15,6 +15,7 @@ import {
     LogOut,
     Shield,
     FileText,
+    MessageSquare,
     ChevronLeft,
     ChevronRight,
     User
@@ -400,7 +401,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                                         ? "h-10 w-10 p-0 mx-auto rounded-md flex items-center justify-center"
                                         : "h-8 px-3 rounded-md justify-start"
                                 )}
-                                onClick={() => onNavigate("/schedule-generator")}
+                                onClick={() => setActiveTab("generator")}
                                 title="Schedule Generator"
                             >
                                 <motion.span
@@ -421,6 +422,48 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                                         className="text-sm"
                                     >
                                         Generator
+                                    </motion.span>
+                                )}
+                            </Button>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            whileHover={{ x: 2 }}
+                            transition={{ duration: 0.2, delay: 0.27 }}
+                            className="mb-0.5"
+                        >
+                            <Button
+                                variant="ghost"
+                                className={cn(
+                                    "w-full transition-all duration-200 text-muted-foreground/70 hover:text-foreground hover:bg-muted/20",
+                                    activeTab === "assistant" && "bg-muted/40 text-foreground",
+                                    isCollapsed
+                                        ? "h-10 w-10 p-0 mx-auto rounded-md flex items-center justify-center"
+                                        : "h-8 px-3 rounded-md justify-start"
+                                )}
+                                onClick={() => setActiveTab("assistant")}
+                                title="CUK Assistant"
+                            >
+                                <motion.span
+                                    initial={false}
+                                    animate={{ scale: 1 }}
+                                    whileHover={{ scale: 1.08 }}
+                                    transition={{ duration: 0.15 }}
+                                    className={cn("h-4 w-4", !isCollapsed && "mr-3")}
+                                >
+                                    <MessageSquare />
+                                </motion.span>
+                                {!isCollapsed && (
+                                    <motion.span
+                                        initial={{ opacity: 0, x: -4 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        whileHover={{ x: 1 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="text-sm"
+                                    >
+                                        Assistant
                                     </motion.span>
                                 )}
                             </Button>

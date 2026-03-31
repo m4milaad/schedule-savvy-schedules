@@ -23,7 +23,11 @@ const starterPrompts = [
   "Scholarship portals for students",
 ];
 
-const ChatbotAssistant = () => {
+interface ChatbotAssistantProps {
+  embedded?: boolean;
+}
+
+const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -80,26 +84,28 @@ const ChatbotAssistant = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Link>
-          </Button>
-          <Badge variant="outline" className="gap-2">
-            <Sparkles className="h-3.5 w-3.5" />
-            Retrieval-Only Assistant
-          </Badge>
-        </div>
+    <div className={embedded ? "text-foreground" : "min-h-screen bg-background text-foreground"}>
+      <div className={embedded ? "mx-auto flex w-full flex-col gap-4" : "mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"}>
+        {!embedded && (
+          <div className="flex items-center justify-between">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Link>
+            </Button>
+            <Badge variant="outline" className="gap-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              Retrieval-Only Assistant
+            </Badge>
+          </div>
+        )}
 
-        <Card>
-          <CardHeader>
+        <Card className={embedded ? "linear-surface overflow-hidden" : ""}>
+          <CardHeader className={embedded ? "linear-toolbar" : ""}>
             <CardTitle className="flex items-center gap-2 text-2xl">
               <Bot className="h-6 w-6" />
-              CUK Knowledge Chatbot
+              {embedded ? "CUK Knowledge Assistant" : "CUK Knowledge Chatbot"}
             </CardTitle>
             <CardDescription>
               Built from crawled content in `crawl.csv` plus PDF sources. Answers are extractive and include references.
