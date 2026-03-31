@@ -5,10 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -25,6 +24,7 @@ import { AdminProtectedRoute } from "./components/AdminProtectedRoute";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
+import ChatbotAssistant from "@/pages/ChatbotAssistant";
 import { useState } from "react";
 import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 
@@ -85,7 +85,7 @@ const App = () => {
                 path="/schedule-generator"
                 element={
                   <AdminProtectedRoute>
-                    <Index />
+                    <Navigate to="/admin-dashboard?tab=generator" replace />
                   </AdminProtectedRoute>
                 }
               />
@@ -140,10 +140,18 @@ const App = () => {
                   <MobileSchedule />
                 </ProtectedRoute>
               } />
+              <Route
+                path="/assistant"
+                element={
+                  <ProtectedRoute allowedRoles={['student', 'teacher', 'admin', 'department_admin']}>
+                    <ChatbotAssistant />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
-            </Routes>
+              </Routes>
+              <OfflineIndicator />
             </BrowserRouter>
-            <OfflineIndicator />
           </TooltipProvider>
         </QueryClientProvider>
         <Analytics />

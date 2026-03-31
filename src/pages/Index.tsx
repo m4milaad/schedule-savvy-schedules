@@ -25,7 +25,11 @@ import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/layout/PageTransition";
 import logger from "@/lib/logger";
 
-export default function Index() {
+interface IndexProps {
+  embedded?: boolean;
+}
+
+export default function Index({ embedded = false }: IndexProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [selectedCourseTeachers, setSelectedCourseTeachers] = useState<string[]>([]);
@@ -409,6 +413,153 @@ export default function Index() {
   const dateRangeInfo = getDateRangeInfo();
   const minimumDaysInfo = calculateMinimumRequiredDays();
 
+  const renderGeneratorTabs = () => (
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "selection" | "schedule")}>
+
+      {/* ── Toolbar card with tabs + actions ── */}
+      <Card className="linear-surface overflow-hidden mb-6">
+        <CardHeader className="linear-toolbar">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="linear-kicker">Exam Planner</div>
+              <CardTitle className="text-base font-semibold">Schedule Generator</CardTitle>
+            </div>
+            <div className="flex items-center gap-3">
+              <TabsList>
+                <TabsTrigger value="selection" className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Course Selection</span>
+                  <span className="sm:hidden">Courses</span>
+                </TabsTrigger>
+                <TabsTrigger value="schedule" disabled={!isScheduleGenerated} className="flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span className="hidden sm:inline">Date Sheet</span>
+                  <span className="sm:hidden">Sheet</span>
+                  {isScheduleGenerated && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full leading-none">
+                      {generatedSchedule.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={loadLastSchedule} disabled={loadingLastSchedule}>
+                  <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
+                  <span className="hidden sm:inline ml-2">Reload Last</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* ── Course Selection Tab ── */}
+      <TabsContent value="selection" className="mt-0">
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="linear-pill">
+                <span className="font-medium text-foreground">{selectedCourseTeachers.length}</span>
+                <span className="text-muted-foreground">/</span>
+                <span className="font-medium text-foreground">{courseTeachers.length}</span>
+                <span className="hidden sm:inline text-muted-foreground">courses selected</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={selectEnrolledCourses}>With Students</Button>
+                <Button variant="outline" size="sm" onClick={selectAllCourses}>Select All</Button>
+                <Button variant="outline" size="sm" onClick={deselectAllCourses}>Clear</Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            <div className="grid lg:grid-cols-4 gap-6">
+              <ScheduleSettings
+                startDate={startDate}
+                endDate={endDate}
+                holidays={holidays}
+                dateRangeInfo={dateRangeInfo}
+                minimumDaysInfo={minimumDaysInfo}
+                isScheduleGenerated={isScheduleGenerated}
+                loading={loading}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                onGenerateSchedule={generateSchedule}
+                onSaveSchedule={handleSaveSchedule}
+                onDownloadExcel={handleDownloadExcel}
+              />
+              <div className="lg:col-span-3">
+                {courseTeachers.length === 0 ? (
+                  <div className="py-14 text-center">
+                    <div className="text-sm font-medium">No courses found</div>
+                    <div className="mt-1 text-sm text-muted-foreground">Add courses in the admin panel first.</div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {getAllAvailableCourses().map(ct => (
+                      <CourseEnrollmentCard
+                        key={ct.id}
+                        courseTeacher={ct}
+                        isSelected={selectedCourseTeachers.includes(ct.id)}
+                        onToggle={() => toggleCourseTeacher(ct.id)}
+                        editingGap={editingGap}
+                        tempGapValue={tempGapValue}
+                        onEditGap={handleEditGap}
+                        onSaveGap={handleSaveGap}
+                        onCancelGap={handleCancelGap}
+                        onTempGapChange={setTempGapValue}
+                        enrollmentCount={courseEnrollmentCounts[ct.course_id] || 0}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      {/* ── Date Sheet Tab ── */}
+      <TabsContent value="schedule" className="mt-0">
+        <Card className="linear-surface overflow-hidden">
+          <CardHeader className="linear-toolbar">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="linear-kicker">Output</div>
+                <CardTitle className="text-base font-semibold">Generated Date Sheet</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleSaveSchedule} disabled={loading}>
+                  <Save className="w-4 h-4 mr-2" />Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDownloadExcel}>
+                  <Download className="w-4 h-4 mr-2" />Excel
+                </Button>
+                <div className="linear-pill">
+                  <span className="font-medium text-foreground">{generatedSchedule.length}</span>
+                  <span className="hidden sm:inline text-muted-foreground">exams</span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScheduleTable generatedSchedule={generatedSchedule} onDragEnd={onDragEnd} />
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+    </Tabs>
+  );
+
+  if (embedded) {
+    return (
+      <TooltipProvider>
+        <div className="w-full">
+          {renderGeneratorTabs()}
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div
@@ -472,140 +623,7 @@ export default function Index() {
             <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
               <AnimatePresence mode="wait">
                 <PageTransition key="generator">
-                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "selection" | "schedule")}>
-
-                    {/* ── Toolbar card with tabs + actions ── */}
-                    <Card className="linear-surface overflow-hidden mb-6">
-                      <CardHeader className="linear-toolbar">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <div className="linear-kicker">Exam Planner</div>
-                            <CardTitle className="text-base font-semibold">Schedule Generator</CardTitle>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <TabsList>
-                              <TabsTrigger value="selection" className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4" />
-                                <span className="hidden sm:inline">Course Selection</span>
-                                <span className="sm:hidden">Courses</span>
-                              </TabsTrigger>
-                              <TabsTrigger value="schedule" disabled={!isScheduleGenerated} className="flex items-center gap-2">
-                                <FileSpreadsheet className="w-4 h-4" />
-                                <span className="hidden sm:inline">Date Sheet</span>
-                                <span className="sm:hidden">Sheet</span>
-                                {isScheduleGenerated && (
-                                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full leading-none">
-                                    {generatedSchedule.length}
-                                  </span>
-                                )}
-                              </TabsTrigger>
-                            </TabsList>
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" onClick={loadLastSchedule} disabled={loadingLastSchedule}>
-                                <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
-                                <span className="hidden sm:inline ml-2">Reload Last</span>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </Card>
-
-                    {/* ── Course Selection Tab ── */}
-                    <TabsContent value="selection" className="mt-0">
-                      <Card className="linear-surface overflow-hidden">
-                        <CardHeader className="linear-toolbar">
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="linear-pill">
-                              <span className="font-medium text-foreground">{selectedCourseTeachers.length}</span>
-                              <span className="text-muted-foreground">/</span>
-                              <span className="font-medium text-foreground">{courseTeachers.length}</span>
-                              <span className="hidden sm:inline text-muted-foreground">courses selected</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              <Button variant="outline" size="sm" onClick={selectEnrolledCourses}>With Students</Button>
-                              <Button variant="outline" size="sm" onClick={selectAllCourses}>Select All</Button>
-                              <Button variant="outline" size="sm" onClick={deselectAllCourses}>Clear</Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4 md:p-6">
-                          <div className="grid lg:grid-cols-4 gap-6">
-                            <ScheduleSettings
-                              startDate={startDate}
-                              endDate={endDate}
-                              holidays={holidays}
-                              dateRangeInfo={dateRangeInfo}
-                              minimumDaysInfo={minimumDaysInfo}
-                              isScheduleGenerated={isScheduleGenerated}
-                              loading={loading}
-                              onStartDateChange={setStartDate}
-                              onEndDateChange={setEndDate}
-                              onGenerateSchedule={generateSchedule}
-                              onSaveSchedule={handleSaveSchedule}
-                              onDownloadExcel={handleDownloadExcel}
-                            />
-                            <div className="lg:col-span-3">
-                              {courseTeachers.length === 0 ? (
-                                <div className="py-14 text-center">
-                                  <div className="text-sm font-medium">No courses found</div>
-                                  <div className="mt-1 text-sm text-muted-foreground">Add courses in the admin panel first.</div>
-                                </div>
-                              ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                                  {getAllAvailableCourses().map(ct => (
-                                    <CourseEnrollmentCard
-                                      key={ct.id}
-                                      courseTeacher={ct}
-                                      isSelected={selectedCourseTeachers.includes(ct.id)}
-                                      onToggle={() => toggleCourseTeacher(ct.id)}
-                                      editingGap={editingGap}
-                                      tempGapValue={tempGapValue}
-                                      onEditGap={handleEditGap}
-                                      onSaveGap={handleSaveGap}
-                                      onCancelGap={handleCancelGap}
-                                      onTempGapChange={setTempGapValue}
-                                      enrollmentCount={courseEnrollmentCounts[ct.course_id] || 0}
-                                    />
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-
-                    {/* ── Date Sheet Tab ── */}
-                    <TabsContent value="schedule" className="mt-0">
-                      <Card className="linear-surface overflow-hidden">
-                        <CardHeader className="linear-toolbar">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <div className="linear-kicker">Output</div>
-                              <CardTitle className="text-base font-semibold">Generated Date Sheet</CardTitle>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" onClick={handleSaveSchedule} disabled={loading}>
-                                <Save className="w-4 h-4 mr-2" />Save
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={handleDownloadExcel}>
-                                <Download className="w-4 h-4 mr-2" />Excel
-                              </Button>
-                              <div className="linear-pill">
-                                <span className="font-medium text-foreground">{generatedSchedule.length}</span>
-                                <span className="hidden sm:inline text-muted-foreground">exams</span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                          <ScheduleTable generatedSchedule={generatedSchedule} onDragEnd={onDragEnd} />
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-
-                  </Tabs>
+                  {renderGeneratorTabs()}
                 </PageTransition>
               </AnimatePresence>
             </div>
