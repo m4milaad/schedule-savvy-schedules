@@ -35,14 +35,24 @@ class RetrievalOutput:
 class RagPipeline:
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.embedder = SentenceTransformer(settings.embedding_model)
-        self.reranker = CrossEncoder(settings.reranker_model)
+        self.embedder: SentenceTransformer | None = None
+        self.reranker: CrossEncoder | None = None
         self.index: faiss.Index | None = None
         self.metadata: list[dict[str, Any]] = []
         self.exa = Exa(settings.exa_api_key) if settings.exa_api_key else None
         self.supabase: Client | None = None
         if settings.supabase_url and settings.supabase_service_role_key:
             self.supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
+
+    def _ensure_embedder(self) -> SentenceTransformer:
+        if self.embedder is None:
+            self.embedder = SentenceTransformer(self.settings.embedding_model)
+        return self.embedder
+
+    def _ensure_reranker(self) -> CrossEncoder:
+        if self.reranker is None:
+            self.reranker = CrossEncoder(self.settings.reranker_model)
+        return self.reranker
 
     def load_index(self, index_path: Path | None = None, metadata_path: Path | None = None) -> None:
         # For supabase mode, index files are optional fallback and not required.
@@ -65,7 +75,7 @@ class RagPipeline:
 
     @lru_cache(maxsize=1024)
     def embed_query(self, query: str) -> tuple[float, ...]:
-        vec = self.embedder.encode([query], normalize_embeddings=True, convert_to_numpy=True)[0]
+        vec = self._ensure_embedder().encode([query], normalize_embeddings=True, convert_to_numpy=True)[0]
         return tuple(float(x) for x in vec.tolist())
 
     def _distance_to_cosine(self, distance: float) -> float:
@@ -77,7 +87,11 @@ class RagPipeline:
         if not candidates:
             return []
         pairs = [(query, self.metadata[idx]["text"]) for idx, _ in candidates]
-        rerank_scores = self.reranker.predict(pairs).tolist()
+        try:
+            rerank_scores = self._ensure_reranker().predict(pairs).tolist()
+        except Exception:
+            # If reranker fails to load on constrained environments, degrade gracefully.
+            rerank_scores = [0.0 for _ in pairs]
         merged = []
         for (idx, distance), rerank_score in zip(candidates, rerank_scores, strict=False):
             merged.append((idx, float(distance), float(rerank_score)))

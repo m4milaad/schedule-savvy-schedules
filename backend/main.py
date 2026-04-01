@@ -69,6 +69,16 @@ settings = Settings()
 logger = setup_logger(settings.log_level)
 limiter = Limiter(key_func=get_remote_address)
 started_at = time.time()
+logger.info(
+    "process_bootstrap",
+    extra={
+        "extra": {
+            "python_runtime_configured": "PYTHON_VERSION env expected on platform",
+            "demo_mode": settings.demo_mode,
+            "rag_store": settings.rag_store,
+        }
+    },
+)
 
 query_cache: dict[str, CachedResponse] = {}
 

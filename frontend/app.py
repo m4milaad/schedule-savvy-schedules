@@ -7,7 +7,8 @@ import gradio as gr
 import httpx
 
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
+RUNNING_ON_HF = bool(os.getenv("SPACE_ID"))
+BASE_URL = os.getenv("BASE_URL", "https://schedule-savvy-schedules.onrender.com").rstrip("/")
 REQUEST_TIMEOUT = 20
 
 
@@ -24,6 +25,12 @@ def _render_sources(sources: list[dict[str, Any]]) -> str:
 
 def respond(message: str, history: list[tuple[str, str]]) -> str:
     _ = history
+    if RUNNING_ON_HF and BASE_URL == "http://localhost:8000":
+        return (
+            "Backend URL is not configured for this Space.\n\n"
+            "Set `BASE_URL` in Hugging Face Space Variables to your Render backend URL, for example:\n"
+            "`https://your-service.onrender.com`"
+        )
     try:
         with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
             res = client.post(f"{BASE_URL}/chat", json={"query": message})
@@ -33,6 +40,12 @@ def respond(message: str, history: list[tuple[str, str]]) -> str:
         mode = payload.get("mode", "unknown")
         sources_md = _render_sources(payload.get("sources", []))
         return f"{answer}\n\n**Mode:** `{mode}`\n\n**Sources**\n{sources_md}"
+    except httpx.ConnectError:
+        return (
+            "Could not connect to backend service.\n\n"
+            f"Current `BASE_URL`: `{BASE_URL}`\n\n"
+            "Verify the URL is correct, publicly reachable, and the backend is running."
+        )
     except httpx.TimeoutException:
         return (
             "The assistant is taking longer than expected right now. "

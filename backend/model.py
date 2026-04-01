@@ -7,8 +7,6 @@ from typing import Literal
 
 import httpx
 import ollama
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 
 from backend.config import Settings
 
@@ -45,6 +43,10 @@ class ModelRouter:
         return False
 
     def _load_hf_pipeline(self, model_name: str):
+        # Lazy import heavy ML dependencies so app startup can bind port quickly.
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
+
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         quant_config = None
         device_map = "cpu"
