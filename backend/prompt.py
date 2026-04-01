@@ -3,8 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
-from transformers import AutoTokenizer
-
 from backend.rag import RetrievedChunk
 
 
@@ -29,6 +27,7 @@ class PromptBuilder:
 
     def _get_tokenizer(self):
         if self.tokenizer is None:
+            from transformers import AutoTokenizer
             self.tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
         return self.tokenizer
 

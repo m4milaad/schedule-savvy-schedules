@@ -4,15 +4,17 @@ import json
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import faiss
 import numpy as np
 from exa_py import Exa
-from sentence_transformers import CrossEncoder, SentenceTransformer
 from supabase import Client, create_client
 
 from backend.config import Settings
+
+if TYPE_CHECKING:
+    from sentence_transformers import CrossEncoder, SentenceTransformer
 
 
 @dataclass(slots=True)
@@ -46,11 +48,13 @@ class RagPipeline:
 
     def _ensure_embedder(self) -> SentenceTransformer:
         if self.embedder is None:
+            from sentence_transformers import SentenceTransformer
             self.embedder = SentenceTransformer(self.settings.embedding_model)
         return self.embedder
 
     def _ensure_reranker(self) -> CrossEncoder:
         if self.reranker is None:
+            from sentence_transformers import CrossEncoder
             self.reranker = CrossEncoder(self.settings.reranker_model)
         return self.reranker
 
