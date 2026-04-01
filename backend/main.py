@@ -45,8 +45,14 @@ def setup_logger(level: str) -> logging.Logger:
     return logger
 
 
+class ChatTurn(BaseModel):
+    role: str = Field(pattern="^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=1200)
+
+
 class ChatRequest(BaseModel):
     query: str = Field(min_length=2, max_length=600)
+    history: list[ChatTurn] = Field(default_factory=list, max_length=12)
 
 
 class SearchRequest(BaseModel):
@@ -113,8 +119,8 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.cors_origins,
+    allow_credentials="*" not in settings.cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -144,6 +150,7 @@ async def health() -> dict[str, Any]:
         "model_loaded": model_state.loaded,
         "model_status": app.state.model_status,
         "rag_store": settings.rag_store,
+        "cors_origins": settings.cors_origins,
         "index_size": app.state.rag.index_size,
         "uptime_seconds": int(time.time() - started_at),
     }
@@ -188,7 +195,11 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         query_cache.pop(key, None)
 
     retrieval = app.state.rag.retrieve(payload.query)
-    prompt_payload = app.state.prompt_builder.build(payload.query, retrieval.chunks)
+    prompt_payload = app.state.prompt_builder.build(
+        query=payload.query,
+        chunks=retrieval.chunks,
+        history=[{"role": turn.role, "content": turn.content} for turn in payload.history[-8:]],
+    )
 
     mode = retrieval.mode
     if settings.demo_mode or app.state.model_status != "ready":

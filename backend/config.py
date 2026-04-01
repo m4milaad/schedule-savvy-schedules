@@ -19,6 +19,11 @@ def _bool_env(name: str, default: bool) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _list_env(name: str, default: str) -> list[str]:
+    raw = os.getenv(name, default)
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 @dataclass(slots=True)
 class Settings:
     exa_api_key: str = os.getenv("EXA_API_KEY", "")
@@ -33,6 +38,7 @@ class Settings:
 
     supabase_url: str = os.getenv("SUPABASE_URL", "").strip()
     supabase_service_role_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    cors_origins: list[str] = None  # type: ignore[assignment]
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -45,3 +51,7 @@ class Settings:
     @property
     def model_timeout_seconds(self) -> int:
         return 15
+
+    def __post_init__(self) -> None:
+        if self.cors_origins is None:
+            self.cors_origins = _list_env("CORS_ORIGINS", "http://localhost:8080,http://localhost:5173")

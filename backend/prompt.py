@@ -30,11 +30,28 @@ class PromptBuilder:
     def _count_tokens(self, text: str) -> int:
         return len(self.tokenizer.encode(text, add_special_tokens=False))
 
-    def build(self, query: str, chunks: Iterable[RetrievedChunk]) -> PromptPayload:
+    def build(
+        self,
+        query: str,
+        chunks: Iterable[RetrievedChunk],
+        history: list[dict[str, str]] | None = None,
+    ) -> PromptPayload:
         selected_blocks: list[str] = []
         source_urls: list[str] = []
+        history = history or []
 
-        base = f"System:\n{SYSTEM_PROMPT}\n\nQuestion:\n{query}\n\nContext:\n"
+        history_lines = []
+        for turn in history[-8:]:
+            role = "User" if turn.get("role") == "user" else "Assistant"
+            history_lines.append(f"{role}: {turn.get('content', '').strip()}")
+        history_block = "\n".join(history_lines).strip()
+
+        base = (
+            f"System:\n{SYSTEM_PROMPT}\n\n"
+            f"Conversation History:\n{history_block or 'None'}\n\n"
+            f"Question:\n{query}\n\n"
+            "Context:\n"
+        )
         used_tokens = self._count_tokens(base)
 
         for chunk in chunks:

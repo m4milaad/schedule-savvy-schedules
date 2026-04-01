@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,7 +12,7 @@ import {
   Timer,
   Database,
 } from "lucide-react";
-import { askKnowledgeBase, type ChatbotResponse } from "@/lib/chatbot/retrieval";
+import { askKnowledgeBase, type ChatbotResponse, type ChatHistoryTurn } from "@/lib/chatbot/retrieval";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ const starterPrompts = [
   "How do I contact the examination department?",
   "What are the MBA admission requirements?",
 ];
+const MIN_REQUEST_GAP_MS = 1500;
 
 interface ChatbotAssistantProps {
   embedded?: boolean;
@@ -53,6 +54,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
     },
   ]);
   const [activeSources, setActiveSources] = useState<ChatbotResponse["sources"]>([]);
+  const lastRequestAtRef = useRef(0);
 
   useEffect(() => {
     if (embedded) return;
@@ -93,12 +95,23 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
     setLoading(true);
 
     try {
-      const response = await askKnowledgeBase(cleaned);
+      const now = Date.now();
+      if (now - lastRequestAtRef.current < MIN_REQUEST_GAP_MS) {
+        throw new Error("Please wait a moment before sending another question.");
+      }
+      lastRequestAtRef.current = now;
+
+      const history: ChatHistoryTurn[] = messages
+        .filter((m) => (m.role === "user" || m.role === "assistant") && !m.id.startsWith("welcome"))
+        .slice(-8)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      const response = await askKnowledgeBase(cleaned, history);
       const assistantMessage: ChatMessage = {
         id: `a-${Date.now()}`,
         role: "assistant",
         content: response.answer,
-        meta: `${response.matchCount} matches in ${response.elapsedMs}ms`,
+        meta: `${response.mode.toUpperCase()} | ${response.matchCount} sources in ${response.elapsedMs}ms`,
         response,
       };
       setActiveSources(response.sources);
@@ -111,7 +124,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
           id: `e-${Date.now()}`,
           role: "assistant",
           content: `I could not answer right now: ${message}`,
-          meta: "Please verify /chatbot/knowledge-base.json is present.",
+          meta: "Please verify backend /chat endpoint is reachable.",
         },
       ]);
     } finally {
@@ -220,7 +233,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                           {message.response.sources.slice(0, 4).map((source) => (
                             <Badge key={`${source.url}-${source.title}`} variant="secondary" className="gap-1.5">
                               {source.sourceType === "pdf" ? <FileText className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                              {source.category}
+                              {(source.score ?? 0).toFixed(2)}
                             </Badge>
                           ))}
                         </div>

@@ -118,6 +118,7 @@ Open the Gradio URL shown in terminal.
    - `RAG_STORE=supabase`
    - `SUPABASE_URL=https://<project>.supabase.co`
    - `SUPABASE_SERVICE_ROLE_KEY=<service-role-key>`
+   - `CORS_ORIGINS=https://<your-react-domain>,https://<your-space>.hf.space`
 5. Deploy and verify:
    - `https://<your-render-domain>/health`
    - `https://<your-render-domain>/ping`
@@ -146,6 +147,9 @@ This preserves `data/faiss_index.bin` and `data/metadata.json`.
 3. In Space settings, add variable:
    - `BASE_URL=https://<your-render-domain>`
 4. Restart Space and test prompts.
+
+For the React app, set:
+- `VITE_CHATBOT_API_URL=https://<your-render-domain>`
 
 ---
 
