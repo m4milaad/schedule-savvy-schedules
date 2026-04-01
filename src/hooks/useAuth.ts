@@ -204,7 +204,7 @@ export const useAuth = () => {
           : error.message || "Failed to sign in",
         variant: "destructive",
       });
-      return { data: null, error };
+      return { data: null as null, error };
     }
   };
 
