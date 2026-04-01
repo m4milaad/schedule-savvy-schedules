@@ -189,7 +189,7 @@ export const useAuth = () => {
         }
       }
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Sign in error:', error);
       const isTimeout =
