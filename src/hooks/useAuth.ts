@@ -126,7 +126,7 @@ export const useAuth = () => {
         description: "Account created successfully! Please check your email to verify your account.",
       });
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Sign up error:', error);
       toast({
