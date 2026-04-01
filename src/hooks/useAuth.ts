@@ -294,7 +294,7 @@ export const useAuth = () => {
         description: error.message || "Failed to update profile",
         variant: "destructive",
       });
-      return { data: null, error };
+      return { data: null as null, error };
     }
   };
 
