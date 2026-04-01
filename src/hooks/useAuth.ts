@@ -286,7 +286,7 @@ export const useAuth = () => {
         description: "Profile updated successfully",
       });
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Profile update error:', error);
       toast({
