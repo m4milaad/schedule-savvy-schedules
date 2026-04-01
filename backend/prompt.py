@@ -25,10 +25,19 @@ class PromptPayload:
 class PromptBuilder:
     def __init__(self, token_limit: int = 1800):
         self.token_limit = token_limit
-        self.tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+        self.tokenizer = None
+
+    def _get_tokenizer(self):
+        if self.tokenizer is None:
+            self.tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+        return self.tokenizer
 
     def _count_tokens(self, text: str) -> int:
-        return len(self.tokenizer.encode(text, add_special_tokens=False))
+        try:
+            return len(self._get_tokenizer().encode(text, add_special_tokens=False))
+        except Exception:
+            # Keep service available if tokenizer download/init fails at runtime.
+            return max(1, len(text.split()))
 
     def build(
         self,
