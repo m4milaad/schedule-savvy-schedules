@@ -126,7 +126,7 @@ export const useAuth = () => {
         description: "Account created successfully! Please check your email to verify your account.",
       });
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Sign up error:', error);
       toast({
@@ -134,7 +134,7 @@ export const useAuth = () => {
         description: error.message || "Failed to create account",
         variant: "destructive",
       });
-      return { data: null, error };
+      return { data: null as null, error };
     }
   };
 
@@ -189,7 +189,7 @@ export const useAuth = () => {
         }
       }
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Sign in error:', error);
       const isTimeout =
@@ -204,7 +204,7 @@ export const useAuth = () => {
           : error.message || "Failed to sign in",
         variant: "destructive",
       });
-      return { data: null, error };
+      return { data: null as null, error };
     }
   };
 
@@ -286,7 +286,7 @@ export const useAuth = () => {
         description: "Profile updated successfully",
       });
 
-      return { data, error: null };
+      return { data, error: null as null };
     } catch (error: any) {
       logger.error('Profile update error:', error);
       toast({
@@ -294,7 +294,7 @@ export const useAuth = () => {
         description: error.message || "Failed to update profile",
         variant: "destructive",
       });
-      return { data: null, error };
+      return { data: null as null, error };
     }
   };
 

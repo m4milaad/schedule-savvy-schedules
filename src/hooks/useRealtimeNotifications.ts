@@ -31,7 +31,7 @@ async function storeNotification(
   }
 }
 
-export function useRealtimeNotifications({ studentId, userId, enabled = true }: UseRealtimeNotificationsProps) {
+export function useRealtimeNotifications({ studentId, userId, enabled = true }: UseRealtimeNotificationsProps): null {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {

@@ -238,7 +238,7 @@ const AdminDashboard: React.FC = () => {
                     student_year: 1,
                     semester: p.semester || 1,
                     abc_id: p.abc_id,
-                    contact_no: null,
+                    contact_no: null as string | null,
                     created_at: p.created_at,
                     updated_at: p.updated_at
                 }));

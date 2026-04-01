@@ -57,7 +57,7 @@ export const useExamData = () => {
         id: course.course_id, // Use actual course_id as the unique key
         course_code: course.course_code,
         course_name: course.course_name,
-        teacher_name: null, // Teacher is optional - can be assigned later
+        teacher_name: null as string | null, // Teacher is optional - can be assigned later
         dept_name: course.departments?.dept_name || 'Unknown',
         semester: course.semester || 1,
         program_type: course.program_type || 'B.Tech',
