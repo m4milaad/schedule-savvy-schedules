@@ -49,7 +49,7 @@ examples = [
     "How do I contact the examination department?",
 ]
 
-with gr.Blocks(theme=gr.themes.Soft(), title="CUK Assistant") as demo:
+with gr.Blocks(title="CUK Assistant") as demo:
     gr.Markdown(
         "## CUK Assistant — Central University of Kashmir AI Help Desk\n"
         "Ask about admissions, courses, exam schedules, notices & more"
@@ -57,7 +57,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="CUK Assistant") as demo:
 
     gr.ChatInterface(
         fn=respond,
-        chatbot=gr.Chatbot(height=500, show_copy_button=True),
+        chatbot=gr.Chatbot(height=500),
         textbox=gr.Textbox(placeholder="Type your question here..."),
         examples=examples,
     )
@@ -66,4 +66,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title="CUK Assistant") as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=int(os.getenv("PORT", "7860")))
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.getenv("PORT", "7860")),
+        theme=gr.themes.Soft(),
+    )

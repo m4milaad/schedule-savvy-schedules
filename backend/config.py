@@ -29,6 +29,10 @@ class Settings:
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
     max_tokens: int = int(os.getenv("MAX_TOKENS", "300"))
     confidence_threshold: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.35"))
+    rag_store: str = os.getenv("RAG_STORE", "supabase").strip().lower()
+
+    supabase_url: str = os.getenv("SUPABASE_URL", "").strip()
+    supabase_service_role_key: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"

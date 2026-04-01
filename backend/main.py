@@ -143,6 +143,7 @@ async def health() -> dict[str, Any]:
         "status": "ok",
         "model_loaded": model_state.loaded,
         "model_status": app.state.model_status,
+        "rag_store": settings.rag_store,
         "index_size": app.state.rag.index_size,
         "uptime_seconds": int(time.time() - started_at),
     }

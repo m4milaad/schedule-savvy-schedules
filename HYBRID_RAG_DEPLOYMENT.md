@@ -2,7 +2,7 @@
 
 ## 1) What gets deployed where
 
-1. **Backend (FastAPI + FAISS + RAG):** Render
+1. **Backend (FastAPI + Supabase pgvector + RAG):** Render
 2. **Frontend (Gradio UI):** Hugging Face Spaces
 3. **Crawling + indexing scripts:** run locally (or in CI) to refresh `data/`
 
@@ -40,7 +40,7 @@ python scripts/scrape_cuk.py
 
 This saves crawled `.txt` and `.pdf` files into `data/`.
 
-### Step B — Build chunks + embeddings + FAISS index
+### Step B — Build chunks + embeddings + FAISS index (local fallback)
 
 ```bash
 python scripts/ingest.py
@@ -51,7 +51,21 @@ This creates:
 - `data/faiss_index.bin`
 - `data/metadata.json`
 
-### Step C — Validate retrieval pipeline
+### Step C — Push chunks + embeddings into Supabase (Option B)
+
+1. In Supabase SQL editor, run:
+   - `supabase/migrations/20260331190000_create_rag_documents_pgvector.sql`
+2. Add to `backend/.env`:
+   - `RAG_STORE=supabase`
+   - `SUPABASE_URL=https://<project>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY=<service-role-key>`
+3. Sync:
+
+```bash
+python scripts/sync_supabase.py
+```
+
+### Step D — Validate retrieval pipeline
 
 ```bash
 python scripts/test_rag.py
@@ -101,6 +115,9 @@ Open the Gradio URL shown in terminal.
    - `LOG_LEVEL=INFO`
    - `CACHE_TTL_SECONDS=3600`
    - `CONFIDENCE_THRESHOLD=0.35`
+   - `RAG_STORE=supabase`
+   - `SUPABASE_URL=https://<project>.supabase.co`
+   - `SUPABASE_SERVICE_ROLE_KEY=<service-role-key>`
 5. Deploy and verify:
    - `https://<your-render-domain>/health`
    - `https://<your-render-domain>/ping`

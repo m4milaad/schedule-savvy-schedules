@@ -10,6 +10,7 @@ import faiss
 import numpy as np
 from exa_py import Exa
 from sentence_transformers import CrossEncoder, SentenceTransformer
+from supabase import Client, create_client
 
 from backend.config import Settings
 
@@ -39,8 +40,14 @@ class RagPipeline:
         self.index: faiss.Index | None = None
         self.metadata: list[dict[str, Any]] = []
         self.exa = Exa(settings.exa_api_key) if settings.exa_api_key else None
+        self.supabase: Client | None = None
+        if settings.supabase_url and settings.supabase_service_role_key:
+            self.supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
 
     def load_index(self, index_path: Path | None = None, metadata_path: Path | None = None) -> None:
+        # For supabase mode, index files are optional fallback and not required.
+        if self.settings.rag_store == "supabase":
+            return
         faiss_path = index_path or self.settings.faiss_index_path
         meta_path = metadata_path or self.settings.metadata_path
         if not faiss_path.exists():
@@ -52,6 +59,8 @@ class RagPipeline:
 
     @property
     def index_size(self) -> int:
+        if self.settings.rag_store == "supabase":
+            return 0
         return 0 if self.index is None else int(self.index.ntotal)
 
     @lru_cache(maxsize=1024)
@@ -110,6 +119,60 @@ class RagPipeline:
         _ = top_idx
         return chunks, confidence
 
+    def _supabase_retrieve(self, query: str) -> tuple[list[RetrievedChunk], float]:
+        if self.supabase is None:
+            return [], 0.0
+        query_vec = list(self.embed_query(query))
+        result = self.supabase.rpc(
+            "match_rag_documents",
+            {"query_embedding": query_vec, "match_count": 15},
+        ).execute()
+        rows = result.data or []
+        if not rows:
+            return [], 0.0
+
+        candidates: list[tuple[int, float]] = []
+        # Build metadata-like array for reranker compatibility.
+        temp_meta: list[dict[str, Any]] = []
+        for idx, row in enumerate(rows):
+            temp_meta.append(
+                {
+                    "text": row["content"],
+                    "source_url": row["source_url"],
+                    "page_title": row["page_title"],
+                    "date_scraped": str(row["date_scraped"]),
+                    "chunk_index": int(row["chunk_index"]),
+                }
+            )
+            similarity = float(row.get("similarity", 0.0))
+            distance = 2.0 * (1.0 - max(0.0, min(1.0, similarity)))
+            candidates.append((idx, distance))
+
+        old_meta = self.metadata
+        self.metadata = temp_meta
+        reranked = self._rerank(query=query, candidates=candidates)
+        self.metadata = old_meta
+
+        if not reranked:
+            return [], 0.0
+        top_idx, top_distance, _ = reranked[0]
+        confidence = self._distance_to_cosine(top_distance)
+        chunks: list[RetrievedChunk] = []
+        for idx, distance, rerank_score in reranked:
+            meta = temp_meta[idx]
+            chunks.append(
+                RetrievedChunk(
+                    text=meta["text"],
+                    source_url=meta["source_url"],
+                    page_title=meta["page_title"],
+                    date_scraped=meta["date_scraped"],
+                    chunk_index=meta["chunk_index"],
+                    score=float((self._distance_to_cosine(distance) * 0.5) + (max(-5.0, min(5.0, rerank_score)) / 10.0)),
+                )
+            )
+        _ = top_idx
+        return chunks, confidence
+
     def _exa_fallback(self, query: str) -> list[RetrievedChunk]:
         if self.exa is None:
             return []
@@ -132,11 +195,17 @@ class RagPipeline:
         return chunks[:3]
 
     def retrieve(self, query: str) -> RetrievalOutput:
-        local_chunks, confidence = self._local_retrieve(query)
+        if self.settings.rag_store == "supabase":
+            local_chunks, confidence = self._supabase_retrieve(query)
+            local_mode = "supabase"
+        else:
+            local_chunks, confidence = self._local_retrieve(query)
+            local_mode = "faiss"
+
         if local_chunks and confidence >= self.settings.confidence_threshold:
-            return RetrievalOutput(chunks=local_chunks, confidence=confidence, mode="faiss")
+            return RetrievalOutput(chunks=local_chunks, confidence=confidence, mode=local_mode)
 
         fallback_chunks = self._exa_fallback(query)
         if fallback_chunks:
             return RetrievalOutput(chunks=fallback_chunks, confidence=confidence, mode="exa")
-        return RetrievalOutput(chunks=local_chunks, confidence=confidence, mode="faiss")
+        return RetrievalOutput(chunks=local_chunks, confidence=confidence, mode=local_mode)

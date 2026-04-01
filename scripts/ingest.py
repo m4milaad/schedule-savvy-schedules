@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import hashlib
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -121,11 +122,13 @@ def main() -> None:
                 continue
             records.append(
                 {
+                    "id": hashlib.sha256(f"{common_meta['source_url']}::{idx}::{chunk_text}".encode("utf-8")).hexdigest(),
                     "text": chunk_text,
                     "source_url": common_meta["source_url"],
                     "page_title": common_meta["page_title"],
                     "date_scraped": common_meta["date_scraped"],
                     "chunk_index": idx,
+                    "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
                 }
             )
             texts_for_embedding.append(chunk_text)
@@ -144,11 +147,13 @@ def main() -> None:
                 continue
             records.append(
                 {
+                    "id": hashlib.sha256(f"{common_meta['source_url']}::{idx}::{chunk_text}".encode("utf-8")).hexdigest(),
                     "text": chunk_text,
                     "source_url": common_meta["source_url"],
                     "page_title": common_meta["page_title"],
                     "date_scraped": common_meta["date_scraped"],
                     "chunk_index": idx,
+                    "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
                 }
             )
             texts_for_embedding.append(chunk_text)

@@ -13,3 +13,5 @@ services:
         value: "true"
       - key: LOG_LEVEL
         value: "INFO"
+      - key: RAG_STORE
+        value: "supabase"
