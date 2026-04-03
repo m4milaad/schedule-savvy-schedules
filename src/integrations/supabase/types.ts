@@ -744,6 +744,42 @@ export type Database = {
           },
         ]
       }
+      rag_documents: {
+        Row: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          created_at: string
+          date_scraped: string
+          embedding: string
+          id: string
+          page_title: string
+          source_url: string
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          content_hash: string
+          created_at?: string
+          date_scraped?: string
+          embedding: string
+          id: string
+          page_title: string
+          source_url: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          content_hash?: string
+          created_at?: string
+          date_scraped?: string
+          embedding?: string
+          id?: string
+          page_title?: string
+          source_url?: string
+        }
+        Relationships: []
+      }
       resource_bookmarks: {
         Row: {
           created_at: string | null
@@ -1495,6 +1531,18 @@ export type Database = {
           p_is_recurring?: boolean
         }
         Returns: Json
+      }
+      match_rag_documents: {
+        Args: { match_count?: number; query_embedding: string }
+        Returns: {
+          chunk_index: number
+          content: string
+          date_scraped: string
+          id: string
+          page_title: string
+          similarity: number
+          source_url: string
+        }[]
       }
     }
     Enums: {
