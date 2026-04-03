@@ -76,7 +76,7 @@ class ModelRouter:
 
                 self._ollama_client = ollama.Client(host=self.settings.ollama_url)
             result = self._ollama_client.generate(
-                model="phi3:mini",
+                model="phi3.5:3.8b",
                 prompt=prompt,
                 options={"temperature": 0.1, "num_predict": self.settings.max_tokens},
             )
