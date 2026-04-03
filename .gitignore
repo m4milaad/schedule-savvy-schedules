@@ -11,6 +11,9 @@ dist
 dist-ssr
 *.local
 
+# RAG / scraper output (txt, pdf, faiss, metadata — regenerate with scripts/scrape_cuk.py + ingest.py)
+/data/
+
 # Editor directories and files
 .vscode/*
 .github/*

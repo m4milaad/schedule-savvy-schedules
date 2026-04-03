@@ -22,6 +22,8 @@ META_PATH = DATA_DIR / "metadata.json"
 
 CHUNK_SIZE = 400
 OVERLAP = 80
+# Created only when /data is empty; must not be mixed with scraped *.txt or titles show "bootstrap kb"
+BOOTSTRAP_KB = "bootstrap_kb.txt"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +63,32 @@ def _load_txt(path: Path) -> tuple[str, dict[str, str]]:
     }
 
 
+_MIN_PDF_TEXT_CHARS = 64
+
+
+def _extract_pdf_pymupdf(path: Path) -> str:
+    """Second-pass text extract; often succeeds when pypdf returns nothing (encoding/layout)."""
+    try:
+        import fitz  # PyMuPDF
+
+        doc = fitz.open(path)
+        parts: list[str] = []
+        try:
+            for page in doc:
+                t = (page.get_text() or "").strip()
+                if t:
+                    parts.append(t)
+        finally:
+            doc.close()
+        return "\n\n".join(parts)
+    except Exception as exc:
+        logger.debug("PyMuPDF extract failed for %s: %s", path.name, exc)
+        return ""
+
+
 def _load_pdf(path: Path) -> tuple[str, dict[str, str]] | None:
+    """Read *internal* PDF text layers (not OCR). Scanned image-only PDFs may still yield nothing."""
+    joined = ""
     try:
         reader = PdfReader(str(path))
         pages: list[str] = []
@@ -70,6 +97,20 @@ def _load_pdf(path: Path) -> tuple[str, dict[str, str]] | None:
             if text:
                 pages.append(text)
         joined = "\n\n".join(pages)
+    except Exception as exc:
+        logger.warning("pypdf failed for %s (%s); trying PyMuPDF", path.name, exc)
+        joined = ""
+
+    if len(joined.strip()) < _MIN_PDF_TEXT_CHARS:
+        alt = _extract_pdf_pymupdf(path)
+        if len(alt.strip()) > len(joined.strip()):
+            logger.info("Using PyMuPDF text for %s (pypdf text too short)", path.name)
+            joined = alt
+
+    if not joined.strip():
+        return None
+
+    try:
         source_url = _extract_url(joined) or f"file://{path.name}"
         page_title = path.stem.replace("_", " ").strip()
         date_scraped = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
@@ -90,8 +131,11 @@ def main() -> None:
     records: list[dict[str, Any]] = []
     texts_for_embedding: list[str] = []
 
-    txt_files = sorted(DATA_DIR.glob("*.txt"))
+    raw_txt = sorted(DATA_DIR.glob("*.txt"))
     pdf_files = sorted(DATA_DIR.glob("*.pdf"))
+    txt_files = [p for p in raw_txt if p.name != BOOTSTRAP_KB]
+    if txt_files and len(raw_txt) > len(txt_files):
+        logger.info("Skipping %s (stale bootstrap); using scraped .txt files only.", BOOTSTRAP_KB)
 
     logger.info("Found %d txt and %d pdf files", len(txt_files), len(pdf_files))
 
@@ -99,7 +143,7 @@ def main() -> None:
         kb_path = ROOT / "public" / "chatbot" / "knowledge-base.json"
         if kb_path.exists():
             payload = json.loads(kb_path.read_text(encoding="utf-8"))
-            bootstrap = DATA_DIR / "bootstrap_kb.txt"
+            bootstrap = DATA_DIR / BOOTSTRAP_KB
             merged = []
             for row in payload.get("documents", [])[:120]:
                 merged.append(

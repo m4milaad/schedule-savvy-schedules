@@ -1,6 +1,16 @@
 Source URL: https://www.ugc.gov.in
 Page Title: Welcome to UGC, New Delhi, India
-Date Scraped: 2026-04-01T16:56:34.431219+00:00
+Date Scraped: 2026-04-03T05:43:23.685520+00:00
+
+--- Extracted contact details (who to contact — use these labels when answering) ---
+Each line ties a department or role to an email or phone number from this page.
+Email — Email: contact.ugc@nic.in: contact.ugc@nic.in
+Email — From page text: covid19help.ugc@gov.in
+Email — From page text: netjrf-ugc@gov.in
+Email — From page text: helpdesk@nsp.gov.in
+Phone — From page text: +91 79-2326-8279
+Email — From page text: helpline@antiragging.in
+--- End extracted contact details ---
 
 Welcome to UGC, New Delhi, India
 Follow Us on
@@ -168,6 +178,12 @@ Star Performer
 of the Month
 View All
 Notices
+UGC letter regarding: Adoption of Anganwadi Centres by Universities and Integration with academic progremmes.
+Published on : 02/04/2026
+UGC Public Notice regarding: Universalization of the Aadhar-Based Payment (ABP) system.
+Published on : 02/04/2026
+UGC Public Notice regarding: QS World Rankings 2027-Data Submission
+Published on : 02/04/2026
 UGC Public Notice regarding: Extension of last date of admission for academic year 2025-26, academic session February, 2026, for Open and Distance Learning (ODL) programmes and Online programmes being offered by recognized/entitled HEIs
 Published on : 01/04/2026
 UGC Public Notice regarding: Rajeev Gandhi Institute of Technology & Management, Mansa Chowk, Bhiwadi, District Alwar, Rajasthan is not recognised under Section 2(f) or Section 3 of the UGC Act nor empowered to award any degree as per Section 22 of the UGC Act, 1956.
@@ -202,12 +218,6 @@ UGC letter regarding: Participation of Universities and Colleges in FIT INDIA - 
 Published on : 13/02/2026
 UGC letter regarding: Participation in the National Convention of Women Thought Leaders "Bharti-Nari to Narayani" scheduled on 7th-8th March 2026 at Vigyan Bhavan, New Delhi.
 Published on : 13/02/2026
-UGC letter regarding: Extension of Timeline - Circulation of UGC Guidelines on Uniform Policy on Mental Health & Well-Being for Higher Educational Institutions - Inviting Comments from Stakeholders.
-Published on : 03/02/2026
-UGC letter regarding: Implementation of Disaster Management Initiatives.
-Published on : 30/01/2026
-UGC letter regarding: Organization of Pre-Summit Activities for AI Impact Summit 2026.
-Published on : 30/01/2026
 Read More
 Circulars
 UGC Circular regarding: Grant of Dearness Relief to Central Government pensioners/family pensioners revised rate effective from 01-07-2024 shall be enhanced from 50% to 53%.
@@ -359,10 +369,10 @@ New Delhi - 110002.
 Phone: 011-23604446, 011-23604200
 Email: contact.ugc@nic.in
 Total Visitors
-236582929
+236663067
 Copyright © 2023 University Grants Commission New Delhi, India
 Website last updated on:
-01-04-2026
+03-04-2026
 Disclaimer
 |
 Privacy Policy
