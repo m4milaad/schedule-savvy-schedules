@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: str = "*"
 
-    faiss_index_path: Path = DATA_DIR / "processed" / "faiss.index"
-    faiss_metadata_path: Path = DATA_DIR / "processed" / "documents.jsonl"
+    faiss_index_path: Path = DATA_DIR / "faiss_index.bin"
+    faiss_metadata_path: Path = DATA_DIR / "metadata.json"
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     retrieval_top_k: int = 5
     retrieval_score_threshold: float = 0.28

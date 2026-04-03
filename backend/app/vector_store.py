@@ -16,6 +16,8 @@ class IndexedDocument:
     source: str
     category: str
     content: str
+    date_scraped: str = ""
+    chunk_index: int = 0
 
 
 class VectorStore:
@@ -31,22 +33,29 @@ class VectorStore:
             raise FileNotFoundError(f"FAISS metadata file not found: {metadata_path}")
 
         index = faiss.read_index(str(index_path))
-        documents: list[IndexedDocument] = []
         with metadata_path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                if not line.strip():
-                    continue
-                row = json.loads(line)
-                documents.append(
-                    IndexedDocument(
-                        id=row["id"],
-                        title=row["title"],
-                        url=row["url"],
-                        source=row["source"],
-                        category=row["category"],
-                        content=row["content"],
-                    )
+            raw = json.load(handle)
+
+        # Support both JSONL (list of dicts line-by-line) and full JSON array
+        rows = raw if isinstance(raw, list) else [json.loads(line) for line in raw if line.strip()]
+
+        documents: list[IndexedDocument] = []
+        for row in rows:
+            text = row.get("text") or row.get("content", "")
+            title = row.get("page_title") or row.get("title", "")
+            url = row.get("source_url") or row.get("url", "")
+            documents.append(
+                IndexedDocument(
+                    id=row.get("id", ""),
+                    title=title,
+                    url=url,
+                    source=row.get("source", "self"),
+                    category=row.get("category", "web"),
+                    content=text,
+                    date_scraped=row.get("date_scraped", ""),
+                    chunk_index=int(row.get("chunk_index", 0)),
                 )
+            )
         return cls(index=index, documents=documents)
 
     def search(self, query_vector: list[float], top_k: int) -> list[tuple[IndexedDocument, float]]:

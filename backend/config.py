@@ -26,7 +26,6 @@ def _list_env(name: str, default: str) -> list[str]:
 
 @dataclass(slots=True)
 class Settings:
-    exa_api_key: str = os.getenv("EXA_API_KEY", "")
     demo_mode: bool = _bool_env("DEMO_MODE", False)
     model_backend: str = os.getenv("MODEL_BACKEND", "tinyllama").strip().lower()
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")

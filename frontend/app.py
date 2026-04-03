@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Any
 
 import gradio as gr
@@ -10,6 +11,7 @@ import httpx
 RUNNING_ON_HF = bool(os.getenv("SPACE_ID"))
 BASE_URL = os.getenv("BASE_URL", "https://schedule-savvy-schedules.onrender.com").rstrip("/")
 REQUEST_TIMEOUT = 20
+MAX_RETRIES = 2
 
 
 def _render_sources(sources: list[dict[str, Any]]) -> str:
@@ -33,13 +35,28 @@ def respond(message: str, history: list[tuple[str, str]]) -> str:
         )
     try:
         with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
-            res = client.post(f"{BASE_URL}/chat", json={"query": message})
+            res = None
+            for attempt in range(MAX_RETRIES + 1):
+                res = client.post(f"{BASE_URL}/chat", json={"query": message})
+                if res.status_code not in {502, 503, 504}:
+                    break
+                if attempt < MAX_RETRIES:
+                    time.sleep(1.2 * (attempt + 1))
+            if res is None:
+                return "The assistant is temporarily unavailable."
             res.raise_for_status()
         payload = res.json()
         answer = payload.get("answer", "No answer returned.")
         mode = payload.get("mode", "unknown")
         sources_md = _render_sources(payload.get("sources", []))
         return f"{answer}\n\n**Mode:** `{mode}`\n\n**Sources**\n{sources_md}"
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in {502, 503, 504}:
+            return (
+                "The backend is waking up or temporarily overloaded.\n\n"
+                "Please retry in 10-20 seconds."
+            )
+        return f"Service temporarily unavailable: HTTP {exc.response.status_code}"
     except httpx.ConnectError:
         return (
             "Could not connect to backend service.\n\n"
@@ -62,126 +79,151 @@ examples = [
     "How do I contact the examination department?",
 ]
 
-def on_user_submit(message: str, history: list[tuple[str, str]]) -> tuple[str, list[tuple[str, str]]]:
+def on_user_submit(message: str, history: list[dict[str, str]]) -> tuple[str, list[dict[str, str]]]:
     cleaned = message.strip()
     if not cleaned:
         return "", history
-    return "", [*history, (cleaned, "")]
+    return "", [*history, {"role": "user", "content": cleaned}]
 
 
-def on_bot_respond(history: list[tuple[str, str]]) -> list[tuple[str, str]]:
+def on_bot_respond(history: list[dict[str, str]]) -> list[dict[str, str]]:
     if not history:
         return history
-    user_msg, bot_msg = history[-1]
-    if bot_msg:
+    if history[-1].get("role") != "user":
         return history
-    answer = respond(user_msg, history[:-1])
-    history[-1] = (user_msg, answer)
-    return history
+    user_msg = history[-1].get("content", "")
+    answer = respond(user_msg, [])
+    return [*history, {"role": "assistant", "content": answer}]
 
 
 CUSTOM_CSS = """
 :root {
-  --bg: #141724;
-  --bg-soft: #1a1f31;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-strong: rgba(255, 255, 255, 0.1);
-  --border: rgba(173, 184, 255, 0.24);
-  --text: #f4f6ff;
-  --muted: #b4bcdf;
-  --primary: #dee0ff;
-  --primary-ink: #1f2557;
-  --ring: rgba(222, 224, 255, 0.45);
+  --background: hsl(230, 43%, 98%);
+  --foreground: hsl(210, 11%, 11%);
+  --border: hsl(240, 12%, 85%);
+  --primary: hsl(230, 48%, 47%);
+  --primary-foreground: #ffffff;
+  --muted: hsl(228, 14%, 93%);
+  --muted-foreground: hsl(235, 8%, 40%);
+  --ring: hsla(230, 48%, 47%, 0.25);
 }
 
 .gradio-container {
-  background:
-    radial-gradient(circle at 10% 8%, rgba(63, 81, 181, 0.34), transparent 38%),
-    radial-gradient(circle at 88% 0%, rgba(255, 128, 180, 0.16), transparent 45%),
-    var(--bg) !important;
-  color: var(--text) !important;
-  font-family: "Segoe UI", "SF Pro Text", "Helvetica Neue", sans-serif !important;
+  background-color: var(--background) !important;
+  background-image:
+    radial-gradient(circle at 25px 25px, hsla(230, 48%, 47%, 0.04) 2%, transparent 0%),
+    radial-gradient(circle at 75px 75px, hsla(230, 48%, 47%, 0.04) 2%, transparent 0%) !important;
+  background-size: 100px 100px !important;
+  color: var(--foreground) !important;
+  font-family: "Segoe UI", "SF Pro Text", -apple-system, sans-serif !important;
 }
 
 #app-shell {
   max-width: 1040px;
-  margin: 18px auto;
-  border: 1px solid var(--border);
+  margin: 32px auto;
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 16px;
-  background: linear-gradient(180deg, var(--surface-strong), var(--surface));
-  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(14px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.45));
+  box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
 #hero {
-  padding: 26px 24px 20px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(115deg, rgba(63, 81, 181, 0.34), rgba(18, 23, 44, 0.45));
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.linear-kicker {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 8px;
 }
 
 #hero h1 {
   margin: 0;
-  font-size: 1.72rem;
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-}
-
-#hero p {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 0.94rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
 }
 
 #badge-row {
-  margin-top: 12px;
+  margin-top: 14px;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .info-badge {
-  font-size: 0.74rem;
-  border: 1px solid var(--border);
-  padding: 6px 11px;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid hsla(230, 48%, 47%, 0.2);
+  background: hsla(230, 48%, 47%, 0.05);
   color: var(--primary);
-  background: rgba(255, 255, 255, 0.06);
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 #chat-wrap {
-  padding: 16px 16px 8px;
+  padding: 24px;
 }
 
 #example-wrap {
-  padding: 0 16px 16px;
+  padding: 0 24px 24px;
 }
 
 button.primary {
-  background: linear-gradient(90deg, var(--primary), #b7beff) !important;
-  color: var(--primary-ink) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  font-weight: 600 !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  font-weight: 500 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 4px hsla(230, 48%, 47%, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px hsla(230, 48%, 47%, 0.35) !important;
 }
 
 button.secondary {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text) !important;
+  background: white !important;
+  color: var(--muted-foreground) !important;
   border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+  transition: all 0.2s ease !important;
+}
+
+button.secondary:hover {
+  background: var(--muted) !important;
 }
 
 .gradio-container .gr-box,
 .gradio-container .gr-panel,
 .gradio-container .gr-form {
-  background: var(--bg-soft) !important;
+  background: transparent !important;
   border-color: var(--border) !important;
 }
 
 .gradio-container textarea,
 .gradio-container input {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text) !important;
+  background: white !important;
+  color: var(--foreground) !important;
   border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02) inset !important;
+  transition: all 0.2s ease !important;
 }
 
 .gradio-container textarea:focus,
@@ -191,26 +233,38 @@ button.secondary {
 }
 
 .message.user {
-  border: 1px solid rgba(222, 224, 255, 0.26) !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: none !important;
+  border-radius: 16px 16px 4px 16px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 2px 6px hsla(230, 48%, 47%, 0.25) !important;
 }
 
 .message.bot {
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: white !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px 16px 16px 4px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+}
+
+.message p {
+  margin-bottom: 0 !important;
 }
 """
 
 
-with gr.Blocks(title="CUK Assistant", css=CUSTOM_CSS, theme=gr.themes.Base()) as demo:
+with gr.Blocks(title="Knowledge Assistant", css=CUSTOM_CSS, theme=gr.themes.Base()) as demo:
     with gr.Column(elem_id="app-shell"):
         gr.HTML(
             """
             <div id="hero">
-              <h1>CUK Assistant — Official Help Desk</h1>
-              <p>Indigo Prism edition: clear, source-grounded answers for admissions, exams, courses, and university notices.</p>
+              <div class="linear-kicker">AI Support</div>
+              <h1>Knowledge Assistant</h1>
               <div id="badge-row">
-                <span class="info-badge">Powered by Supabase + RAG</span>
-                <span class="info-badge">Exa fallback enabled</span>
-                <span class="info-badge">Admin Dashboard visual match</span>
+                <span class="info-badge">Retrieval-Only Assistant</span>
               </div>
             </div>
             """
@@ -218,11 +272,7 @@ with gr.Blocks(title="CUK Assistant", css=CUSTOM_CSS, theme=gr.themes.Base()) as
         with gr.Column(elem_id="chat-wrap"):
             chatbot = gr.Chatbot(
                 height=530,
-                type="tuples",
                 show_label=False,
-                avatar_images=(None, None),
-                bubble_full_width=False,
-                placeholder="Ask anything about Central University of Kashmir.",
             )
             with gr.Row():
                 textbox = gr.Textbox(
@@ -248,5 +298,4 @@ if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
         server_port=int(os.getenv("PORT", "7860")),
-        theme=gr.themes.Soft(),
     )

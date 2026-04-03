@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.embeddings import EmbeddingService
-from app.exa_client import ExaFallbackClient
 from app.llm import AnswerGenerator
 from app.models import ChatRequest, ChatResponse, SearchResponse
 from app.retriever import Retriever
@@ -25,7 +24,6 @@ async def lifespan(app: FastAPI):
         metadata_path=settings.faiss_metadata_path,
     )
     retriever = Retriever(embedding_service=embedding_service, vector_store=vector_store)
-    exa_client = ExaFallbackClient(settings.exa_api_key)
     generator = AnswerGenerator(
         mode=settings.answer_mode,
         tinyllama_model_name=settings.tinyllama_model_name,
@@ -38,7 +36,6 @@ async def lifespan(app: FastAPI):
     app.state.rag = RagService(
         settings=settings,
         retriever=retriever,
-        exa_client=exa_client,
         generator=generator,
     )
     yield

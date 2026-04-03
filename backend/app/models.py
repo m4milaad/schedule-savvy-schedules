@@ -7,21 +7,15 @@ class ChatRequest(BaseModel):
 
 
 class SourceDocument(BaseModel):
-    id: str
-    title: str
-    url: str
-    source: str
-    category: str
-    snippet: str
+    source_url: str
+    page_title: str
     score: float
 
 
 class ChatResponse(BaseModel):
     answer: str
-    source: str
-    used_fallback: bool
-    latency_ms: int
-    documents: list[SourceDocument]
+    sources: list[SourceDocument]
+    mode: str
 
 
 class SearchResponse(BaseModel):

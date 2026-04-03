@@ -12,9 +12,11 @@ create table if not exists public.rag_documents (
   created_at timestamptz not null default now()
 );
 
-create index if not exists rag_documents_embedding_ivfflat_idx
-  on public.rag_documents using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
+-- HNSW works on empty tables and small datasets (no training step needed).
+-- ef_construction=128 gives good recall; m=16 is the default neighbor count.
+create index if not exists rag_documents_embedding_hnsw_idx
+  on public.rag_documents using hnsw (embedding vector_cosine_ops)
+  with (m = 16, ef_construction = 128);
 
 create index if not exists rag_documents_source_url_idx
   on public.rag_documents (source_url);

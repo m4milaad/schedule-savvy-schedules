@@ -4,9 +4,9 @@ import json
 import os
 from pathlib import Path
 
+import httpx
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
-from supabase import Client, create_client
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +30,7 @@ def load_env() -> tuple[str, str]:
 
 def batched(items: list[dict], size: int):
     for i in range(0, len(items), size):
-        yield items[i:i + size]
+        yield items[i : i + size]
 
 
 def main() -> None:
@@ -38,7 +38,6 @@ def main() -> None:
         raise FileNotFoundError(f"metadata.json not found at {META_PATH}. Run scripts/ingest.py first.")
 
     url, key = load_env()
-    client: Client = create_client(url, key)
     model = SentenceTransformer(MODEL_NAME)
 
     docs = json.loads(META_PATH.read_text(encoding="utf-8"))
@@ -65,8 +64,19 @@ def main() -> None:
             }
         )
 
-    for batch in batched(payload, BATCH_SIZE):
-        client.table("rag_documents").upsert(batch, on_conflict="content_hash").execute()
+    rest_url = f"{url.rstrip('/')}/rest/v1/rag_documents"
+    headers = {
+        "apikey": key,
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates",
+    }
+
+    with httpx.Client(timeout=30) as client:
+        for i, batch in enumerate(batched(payload, BATCH_SIZE)):
+            res = client.post(rest_url, json=batch, headers=headers)
+            res.raise_for_status()
+            print(f"  Batch {i + 1}: upserted {len(batch)} rows")
 
     print(f"Synced {len(payload)} chunks to Supabase rag_documents.")
 

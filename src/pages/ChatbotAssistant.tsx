@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeft,
   Bot,
+  BrainCircuit,
   ExternalLink,
   FileText,
   Globe,
@@ -18,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 type ChatMessage = {
   id: string;
@@ -49,8 +51,8 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
       id: "welcome",
       role: "assistant",
       content:
-        "I am your zero-credit campus assistant. I answer from crawled website and PDF content only, and I always show source links.",
-      meta: "No paid AI inference used",
+        "Hello, I am the CUK Knowledge Assistant. I can help answer questions about admissions, exams, scholarships, and regulations using our verified knowledge base.",
+      meta: "Knowledge Assistant",
     },
   ]);
   const [activeSources, setActiveSources] = useState<ChatbotResponse["sources"]>([]);
@@ -137,8 +139,8 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
       id: `welcome-${Date.now()}`,
       role: "assistant",
       content:
-        "Chat reset complete. Ask anything about admissions, notices, exams, scholarships, or regulations.",
-      meta: "Knowledge base mode",
+        "Chat reset complete. How else can I help you today?",
+      meta: "Ready",
     };
     setMessages([welcome]);
     setActiveSources([]);
@@ -150,152 +152,208 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   const avgLatency = latestAssistant?.response?.elapsedMs ?? 0;
 
   return (
-    <div className={embedded ? "text-foreground" : "min-h-screen bg-background text-foreground"}>
-      <div className={embedded ? "mx-auto flex w-full flex-col gap-4" : "mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8"}>
+    <div className={cn("flex flex-col h-full", embedded ? "text-foreground" : "min-h-screen bg-background text-foreground")}>
+      <div className={cn("mx-auto flex h-full w-full flex-col gap-4", embedded ? "" : "max-w-6xl px-4 py-6 sm:px-6 lg:px-8")}>
         {!embedded && (
           <div className="flex items-center justify-between">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="hover:bg-accent/50">
               <Link to="/">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Link>
             </Button>
-            <Badge variant="outline" className="gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
+            <Badge variant="outline" className="gap-2 bg-background/50 backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
               Retrieval-Only Assistant
             </Badge>
           </div>
         )}
 
-        <Card className={embedded ? "linear-surface overflow-hidden" : ""}>
-          <CardHeader className={embedded ? "linear-toolbar" : ""}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <Card className={cn("flex flex-col flex-1 overflow-hidden transition-all duration-300", embedded ? "linear-surface border-0 shadow-none" : "border shadow-sm")}>
+          <CardHeader className={cn("flex flex-col gap-3", embedded ? "linear-toolbar" : "border-b bg-muted/10 pb-4")}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Bot className="h-6 w-6" />
-                  {embedded ? "CUK Knowledge Assistant" : "CUK Knowledge Chatbot"}
+                <div className="linear-kicker">AI Support</div>
+                <CardTitle className="text-base font-semibold">
+                  {embedded ? "Knowledge Assistant" : "Knowledge Chatbot"}
                 </CardTitle>
-                <CardDescription className="mt-1">
-                  Built from crawled content in `crawl.csv` plus PDF sources. Answers are extractive and include references.
-                </CardDescription>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="gap-1.5">
-                  <Database className="h-3.5 w-3.5" />
-                  {messages.length - 1} replies
-                </Badge>
-                <Badge variant="outline" className="gap-1.5">
-                  <Timer className="h-3.5 w-3.5" />
-                  {avgLatency}ms
-                </Badge>
-                <Badge variant="outline" className="gap-1.5">
-                  <Globe className="h-3.5 w-3.5" />
-                  {totalCitations} citations
-                </Badge>
-                <Button variant="outline" size="sm" onClick={clearChat} disabled={loading}>
-                  <RotateCcw className="mr-2 h-4 w-4" />
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="linear-pill hidden sm:flex">
+                  <Database className="h-3 w-3 text-muted-foreground" />
+                  <span>{messages.length - 1} replies</span>
+                </div>
+                <div className="linear-pill hidden sm:flex">
+                  <Timer className="h-3 w-3 text-muted-foreground" />
+                  <span>{avgLatency}ms</span>
+                </div>
+                <div className="linear-pill">
+                  <Globe className="h-3 w-3 text-muted-foreground" />
+                  <span>{totalCitations} sources</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={clearChat} disabled={loading} className="h-8 ml-1">
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" />
                   Clear
                 </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              {starterPrompts.map((prompt) => (
-                <Button
-                  key={prompt}
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setQuery(prompt)}
-                  disabled={loading}
-                >
-                  {prompt}
-                </Button>
-              ))}
-            </div>
 
-            <div className="grid gap-4 xl:grid-cols-12">
-              <ScrollArea className="h-[55vh] rounded-md border p-3 xl:col-span-8">
-                <div className="space-y-3">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`rounded-lg p-3 ${message.role === "user" ? "bg-primary/10" : "bg-muted/50"}`}
-                    >
-                      <div className="mb-1 flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground">
-                        <span>{message.role === "user" ? "You" : "Assistant"}</span>
-                        {message.meta && <span>{message.meta}</span>}
-                      </div>
-                      <p className="whitespace-pre-line text-sm">{message.content}</p>
+          <CardContent className="flex flex-1 flex-col gap-4 p-4 sm:p-6 min-h-[500px]">
+            {messages.length <= 1 && (
+              <div className="flex flex-wrap gap-2 pb-2">
+                {starterPrompts.map((prompt) => (
+                  <Button
+                    key={prompt}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setQuery(prompt)}
+                    disabled={loading}
+                    className="rounded-full bg-secondary/50 text-xs hover:bg-secondary border border-border/40 transition-colors"
+                  >
+                    {prompt}
+                  </Button>
+                ))}
+              </div>
+            )}
 
-                      {message.response?.sources && message.response.sources.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {message.response.sources.slice(0, 4).map((source) => (
-                            <Badge key={`${source.url}-${source.title}`} variant="secondary" className="gap-1.5">
-                              {source.sourceType === "pdf" ? <FileText className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                              {(source.score ?? 0).toFixed(2)}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {loading && (
-                    <div className="rounded-lg bg-muted/50 p-3">
-                      <div className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">Assistant</div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-primary" />
-                        Searching crawled sources...
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-
-              <div className="space-y-3 xl:col-span-4">
-                <div className="rounded-md border bg-muted/20 p-3">
-                  <div className="mb-2 text-sm font-medium">Cited Sources</div>
-                  {activeSources.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Ask a question to see source links here.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {activeSources.slice(0, 6).map((source) => (
-                        <a
-                          key={`${source.url}-${source.title}`}
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center justify-between rounded-md border bg-background px-2.5 py-2 text-sm hover:bg-muted/50"
+            <div className="grid flex-1 gap-6 xl:grid-cols-12 min-h-0">
+              <div className="flex flex-col gap-4 xl:col-span-8 min-h-0">
+                <ScrollArea className="flex-1 rounded-xl border border-border/40 bg-muted/10 shadow-inner">
+                  <div className="flex flex-col space-y-4 p-4 pr-6">
+                    {messages.map((message) => {
+                      const isUser = message.role === "user";
+                      return (
+                        <div
+                          key={message.id}
+                          className={cn(
+                            "flex flex-col gap-1 w-fit max-w-[85%] sm:max-w-[75%]",
+                            isUser ? "ml-auto" : "mr-auto"
+                          )}
                         >
-                          <span className="flex min-w-0 items-center gap-2">
-                            {source.sourceType === "pdf" ? (
-                              <FileText className="h-4 w-4 shrink-0 text-amber-600" />
-                            ) : (
-                              <Globe className="h-4 w-4 shrink-0 text-blue-600" />
+                          <div
+                            className={cn(
+                              "rounded-2xl px-4 py-2.5 text-sm shadow-sm",
+                              isUser
+                                ? "bg-primary text-primary-foreground rounded-tr-sm"
+                                : "bg-card border border-border/50 text-card-foreground rounded-tl-sm"
                             )}
-                            <span className="line-clamp-1">{source.title}</span>
-                          </span>
-                          <ExternalLink className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                          >
+                            <p className="whitespace-pre-line leading-relaxed">{message.content}</p>
+                          </div>
+                          
+                          <div className={cn(
+                            "flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5",
+                            isUser ? "justify-end pr-1" : "justify-start pl-1"
+                          )}>
+                            <span>{isUser ? "You" : "Assistant"}</span>
+                            {message.meta && (
+                              <>
+                                <span className="opacity-50">•</span>
+                                <span className="opacity-80 truncate max-w-[150px]">{message.meta}</span>
+                              </>
+                            )}
+                          </div>
+
+                          {!isUser && message.response?.sources && message.response.sources.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1.5 pl-1">
+                              {message.response.sources.slice(0, 3).map((source) => (
+                                <Badge key={`${source.url}-${source.title}`} variant="outline" className="gap-1 bg-background/50 text-[10px] py-0 h-5">
+                                  {source.sourceType === "pdf" ? <FileText className="h-2.5 w-2.5 opacity-70" /> : <Globe className="h-2.5 w-2.5 opacity-70" />}
+                                  {(source.score ?? 0).toFixed(2)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {loading && (
+                      <div className="mr-auto flex w-fit max-w-[85%] flex-col gap-1">
+                         <div className="rounded-2xl rounded-tl-sm border border-border/50 bg-card px-4 py-3 shadow-sm">
+                            <div className="flex items-center gap-1.5">
+                              <span className="flex h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60" style={{ animationDelay: '0ms' }} />
+                              <span className="flex h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60" style={{ animationDelay: '150ms' }} />
+                              <span className="flex h-1.5 w-1.5 animate-bounce rounded-full bg-primary/60" style={{ animationDelay: '300ms' }} />
+                            </div>
+                         </div>
+                         <div className="pl-1 text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                           Assistant • Searching sources...
+                         </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+
+                <form onSubmit={onSubmit} className="relative mt-auto flex items-center">
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Ask about admissions, exams, notices, scholarships..."
+                    disabled={loading}
+                    className="h-12 rounded-xl pr-12 shadow-sm border-border/50 bg-card focus-visible:ring-1 focus-visible:ring-primary/50"
+                  />
+                  <Button 
+                    type="submit" 
+                    size="icon"
+                    disabled={!canSubmit}
+                    className={cn(
+                      "absolute right-1.5 top-1.5 h-9 w-9 rounded-lg transition-all",
+                      canSubmit ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    <SendHorizonal className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
+
+              <div className="hidden xl:flex xl:col-span-4 flex-col gap-3 min-h-0">
+                <div className="flex-1 rounded-xl border border-border/40 bg-muted/10 p-4 shadow-inner overflow-hidden flex flex-col">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Database className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Cited Sources</h3>
+                  </div>
+                  
+                  <ScrollArea className="flex-1 pr-2">
+                    {activeSources.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-40 text-center gap-3 text-muted-foreground/60">
+                         <Globe className="h-8 w-8 stroke-[1.5]" />
+                         <p className="text-xs max-w-[180px]">Ask a question to see relevant source links here.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {activeSources.slice(0, 8).map((source) => (
+                          <a
+                            key={`${source.url}-${source.title}`}
+                            href={source.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex flex-col gap-1.5 rounded-lg border border-border/30 bg-card p-3 shadow-sm transition-all hover:border-border/80 hover:shadow-md"
+                          >
+                            <span className="flex items-start gap-2">
+                              {source.sourceType === "pdf" ? (
+                                <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                              ) : (
+                                <Globe className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-500" />
+                              )}
+                              <span className="line-clamp-2 text-xs font-medium leading-tight group-hover:text-primary transition-colors">
+                                {source.title}
+                              </span>
+                            </span>
+                            <div className="flex items-center justify-between pl-5">
+                               <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-muted/50 rounded-sm">
+                                  Score: {(source.score ?? 0).toFixed(2)}
+                               </Badge>
+                               <ExternalLink className="h-3 w-3 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
                 </div>
               </div>
             </div>
-
-            <form onSubmit={onSubmit} className="flex gap-2">
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Ask about admissions, exams, notices, UGC rules, scholarships..."
-                disabled={loading}
-              />
-              <Button type="submit" disabled={!canSubmit}>
-                <SendHorizonal className="mr-2 h-4 w-4" />
-                Ask
-              </Button>
-            </form>
           </CardContent>
         </Card>
       </div>
