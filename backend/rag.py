@@ -81,6 +81,15 @@ class RagPipeline:
         vec = self._ensure_embedder().encode([query], normalize_embeddings=True, convert_to_numpy=True)[0]
         return tuple(float(x) for x in vec.tolist())
 
+    def _host_rank(self, url: str) -> int:
+        """Prefer CUK pages over generic UGC or other hosts when scores are similar."""
+        url_lower = url.lower()
+        if "cukashmir.ac.in" in url_lower:
+            return 2
+        if "ugc.gov.in" in url_lower:
+            return 1
+        return 0
+
     def _distance_to_cosine(self, distance: float) -> float:
         cosine = 1.0 - (distance / 2.0)
         return float(max(0.0, min(1.0, cosine)))
@@ -117,6 +126,11 @@ class RagPipeline:
             candidates.append((int(idx), float(distance)))
 
         reranked = self._rerank(query=query, candidates=candidates)
+        # Prefer CUK chunks when scores are similar.
+        reranked.sort(
+            key=lambda row: (self._host_rank(self.metadata[row[0]]["source_url"]), row[2]),
+            reverse=True,
+        )
         if not reranked:
             return [], 0.0
         confidence = self._distance_to_cosine(reranked[0][1])
@@ -173,6 +187,11 @@ class RagPipeline:
             candidates.append((idx, distance))
 
         reranked = self._rerank(query=query, candidates=candidates, metadata=temp_meta)
+        # Prefer CUK chunks when scores are similar.
+        reranked.sort(
+            key=lambda row: (self._host_rank(temp_meta[row[0]]["source_url"]), row[2]),
+            reverse=True,
+        )
 
         if not reranked:
             return [], 0.0
@@ -199,6 +218,12 @@ class RagPipeline:
         else:
             local_chunks, confidence = self._local_retrieve(query)
             local_mode = "faiss"
+
+        # Apply a confidence gate: if even the best match is weak, treat it as "no answer".
+        if local_chunks and confidence < self.settings.confidence_threshold:
+            local_chunks = []
+            local_mode = f"{local_mode}_low_confidence"
+            confidence = 0.0
 
         # Scraper-first policy: no Exa fallback; stay grounded in owned crawled data.
         return RetrievalOutput(chunks=local_chunks, confidence=confidence, mode=local_mode)

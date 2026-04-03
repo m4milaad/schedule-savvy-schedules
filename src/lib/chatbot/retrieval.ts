@@ -33,7 +33,7 @@ type BackendChatResponse = {
 };
 
 const API_BASE_URL = (import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000").replace(/\/+$/, "");
-const REQUEST_TIMEOUT_MS = 25000;
+const REQUEST_TIMEOUT_MS = 250000;
 
 export const askKnowledgeBase = async (
   question: string,

@@ -52,10 +52,34 @@ def _token_chunk(token_ids: list[int], chunk_size: int, overlap: int) -> list[li
 
 
 def _load_txt(path: Path) -> tuple[str, dict[str, str]]:
+    """Load a TXT file produced by scrape_cuk.py, preserving its header metadata.
+
+    scrape_cuk.py writes:
+        Source URL: ...
+        Page Title: ...
+        Date Scraped: ...
+
+    We prefer those header values over any URLs we might regex from the body.
+    """
     raw = path.read_text(encoding="utf-8", errors="ignore")
-    source_url = _extract_url(raw) or f"file://{path.name}"
-    page_title = path.stem.replace("_", " ").strip()
-    date_scraped = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
+    lines = raw.splitlines()
+
+    header_source_url = ""
+    header_title = ""
+    header_date = ""
+    for line in lines[:8]:
+        if line.startswith("Source URL:"):
+            header_source_url = line.removeprefix("Source URL:").strip()
+        elif line.startswith("Page Title:"):
+            header_title = line.removeprefix("Page Title:").strip()
+        elif line.startswith("Date Scraped:"):
+            header_date = line.removeprefix("Date Scraped:").strip()
+
+    # Fallbacks for older files or non-standard inputs.
+    source_url = header_source_url or _extract_url(raw) or f"file://{path.name}"
+    page_title = header_title or path.stem.replace("_", " ").strip()
+    date_scraped = header_date or datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
+
     return raw, {
         "source_url": source_url,
         "page_title": page_title,

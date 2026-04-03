@@ -15,11 +15,46 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 
 SEED_URLS = [
-    "https://www.cukashmir.ac.in",
+    "https://www.cukashmir.ac.in/#/publiczone",
     "https://www.cukashmir.ac.in/admission",
     "https://www.cukashmir.ac.in/notices",
     "https://www.cukashmir.ac.in/examination",
-    "https://www.ugc.gov.in",
+    # "https://www.ugc.gov.in",
+    "https://www.cukashmir.ac.in/#/notifications?type=General%20Notices",
+    "https://www.cukashmir.ac.in/#/departlist;id=AED760BD-36B6-4D11-AC94-44D136088505",
+    "https://www.cukashmir.ac.in/#/departlist;id=397295BC-B6BD-4D3F-8CFF-80A6327410C7",
+    "https://www.cukashmir.ac.in/#/departlist;id=6B31D492-45D6-433B-9637-C4CD70E41B64",
+    "https://www.cukashmir.ac.in/#/departlist;id=148B93D4-8BDC-47A2-AD7A-7DD50D670469",
+    "https://www.cukashmir.ac.in/#/departlist;id=4B5ACB21-03C4-4944-9F4E-5B041A977EB1",
+    "https://www.cukashmir.ac.in/#/departlist;id=EDC30EE7-D2C8-49CB-ADD3-B2DD0ECE8374",
+    "https://www.cukashmir.ac.in/#/departlist;id=8E88C6B7-3749-4271-9384-6336FA7C4C9A",
+    "https://cukashmir.in/",
+    "https://cukashmir.in/pages/about/cu-kashmir",
+    "https://cukashmir.in/pages/about/vision",
+    "https://cukashmir.in/pages/about/objectives",
+    "https://cukashmir.in/pages/about/logo",
+    "https://cukashmir.in/pages/about/acts-ordinances-etc",
+    "https://cukashmir.in/pages/about/statutory-bodies",
+    "https://cukashmir.in/pages/about/organogram",
+    "https://cukashmir.in/pages/about/how-to-reach",
+    "https://cukashmir.in/pages/campuses/main-campus",
+    "https://cukashmir.in/pages/campuses/green-campus",
+    "https://cukashmir.in/pages/campuses/science-campus",
+    "https://cukashmir.in/pages/campuses/arts-campus",
+    "https://cukashmir.in/pages/academics/dean-academics-affairs",
+    "https://cukashmir.in/pages/academics/schools-of-study",
+    "https://cukashmir.in/pages/academics/deans",
+    "https://cukashmir.in/pages/academics/departments",
+    "https://cukashmir.in/pages/academics/university-centres",
+    "https://cukashmir.in/pages/academics/heads-coordinators",
+    "https://cukashmir.in/pages/academics/programmes-offered",
+    "https://cukashmir.in/pages/academics/mdc-aec-vbc-sec",
+    "https://cukashmir.in/pages/research/directorate-of-rd",
+    "https://cukashmir.in/pages/research/research-programmes-offered",
+    "https://cukashmir.in/pages/research/knowledge-creativity-zone",
+    "https://cukashmir.in/pages/contact",
+    "https://www.cukashmir.ac.in/#/departlist;id=ACED671E-26F3-49BA-A365-A61C540D645F",
+    "https://www.cukashmir.ac.in/#/departlist;id=51C71663-4297-4866-AC49-22D2DDD4D4DC",
 ]
 
 ALLOWED_HOSTS = {"www.cukashmir.ac.in", "cukashmir.ac.in", "www.ugc.gov.in", "ugc.gov.in"}
@@ -322,6 +357,32 @@ def _same_domain(url: str) -> bool:
     return host in ALLOWED_HOSTS
 
 
+def _is_cuk(url: str) -> bool:
+    host = urlparse(url).netloc.lower()
+    return "cukashmir.ac.in" in host
+
+
+CUK_KEYWORDS = [
+    "/admission",
+    "/admissions",
+    "/notice",
+    "/notices",
+    "/exam",
+    "/examination",
+    "/result",
+    "/results",
+    "/department",
+    "/school",
+    "/faculty",
+    "/program",
+    "/programme",
+    "/course",
+    "/syllabus",
+    "/contact",
+    "/about",
+]
+
+
 def crawl() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     visited: set[str] = set()
@@ -388,8 +449,16 @@ def crawl() -> None:
                     continue
                 if abs_url in visited:
                     continue
-                if _is_pagination_link(abs_url) or any(seed in abs_url for seed in ["/admission", "/notice", "/notices", "/exam", "/examination"]):
-                    queue.append(abs_url)
+                if _is_cuk(abs_url):
+                    # For CUK, follow a richer set of paths (admissions, departments, exams, contact, etc.)
+                    if _is_pagination_link(abs_url) or any(key in abs_url.lower() for key in CUK_KEYWORDS):
+                        queue.append(abs_url)
+                else:
+                    # For UGC (or other allowed hosts), keep to the stricter notices/admissions/exam filters.
+                    if _is_pagination_link(abs_url) or any(
+                        key in abs_url.lower() for key in ["/admission", "/notice", "/notices", "/exam", "/examination"]
+                    ):
+                        queue.append(abs_url)
 
     logger.info("Crawl finished. Pages saved: %d, PDFs queued: %d", pages_done, len(pdf_seen))
 

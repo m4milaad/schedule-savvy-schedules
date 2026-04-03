@@ -49,8 +49,14 @@ def main() -> None:
         show_progress_bar=True,
     ).tolist()
 
-    payload = []
+    # Build payload and deduplicate by content_hash so we never violate the unique constraint.
+    payload: list[dict] = []
+    seen_hashes: set[str] = set()
     for doc, vector in zip(docs, vectors, strict=False):
+        h = doc["content_hash"]
+        if h in seen_hashes:
+            continue
+        seen_hashes.add(h)
         payload.append(
             {
                 "id": doc["id"],

@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import Body, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -239,3 +239,52 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
     )
     _ = request
     return response
+
+
+@app.post("/chat/stream")
+@limiter.limit("20/minute")
+async def chat_stream(request: Request, payload: ChatRequest = Body(...)) -> StreamingResponse:
+    """Server-sent events style streaming endpoint.
+
+    The response is a text/event-stream where the server sends:
+      - one initial 'meta' event with mode and sources
+      - a sequence of 'token' events containing pieces of the answer
+    """
+    t0 = time.perf_counter()
+    retrieval = app.state.rag.retrieve(payload.query)
+    prompt_payload = app.state.prompt_builder.build(
+        query=payload.query,
+        chunks=retrieval.chunks,
+        history=[{"role": turn.role, "content": turn.content} for turn in payload.history[-8:]],
+    )
+
+    mode = retrieval.mode
+    if settings.demo_mode or app.state.model_status != "ready":
+        top = retrieval.chunks[0].text[:420] if retrieval.chunks else "No relevant chunk found."
+        answer = f"[DEMO_MODE] Based on indexed context:\n{top}"
+        mode = "demo"
+    else:
+        answer = app.state.model_router.generate(prompt_payload.prompt)
+
+    sources = _serialize_sources(retrieval.chunks)
+
+    async def event_generator() -> Any:
+        # Initial metadata event
+        meta = {"type": "meta", "mode": mode, "sources": sources}
+        yield f"data: {json.dumps(meta)}\n\n"
+
+        # Stream the answer as whitespace-delimited tokens for a simple typing effect.
+        for token in answer.split():
+            chunk = {"type": "token", "token": token + " "}
+            yield f"data: {json.dumps(chunk)}\n\n"
+            await asyncio.sleep(0)  # yield control to the event loop
+
+        done = {
+            "type": "done",
+            "latency_ms": int((time.perf_counter() - t0) * 1000),
+            "chunk_count": len(retrieval.chunks),
+        }
+        yield f"data: {json.dumps(done)}\n\n"
+
+    _ = request
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

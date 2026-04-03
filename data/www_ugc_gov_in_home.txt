@@ -1,6 +1,6 @@
 Source URL: https://www.ugc.gov.in
 Page Title: Welcome to UGC, New Delhi, India
-Date Scraped: 2026-04-03T05:43:23.685520+00:00
+Date Scraped: 2026-04-03T07:02:32.895516+00:00
 
 --- Extracted contact details (who to contact — use these labels when answering) ---
 Each line ties a department or role to an email or phone number from this page.
@@ -369,7 +369,7 @@ New Delhi - 110002.
 Phone: 011-23604446, 011-23604200
 Email: contact.ugc@nic.in
 Total Visitors
-236663067
+236667351
 Copyright © 2023 University Grants Commission New Delhi, India
 Website last updated on:
 03-04-2026
