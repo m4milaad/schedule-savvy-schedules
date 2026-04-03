@@ -28,18 +28,24 @@ class Settings(BaseSettings):
     exa_api_key: str | None = None
     exa_fallback_results: int = 3
 
-    answer_mode: Literal["extractive", "tinyllama", "ollama"] = "extractive"
+    answer_mode: Literal["extractive", "tinyllama", "ollama", "openrouter"] = "extractive"
     tinyllama_model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    model_max_new_tokens: int = 220
-    model_temperature: float = 0.2
+    model_max_new_tokens: int = 512
+    model_temperature: float = 0.15
 
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "phi3:mini"
 
-    cache_ttl_seconds: int = 600
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "liquid/lfm-2.5-1.2b-instruct:free"
+    openrouter_site_url: str | None = None
+    openrouter_site_name: str | None = None
+    openrouter_max_retries: int = 2
+
+    cache_ttl_seconds: int = 300
     cache_max_items: int = 512
 
-    request_timeout_seconds: int = Field(default=20, ge=5, le=120)
+    request_timeout_seconds: int = Field(default=45, ge=5, le=120)
 
 
 @lru_cache(maxsize=1)

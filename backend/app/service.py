@@ -1,16 +1,63 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+import re
 from time import perf_counter
 
 from app.cache import TTLCache
 from app.config import Settings
 from app.llm import AnswerGenerator
-from app.models import ChatResponse, RetrievalResult, SearchResponse, SourceDocument
+from app.models import ChatResponse, SearchResponse, SourceDocument
 from app.retriever import Retriever
+
+logger = logging.getLogger(__name__)
+
+_GREETING_PATTERNS = re.compile(
+    r"^(h(i|ello|ey|ola|owdy)|good\s*(morning|afternoon|evening|day)|"
+    r"what'?s\s*up|sup|yo|greetings|salaam|assalam[u ]?alaikum|"
+    r"how\s*are\s*you|how'?s\s*it\s*going|how\s*do\s*you\s*do|"
+    r"thanks?|thank\s*you|bye|goodbye|see\s*ya|"
+    r"nice\s*to\s*meet\s*you|pleased\s*to\s*meet\s*you)[\s!?.,:;]*$",
+    re.IGNORECASE,
+)
+
+_GREETING_RESPONSES: dict[str, str] = {
+    "greeting": (
+        "Hello! I'm NeMoX, the CUK academic assistant. "
+        "I can help you with information about Central University of Kashmir — "
+        "admissions, exams, schedules, departments, faculty, notices, and more. "
+        "What would you like to know?"
+    ),
+    "how_are_you": (
+        "I'm NeMoX, your CUK academic assistant, and I'm doing great — thank you for asking! "
+        "I'm here to help you with anything related to Central University of Kashmir. "
+        "Feel free to ask about admissions, courses, departments, faculty, or schedules."
+    ),
+    "thanks": (
+        "You're welcome! If you have any more questions about CUK, NeMoX is here to help anytime."
+    ),
+    "bye": (
+        "Goodbye! Feel free to come back whenever you need help with CUK-related queries. NeMoX will be here. Take care!"
+    ),
+}
+
+
+def _match_casual(query: str) -> str | None:
+    text = query.strip()
+    if not _GREETING_PATTERNS.match(text):
+        return None
+    lower = text.lower().rstrip("!?., ")
+    if re.match(r"how\s*are\s*you|how'?s\s*it\s*going|how\s*do\s*you\s*do", lower):
+        return _GREETING_RESPONSES["how_are_you"]
+    if re.match(r"thanks?|thank\s*you", lower):
+        return _GREETING_RESPONSES["thanks"]
+    if re.match(r"bye|goodbye|see\s*ya", lower):
+        return _GREETING_RESPONSES["bye"]
+    return _GREETING_RESPONSES["greeting"]
 
 
 def _cosine_from_distance(distance: float) -> float:
-    # For L2-normalized vectors: cos = 1 - d^2 / 2
     similarity = 1.0 - (distance / 2.0)
     return float(max(0.0, min(1.0, similarity)))
 
@@ -30,7 +77,34 @@ class RagService:
             max_items=settings.cache_max_items,
         )
 
-    def chat(self, query: str, top_k: int | None = None) -> ChatResponse:
+    def _build_context(
+        self,
+        items: list,
+        sources: list[SourceDocument],
+        max_chars: int,
+    ) -> list[str]:
+        blocks: list[str] = []
+        total = 0
+        for item, doc in zip(items, sources):
+            content = item.document.content
+            block = f"[{doc.page_title}] {content}"
+            if total + len(block) > max_chars:
+                remaining = max_chars - total
+                if remaining > 200:
+                    blocks.append(block[:remaining])
+                break
+            blocks.append(block)
+            total += len(block)
+        return blocks
+
+    def _retrieve_sync(self, query: str, top_k: int):
+        return self.retriever.retrieve(query=query, top_k=top_k)
+
+    async def chat(self, query: str, top_k: int | None = None) -> ChatResponse:
+        casual = _match_casual(query)
+        if casual:
+            return ChatResponse(answer=casual, sources=[], mode="greeting")
+
         cache_key = f"{query.strip().lower()}::{top_k or self.settings.retrieval_top_k}"
         cached = self._cache.get(cache_key)
         if cached is not None:
@@ -38,31 +112,45 @@ class RagService:
 
         started = perf_counter()
         effective_top_k = top_k or self.settings.retrieval_top_k
-        items = self.retriever.retrieve(query=query, top_k=effective_top_k)
+
+        items = await asyncio.to_thread(self._retrieve_sync, query, effective_top_k)
+
+        scored_items = []
+        for item in items[:effective_top_k]:
+            sim = _cosine_from_distance(abs(item.score))
+            if sim >= self.settings.retrieval_score_threshold:
+                scored_items.append((item, round(sim, 4)))
+
+        if not scored_items:
+            logger.info("no chunks above threshold %.2f for query=%r", self.settings.retrieval_score_threshold, query)
+            scored_items = [(item, round(_cosine_from_distance(abs(item.score)), 4)) for item in items[:3]]
 
         sources = [
-            SourceDocument(
-                source_url=item.document.url,
-                page_title=item.document.title,
-                score=round(_cosine_from_distance(abs(item.score)), 4),
-            )
-            for item in items[:effective_top_k]
+            SourceDocument(source_url=item.document.url, page_title=item.document.title, score=score)
+            for item, score in scored_items
         ]
+        filtered_items = [item for item, _ in scored_items]
 
-        context_blocks = [
-            f"[{doc.page_title}] {item.document.content[:500]}"
-            for item, doc in zip(items[:effective_top_k], sources)
-        ]
-        answer = self.generator.answer(query, context_blocks=context_blocks)
+        context_blocks = self._build_context(filtered_items, sources, self.settings.max_context_chars)
+
+        retrieval_ms = int((perf_counter() - started) * 1000)
+        logger.info(
+            "chat retrieval: query=%r chunks=%d context_chars=%d top_score=%.3f elapsed_ms=%d",
+            query, len(context_blocks), sum(len(b) for b in context_blocks),
+            scored_items[0][1] if scored_items else 0,
+            retrieval_ms,
+        )
+
+        answer = await self.generator.answer(query, context_blocks=context_blocks)
 
         mode = "faiss"
         response = ChatResponse(answer=answer, sources=sources, mode=mode)
         self._cache.set(cache_key, response)
         return response
 
-    def search(self, query: str, top_k: int | None = None) -> SearchResponse:
+    async def search(self, query: str, top_k: int | None = None) -> SearchResponse:
         effective_top_k = top_k or self.settings.retrieval_top_k
-        items = self.retriever.retrieve(query=query, top_k=effective_top_k)
+        items = await asyncio.to_thread(self._retrieve_sync, query, effective_top_k)
         documents = [
             SourceDocument(
                 source_url=item.document.url,

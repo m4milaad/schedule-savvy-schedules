@@ -58,8 +58,8 @@ class VectorStore:
             )
         return cls(index=index, documents=documents)
 
-    def search(self, query_vector: list[float], top_k: int) -> list[tuple[IndexedDocument, float]]:
-        vec = np.array([query_vector], dtype=np.float32)
+    def search(self, query_vector: np.ndarray, top_k: int) -> list[tuple[IndexedDocument, float]]:
+        vec = np.ascontiguousarray(query_vector.reshape(1, -1), dtype=np.float32)
         scores, indices = self.index.search(vec, top_k)
         matches: list[tuple[IndexedDocument, float]] = []
         for idx, score in zip(indices[0], scores[0], strict=False):
