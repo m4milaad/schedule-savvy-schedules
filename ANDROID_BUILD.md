@@ -109,6 +109,20 @@ Gates:
 - Confirm JDK and SDK versions are installed.
 - Re-sync Gradle in Android Studio.
 
+### R8 `classes.dex` locked on Windows
+- Symptom: `:app:minifyReleaseWithR8` fails with `classes.dex ... being used by another process`.
+- Cause: transient file lock (commonly Android Studio, Gradle daemon overlap, or antivirus scan).
+- Recovery steps:
+  ```powershell
+  cd android
+  .\gradlew.bat --stop
+  .\gradlew.bat clean
+  .\gradlew.bat assembleRelease
+  ```
+- If it keeps happening:
+  - Close Android Studio while running CLI release builds.
+  - Exclude the project `android/build` and `android/app/build` folders from realtime antivirus scanning.
+
 ### Network/API calls fail
 - Verify `VITE_CHATBOT_API_URL` points to a reachable HTTPS backend.
 - Confirm backend CORS is configured for app origin behavior.
