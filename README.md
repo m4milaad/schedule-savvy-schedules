@@ -3,7 +3,7 @@
 > A comprehensive academic management system with exam scheduling, marks management, attendance tracking, assignments, library, and real-time collaboration.
 
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://ds-cuk.vercel.app/)
-[![Version](https://img.shields.io/badge/version-6.0.0-blue)]()
+[![Version](https://img.shields.io/badge/version-6.5.0-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue)]()
 [![React](https://img.shields.io/badge/React-18.3-blue)]()
