@@ -4,7 +4,11 @@ apply plugin: 'kotlin-android'
 def signingProps = new Properties()
 def keystorePropsFile = rootProject.file('keystore.properties')
 if (keystorePropsFile.exists()) {
-    keystorePropsFile.withInputStream { stream -> signingProps.load(stream) }
+    def text = keystorePropsFile.getText('UTF-8')
+    if (text.startsWith('\uFEFF')) {
+        text = text.substring(1)
+    }
+    signingProps.load(new StringReader(text))
 }
 
 def getSigningValue = { String key ->
@@ -21,8 +25,8 @@ android {
         applicationId "com.cukacadex.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "6.5.0"
+        versionCode 2
+        versionName "6.5.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
