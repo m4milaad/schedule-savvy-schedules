@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Bundle
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -13,9 +15,17 @@ import android.webkit.ConsoleMessage
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
+
+    /** Serves android_asset/… as https://appassets.androidplatform.net/… so scripts/CSS load (file:// is blocked by CORS in modern WebView). Paths map 1:1 (e.g. /public/index.html → assets/public/index.html). */
+    private val assetLoader: WebViewAssetLoader by lazy {
+        WebViewAssetLoader.Builder()
+            .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this))
+            .build()
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,11 +66,20 @@ class MainActivity : AppCompatActivity() {
         
         // Set WebViewClient to handle navigation
         webView.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest,
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request.url)
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 Log.d("WebView", "Navigation requested: $url")
-                
-                // Open external http/https links in external browser
+
                 if (url.startsWith("http://") || url.startsWith("https://")) {
+                    if (url.startsWith("https://appassets.androidplatform.net/")) {
+                        return false
+                    }
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         startActivity(intent)
@@ -70,19 +89,12 @@ class MainActivity : AppCompatActivity() {
                         return false
                     }
                 }
-                
-                // Handle hash-based routing - don't navigate away from index.html
-                if (url.startsWith("file:///android_asset/public/index.html")) {
-                    return false // Let WebView handle it
-                }
-                
-                // Block any file:// navigation that isn't our index.html
-                // This includes file:/// (root) and other file paths
+
                 if (url.startsWith("file://")) {
                     Log.d("WebView", "Blocked navigation to: $url")
-                    return true // Block navigation
+                    return true
                 }
-                
+
                 return false
             }
             
@@ -100,8 +112,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Load your web app
-        webView.loadUrl("file:///android_asset/public/index.html")
+        webView.loadUrl("https://appassets.androidplatform.net/public/index.html")
     }
     
     @Deprecated("Deprecated in Java")
