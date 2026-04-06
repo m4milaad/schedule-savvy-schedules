@@ -155,8 +155,12 @@ const App = () => {
             </HashRouter>
           </TooltipProvider>
         </QueryClientProvider>
-        <Analytics />
-        <SpeedInsights/>
+        {!isNativeApp && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </ThemeProvider>
     </ErrorBoundary>
   );

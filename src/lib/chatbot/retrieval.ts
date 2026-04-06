@@ -33,11 +33,7 @@ type BackendChatResponse = {
 };
 
 const rawApiBaseUrl = (import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000").replace(/\/+$/, "");
-const isLocalhostUrl = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(rawApiBaseUrl);
-
-if (import.meta.env.PROD && isLocalhostUrl) {
-  throw new Error("VITE_CHATBOT_API_URL must point to a deployed backend in production builds.");
-}
+const isLocalhostChatbotUrl = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(rawApiBaseUrl);
 
 const API_BASE_URL = rawApiBaseUrl;
 const REQUEST_TIMEOUT_MS = 250000;
@@ -46,6 +42,11 @@ export const askKnowledgeBase = async (
   question: string,
   history: ChatHistoryTurn[] = [],
 ): Promise<ChatbotResponse> => {
+  if (import.meta.env.PROD && isLocalhostChatbotUrl) {
+    throw new Error(
+      "Chat assistant is not configured for production. Set VITE_CHATBOT_API_URL to your deployed API (not localhost).",
+    );
+  }
   const startedAt = performance.now();
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

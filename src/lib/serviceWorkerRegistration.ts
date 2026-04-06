@@ -5,10 +5,11 @@ export function registerServiceWorker() {
 
   const isNativeApp = /Android.*wv/.test(navigator.userAgent);
   const isSecureLikeContext = window.isSecureContext || window.location.hostname === 'localhost';
-  const shouldRegister = import.meta.env.PROD && isSecureLikeContext;
+  // Service workers are unreliable with WebViewAssetLoader (virtual https host); skip in Android shell.
+  const shouldRegister =
+    import.meta.env.PROD && isSecureLikeContext && !isNativeApp;
 
   // In web preview/dev, remove stale SW + caches so latest code always loads.
-  // Keep native caches intact so supported runtimes can keep offline data.
   if (!shouldRegister) {
     if (!isNativeApp) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
@@ -27,7 +28,10 @@ export function registerServiceWorker() {
         });
       }
     } else {
-      logger.info('[SW] Skipping registration: secure context unavailable for current native runtime.');
+      logger.info('[SW] Skipping registration in Android WebView (not used for this shell).');
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
+      });
     }
 
     return;
@@ -35,9 +39,11 @@ export function registerServiceWorker() {
 
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/service-worker.js', {
-        scope: '/',
-      });
+      const base = import.meta.env.BASE_URL.endsWith('/')
+        ? import.meta.env.BASE_URL
+        : `${import.meta.env.BASE_URL}/`;
+      const swScript = `${base}service-worker.js`;
+      const registration = await navigator.serviceWorker.register(swScript);
       logger.info('[SW] Registered with scope:', registration.scope);
 
       // Check for updates periodically (every 5 minutes)
