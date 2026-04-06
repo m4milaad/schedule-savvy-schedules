@@ -1,6 +1,3 @@
-import { Preferences } from '@capacitor/preferences';
-import { Network } from '@capacitor/network';
-
 const CACHE_PREFIX = 'cuk_cache_';
 const SYNC_TIMESTAMP_KEY = 'cuk_last_sync_timestamp';
 
@@ -20,7 +17,7 @@ export const DEFAULT_TTL = {
 } as const;
 
 /**
- * Save data to Capacitor Preferences cache
+ * Save data to localStorage cache
  */
 export async function setCachedData<T>(key: string, data: T, version = 1): Promise<void> {
   const cached: CachedData<T> = {
@@ -28,19 +25,13 @@ export async function setCachedData<T>(key: string, data: T, version = 1): Promi
     timestamp: Date.now(),
     version,
   };
-  await Preferences.set({
-    key: `${CACHE_PREFIX}${key}`,
-    value: JSON.stringify(cached),
-  });
+  localStorage.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(cached));
   // Update global last-synced timestamp
-  await Preferences.set({
-    key: SYNC_TIMESTAMP_KEY,
-    value: new Date().toISOString(),
-  });
+  localStorage.setItem(SYNC_TIMESTAMP_KEY, new Date().toISOString());
 }
 
 /**
- * Get cached data from Capacitor Preferences with TTL enforcement
+ * Get cached data from localStorage with TTL enforcement
  * @param key Cache key
  * @param maxAgeMs Maximum age in milliseconds (optional). If provided, returns null if expired.
  * @param expectedVersion Expected schema version (optional). If provided, returns null if version mismatch.
@@ -50,7 +41,7 @@ export async function getCachedData<T>(
   maxAgeMs?: number,
   expectedVersion?: number
 ): Promise<CachedData<T> | null> {
-  const { value } = await Preferences.get({ key: `${CACHE_PREFIX}${key}` });
+  const value = localStorage.getItem(`${CACHE_PREFIX}${key}`);
   if (!value) return null;
   
   try {
@@ -79,17 +70,17 @@ export async function getCachedData<T>(
  * Remove a specific cache entry
  */
 export async function removeCachedData(key: string): Promise<void> {
-  await Preferences.remove({ key: `${CACHE_PREFIX}${key}` });
+  localStorage.removeItem(`${CACHE_PREFIX}${key}`);
 }
 
 /**
  * Clear all cached data
  */
 export async function clearAllCache(): Promise<void> {
-  const { keys } = await Preferences.keys();
+  const keys = Object.keys(localStorage);
   const cacheKeys = keys.filter((k) => k.startsWith(CACHE_PREFIX));
   for (const key of cacheKeys) {
-    await Preferences.remove({ key });
+    localStorage.removeItem(key);
   }
 }
 
@@ -97,15 +88,14 @@ export async function clearAllCache(): Promise<void> {
  * Get the last sync timestamp
  */
 export async function getLastSyncTimestamp(): Promise<string | null> {
-  const { value } = await Preferences.get({ key: SYNC_TIMESTAMP_KEY });
-  return value;
+  return localStorage.getItem(SYNC_TIMESTAMP_KEY);
 }
 
 /**
- * Check if any cached app data exists in Preferences.
+ * Check if any cached app data exists in localStorage.
  */
 export async function hasAnyCachedData(): Promise<boolean> {
-  const { keys } = await Preferences.keys();
+  const keys = Object.keys(localStorage);
   return keys.some((k) => k.startsWith(CACHE_PREFIX));
 }
 
@@ -113,21 +103,17 @@ export async function hasAnyCachedData(): Promise<boolean> {
  * Check current network status
  */
 export async function isOnline(): Promise<boolean> {
-  const status = await Network.getStatus();
-  return status.connected;
+  return navigator.onLine;
 }
 
 /**
- * Persist auth session to Preferences
+ * Persist auth session to localStorage
  */
 export async function persistAuthSession(session: {
   access_token: string;
   refresh_token: string;
 }): Promise<void> {
-  await Preferences.set({
-    key: 'cuk_auth_session',
-    value: JSON.stringify(session),
-  });
+  localStorage.setItem('cuk_auth_session', JSON.stringify(session));
 }
 
 /**
@@ -137,7 +123,7 @@ export async function getPersistedAuthSession(): Promise<{
   access_token: string;
   refresh_token: string;
 } | null> {
-  const { value } = await Preferences.get({ key: 'cuk_auth_session' });
+  const value = localStorage.getItem('cuk_auth_session');
   if (!value) return null;
   try {
     return JSON.parse(value);
@@ -150,5 +136,5 @@ export async function getPersistedAuthSession(): Promise<{
  * Clear persisted auth session
  */
 export async function clearPersistedAuthSession(): Promise<void> {
-  await Preferences.remove({ key: 'cuk_auth_session' });
+  localStorage.removeItem('cuk_auth_session');
 }

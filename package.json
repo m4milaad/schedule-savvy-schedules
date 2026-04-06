@@ -9,15 +9,12 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:chatbot-kb": "node scripts/generate-chatbot-kb.mjs"
+    "build:chatbot-kb": "node scripts/generate-chatbot-kb.mjs",
+    "android:copy": "npm run build && xcopy /E /I /Y dist android\\app\\src\\main\\assets\\public",
+    "android:build": "cd android && .\\gradlew assembleRelease",
+    "android:install": "cd android && .\\gradlew installRelease"
   },
   "dependencies": {
-    "@capacitor/android": "^8.0.0",
-    "@capacitor/core": "^8.0.0",
-    "@capacitor/network": "^8.0.1",
-    "@capacitor/preferences": "^8.0.0",
-    "@capacitor/splash-screen": "^8.0.0",
-    "@capacitor/status-bar": "^8.0.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -79,7 +76,6 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.0.0",
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",

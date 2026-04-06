@@ -109,7 +109,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               }}
             >
               <img
-                src="/CUKLogo.ico"
+                src="./CUKLogo.ico"
                 alt="CUK Acadex Logo"
                 style={{ width: 48, height: 48, objectFit: "contain" }}
               />

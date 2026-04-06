@@ -79,7 +79,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                             className="flex items-center gap-2 font-bold text-xl text-primary truncate"
                         >
                             <motion.img
-                                src="/CUKLogo.ico"
+                                src="./CUKLogo.ico"
                                 alt="CUK Logo"
                                 className="w-8 h-8 object-contain"
                                 initial={{ rotate: -10, scale: 0.8 }}
@@ -89,7 +89,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     if (target.src.includes('CUKLogo')) {
-                                        target.src = '/favicon.ico';
+                                        target.src = './favicon.ico';
                                     }
                                 }}
                             />
@@ -113,7 +113,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                             className="w-full flex justify-center"
                         >
                             <motion.img
-                                src="/CUKLogo.ico"
+                                src="./CUKLogo.ico"
                                 alt="CUK Logo"
                                 className="w-8 h-8 object-contain"
                                 whileHover={{ scale: 1.1, rotate: 5 }}
@@ -121,7 +121,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     if (target.src.includes('CUKLogo')) {
-                                        target.src = '/favicon.ico';
+                                        target.src = './favicon.ico';
                                     }
                                 }}
                             />

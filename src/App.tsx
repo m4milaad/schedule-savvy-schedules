@@ -1,11 +1,10 @@
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
-import { Capacitor } from '@capacitor/core';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Auth from "./pages/Auth";
@@ -26,13 +25,9 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
 import ChatbotAssistant from "@/pages/ChatbotAssistant";
 import { useState } from "react";
-import { SplashScreen as CapacitorSplash } from '@capacitor/splash-screen';
 
-// Kill the native splash immediately before anything renders
-const isNativeApp = Capacitor.getPlatform() === 'android' || Capacitor.getPlatform() === 'ios';
-if (isNativeApp) {
-  CapacitorSplash.hide({ fadeOutDuration: 0 }).catch(() => {});
-}
+// Check if running in Android WebView
+const isNativeApp = /Android.*wv/.test(navigator.userAgent);
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -68,7 +63,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <HashRouter>
             <Routes>
               <Route
                 path="/"
@@ -151,7 +146,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
               </Routes>
               <OfflineIndicator />
-            </BrowserRouter>
+            </HashRouter>
           </TooltipProvider>
         </QueryClientProvider>
         <Analytics />

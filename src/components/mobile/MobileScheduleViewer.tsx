@@ -9,7 +9,8 @@ import { ExamScheduleItem } from "@/types/examSchedule";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { useToast } from "@/hooks/use-toast";
-import { SplashScreen } from "./SplashScreen";import logger from '@/lib/logger';
+import { SplashScreen } from "./SplashScreen";
+import logger from '@/lib/logger';
 
 
 export const MobileScheduleViewer = () => {
@@ -135,7 +136,7 @@ export const MobileScheduleViewer = () => {
           <CardHeader className="text-center bg-gradient-to-r from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 text-white rounded-t-lg transition-all duration-300">
             <div className="flex items-center justify-center mb-2">
               <img 
-                src="/favicon.ico" 
+                src="./favicon.ico" 
                 alt="CUK Logo" 
                 className="w-8 h-8 mr-2 transition-transform duration-300 hover:scale-110"
               />

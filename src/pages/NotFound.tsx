@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import FaultyTerminal from '@/components/Faultyterminal'
 import FuzzyText from '@/components/ui/FuzzyText';
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { AppResetDialog } from '@/components/AppResetDialog';import logger from '@/lib/logger';
+import { AppResetDialog } from '@/components/AppResetDialog';
+import logger from '@/lib/logger';
 
 
 const App = () => {
@@ -49,7 +50,7 @@ const App = () => {
         {/* Logo/Image */}
         <div className="mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <img
-            src="/favicon.ico"
+            src="./favicon.ico"
             alt="CUK Logo"
             className="mx-auto h-20 w-20"
           />

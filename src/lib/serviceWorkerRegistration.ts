@@ -1,10 +1,9 @@
-import { Capacitor } from '@capacitor/core';
 import logger from './logger';
 
 export function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
 
-  const isNativeApp = Capacitor.isNativePlatform();
+  const isNativeApp = /Android.*wv/.test(navigator.userAgent);
   const isSecureLikeContext = window.isSecureContext || window.location.hostname === 'localhost';
   const shouldRegister = import.meta.env.PROD && isSecureLikeContext;
 

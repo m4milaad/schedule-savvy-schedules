@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
 import { WifiOff, RefreshCw } from 'lucide-react';
-import { Network } from '@capacitor/network';
 import { getLastSyncTimestamp, hasAnyCachedData } from '@/lib/offlineCache';
 
 export const OfflineIndicator = () => {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [hasCache, setHasCache] = useState(false);
 
   useEffect(() => {
     // Check initial status
-    Network.getStatus().then((status) => {
-      setIsOffline(!status.connected);
-    });
+    setIsOffline(!navigator.onLine);
 
     // Load last sync timestamp
     getLastSyncTimestamp().then((ts) => {
@@ -23,16 +20,22 @@ export const OfflineIndicator = () => {
     hasAnyCachedData().then(setHasCache);
 
     // Listen for changes
-    const handler = Network.addListener('networkStatusChange', (status) => {
-      setIsOffline(!status.connected);
-      if (status.connected) {
-        setLastSynced(new Date().toLocaleTimeString());
-        setHasCache(true);
-      }
-    });
+    const handleOnline = () => {
+      setIsOffline(false);
+      setLastSynced(new Date().toLocaleTimeString());
+      setHasCache(true);
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      handler.then((h) => h.remove());
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 

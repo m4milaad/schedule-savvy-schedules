@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Network } from '@capacitor/network';
 import { setCachedData, getCachedData, isOnline, DEFAULT_TTL } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
 
@@ -31,7 +30,7 @@ interface UseOfflineDataReturn<T> {
 }
 
 /**
- * Hook that fetches data online and caches it via @capacitor/preferences.
+ * Hook that fetches data online and caches it via localStorage.
  * When offline, serves the last cached version with a timestamp.
  * Supports stale-while-revalidate: returns cached data immediately, then refreshes in background.
  */
@@ -132,14 +131,14 @@ export function useOfflineData<T>({
 
   // Auto-refetch when coming back online
   useEffect(() => {
-    const handler = Network.addListener('networkStatusChange', (status) => {
-      if (status.connected) {
-        fetchData(true); // Background refresh
-      }
-    });
+    const handleOnline = () => {
+      fetchData(true); // Background refresh
+    };
+
+    window.addEventListener('online', handleOnline);
 
     return () => {
-      handler.then((h) => h.remove());
+      window.removeEventListener('online', handleOnline);
     };
   }, [fetchData]);
 

@@ -30,9 +30,14 @@ function serviceWorkerInject(mode: string): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: './', 
   server: {
     host: "::",
     port: 8080,
+    fs: {
+      // Exclude android folder from Vite's file system access
+      deny: ['**/android/**']
+    }
   },
   plugins: [
     react(),
@@ -63,5 +68,9 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 1000,
     sourcemap: mode === 'development',
+  },
+  optimizeDeps: {
+    // Exclude android folder from dependency optimization
+    exclude: ['android']
   },
 }));

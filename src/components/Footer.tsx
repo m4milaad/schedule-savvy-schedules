@@ -34,7 +34,7 @@ export const Footer = () => {
                   </p>
                   <div className="flex items-center gap-4">
                       <img
-                          src="/favicon.ico"
+                          src="./favicon.ico"
                           alt="CUK Logo"
                           className="hidden md:block w-6 h-6 opacity-60"
                       />

@@ -242,18 +242,6 @@ export const useAuth = () => {
         sessionStorage.removeItem(key);
       }
     });
-    // Also clear from Capacitor Preferences
-    try {
-      const { Preferences } = await import('@capacitor/preferences');
-      const { keys } = await Preferences.keys();
-      for (const key of keys) {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          await Preferences.remove({ key });
-        }
-      }
-    } catch {
-      // not on native, ignore
-    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

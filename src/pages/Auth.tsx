@@ -12,7 +12,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import { useTheme } from '@/components/ThemeProvider';import logger from '@/lib/logger';
+import { useTheme } from '@/components/ThemeProvider';
+import logger from '@/lib/logger';
 
 
 interface Department {
@@ -211,7 +212,7 @@ const Auth = () => {
         >
           <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center">
             <img 
-              src="/CUKLogo.ico" 
+              src="./CUKLogo.ico" 
               alt="CUK Logo" 
               className="w-full h-full object-contain"
               onError={(e) => {

@@ -7,7 +7,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
-import { supabase } from "@/integrations/supabase/client";import logger from '@/lib/logger';
+import { supabase } from "@/integrations/supabase/client";
+import logger from '@/lib/logger';
 
 
 export const AuditLogsPage: React.FC = () => {
@@ -79,7 +80,7 @@ export const AuditLogsPage: React.FC = () => {
             <div className="text-center md:text-left">
               <div className="flex justify-center md:justify-start items-center gap-3 mb-2">
                 <img
-                  src="/favicon.ico"
+                  src="./favicon.ico"
                   alt="CUK Logo"
                   className="hidden md:block w-10 h-10"
                 />
@@ -106,7 +107,7 @@ export const AuditLogsPage: React.FC = () => {
                 <SheetContent side="right" className="w-72">
                   <div className="flex flex-col gap-4 mt-6">
                     <div className="flex items-center gap-3 mb-4">
-                      <img src="/favicon.ico" alt="CUK Logo" className="hidden md:block w-8 h-8" />
+                      <img src="./favicon.ico" alt="CUK Logo" className="hidden md:block w-8 h-8" />
                       <span className="font-semibold">Menu</span>
                     </div>
                     {navigationButtons}
