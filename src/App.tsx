@@ -25,6 +25,9 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
 import ChatbotAssistant from "@/pages/ChatbotAssistant";
 import { useState } from "react";
+import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 
 // Check if running in Android WebView
 const isNativeApp = /Android.*wv/.test(navigator.userAgent);
@@ -74,6 +77,8 @@ const App = () => {
                 }
               />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
               <Route path="/email-verified" element={<EmailVerified />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route
@@ -146,6 +151,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
               </Routes>
               <OfflineIndicator />
+              <CookieConsentBanner />
             </HashRouter>
           </TooltipProvider>
         </QueryClientProvider>

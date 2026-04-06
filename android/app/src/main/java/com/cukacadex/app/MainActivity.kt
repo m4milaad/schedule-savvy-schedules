@@ -2,6 +2,7 @@ package com.cukacadex.app
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.WebSettings
@@ -22,9 +23,11 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         
         super.onCreate(savedInstanceState)
+
+        val isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         
-        // Enable WebView debugging
-        WebView.setWebContentsDebuggingEnabled(true)
+        // Allow remote webview debugging only in debug builds.
+        WebView.setWebContentsDebuggingEnabled(isDebuggable)
         
         // Create WebView
         webView = WebView(this)
@@ -35,11 +38,15 @@ class MainActivity : AppCompatActivity() {
             javaScriptEnabled = true
             domStorageEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = if (isDebuggable) {
+                WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            } else {
+                WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            }
             allowFileAccess = true
             allowContentAccess = true
-            allowFileAccessFromFileURLs = true
-            allowUniversalAccessFromFileURLs = true
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
             setSupportZoom(true)
             builtInZoomControls = false
             displayZoomControls = false

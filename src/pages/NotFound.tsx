@@ -126,7 +126,7 @@ const App = () => {
           style={{ animationDelay: '1.2s' }}
         >
           <a
-            href="mailto:mb4milad.bhattt@gmail.com"
+            href="mailto:mb4milad.bhattt@cukashmir.edu.in?subject=Support Request - CUK Acadex"
             className="text-sm font-medium text-indigo-700 transition-colors duration-300 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
           >
             Contact Support

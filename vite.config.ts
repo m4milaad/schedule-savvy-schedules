@@ -19,7 +19,10 @@ function serviceWorkerInject(mode: string): Plugin {
       if (!fs.existsSync(swPath)) return;
 
       let content = fs.readFileSync(swPath, "utf-8");
-      const buildHash = `b${Date.now().toString(36)}`;
+      const buildHash =
+        env.VITE_BUILD_HASH ||
+        process.env.GITHUB_SHA?.slice(0, 12) ||
+        "local-build";
       content = content
         .replace(/__SUPABASE_URL__/g, env.VITE_SUPABASE_URL || "")
         .replace(/__BUILD_HASH__/g, buildHash);

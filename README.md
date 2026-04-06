@@ -76,7 +76,7 @@ This section summarizes major user-visible improvements delivered between the RE
 ### ⚡ Enterprise-Grade Performance
 - **Real-Time Sync**: Supabase Realtime pushes updates instantly to all connected clients
 - **Secure Operations**: Row-level security and role-based access control
-- **Mobile Native**: Native Android application with full student dashboard features (Capacitor)
+- **Mobile Native**: Native Android application with Kotlin WebView shell
 - **Performance Analytics**: Comprehensive tracking and visualization of academic performance
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 
@@ -86,7 +86,7 @@ This section summarizes major user-visible improvements delivered between the RE
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Real-time)
 - **State Management**: TanStack Query (React Query)
 - **Utilities**: ExcelJS, jsPDF, Zod, React Hook Form
-- **Mobile**: Capacitor for native Android app
+- **Mobile**: Kotlin + Android WebView shell for native app packaging
 
 ## 🏁 Getting Started
 
@@ -120,7 +120,8 @@ This section summarizes major user-visible improvements delivered between the RE
 ```bash
 npm run build          # Production build
 npm run preview        # Preview build locally
-npx cap sync android   # Sync with Android (Capacitor)
+npm run android:copy   # Build + copy web assets into Android project
+npm run android:build  # Build release APK
 ```
 
 ## 🏗 Project Structure

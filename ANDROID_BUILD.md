@@ -1,3 +1,122 @@
+# Android Production Build Guide
+
+Single source of truth for building, signing, validating, and releasing the Kotlin WebView Android app.
+
+## Why This File Exists
+
+- The app uses a native Kotlin `WebView` shell (not Capacitor runtime).
+- This file replaces older split instructions and keeps one production-ready path.
+
+## Prerequisites
+
+- Node.js 18+
+- npm 9+
+- JDK 17 (recommended)
+- Android Studio (latest stable)
+- Android SDK Platform matching `targetSdkVersion`
+
+## One-Command Build Path
+
+1. Build web assets and copy into Android:
+   ```bash
+   npm run android:copy
+   ```
+2. Build release APK:
+   ```bash
+   npm run android:build
+   ```
+3. (Optional) install release APK on connected device:
+   ```bash
+   npm run android:install
+   ```
+
+Release artifact:
+- `android/app/build/outputs/apk/release/`
+
+## Manual Android Studio Path
+
+1. Open the `android` folder in Android Studio.
+2. Sync Gradle files.
+3. Build > Build APK(s) or Build App Bundle(s).
+4. Verify output under `android/app/build/outputs`.
+
+## Signing for Production
+
+Never store signing secrets in `build.gradle` or commit keystores.
+
+1. Create `android/keystore.properties` from template:
+   ```bash
+   cp android/keystore.properties.example android/keystore.properties
+   ```
+2. Fill:
+   - `RELEASE_STORE_FILE`
+   - `RELEASE_STORE_PASSWORD`
+   - `RELEASE_KEY_ALIAS`
+   - `RELEASE_KEY_PASSWORD`
+3. Ensure these are excluded from version control:
+   - `*.keystore`
+   - `*.jks`
+   - `keystore.properties`
+
+## Security and Release Hardening (Current Setup)
+
+- Release build uses R8 minification and resource shrinking.
+- WebView debugging is debug-only.
+- Release mixed-content policy is restricted.
+- Backup/data extraction rules are explicit in manifest resources.
+- File provider paths are scoped down from broad external root patterns.
+- CI includes policy checks for hardcoded signing secrets and keystore artifacts.
+
+## Environment Requirements
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_CHATBOT_API_URL`
+
+Production guardrails:
+- Production build throws if `VITE_CHATBOT_API_URL` is localhost.
+
+## Production Verification Checklist
+
+- `npm run build` succeeds.
+- `cd android && ./gradlew assembleRelease` succeeds.
+- App launches on a real Android device.
+- Core student/admin/teacher flows open and navigate correctly.
+- Chatbot endpoint resolves to deployed backend (not localhost).
+- No signing secrets in git-tracked files.
+- No keystore files committed.
+
+## CI Quality Gates
+
+Workflow:
+- `.github/workflows/android-release-gates.yml`
+
+Gates:
+- Secret policy scan for Gradle signing leaks.
+- Web build.
+- Android lint + unit tests.
+- Android release assemble.
+- Release APK artifact upload.
+
+## Troubleshooting
+
+### Blank screen on launch
+- Confirm `android/app/src/main/assets/public/index.html` exists.
+- Re-run `npm run android:copy`.
+- Check Android Studio Logcat for JS/runtime errors.
+
+### Build fails due to Android toolchain
+- Confirm JDK and SDK versions are installed.
+- Re-sync Gradle in Android Studio.
+
+### Network/API calls fail
+- Verify `VITE_CHATBOT_API_URL` points to a reachable HTTPS backend.
+- Confirm backend CORS is configured for app origin behavior.
+
+## Release Notes
+
+- Use this guide as the canonical Android release process.
+- Keep `ANDROID_BUILD_GUIDE.md` only as a redirect to this file.
 # Android Build Instructions
 
 Your app has been successfully migrated from Capacitor to a native Kotlin-based WebView implementation.
@@ -26,7 +145,7 @@ Your app has been successfully migrated from Capacitor to a native Kotlin-based 
 
 1. **Build and copy web assets in one command:**
    ```bash
-   npm run build && npm run android:copy
+   npm run android:copy
    ```
 
 2. **Build the APK:**
@@ -103,10 +222,11 @@ Your app now uses standard web APIs instead of Capacitor:
 ## Notes
 
 - The app loads from `file:///android_asset/public/index.html`
-- Always run `npm run build` before copying assets to Android
+- `npm run android:copy` always rebuilds first and then refreshes Android assets
 - The WebView uses localStorage for all caching and auth persistence
 - Network status is detected using standard `navigator.onLine` API
-- For production builds, the app is signed with the keystore at `android/cuk-acadex.keystore`
+- For signed production builds, configure `android/keystore.properties` (use `android/keystore.properties.example` as template)
+- Never commit `.keystore`, `.jks`, or `keystore.properties` files
 
 ## Troubleshooting
 

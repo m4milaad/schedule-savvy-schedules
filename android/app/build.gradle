@@ -1,6 +1,19 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def signingProps = new Properties()
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (keystorePropsFile.exists()) {
+    keystorePropsFile.withInputStream { stream -> signingProps.load(stream) }
+}
+
+def getSigningValue = { String key ->
+    def envValue = System.getenv(key)
+    if (envValue != null && !envValue.trim().isEmpty()) return envValue.trim()
+    def propValue = signingProps.getProperty(key)
+    return propValue != null ? propValue.trim() : null
+}
+
 android {
     namespace "com.cukacadex.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -19,16 +32,35 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file('../cuk-acadex.keystore')
-            storePassword 'nimra123'
-            keyAlias 'cuk-acadex'
-            keyPassword 'nimra123'
+            def storeFilePath = getSigningValue('RELEASE_STORE_FILE')
+            def storePass = getSigningValue('RELEASE_STORE_PASSWORD')
+            def keyAliasValue = getSigningValue('RELEASE_KEY_ALIAS')
+            def keyPass = getSigningValue('RELEASE_KEY_PASSWORD')
+
+            if (storeFilePath) {
+                storeFile file(storeFilePath)
+            }
+            if (storePass) {
+                storePassword storePass
+            }
+            if (keyAliasValue) {
+                keyAlias keyAliasValue
+            }
+            if (keyPass) {
+                keyPassword keyPass
+            }
         }
     }
     buildTypes {
+        debug {
+            debuggable true
+        }
         release {
-            signingConfig signingConfigs.release
-            minifyEnabled false
+            if (signingConfigs.release.storeFile != null) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

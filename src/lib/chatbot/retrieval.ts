@@ -32,7 +32,14 @@ type BackendChatResponse = {
   mode?: string;
 };
 
-const API_BASE_URL = (import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+const rawApiBaseUrl = (import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+const isLocalhostUrl = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(rawApiBaseUrl);
+
+if (import.meta.env.PROD && isLocalhostUrl) {
+  throw new Error("VITE_CHATBOT_API_URL must point to a deployed backend in production builds.");
+}
+
+const API_BASE_URL = rawApiBaseUrl;
 const REQUEST_TIMEOUT_MS = 250000;
 
 export const askKnowledgeBase = async (
