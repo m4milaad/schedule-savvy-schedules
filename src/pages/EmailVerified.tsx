@@ -56,7 +56,7 @@ const EmailVerified = () => {
   useEffect(() => {
     // Auto redirect after 5 seconds
     const timer = setTimeout(() => {
-      navigate('/auth');
+      navigate('/');
     }, 5000);
 
     return () => clearTimeout(timer);
@@ -104,7 +104,7 @@ const EmailVerified = () => {
             )}
             <div className="space-y-3">
               <Button 
-                onClick={() => navigate('/auth')} 
+                onClick={() => navigate('/')} 
                 className="w-full"
               >
                 Go to Sign In

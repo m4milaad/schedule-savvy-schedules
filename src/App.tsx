@@ -68,15 +68,16 @@ const App = () => {
             <Sonner />
             <HashRouter>
             <Routes>
+              <Route path="/" element={<Auth />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
               <Route
-                path="/"
+                path="/student-dashboard"
                 element={
                   <ProtectedRoute allowedRoles={['student']}>
                     <StudentDashboard />
                   </ProtectedRoute>
                 }
               />
-              <Route path="/auth" element={<Auth />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
               <Route path="/email-verified" element={<EmailVerified />} />

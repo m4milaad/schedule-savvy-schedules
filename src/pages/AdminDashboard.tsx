@@ -67,7 +67,7 @@ const AdminDashboard: React.FC = () => {
             const { data } = await supabase.auth.getUser();
             const user = data?.user;
             if (!user) {
-                navigate("/auth");
+                navigate("/");
                 return;
             }
 
@@ -96,14 +96,14 @@ const AdminDashboard: React.FC = () => {
                         variant: "destructive",
                     });
                     await supabase.auth.signOut();
-                    navigate("/auth");
+                    navigate("/");
                     return;
                 }
 
                 await loadAllData(role, profile);
             } else {
                 await supabase.auth.signOut();
-                navigate("/auth");
+                navigate("/");
                 return;
             }
         } catch (err) {
@@ -113,7 +113,7 @@ const AdminDashboard: React.FC = () => {
                 description: "Unable to verify user role.",
                 variant: "destructive",
             });
-            navigate("/auth");
+            navigate("/");
         }
     };
 
@@ -149,7 +149,7 @@ const AdminDashboard: React.FC = () => {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         toast({ title: "Success", description: "Logged out successfully" });
-        navigate("/auth");
+        navigate("/");
     };
 
     const loadSchools = async () => {

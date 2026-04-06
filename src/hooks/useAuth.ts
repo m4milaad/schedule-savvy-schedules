@@ -177,15 +177,18 @@ export const useAuth = () => {
           throw new Error('Your account is pending approval by an administrator. Please wait for approval before logging in.');
         }
         
-        // Redirect based on user type
+        const hashGo = (route: string) => {
+          const r = route.startsWith('/') ? route : `/${route}`;
+          window.location.href = `${window.location.origin}${window.location.pathname}#${r}`;
+        };
         if (profileData?.user_type === 'student') {
-          window.location.href = '/';
+          hashGo('/student-dashboard');
         } else if (['admin', 'department_admin'].includes(profileData?.user_type)) {
-          window.location.href = '/admin-dashboard';
+          hashGo('/admin-dashboard');
         } else if (profileData?.user_type === 'teacher') {
-          window.location.href = '/teacher-dashboard';
+          hashGo('/teacher-dashboard');
         } else {
-          window.location.href = '/';
+          hashGo('/student-dashboard');
         }
       }
 
@@ -218,8 +221,7 @@ export const useAuth = () => {
         // Continue even if this fails
       }
       
-      // Force page reload for clean state
-      window.location.href = '/auth';
+      window.location.href = `${window.location.origin}${window.location.pathname}#/`;
     } catch (error: any) {
       logger.error('Sign out error:', error);
       toast({

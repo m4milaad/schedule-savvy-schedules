@@ -408,7 +408,7 @@ const StudentDashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   if (loading) {

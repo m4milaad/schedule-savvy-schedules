@@ -137,7 +137,7 @@ const ResetPassword = () => {
       });
 
       setTimeout(() => {
-        navigate('/auth');
+        navigate('/');
       }, 2000);
     } catch (error: any) {
       toast({

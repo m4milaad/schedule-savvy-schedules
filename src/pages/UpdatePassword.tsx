@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Eye, EyeOff } from 'lucide-react';
-import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';import logger from '@/lib/logger';
+import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import logger from '@/lib/logger';
 
 
 const UpdatePassword = () => {
@@ -115,7 +116,7 @@ const UpdatePassword = () => {
         .maybeSingle();
 
       if (profile?.user_type === 'student') {
-        navigate('/');
+        navigate('/student-dashboard');
       } else {
         navigate('/admin-dashboard');
       }
@@ -134,7 +135,7 @@ const UpdatePassword = () => {
   const handleBack = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      navigate('/auth');
+      navigate('/');
       return;
     }
 
@@ -145,7 +146,7 @@ const UpdatePassword = () => {
       .maybeSingle();
 
     if (profile?.user_type === 'student') {
-      navigate('/');
+      navigate('/student-dashboard');
     } else {
       navigate('/admin-dashboard');
     }

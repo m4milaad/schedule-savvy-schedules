@@ -64,7 +64,7 @@ const Auth = () => {
           navigate('/teacher-dashboard');
           break;
         default:
-          navigate('/');
+          navigate('/student-dashboard');
       }
     }
   }, [user, profile, navigate]);

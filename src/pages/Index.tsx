@@ -407,7 +407,7 @@ export default function Index({ embedded = false }: IndexProps) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/");
   };
 
   const dateRangeInfo = getDateRangeInfo();

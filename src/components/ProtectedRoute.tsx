@@ -14,7 +14,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
   allowedRoles = [],
-  redirectTo = '/auth'
+  redirectTo = '/'
 }) => {
   const { user, profile, loading } = useAuth();
 
@@ -29,13 +29,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (allowedRoles.length > 0 && profile && !allowedRoles.includes(profile.user_type)) {
     // Redirect based on user role
     if (profile.user_type === 'student') {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/student-dashboard" replace />;
     } else if (['admin', 'department_admin'].includes(profile.user_type)) {
       return <Navigate to="/admin-dashboard" replace />;
     } else if (profile.user_type === 'teacher') {
       return <Navigate to="/teacher-dashboard" replace />;
     }
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

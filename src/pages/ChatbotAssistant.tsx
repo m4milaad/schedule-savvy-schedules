@@ -70,6 +70,13 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   );
   const userInitial = useMemo(() => userDisplayName.charAt(0).toUpperCase() || "U", [userDisplayName]);
 
+  const dashboardHome = useMemo(() => {
+    const t = profile?.user_type;
+    if (t === "teacher") return "/teacher-dashboard";
+    if (t === "admin" || t === "department_admin") return "/admin-dashboard";
+    return "/student-dashboard";
+  }, [profile?.user_type]);
+
   const isEmptyChat = messages.length === 0;
 
   useEffect(() => {
@@ -198,7 +205,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
         {!embedded && (
           <div className="mb-4 flex items-center justify-between">
             <Button asChild variant="ghost" size="sm" className="hover:bg-accent/50">
-              <Link to="/">
+              <Link to={dashboardHome}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Link>
