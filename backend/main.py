@@ -106,7 +106,7 @@ async def lifespan(app: FastAPI):
     rag = RagPipeline(settings=settings)
     rag.load_index()
     app.state.rag = rag
-    app.state.prompt_builder = PromptBuilder(token_limit=1800)
+    app.state.prompt_builder = PromptBuilder(token_limit=4500)
     app.state.model_router = ModelRouter(settings=settings)
     app.state.model_status = "demo_only" if settings.demo_mode else "loading"
 
@@ -217,7 +217,7 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         answer = f"[DEMO_MODE] Based on indexed context:\n{top}"
         mode = "demo"
     else:
-        answer = app.state.model_router.generate(prompt_payload.prompt)
+        answer = app.state.model_router.generate(prompt_payload.messages)
 
     response = {
         "answer": answer,
@@ -264,7 +264,7 @@ async def chat_stream(request: Request, payload: ChatRequest = Body(...)) -> Str
         answer = f"[DEMO_MODE] Based on indexed context:\n{top}"
         mode = "demo"
     else:
-        answer = app.state.model_router.generate(prompt_payload.prompt)
+        answer = app.state.model_router.generate(prompt_payload.messages)
 
     sources = _serialize_sources(retrieval.chunks)
 

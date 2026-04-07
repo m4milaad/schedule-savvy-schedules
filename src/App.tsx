@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Auth from "./pages/Auth";
@@ -31,6 +31,13 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 
 // Check if running in Android WebView
 const isNativeApp = /Android.*wv/.test(navigator.userAgent);
+
+/** Vite `base` is `/` or `./` for root deploys; only set basename for real path prefixes (e.g. GitHub Pages). */
+function routerBasename(): string | undefined {
+  const base = import.meta.env.BASE_URL;
+  if (!base || base === "/" || base === "./") return undefined;
+  return base.endsWith("/") ? base.slice(0, -1) : base;
+}
 
 const App = () => {
   const [queryClient] = useState(() => new QueryClient({
@@ -66,7 +73,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <HashRouter>
+            <BrowserRouter basename={routerBasename()}>
             <Routes>
               <Route path="/" element={<Auth />} />
               <Route path="/auth" element={<Navigate to="/" replace />} />
@@ -153,7 +160,7 @@ const App = () => {
               </Routes>
               <OfflineIndicator />
               <CookieConsentBanner />
-            </HashRouter>
+            </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>
         {!isNativeApp && (

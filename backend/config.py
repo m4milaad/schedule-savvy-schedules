@@ -29,6 +29,15 @@ class Settings:
     demo_mode: bool = _bool_env("DEMO_MODE", False)
     model_backend: str = os.getenv("MODEL_BACKEND", "tinyllama").strip().lower()
     ollama_url: str = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
+    openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "").strip()
+    openrouter_model: str = os.getenv(
+        "OPENROUTER_MODEL",
+        "liquid/lfm-2.5-1.2b-instruct:free",
+    ).strip()
+    openrouter_site_url: str = os.getenv("OPENROUTER_SITE_URL", "").strip() or None
+    openrouter_site_name: str = os.getenv("OPENROUTER_SITE_NAME", "").strip() or None
+    openrouter_max_retries: int = int(os.getenv("OPENROUTER_MAX_RETRIES", "2"))
+    openrouter_timeout_seconds: float = float(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "60"))
     log_level: str = os.getenv("LOG_LEVEL", "INFO").upper()
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "3600"))
     max_tokens: int = int(os.getenv("MAX_TOKENS", "300"))

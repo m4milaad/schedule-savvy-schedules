@@ -26,14 +26,15 @@ def main() -> None:
 
     for query in tests:
         retrieval = pipeline.retrieve(query)
-        prompt = prompt_builder.build(query, retrieval.chunks)
+        payload = prompt_builder.build(query, retrieval.chunks)
+        preview = json.dumps(payload.messages, ensure_ascii=False)[:700]
         results.append(
             {
                 "query": query,
                 "mode": retrieval.mode,
                 "confidence": retrieval.confidence,
                 "sources": [chunk.source_url for chunk in retrieval.chunks],
-                "prompt_preview": prompt.prompt[:700],
+                "prompt_preview": preview,
             }
         )
 

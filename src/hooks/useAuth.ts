@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +12,17 @@ import logger from '@/lib/logger';
 
 export type UserProfile = Profile;
 
+function appHomeUrl(): string {
+  const base = import.meta.env.BASE_URL;
+  if (!base || base === "/" || base === "./") {
+    return `${window.location.origin}/`;
+  }
+  const path = base.endsWith("/") ? base : `${base}/`;
+  return `${window.location.origin}${path}`;
+}
+
 export const useAuth = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -177,18 +188,18 @@ export const useAuth = () => {
           throw new Error('Your account is pending approval by an administrator. Please wait for approval before logging in.');
         }
         
-        const hashGo = (route: string) => {
+        const go = (route: string) => {
           const r = route.startsWith('/') ? route : `/${route}`;
-          window.location.href = `${window.location.origin}${window.location.pathname}#${r}`;
+          navigate(r, { replace: true });
         };
         if (profileData?.user_type === 'student') {
-          hashGo('/student-dashboard');
+          go('/student-dashboard');
         } else if (['admin', 'department_admin'].includes(profileData?.user_type)) {
-          hashGo('/admin-dashboard');
+          go('/admin-dashboard');
         } else if (profileData?.user_type === 'teacher') {
-          hashGo('/teacher-dashboard');
+          go('/teacher-dashboard');
         } else {
-          hashGo('/student-dashboard');
+          go('/student-dashboard');
         }
       }
 
@@ -221,7 +232,7 @@ export const useAuth = () => {
         // Continue even if this fails
       }
       
-      window.location.href = `${window.location.origin}${window.location.pathname}#/`;
+      window.location.replace(appHomeUrl());
     } catch (error: any) {
       logger.error('Sign out error:', error);
       toast({
