@@ -11,7 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Shield, Trash2, UserPlus, ArrowLeft, GraduationCap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '@/components/ui/loading-screen';
-import { cn } from "@/lib/utils";import logger from '@/lib/logger';
+import { cn } from "@/lib/utils";
+import logger from "@/lib/logger";
+import { getAppBaseUrl } from "@/lib/appUrl";
 
 
 interface AdminUser {
