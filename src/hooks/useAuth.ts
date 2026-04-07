@@ -8,6 +8,7 @@ import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validatio
 import { z } from 'zod';
 import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
+import { getAppBaseUrl } from '@/lib/appUrl';
 
 
 export type UserProfile = Profile;
