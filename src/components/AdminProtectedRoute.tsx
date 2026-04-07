@@ -27,14 +27,27 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
         return;
       }
 
-      // Check if user has admin role
+      // Check user_roles table first (primary source of truth)
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .in('role', ['admin', 'department_admin']);
 
-      setIsAdmin(roles && roles.length > 0);
+      if (roles && roles.length > 0) {
+        setIsAdmin(true);
+      } else {
+        // Fallback: check profiles.user_type for consistency
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('user_id', user.id)
+          .single();
+
+        setIsAdmin(
+          profile?.user_type === 'admin' || profile?.user_type === 'department_admin'
+        );
+      }
     } catch (error) {
       logger.error('Error checking admin access:', error);
       setIsAdmin(false);
