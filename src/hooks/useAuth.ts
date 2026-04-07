@@ -8,17 +8,13 @@ import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validatio
 import { z } from 'zod';
 import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
+import { getAppBaseUrl } from '@/lib/appUrl';
 
 
 export type UserProfile = Profile;
 
 function appHomeUrl(): string {
-  const base = import.meta.env.BASE_URL;
-  if (!base || base === "/" || base === "./") {
-    return `${window.location.origin}/`;
-  }
-  const path = base.endsWith("/") ? base : `${base}/`;
-  return `${window.location.origin}${path}`;
+  return `${getAppBaseUrl()}/`;
 }
 
 export const useAuth = () => {
@@ -122,7 +118,7 @@ export const useAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/email-verified`,
+          emailRedirectTo: `${getAppBaseUrl()}/email-verified`,
           data: {
             ...userData,
             student_enrollment_no: userData.student_enrollment_no || null,

@@ -93,7 +93,9 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
 
   useEffect(() => {
     if (embedded) return;
-    localStorage.setItem("cuk-assistant-history", JSON.stringify(messages));
+    // Limit stored history to last 50 messages to prevent localStorage bloat
+    const toStore = messages.slice(-50);
+    localStorage.setItem("cuk-assistant-history", JSON.stringify(toStore));
   }, [embedded, messages]);
 
   // Auto-scroll to bottom on new messages
