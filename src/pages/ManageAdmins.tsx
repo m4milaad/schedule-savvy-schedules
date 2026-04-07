@@ -227,7 +227,7 @@ const ManageAdmins = () => {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/admin-login`,
+          emailRedirectTo: `${getAppBaseUrl()}/`,
           data: {
             full_name: fullName.trim(),
             user_type: role,

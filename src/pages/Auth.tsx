@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import { useTheme } from '@/components/ThemeProvider';
 import logger from '@/lib/logger';
+import { getAppBaseUrl } from '@/lib/appUrl';
 
 
 interface Department {

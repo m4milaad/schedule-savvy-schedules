@@ -24,7 +24,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap');
+        /* Use system font stack - avoids network dependency on splash */
 
         .splash-logo {
           opacity: 0;
@@ -62,7 +62,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       <div
         style={{
-          fontFamily: "'Geist', sans-serif",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           background: "#0a0a0b",
           transition: "opacity 0.6s ease",
           opacity: fadeOut ? 0 : 1,
