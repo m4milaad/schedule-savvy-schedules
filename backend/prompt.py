@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Iterable
 
 from backend.rag import RetrievedChunk
@@ -16,6 +17,7 @@ SYSTEM_PROMPT = (
     "fees, programs, processes, names, emails, phone numbers, departments—say them clearly. "
     "Do not replace a concrete answer with 'visit cukashmir.ac.in' or 'contact admissions' "
     "if the Context already contains the information.\n"
+    "If the user asks for contacts, list every matching name/email/phone found in Context.\n"
     "2. Synthesize across the Context blocks; you may paraphrase, but stay faithful to what is written.\n"
     "3. If the Context is empty, or it does not discuss the topic asked, say briefly that the indexed "
     "materials do not contain that information, then you may suggest cukashmir.ac.in or the right office.\n"
@@ -70,7 +72,20 @@ class PromptBuilder:
         user_header = f"Question:\n{query.strip()}\n\nContext:\n"
         used_tokens = self._count_tokens(user_header)
 
-        for chunk in chunks:
+        chunk_list = list(chunks)
+        q = query.lower()
+        contact_intent = any(k in q for k in ("contact", "email", "phone", "mobile", "teacher", "faculty"))
+        if contact_intent:
+            def score_chunk(c: RetrievedChunk) -> tuple[int, int, float]:
+                text = c.text.lower()
+                url = c.source_url.lower()
+                # Prefer contact-bearing text and department-specific sources.
+                has_contact = 1 if re.search(r"\b(email|phone|mobile|tel|contact)\b|@", text) else 0
+                source_bias = 1 if any(k in url for k in ("departlist", "department", "heads-coordinators", "contact")) else 0
+                return (has_contact, source_bias, c.score)
+            chunk_list.sort(key=score_chunk, reverse=True)
+
+        for chunk in chunk_list:
             block = (
                 f"- [Source: {chunk.source_url}]\n"
                 f"Title: {chunk.page_title}\n"

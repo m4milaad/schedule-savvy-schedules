@@ -21,23 +21,23 @@ class Settings(BaseSettings):
     faiss_index_path: Path = DATA_DIR / "faiss_index.bin"
     faiss_metadata_path: Path = DATA_DIR / "metadata.json"
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-    retrieval_top_k: int = 5
-    retrieval_score_threshold: float = 0.28
-    max_context_chars: int = 5000
+    retrieval_top_k: int = 8
+    retrieval_score_threshold: float = 0.25
+    max_context_chars: int = 6000
 
     exa_api_key: str | None = None
     exa_fallback_results: int = 3
 
     answer_mode: Literal["extractive", "tinyllama", "ollama", "openrouter"] = "extractive"
     tinyllama_model_name: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    model_max_new_tokens: int = 512
+    model_max_new_tokens: int = 600
     model_temperature: float = 0.15
 
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "phi3:mini"
 
     openrouter_api_key: str | None = None
-    openrouter_model: str = "liquid/lfm-2.5-1.2b-instruct:free"
+    openrouter_model: str = "meta-llama/llama-3.3-70b-instruct:free"
     openrouter_site_url: str | None = None
     openrouter_site_name: str | None = None
     openrouter_max_retries: int = 2

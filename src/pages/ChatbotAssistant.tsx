@@ -2,6 +2,8 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
+  Check,
+  Copy,
   ExternalLink,
   FileText,
   Globe,
@@ -61,6 +63,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const lastRequestAtRef = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -188,6 +191,18 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   const clearChat = () => {
     setMessages([]);
     if (!embedded) localStorage.removeItem("cuk-assistant-history");
+  };
+
+  const copyMessage = async (message: ChatMessage) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopiedMessageId(message.id);
+      window.setTimeout(() => {
+        setCopiedMessageId((prev) => (prev === message.id ? null : prev));
+      }, 1600);
+    } catch {
+      // If clipboard is unavailable, silently ignore.
+    }
   };
 
   return (
@@ -338,6 +353,24 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                         >
                           <p className="whitespace-pre-line">{message.content}</p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => copyMessage(message)}
+                          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-muted/40 hover:text-foreground transition-colors"
+                          aria-label="Copy message"
+                        >
+                          {copiedMessageId === message.id ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3" />
+                              Copy
+                            </>
+                          )}
+                        </button>
 
                         {/* Inline sources */}
                         {!isUser && sources.length > 0 && (
@@ -378,18 +411,19 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                   );
                 })}
 
-                {/* Loading indicator */}
+                {/* Loading indicator with skeleton */}
                 {loading && (
                   <div className="flex gap-3 animate-in fade-in duration-300">
                     <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted border border-border/50 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                       N
                     </div>
-                    <div className="flex flex-col gap-2 items-start">
+                    <div className="flex flex-col gap-2 items-start max-w-[82%]">
                       <span className="px-0.5 text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium">
                         NeMoX
                       </span>
-                      <div className="rounded-2xl rounded-tl-sm border border-border/40 bg-card px-4 py-3 shadow-sm">
-                        <div className="flex items-center gap-1.5">
+                      <div className="rounded-2xl rounded-tl-sm border border-border/40 bg-card px-4 py-3 shadow-sm w-full">
+                        {/* Thinking indicator */}
+                        <div className="flex items-center gap-1.5 mb-3">
                           <span
                             className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50"
                             style={{ animationDelay: "0ms" }}
@@ -402,6 +436,13 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                             className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50"
                             style={{ animationDelay: "300ms" }}
                           />
+                          <span className="ml-1 text-xs text-muted-foreground/60">Thinking...</span>
+                        </div>
+                        {/* Skeleton lines */}
+                        <div className="space-y-2 animate-pulse">
+                          <div className="h-3 bg-muted/60 rounded w-full"></div>
+                          <div className="h-3 bg-muted/60 rounded w-11/12"></div>
+                          <div className="h-3 bg-muted/60 rounded w-4/5"></div>
                         </div>
                       </div>
                     </div>

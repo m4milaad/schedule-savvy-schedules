@@ -83,8 +83,14 @@ logger.info(
 query_cache: dict[str, CachedResponse] = {}
 
 
-def _hash_query(query: str) -> str:
-    return hashlib.sha256(query.strip().lower().encode("utf-8")).hexdigest()
+def _chat_cache_key(query: str, history: list[ChatTurn]) -> str:
+    compact_history = [{"role": t.role, "content": t.content.strip()} for t in history[-8:]]
+    payload = json.dumps(
+        {"query": query.strip().lower(), "history": compact_history},
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _serialize_sources(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
@@ -98,6 +104,17 @@ def _serialize_sources(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:
         }
         for c in chunks
     ]
+
+
+def _cacheable_answer(answer: str) -> bool:
+    low = answer.lower().strip()
+    bad = (
+        "[demo_mode]",
+        "taking too long",
+        "could not reach openrouter",
+        "could not reach the language model",
+    )
+    return bool(low) and not any(x in low for x in bad)
 
 
 @asynccontextmanager
@@ -190,7 +207,7 @@ async def search(payload: SearchRequest) -> dict[str, Any]:
 @limiter.limit("20/minute")
 async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, Any]:
     t0 = time.perf_counter()
-    key = _hash_query(payload.query)
+    key = _chat_cache_key(payload.query, payload.history)
     cached = query_cache.get(key)
     now = time.time()
     if cached and now - cached.created_at <= settings.cache_ttl_seconds:
@@ -224,7 +241,8 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         "sources": _serialize_sources(retrieval.chunks),
         "mode": mode,
     }
-    query_cache[key] = CachedResponse(payload=response, created_at=now)
+    if _cacheable_answer(answer):
+        query_cache[key] = CachedResponse(payload=response, created_at=now)
 
     logger.info(
         "chat_request",

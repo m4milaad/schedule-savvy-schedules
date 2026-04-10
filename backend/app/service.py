@@ -10,6 +10,7 @@ from app.config import Settings
 from app.llm import AnswerGenerator
 from app.models import ChatResponse, SearchResponse, SourceDocument
 from app.retriever import Retriever
+from app.query_expansion import expand_query, extract_department_name
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,26 @@ class RagService:
         started = perf_counter()
         effective_top_k = top_k or self.settings.retrieval_top_k
 
-        items = await asyncio.to_thread(self._retrieve_sync, query, effective_top_k)
+        # Expand query for better retrieval
+        query_variations = expand_query(query)
+        logger.info("query_expansion: original=%r variations=%r", query, query_variations)
+        
+        # Retrieve with all query variations
+        all_items = []
+        for q_var in query_variations:
+            items = await asyncio.to_thread(self._retrieve_sync, q_var, effective_top_k)
+            all_items.extend(items)
+        
+        # Deduplicate by URL and sort by score
+        seen_urls = set()
+        unique_items = []
+        for item in sorted(all_items, key=lambda x: abs(x.score)):
+            if item.document.url not in seen_urls:
+                seen_urls.add(item.document.url)
+                unique_items.append(item)
+        
+        # Take top items after deduplication
+        items = unique_items[:effective_top_k * 2]  # Get more items for better context
 
         scored_items = []
         for item in items[:effective_top_k]:
@@ -134,9 +154,14 @@ class RagService:
         context_blocks = self._build_context(filtered_items, sources, self.settings.max_context_chars)
 
         retrieval_ms = int((perf_counter() - started) * 1000)
+        
+        # Extract department for better logging
+        dept_name = extract_department_name(query)
+        
         logger.info(
-            "chat retrieval: query=%r chunks=%d context_chars=%d top_score=%.3f elapsed_ms=%d",
-            query, len(context_blocks), sum(len(b) for b in context_blocks),
+            "chat retrieval: query=%r dept=%r variations=%d chunks=%d context_chars=%d top_score=%.3f elapsed_ms=%d",
+            query, dept_name, len(query_variations), len(context_blocks), 
+            sum(len(b) for b in context_blocks),
             scored_items[0][1] if scored_items else 0,
             retrieval_ms,
         )

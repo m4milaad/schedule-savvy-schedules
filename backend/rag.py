@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import logging
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import httpx
 import numpy as np
@@ -14,6 +17,8 @@ from backend.config import Settings
 if TYPE_CHECKING:
     import faiss as _faiss
     from sentence_transformers import CrossEncoder, SentenceTransformer
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -34,6 +39,23 @@ class RetrievalOutput:
 
 
 class RagPipeline:
+    @staticmethod
+    def _is_allowed_source_url(url: str) -> bool:
+        if not url:
+            return False
+        u = url.lower().strip()
+        if u.startswith("file://"):
+            return True
+        host = urlparse(u).netloc
+        allowed = (
+            "cukashmir.ac.in",
+            "cukashmir.in",
+            "ugc.gov.in",
+            "admin.cukashmir.in",
+            "cukapi.disgenweb.in",
+        )
+        return any(a in host for a in allowed)
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.embedder: SentenceTransformer | None = None
@@ -81,14 +103,50 @@ class RagPipeline:
         vec = self._ensure_embedder().encode([query], normalize_embeddings=True, convert_to_numpy=True)[0]
         return tuple(float(x) for x in vec.tolist())
 
+    @staticmethod
+    def _is_contact_intent(query: str) -> bool:
+        q = query.lower()
+        return any(
+            key in q
+            for key in (
+                "contact",
+                "phone",
+                "email",
+                "teacher",
+                "faculty",
+                "biotechnology",
+                "hod",
+                "department",
+                "dept",
+            )
+        )
+
     def _host_rank(self, url: str) -> int:
         """Prefer CUK pages over generic UGC or other hosts when scores are similar."""
         url_lower = url.lower()
-        if "cukashmir.ac.in" in url_lower:
+        if "cukashmir.ac.in" in url_lower or "cukashmir.in" in url_lower:
             return 2
         if "ugc.gov.in" in url_lower:
             return 1
         return 0
+
+    def _source_relevance_boost(self, query: str, source_url: str, page_title: str, text: str) -> float:
+        """Lightweight intent-aware boost to keep contacts/department queries grounded."""
+        if not self._is_contact_intent(query):
+            return 0.0
+        url = (source_url or "").lower()
+        title = (page_title or "").lower()
+        body = (text or "").lower()
+        boost = 0.0
+        if any(k in url for k in ("departlist", "department", "departments", "heads-coordinators", "contact")):
+            boost += 1.2
+        if any(k in title for k in ("department", "contact", "coordinator", "faculty", "teacher")):
+            boost += 0.8
+        if re.search(r"\b(email|phone|mobile|tel|contact)\b", body):
+            boost += 0.8
+        if "biotech" in query.lower() and "biotech" in body:
+            boost += 0.6
+        return boost
 
     def _distance_to_cosine(self, distance: float) -> float:
         cosine = 1.0 - (distance / 2.0)
@@ -110,15 +168,22 @@ class RagPipeline:
             rerank_scores = [0.0 for _ in pairs]
         merged = []
         for (idx, distance), rerank_score in zip(candidates, rerank_scores, strict=False):
-            merged.append((idx, float(distance), float(rerank_score)))
+            meta_row = meta[idx]
+            boost = self._source_relevance_boost(
+                query=query,
+                source_url=str(meta_row.get("source_url", "")),
+                page_title=str(meta_row.get("page_title", "")),
+                text=str(meta_row.get("text", "")),
+            )
+            merged.append((idx, float(distance), float(rerank_score + boost)))
         merged.sort(key=lambda row: row[2], reverse=True)
-        return merged[:3]
+        return merged[:5]
 
     def _local_retrieve(self, query: str) -> tuple[list[RetrievedChunk], float]:
         if self.index is None:
             raise RuntimeError("Index not loaded.")
         query_vec = np.array([self.embed_query(query)], dtype=np.float32)
-        distances, indices = self.index.search(query_vec, 15)
+        distances, indices = self.index.search(query_vec, 30)
         candidates: list[tuple[int, float]] = []
         for idx, distance in zip(indices[0], distances[0], strict=False):
             if idx < 0:
@@ -137,6 +202,8 @@ class RagPipeline:
         chunks: list[RetrievedChunk] = []
         for idx, distance, rerank_score in reranked:
             meta = self.metadata[idx]
+            if not self._is_allowed_source_url(str(meta.get("source_url", ""))):
+                continue
             chunks.append(
                 RetrievedChunk(
                     text=meta["text"],
@@ -159,13 +226,14 @@ class RagPipeline:
             "Authorization": f"Bearer {self.settings.supabase_service_role_key}",
             "Content-Type": "application/json",
         }
-        payload = {"query_embedding": query_vec, "match_count": 15}
+        payload = {"query_embedding": query_vec, "match_count": 30}
         try:
             with httpx.Client(timeout=20) as client:
                 res = client.post(rpc_url, json=payload, headers=headers)
                 res.raise_for_status()
             rows = res.json() or []
-        except Exception:
+        except Exception as exc:
+            logger.warning("supabase retrieve failed: %s", exc)
             return [], 0.0
         if not rows:
             return [], 0.0
@@ -173,10 +241,13 @@ class RagPipeline:
         candidates: list[tuple[int, float]] = []
         temp_meta: list[dict[str, Any]] = []
         for idx, row in enumerate(rows):
+            source_url = str(row.get("source_url", ""))
+            if not self._is_allowed_source_url(source_url):
+                continue
             temp_meta.append(
                 {
                     "text": row["content"],
-                    "source_url": row["source_url"],
+                    "source_url": source_url,
                     "page_title": row["page_title"],
                     "date_scraped": str(row["date_scraped"]),
                     "chunk_index": int(row["chunk_index"]),
@@ -184,7 +255,7 @@ class RagPipeline:
             )
             similarity = float(row.get("similarity", 0.0))
             distance = 2.0 * (1.0 - max(0.0, min(1.0, similarity)))
-            candidates.append((idx, distance))
+            candidates.append((len(temp_meta) - 1, distance))
 
         reranked = self._rerank(query=query, candidates=candidates, metadata=temp_meta)
         # Prefer CUK chunks when scores are similar.
