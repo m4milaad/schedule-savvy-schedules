@@ -18,6 +18,7 @@ from slowapi.util import get_remote_address
 from backend.config import Settings
 from backend.model import ModelRouter
 from backend.prompt import PromptBuilder
+from backend.query_rewrite import rewrite_query
 from backend.rag import RagPipeline, RetrievedChunk
 
 
@@ -57,6 +58,7 @@ class ChatRequest(BaseModel):
 
 class SearchRequest(BaseModel):
     query: str = Field(min_length=2, max_length=600)
+    history: list[ChatTurn] = Field(default_factory=list, max_length=12)
 
 
 @dataclass(slots=True)
@@ -185,10 +187,15 @@ async def health() -> dict[str, Any]:
 
 @app.post("/search")
 async def search(payload: SearchRequest) -> dict[str, Any]:
-    retrieval = app.state.rag.retrieve(payload.query)
+    history = [{"content": t.content} for t in payload.history[-settings.query_rewrite_history_turns :]]
+    rewritten_query = rewrite_query(payload.query, history, enabled=settings.query_rewrite_enabled)
+    retrieval = app.state.rag.retrieve(rewritten_query)
     return {
         "mode": retrieval.mode,
+        "query": payload.query,
+        "rewritten_query": rewritten_query,
         "confidence": round(retrieval.confidence, 4),
+        "retrieval": retrieval.metadata,
         "chunks": [
             {
                 "text": c.text,
@@ -221,9 +228,11 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
     if cached and now - cached.created_at > settings.cache_ttl_seconds:
         query_cache.pop(key, None)
 
-    retrieval = app.state.rag.retrieve(payload.query)
+    history_for_rewrite = [{"content": t.content} for t in payload.history[-settings.query_rewrite_history_turns :]]
+    rewritten_query = rewrite_query(payload.query, history_for_rewrite, enabled=settings.query_rewrite_enabled)
+    retrieval = app.state.rag.retrieve(rewritten_query)
     prompt_payload = app.state.prompt_builder.build(
-        query=payload.query,
+        query=rewritten_query,
         chunks=retrieval.chunks,
         history=[{"role": turn.role, "content": turn.content} for turn in payload.history[-8:]],
     )
@@ -238,8 +247,11 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
 
     response = {
         "answer": answer,
+        "query": payload.query,
+        "rewritten_query": rewritten_query,
         "sources": _serialize_sources(retrieval.chunks),
         "mode": mode,
+        "retrieval": retrieval.metadata,
     }
     if _cacheable_answer(answer):
         query_cache[key] = CachedResponse(payload=response, created_at=now)
@@ -249,6 +261,7 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         extra={
             "extra": {
                 "query": payload.query,
+                "rewritten_query": rewritten_query,
                 "mode": mode,
                 "latency_ms": int((time.perf_counter() - t0) * 1000),
                 "chunk_count": len(retrieval.chunks),
@@ -269,9 +282,11 @@ async def chat_stream(request: Request, payload: ChatRequest = Body(...)) -> Str
       - a sequence of 'token' events containing pieces of the answer
     """
     t0 = time.perf_counter()
-    retrieval = app.state.rag.retrieve(payload.query)
+    history_for_rewrite = [{"content": t.content} for t in payload.history[-settings.query_rewrite_history_turns :]]
+    rewritten_query = rewrite_query(payload.query, history_for_rewrite, enabled=settings.query_rewrite_enabled)
+    retrieval = app.state.rag.retrieve(rewritten_query)
     prompt_payload = app.state.prompt_builder.build(
-        query=payload.query,
+        query=rewritten_query,
         chunks=retrieval.chunks,
         history=[{"role": turn.role, "content": turn.content} for turn in payload.history[-8:]],
     )
@@ -288,7 +303,7 @@ async def chat_stream(request: Request, payload: ChatRequest = Body(...)) -> Str
 
     async def event_generator() -> Any:
         # Initial metadata event
-        meta = {"type": "meta", "mode": mode, "sources": sources}
+        meta = {"type": "meta", "mode": mode, "sources": sources, "query": payload.query, "rewritten_query": rewritten_query, "retrieval": retrieval.metadata}
         yield f"data: {json.dumps(meta)}\n\n"
 
         # Stream the answer as whitespace-delimited tokens for a simple typing effect.

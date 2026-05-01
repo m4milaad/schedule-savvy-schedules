@@ -15,6 +15,7 @@ META_PATH = DATA_DIR / "metadata.json"
 ENV_PATH = ROOT / "backend" / ".env"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 BATCH_SIZE = 100
+ENABLE_EXTRA_COLUMNS = os.getenv("SUPABASE_RAG_EXTRA_COLUMNS", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def load_env() -> tuple[str, str]:
@@ -57,18 +58,23 @@ def main() -> None:
         if h in seen_hashes:
             continue
         seen_hashes.add(h)
-        payload.append(
-            {
-                "id": doc["id"],
-                "source_url": doc["source_url"],
-                "page_title": doc["page_title"],
-                "date_scraped": doc["date_scraped"],
-                "chunk_index": int(doc["chunk_index"]),
-                "content": doc["text"],
-                "content_hash": doc["content_hash"],
-                "embedding": vector,
-            }
-        )
+        row = {
+            "id": doc["id"],
+            "source_url": doc["source_url"],
+            "page_title": doc["page_title"],
+            "date_scraped": doc["date_scraped"],
+            "chunk_index": int(doc["chunk_index"]),
+            "content": doc["text"],
+            "content_hash": doc["content_hash"],
+            "embedding": vector,
+        }
+        # Optional feature columns for enhanced ranking; disabled by default for schema compatibility.
+        if ENABLE_EXTRA_COLUMNS:
+            row["has_table"] = bool(doc.get("has_table", False))
+            row["table_row_count"] = int(doc.get("table_row_count", 0))
+            row["contact_field_count"] = int(doc.get("contact_field_count", 0))
+            row["normalized_title"] = str(doc.get("normalized_title", ""))
+        payload.append(row)
 
     rest_url = f"{url.rstrip('/')}/rest/v1/rag_documents"
     headers = {

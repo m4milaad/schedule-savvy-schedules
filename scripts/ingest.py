@@ -30,6 +30,10 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("ingest")
+EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+PHONE_RE = re.compile(r"(?:\+91[\s-]?)?(?:\d[\s-]?){10,13}")
+TABLE_LINE_RE = re.compile(r"(\|)|(\t)|(\s{2,})")
+TITLE_CLEAN_RE = re.compile(r"\s+")
 
 
 def _extract_url(text: str) -> str:
@@ -135,7 +139,8 @@ def _load_pdf(path: Path) -> tuple[str, dict[str, str]] | None:
         return None
 
     try:
-        source_url = _extract_url(joined) or f"file://{path.name}"
+        # Use stable local provenance for PDFs. Extracted body URLs are often unrelated outlinks.
+        source_url = f"file://{path.name}"
         page_title = path.stem.replace("_", " ").strip()
         date_scraped = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
         return joined, {
@@ -197,6 +202,10 @@ def main() -> None:
                     "date_scraped": common_meta["date_scraped"],
                     "chunk_index": idx,
                     "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
+                    "has_table": bool(TABLE_LINE_RE.search(chunk_text)),
+                    "table_row_count": sum(1 for line in chunk_text.splitlines() if TABLE_LINE_RE.search(line)),
+                    "contact_field_count": len(EMAIL_RE.findall(chunk_text)) + len(PHONE_RE.findall(chunk_text)),
+                    "normalized_title": TITLE_CLEAN_RE.sub(" ", common_meta["page_title"]).strip().lower(),
                 }
             )
             texts_for_embedding.append(chunk_text)
@@ -222,6 +231,10 @@ def main() -> None:
                     "date_scraped": common_meta["date_scraped"],
                     "chunk_index": idx,
                     "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
+                    "has_table": bool(TABLE_LINE_RE.search(chunk_text)),
+                    "table_row_count": sum(1 for line in chunk_text.splitlines() if TABLE_LINE_RE.search(line)),
+                    "contact_field_count": len(EMAIL_RE.findall(chunk_text)) + len(PHONE_RE.findall(chunk_text)),
+                    "normalized_title": TITLE_CLEAN_RE.sub(" ", common_meta["page_title"]).strip().lower(),
                 }
             )
             texts_for_embedding.append(chunk_text)
