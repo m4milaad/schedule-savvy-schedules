@@ -10,13 +10,23 @@ from backend.config import Settings
 
 @pytest.fixture()
 def default_settings() -> Settings:
-    """Return a Settings instance with defaults suitable for testing."""
+    """
+    Create a Settings instance configured with default test values.
+    
+    Returns:
+        settings (Settings): A Settings object initialized with the module's default values for testing.
+    """
     return Settings()
 
 
 @pytest.fixture()
 def heuristic_settings():
-    """Lightweight namespace that replaces pipeline.settings for heuristic tests."""
+    """
+    Provide a lightweight settings namespace tailored for heuristic tests.
+    
+    Returns:
+        types.SimpleNamespace: A SimpleNamespace containing heuristic configuration values including weight_* heuristics, RRF and retrieval/rerank top-k limits, and a `sparse_enabled` boolean.
+    """
     return types.SimpleNamespace(
         weight_heuristic_contact=0.90,
         weight_heuristic_table=0.60,
@@ -37,7 +47,22 @@ def heuristic_settings():
 
 @pytest.fixture()
 def sample_metadata() -> list[dict]:
-    """Small synthetic metadata corpus for testing."""
+    """
+    Provide a small synthetic list of metadata records for use in tests.
+    
+    Each record is a dict representing scraped page metadata with the following keys:
+    - source_url: original resource URL or file path (empty string to simulate an error page).
+    - page_title: page title string.
+    - text: extracted plain-text content.
+    - has_table: `True` if the page contains at least one table, `False` otherwise.
+    - table_row_count: number of rows in the first table (0 when none).
+    - date_scraped: ISO date string when the page was scraped.
+    - chunk_index: integer index for chunking/splitting content.
+    
+    Returns:
+        list[dict]: A small hardcoded list of metadata dictionaries covering mixed cases
+        (table and non-table pages, file URLs, and an error-like empty-URL entry).
+    """
     return [
         {
             "source_url": "https://www.cukashmir.ac.in/departlist",
