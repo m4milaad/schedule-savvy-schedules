@@ -39,7 +39,7 @@ export default function Index({ embedded = false }: IndexProps) {
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"selection" | "schedule">("selection");
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -59,7 +59,7 @@ export default function Index({ embedded = false }: IndexProps) {
         setProfileData(profile || null);
       }
     };
-    loadProfile();
+    void loadProfile();
   }, []);
 
   const {
@@ -77,7 +77,8 @@ export default function Index({ embedded = false }: IndexProps) {
   } = useExamData();
 
   useEffect(() => {
-    if (courseTeachers.length > 0) loadEnrollmentCounts();
+    if (courseTeachers.length > 0) void loadEnrollmentCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseTeachers]);
 
   const calculateMinimumDaysForEndDate = () => {
@@ -91,7 +92,7 @@ export default function Index({ embedded = false }: IndexProps) {
     const merged = Array.from(unique.values());
     const bySem = merged.reduce((acc, c) => {
       if (!acc[c.semester]) acc[c.semester] = [];
-      acc[c.semester].push(c);
+      acc[c.semester]?.push(c);
       return acc;
     }, {} as Record<number, CourseTeacher[]>);
     const reqs = Object.values(bySem).map(cs => {
@@ -108,6 +109,7 @@ export default function Index({ embedded = false }: IndexProps) {
       end.setDate(end.getDate() + Math.ceil(days * 1.5));
       setEndDate(end);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, selectedCourseTeachers]);
 
   const loadEnrollmentCounts = async () => {
@@ -118,15 +120,17 @@ export default function Index({ embedded = false }: IndexProps) {
         .eq("is_active", true);
       if (error) throw error;
       const counts: Record<string, Set<string>> = {};
-      data?.forEach((e: any) => {
-        if (!counts[e.course_id]) counts[e.course_id] = new Set();
-        counts[e.course_id].add(e.student_id);
+      data?.forEach((e: Record<string, unknown>) => {
+        if (typeof e.course_id === 'string' && typeof e.student_id === 'string') {
+          if (!counts[e.course_id]) counts[e.course_id] = new Set();
+          counts[e.course_id]?.add(e.student_id);
+        }
       });
       const nums: Record<string, number> = {};
-      Object.keys(counts).forEach(id => { nums[id] = counts[id].size; });
+      Object.keys(counts).forEach(id => { nums[id] = counts[id]?.size || 0; });
       setCourseEnrollmentCounts(nums);
       setSelectedCourseTeachers(
-        courseTeachers.filter(ct => nums[ct.course_id] > 0).map(ct => ct.id)
+        courseTeachers.filter(ct => (nums[ct.course_id] ?? 0) > 0).map(ct => ct.id)
       );
     } catch (err) {
       logger.error("Error loading enrollment counts:", err);
@@ -231,16 +235,17 @@ export default function Index({ embedded = false }: IndexProps) {
       if (enrollErr) logger.error("Enrollment load error:", enrollErr);
       const codeById = new Map(courseTeachers.map(ct => [ct.course_id, ct.course_code]));
       const newMap: Record<string, string[]> = {};
-      enrollments?.forEach((e: any) => {
+      enrollments?.forEach((e: Record<string, unknown>) => {
+        if (typeof e.course_id !== 'string') return;
         const code = codeById.get(e.course_id);
-        if (e.student_id && code) {
+        if (typeof e.student_id === 'string' && code) {
           if (!newMap[e.student_id]) newMap[e.student_id] = [];
-          newMap[e.student_id].push(code);
+          newMap[e.student_id]?.push(code);
         }
       });
       setStudentCourseMap(newMap);
       const { generateEnhancedSchedule } = await import("@/utils/scheduleAlgorithm");
-      const schedule = await generateEnhancedSchedule(allSelected, startDate, endDate, holidays, newMap);
+      const schedule = generateEnhancedSchedule(allSelected, startDate, endDate, holidays, newMap);
       setGeneratedSchedule(schedule);
       setIsScheduleGenerated(true);
       setActiveTab("schedule");
@@ -259,7 +264,7 @@ export default function Index({ embedded = false }: IndexProps) {
         ? {
             ...exam,
             date: targetDate,
-            exam_date: targetDate.toISOString().split("T")[0],
+            exam_date: targetDate.toISOString().split("T")[0] ?? '',
             dayOfWeek: targetDate.toLocaleDateString("en-US", { weekday: "long" }),
             day_of_week: targetDate.toLocaleDateString("en-US", { weekday: "long" }),
             timeSlot: getExamTimeSlot(targetDate),
@@ -283,12 +288,12 @@ export default function Index({ embedded = false }: IndexProps) {
     const onTarget = generatedSchedule.filter(e => e.date.toDateString() === targetDate.toDateString() && e.id !== dragged.id);
     const draggedCode = normalizeCourseCode(dragged.course_code);
     const draggedStudents = Object.keys(studentCourseMap).filter(sid =>
-      studentCourseMap[sid].some(c => normalizeCourseCode(c) === draggedCode)
+      (studentCourseMap[sid] ?? []).some(c => normalizeCourseCode(c) === draggedCode)
     );
     for (const exam of onTarget) {
       const examCode = normalizeCourseCode(exam.course_code);
       const examStudents = Object.keys(studentCourseMap).filter(sid =>
-        studentCourseMap[sid].some(c => normalizeCourseCode(c) === examCode)
+        (studentCourseMap[sid] ?? []).some(c => normalizeCourseCode(c) === examCode)
       );
       const conflicts = draggedStudents.filter(sid => examStudents.includes(sid));
       if (conflicts.length > 0) {
@@ -313,13 +318,13 @@ export default function Index({ embedded = false }: IndexProps) {
     if (!dragged.is_first_paper) {
       const draggedNorm = normalizeCourseCode(dragged.course_code);
       const draggedStu = Object.keys(studentCourseMap).filter(sid =>
-        studentCourseMap[sid].some(c => normalizeCourseCode(c) === draggedNorm)
+        (studentCourseMap[sid] ?? []).some(c => normalizeCourseCode(c) === draggedNorm)
       );
       for (const exam of generatedSchedule) {
         if (exam.id === dragged.id) continue;
         const examNorm = normalizeCourseCode(exam.course_code);
         const examStu = Object.keys(studentCourseMap).filter(sid =>
-          studentCourseMap[sid].some(c => normalizeCourseCode(c) === examNorm)
+          (studentCourseMap[sid] ?? []).some(c => normalizeCourseCode(c) === examNorm)
         );
         const shared = draggedStu.filter(sid => examStu.includes(sid));
         if (shared.length > 0) {
@@ -388,7 +393,7 @@ export default function Index({ embedded = false }: IndexProps) {
         { key: "Venue", label: "Venue", width: 15 },
       ];
       const workbook = createWorkbook();
-      addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as any);
+      addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as unknown as { key: string; label: string; width?: number }[]);
       await downloadWorkbook(workbook, `exam-schedule-${new Date().toISOString().split("T")[0]}.xlsx`);
       toast({ title: "Success", description: "Excel file downloaded successfully!" });
     } catch (err) {
@@ -443,7 +448,14 @@ export default function Index({ embedded = false }: IndexProps) {
                 </TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={loadLastSchedule} disabled={loadingLastSchedule}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    void loadLastSchedule();
+                  }}
+                  disabled={loadingLastSchedule}
+                >
                   <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
                   <span className="hidden sm:inline ml-2">Reload Last</span>
                 </Button>
@@ -483,9 +495,15 @@ export default function Index({ embedded = false }: IndexProps) {
                 loading={loading}
                 onStartDateChange={setStartDate}
                 onEndDateChange={setEndDate}
-                onGenerateSchedule={generateSchedule}
-                onSaveSchedule={handleSaveSchedule}
-                onDownloadExcel={handleDownloadExcel}
+                onGenerateSchedule={() => {
+                  void generateSchedule();
+                }}
+                onSaveSchedule={() => {
+                  void handleSaveSchedule();
+                }}
+                onDownloadExcel={() => {
+                  void handleDownloadExcel();
+                }}
               />
               <div className="lg:col-span-3">
                 {courseTeachers.length === 0 ? (
@@ -504,7 +522,9 @@ export default function Index({ embedded = false }: IndexProps) {
                         editingGap={editingGap}
                         tempGapValue={tempGapValue}
                         onEditGap={handleEditGap}
-                        onSaveGap={handleSaveGap}
+                        onSaveGap={(courseId) => {
+                          void handleSaveGap(courseId);
+                        }}
                         onCancelGap={handleCancelGap}
                         onTempGapChange={setTempGapValue}
                         enrollmentCount={courseEnrollmentCounts[ct.course_id] || 0}
@@ -528,10 +548,22 @@ export default function Index({ embedded = false }: IndexProps) {
                 <CardTitle className="text-base font-semibold">Generated Date Sheet</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={handleSaveSchedule} disabled={loading}>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    void handleSaveSchedule();
+                  }}
+                  disabled={loading}
+                >
                   <Save className="w-4 h-4 mr-2" />Save
                 </Button>
-                <Button size="sm" variant="outline" onClick={handleDownloadExcel}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    void handleDownloadExcel();
+                  }}
+                >
                   <Download className="w-4 h-4 mr-2" />Excel
                 </Button>
                 <div className="linear-pill">
@@ -579,7 +611,9 @@ export default function Index({ embedded = false }: IndexProps) {
                 userRole={profileData?.user_type === "admin" ? "admin" : "department_admin"}
                 isCollapsed={false}
                 toggleSidebar={() => setIsMobileMenuOpen(false)}
-                onLogout={handleLogout}
+                onLogout={() => {
+              void handleLogout();
+            }}
                 onNavigate={(path) => { navigate(path); setIsMobileMenuOpen(false); }}
                 isInsideSheet
               />
@@ -595,7 +629,9 @@ export default function Index({ embedded = false }: IndexProps) {
             userRole={profileData?.user_type === "admin" ? "admin" : "department_admin"}
             isCollapsed={isSidebarCollapsed}
             toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            onLogout={handleLogout}
+            onLogout={() => {
+              void handleLogout();
+            }}
             onNavigate={navigate}
           />
         )}
@@ -614,8 +650,12 @@ export default function Index({ embedded = false }: IndexProps) {
             userId={profileData?.user_id}
             isMobile={isMobile}
             onOpenSidebar={() => setIsMobileMenuOpen(true)}
-            onLogout={handleLogout}
-            onRefresh={loadLastSchedule}
+            onLogout={() => {
+              void handleLogout();
+            }}
+            onRefresh={() => {
+              void loadLastSchedule();
+            }}
             onNavigate={navigate}
           />
 

@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';import logger from '@/lib/logger';
+import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';
+import logger from '@/lib/logger';
 
 
 interface StudentPerformanceTabProps {
@@ -67,27 +68,31 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
 
       // Calculate attendance by course
       const attendanceByCourse: Record<string, { present: number; total: number }> = {};
-      (attendance || []).forEach((a: any) => {
+      (attendance || []).forEach((a: Record<string, unknown>) => {
         if (!attendanceByCourse[a.course_id]) attendanceByCourse[a.course_id] = { present: 0, total: 0 };
-        attendanceByCourse[a.course_id].total++;
-        if (a.status === 'present' || a.status === 'late') {
-          attendanceByCourse[a.course_id].present++;
+        if (attendanceByCourse[a.course_id]) {
+          attendanceByCourse[a.course_id].total++;
+          if (a.status === 'present' || a.status === 'late') {
+            attendanceByCourse[a.course_id].present++;
+          }
         }
       });
 
       // Calculate assignment completion by course
-      const submittedAssignmentIds = new Set((submissions || []).map((s: any) => s.assignment_id));
+      const submittedAssignmentIds = new Set((submissions || []).map((s: Record<string, unknown>) => s.assignment_id));
       const assignmentsByCourse: Record<string, { submitted: number; total: number }> = {};
-      (assignments || []).forEach((a: any) => {
+      (assignments || []).forEach((a: Record<string, unknown>) => {
         if (!assignmentsByCourse[a.course_id]) assignmentsByCourse[a.course_id] = { submitted: 0, total: 0 };
-        assignmentsByCourse[a.course_id].total++;
-        if (submittedAssignmentIds.has(a.id)) {
-          assignmentsByCourse[a.course_id].submitted++;
+        if (assignmentsByCourse[a.course_id]) {
+          assignmentsByCourse[a.course_id].total++;
+          if (submittedAssignmentIds.has(a.id as string)) {
+            assignmentsByCourse[a.course_id].submitted++;
+          }
         }
       });
 
       // Build performance data
-      const performanceData: PerformanceData[] = (marks || []).map((m: any) => {
+      const performanceData: PerformanceData[] = (marks || []).map((m: Record<string, unknown>) => {
         const attendanceStats = attendanceByCourse[m.course_id] || { present: 0, total: 1 };
         const attendancePercent = (attendanceStats.present / attendanceStats.total) * 100;
         
@@ -125,7 +130,7 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
           avgAssignment: Math.round(performanceData.reduce((s, p) => s + p.assignmentCompletion, 0) / performanceData.length),
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading performance:', error);
       toast({
         title: 'Error',

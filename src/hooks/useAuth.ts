@@ -27,11 +27,11 @@ export const useAuth = () => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadUserProfile(session.user.id);
+        void loadUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
@@ -39,21 +39,21 @@ export const useAuth = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Persist auth session for offline access
-          persistAuthSession({
+          void persistAuthSession({
             access_token: session.access_token,
             refresh_token: session.refresh_token,
           }).catch(() => {});
           setTimeout(() => {
-            loadUserProfile(session.user.id);
+            void loadUserProfile(session.user.id);
           }, 0);
         } else {
-          clearPersistedAuthSession().catch(() => {});
+          void clearPersistedAuthSession().catch(() => {});
           setProfile(null);
           setLoading(false);
         }
@@ -61,6 +61,7 @@ export const useAuth = () => {
     );
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserProfile = async (userId: string) => {
@@ -109,7 +110,7 @@ export const useAuth = () => {
         });
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
-          throw new Error(validationError.issues[0].message);
+          throw new Error(validationError.issues[0]?.message ?? 'Validation failed');
         }
         throw validationError;
       }
@@ -133,15 +134,16 @@ export const useAuth = () => {
         description: "Account created successfully! Please check your email to verify your account.",
       });
 
-      return { data, error: null as null };
-    } catch (error: any) {
+      return { data, error: null };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Sign up error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: message || "Failed to create account",
         variant: "destructive",
       });
-      return { data: null as null, error };
+      return { data: null, error };
     }
   };
 
@@ -152,7 +154,7 @@ export const useAuth = () => {
         signInSchema.parse({ email, password });
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
-          throw new Error(validationError.issues[0].message);
+          throw new Error(validationError.issues[0]?.message ?? 'Validation failed');
         }
         throw validationError;
       }
@@ -178,7 +180,7 @@ export const useAuth = () => {
           .single();
         
         // Check if department_admin or teacher is approved
-        if (['department_admin', 'teacher'].includes(profileData?.user_type) && !profileData?.is_approved) {
+        if (['department_admin', 'teacher'].includes(profileData?.user_type ?? '') && !profileData?.is_approved) {
           // Sign out the unapproved user
           await supabase.auth.signOut();
           throw new Error('Your account is pending approval by an administrator. Please wait for approval before logging in.');
@@ -190,7 +192,7 @@ export const useAuth = () => {
         };
         if (profileData?.user_type === 'student') {
           go('/student-dashboard');
-        } else if (['admin', 'department_admin'].includes(profileData?.user_type)) {
+        } else if (['admin', 'department_admin'].includes(profileData?.user_type ?? '')) {
           go('/admin-dashboard');
         } else if (profileData?.user_type === 'teacher') {
           go('/teacher-dashboard');
@@ -199,37 +201,38 @@ export const useAuth = () => {
         }
       }
 
-      return { data, error: null as null };
-    } catch (error: any) {
+      return { data, error: null };
+    } catch (error: unknown) {
+      const errorObj = error instanceof Error ? error : new Error('Unknown error');
       logger.error('Sign in error:', error);
       const isTimeout =
-        error?.message?.toLowerCase().includes('timed out') ||
-        error?.name === 'AbortError' ||
-        error?.message?.toLowerCase().includes('network');
+        errorObj.message?.toLowerCase().includes('timed out') ||
+        errorObj.name === 'AbortError' ||
+        errorObj.message?.toLowerCase().includes('network');
 
       toast({
         title: "Error",
         description: isTimeout
           ? "Connection timed out. Please check your internet connection and try again."
-          : error.message || "Failed to sign in",
+          : errorObj.message || "Failed to sign in",
         variant: "destructive",
       });
-      return { data: null as null, error };
+      return { data: null, error };
     }
   };
 
   const signOut = async () => {
     try {
-      await cleanupAuthState();
+      cleanupAuthState();
       
       try {
         await supabase.auth.signOut({ scope: 'global' });
-      } catch (err) {
+      } catch {
         // Continue even if this fails
       }
       
       window.location.replace(appHomeUrl());
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Sign out error:', error);
       toast({
         title: "Error",
@@ -239,7 +242,7 @@ export const useAuth = () => {
     }
   };
 
-  const cleanupAuthState = async () => {
+  const cleanupAuthState = () => {
     // Clear Supabase auth keys from localStorage and sessionStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
@@ -263,7 +266,7 @@ export const useAuth = () => {
         validatedUpdates = profileUpdateSchema.parse(updates) as Partial<UserProfile>;
       } catch (validationError) {
         if (validationError instanceof z.ZodError) {
-          throw new Error(validationError.issues[0].message);
+          throw new Error(validationError.issues[0]?.message ?? 'Validation failed');
         }
         throw validationError;
       }
@@ -283,15 +286,16 @@ export const useAuth = () => {
         description: "Profile updated successfully",
       });
 
-      return { data, error: null as null };
-    } catch (error: any) {
+      return { data, error: null };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Profile update error:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile",
+        description: message || "Failed to update profile",
         variant: "destructive",
       });
-      return { data: null as null, error };
+      return { data: null, error };
     }
   };
 

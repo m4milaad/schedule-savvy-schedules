@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { createPortal } from 'react-dom';
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { Plus, Search, Edit2, Trash2, Upload, KeyRound, BookOpen } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import logger from '@/lib/logger';
 
 
 interface Student {
@@ -55,8 +56,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showBulkUpload, setShowBulkUpload] = useState(false);
-    const [studentEnrollments, setStudentEnrollments] = useState<Record<string, StudentEnrollment[]>>({});
-    const [hoveredStudentId, setHoveredStudentId] = useState<string | null>(null);
+
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,8 +67,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         toggleSelection,
         selectAll,
         clearSelection,
-        selectedCount,
-        hasSelection
+        selectedCount
     } = useBulkSelection<string>();
 
     useSearchShortcut(searchInputRef);
@@ -113,7 +112,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             // Build enrollments map by student_id
             const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
 
-            (enrollmentsData || []).forEach((item: any) => {
+            (enrollmentsData || []).forEach((item: Record<string, unknown>) => {
                 const studentId = item.student_id;
 
                 if (!enrollmentsMap[studentId]) {
@@ -128,7 +127,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 }
             });
 
-            setStudentEnrollments(enrollmentsMap);
+            // Not using studentEnrollments for now since they don't seem to be needed in the table
+            // setStudentEnrollments(enrollmentsMap);
         } catch (error) {
             logger.error('Error in loadStudentEnrollments:', error);
         }
@@ -204,11 +204,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
             resetForm();
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error saving student:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to save student",
+                description: (error as Error).message || "Failed to save student",
                 variant: "destructive",
             });
         }
@@ -243,11 +243,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                 description: "Student deleted successfully",
             });
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error deleting student:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to delete student",
+                description: (error as Error).message || "Failed to delete student",
                 variant: "destructive",
             });
         }
@@ -271,11 +271,11 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             });
             clearSelection();
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error bulk deleting students:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to delete students",
+                description: (error as Error).message || "Failed to delete students",
                 variant: "destructive",
             });
         }
@@ -289,7 +289,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             // Validate ABC IDs are numeric
             const invalidAbcIds = data.filter(item => item.abc_id && !/^\d+$/.test(item.abc_id));
@@ -303,7 +303,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
 
             if (error) throw error;
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Bulk upload error:', error);
             throw error;
         }

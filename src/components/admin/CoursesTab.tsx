@@ -24,7 +24,8 @@ import { Course, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import logger from '@/lib/logger';
 
 
 interface CoursesTabProps {
@@ -90,9 +91,9 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
             toast.success(`${selectedCount} course(s) deleted successfully`);
             clearSelection();
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error bulk deleting courses:', error);
-            toast.error(error.message || 'Failed to delete courses');
+            toast.error((error as Error).message || 'Failed to delete courses');
         }
     };
 
@@ -193,7 +194,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('courses').insert(data);
             if (error) throw error;

@@ -21,7 +21,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Holiday } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
-import { useSearchShortcut } from "@/hooks/useSearchShortcut";import logger from '@/lib/logger';
+import { useSearchShortcut } from "@/hooks/useSearchShortcut";
+import logger from '@/lib/logger';
 
 
 interface HolidaysTabProps {
@@ -138,7 +139,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('holidays').insert(data);
             if (error) throw error;

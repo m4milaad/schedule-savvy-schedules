@@ -42,7 +42,7 @@ const EmailVerified = () => {
         } else {
           setErrorMessage('Verification link is missing required parameters. Please try again from your email.');
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error('Unexpected verification error:', error);
         setErrorMessage(error.message || 'Something went wrong while verifying your email.');
       } finally {

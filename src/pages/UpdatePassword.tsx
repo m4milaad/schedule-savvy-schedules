@@ -120,11 +120,11 @@ const UpdatePassword = () => {
       } else {
         navigate('/admin-dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating password:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update password",
+        description: (error as Error).message || "Failed to update password",
         variant: "destructive",
       });
     } finally {

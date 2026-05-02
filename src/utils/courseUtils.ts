@@ -37,10 +37,12 @@ export const groupCoursesByNormalizedCode = <T extends { course_code: string }>(
   
   courses.forEach((course) => {
     const normalizedCode = normalizeCourseCode(course.course_code);
-    if (!groupedCourses.has(normalizedCode)) {
-      groupedCourses.set(normalizedCode, []);
+    const existingCourses = groupedCourses.get(normalizedCode);
+    if (existingCourses) {
+      existingCourses.push(course);
+    } else {
+      groupedCourses.set(normalizedCode, [course]);
     }
-    groupedCourses.get(normalizedCode)!.push(course);
   });
   
   return groupedCourses;

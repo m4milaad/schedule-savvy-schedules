@@ -14,6 +14,7 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { cn } from "@/lib/utils";
 import logger from "@/lib/logger";
 import { getAppBaseUrl } from "@/lib/appUrl";
+import { AdminUserSchema } from '@/schemas/database';
 
 
 interface AdminUser {
@@ -36,7 +37,7 @@ const ManageAdmins = () => {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'admin' | 'department_admin' | 'teacher'>('department_admin');
   const [deptId, setDeptId] = useState('');
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<Record<string, unknown>[]>([]);
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const ManageAdmins = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -125,16 +127,16 @@ const ManageAdmins = () => {
           created_at: new Date().toISOString(),
           is_approved: profile?.is_approved ?? true,
           dept_id: profile?.dept_id,
-          dept_name: (profile as any)?.departments?.dept_name || 'N/A',
+          dept_name: (profile?.departments as Record<string, unknown>)?.dept_name as string || 'N/A',
         };
       });
 
-      setAdmins(combinedData);
-    } catch (error: any) {
+      setAdmins(AdminUserSchema.array().parse(combinedData));
+    } catch (error: unknown) {
       logger.error('Error loading admins:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to load admin users",
+        description: (error as Error).message || "Failed to load admin users",
         variant: "destructive",
       });
     }
@@ -181,12 +183,12 @@ const ManageAdmins = () => {
           created_at: new Date().toISOString(),
           is_approved: profile?.is_approved ?? false,
           dept_id: profile?.dept_id,
-          dept_name: (profile as any)?.departments?.dept_name || 'N/A',
+          dept_name: (profile?.departments as Record<string, unknown>)?.dept_name as string || 'N/A',
         };
       });
 
       setTeachers(combinedData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading teachers:', error);
     }
   };
@@ -225,7 +227,7 @@ const ManageAdmins = () => {
 
     try {
       // Create user through Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -257,11 +259,11 @@ const ManageAdmins = () => {
 
       // Reload data
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error creating user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create user",
+        description: (error as Error).message || "Failed to create user",
         variant: "destructive",
       });
     } finally {
@@ -284,11 +286,11 @@ const ManageAdmins = () => {
       });
 
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error approving user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to approve user",
+        description: (error as Error).message || "Failed to approve user",
         variant: "destructive",
       });
     }
@@ -309,11 +311,11 @@ const ManageAdmins = () => {
       });
 
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error revoking user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to revoke user",
+        description: (error as Error).message || "Failed to revoke user",
         variant: "destructive",
       });
     }
@@ -349,11 +351,11 @@ const ManageAdmins = () => {
       });
 
       loadData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error removing user:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to remove access",
+        description: (error as Error).message || "Failed to remove access",
         variant: "destructive",
       });
     }
@@ -509,7 +511,7 @@ const ManageAdmins = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="role">Role *</Label>
-                  <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                  <Select value={role} onValueChange={(value: "admin" | "department_admin" | "teacher") => setRole(value)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

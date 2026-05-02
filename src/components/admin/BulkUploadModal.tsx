@@ -6,14 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Upload, Download } from 'lucide-react';
 import { toast } from "sonner";
-import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';import logger from '@/lib/logger';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
+import logger from '@/lib/logger';
 
 
 interface BulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: 'schools' | 'departments' | 'courses' | 'teachers' | 'venues' | 'sessions' | 'holidays' | 'students';
-  onUpload: (data: any[]) => Promise<void>;
+  onUpload: (data: Record<string, unknown>[]) => Promise<void>;
 }
 
 const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalProps) => {
@@ -65,7 +66,7 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
   const downloadTemplate = async () => {
     const template = getTemplate();
     const workbook = createWorkbook();
-    addWorksheetFromJson(workbook, type, template as Record<string, any>[]);
+    addWorksheetFromJson(workbook, type, template as Record<string, Record<string, unknown>>[]);
     await downloadWorkbook(workbook, `${type}_template.xlsx`);
   };
 

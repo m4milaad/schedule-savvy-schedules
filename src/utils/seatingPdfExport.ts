@@ -83,8 +83,8 @@ export function exportSeatingToPdf(
             [220, 255, 255], // light cyan
             [255, 255, 220], // light yellow
           ];
-          const bgColor = colors[courseIndex % colors.length];
-          doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+          const bgColor = colors[courseIndex % colors.length] ?? [220, 235, 255];
+          doc.setFillColor(bgColor[0] || 255, bgColor[1] || 255, bgColor[2] || 255);
           doc.rect(x, y, cellWidth, cellHeight, 'F');
           doc.rect(x, y, cellWidth, cellHeight, 'S');
 
@@ -150,8 +150,8 @@ export function exportSeatingToPdf(
     ];
 
     coursesArray.forEach((course, idx) => {
-      const bgColor = colors[idx % colors.length];
-      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+      const bgColor = colors[idx % colors.length] ?? [220, 235, 255];
+      doc.setFillColor(bgColor[0] || 255, bgColor[1] || 255, bgColor[2] || 255);
       doc.rect(legendX, legendY - 3, 8, 5, 'F');
       doc.setDrawColor(150, 150, 150);
       doc.rect(legendX, legendY - 3, 8, 5, 'S');

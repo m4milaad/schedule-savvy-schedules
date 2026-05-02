@@ -51,7 +51,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
 
       if (error) throw error;
       setMarks(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading marks:', error);
       toast({
         title: 'Error',

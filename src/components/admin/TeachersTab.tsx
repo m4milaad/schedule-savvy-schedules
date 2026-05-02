@@ -25,7 +25,8 @@ import { Teacher, Department } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";import logger from '@/lib/logger';
+import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
+import logger from '@/lib/logger';
 
 
 interface TeachersTabProps {
@@ -112,9 +113,9 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             toast.success(`${selectedCount} teacher(s) deleted successfully`);
             clearSelection();
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error bulk deleting teachers:', error);
-            toast.error(error.message || 'Failed to delete teachers');
+            toast.error((error as Error).message || 'Failed to delete teachers');
         }
     };
 
@@ -141,7 +142,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const loadTeacherCourses = async () => {
         try {
             // Get all teacher-course assignments with course details
-            const { data, error } = await (supabase as any)
+            const { data, error } = await (supabase as Record<string, unknown>)
                 .from('teacher_courses')
                 .select(`
                     id,
@@ -161,7 +162,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             // Build map by teacher_id
             const coursesMap: Record<string, TeacherCourse[]> = {};
 
-            (data || []).forEach((item: any) => {
+            (data || []).forEach((item: Record<string, unknown>) => {
                 const teacherId = item.teacher_id;
 
                 if (!coursesMap[teacherId]) {
@@ -290,7 +291,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('teachers').insert(data);
             if (error) throw error;
@@ -324,7 +325,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         }
 
         try {
-            const { error } = await (supabase as any)
+            const { error } = await (supabase as Record<string, unknown>)
                 .from('teacher_courses')
                 .insert({
                     teacher_id: selectedTeacher.teacher_id,
@@ -336,7 +337,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             toast.success(`Course assigned to ${selectedTeacher.teacher_name}`);
             setSelectedCourseId('');
             loadTeacherCourses();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error assigning course:', error);
             if (error.code === '23505') {
                 toast.error('This course is already assigned to this teacher');
@@ -348,7 +349,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     const handleRemoveCourse = async (assignmentId: string, courseName: string) => {
         try {
-            const { error } = await (supabase as any)
+            const { error } = await (supabase as Record<string, unknown>)
                 .from('teacher_courses')
                 .delete()
                 .eq('id', assignmentId);
@@ -501,16 +502,16 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                             {teacher.teacher_email || '—'}
                                         </td>
                                         <td className="linear-td hidden lg:table-cell">
-                                            {teacherCourses[teacher.teacher_id]?.length > 0 ? (
+                                            {(teacherCourses[teacher.teacher_id] || []).length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
-                                                    {teacherCourses[teacher.teacher_id].slice(0, 3).map((tc) => (
+                                                    {(teacherCourses[teacher.teacher_id] || []).slice(0, 3).map((tc) => (
                                                         <Badge key={tc.id} variant="secondary" className="text-xs">
                                                             {tc.course_code}
                                                         </Badge>
                                                     ))}
-                                                    {teacherCourses[teacher.teacher_id].length > 3 && (
+                                                    {(teacherCourses[teacher.teacher_id] || []).length > 3 && (
                                                         <Badge variant="outline" className="text-xs">
-                                                            +{teacherCourses[teacher.teacher_id].length - 3}
+                                                            +{(teacherCourses[teacher.teacher_id] || []).length - 3}
                                                         </Badge>
                                                     )}
                                                 </div>
@@ -611,11 +612,11 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                     </DialogHeader>
                     <div className="space-y-4">
                         {/* Currently assigned courses */}
-                        {selectedTeacher && teacherCourses[selectedTeacher.teacher_id]?.length > 0 && (
+                        {selectedTeacher && (teacherCourses[selectedTeacher.teacher_id] || []).length > 0 && (
                             <div>
                                 <Label className="text-sm font-medium">Assigned Courses:</Label>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    {teacherCourses[selectedTeacher.teacher_id].map((tc) => (
+                                    {(teacherCourses[selectedTeacher.teacher_id] || []).map((tc) => (
                                         <Badge
                                             key={tc.id}
                                             variant="secondary"

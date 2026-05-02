@@ -84,7 +84,7 @@ export const ScheduleTable = ({
                               snapshot.isDraggingOver ? "bg-blue-50 border-2 border-blue-300 border-dashed" : ""
                             } ${examCount >= 4 ? "bg-red-50/50" : ""}`}
                           >
-                            {examsOnDate.map((exam, index) => (
+                            {(examsOnDate || []).map((exam, index) => (
                               <Draggable key={exam.id} draggableId={exam.id} index={index}>
                                 {(provided, snapshot) => (
                                   <div

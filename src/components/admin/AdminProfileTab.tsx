@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from 'react-router-dom';
 import { Lock, RefreshCw, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';import logger from '@/lib/logger';
+import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import logger from '@/lib/logger';
 
 
 interface Department {
@@ -34,7 +34,7 @@ const presetColors = [
 export const AdminProfileTab: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Record<string, unknown>>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -54,11 +54,12 @@ export const AdminProfileTab: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const { toast } = useToast();
-  const navigate = useNavigate();
+  
 
   useEffect(() => {
     loadProfile();
     loadDepartments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDepartments = async () => {
@@ -93,10 +94,10 @@ export const AdminProfileTab: React.FC = () => {
         full_name: profileData.full_name || '',
         email: profileData.email || user.email || '',
         dept_id: profileData.dept_id || '',
-        contact_no: (profileData as any).contact_no || '',
-        theme_color: (profileData as any).theme_color || '#020817'
+        contact_no: (profileData as Record<string, unknown>).contact_no || '',
+        theme_color: (profileData as Record<string, unknown>).theme_color || '#020817'
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading profile:', error);
       toast({
         title: "Error",
@@ -116,7 +117,7 @@ export const AdminProfileTab: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         full_name: formData.full_name,
         email: formData.email,
         contact_no: formData.contact_no || null,
@@ -138,11 +139,11 @@ export const AdminProfileTab: React.FC = () => {
       
       // Reload the page to apply theme changes
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile",
+        description: (error as Error).message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -250,11 +251,11 @@ export const AdminProfileTab: React.FC = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating password:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update password",
+        description: (error as Error).message || "Failed to update password",
         variant: "destructive",
       });
     } finally {

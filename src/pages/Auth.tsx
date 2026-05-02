@@ -51,7 +51,8 @@ const Auth = () => {
   const isSignUp = activeTab === 'Sign Up';
 
   useEffect(() => {
-    loadDepartments();
+    void loadDepartments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -108,8 +109,8 @@ const Auth = () => {
       toast({ title: "Success", description: "Password reset link sent! Please check your email." });
       setShowForgotPassword(false);
       setResetEmail('');
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to send reset link", variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: (error as Error).message || "Failed to send reset link", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -283,7 +284,9 @@ const Auth = () => {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  onSubmit={handleSubmit}
+                  onSubmit={(e) => {
+                    void handleSubmit(e);
+                  }}
                   className="space-y-4"
                 >
                   <SignInForm
@@ -306,7 +309,9 @@ const Auth = () => {
                   animate="center"
                   exit="exit"
                   transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  onSubmit={handleSubmit}
+                  onSubmit={(e) => {
+                    void handleSubmit(e);
+                  }}
                   className="space-y-4"
                 >
                   <SignUpForm
@@ -357,7 +362,12 @@ const Auth = () => {
             >
               <h2 className="text-lg font-semibold text-foreground mb-1">Reset Password</h2>
               <p className="text-sm text-muted-foreground mb-5">We'll send you a link to reset your password.</p>
-              <form onSubmit={handleForgotPassword} className="space-y-4">
+              <form
+                onSubmit={(e) => {
+                  void handleForgotPassword(e);
+                }}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="reset-email" className="text-sm font-medium">Email Address</Label>
                   <Input
@@ -507,7 +517,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
 
     <div className="space-y-1.5">
       <Label htmlFor="user-type" className="text-xs font-medium text-foreground/80">Account Type</Label>
-      <Select value={userType} onValueChange={(value: any) => setUserType(value)}>
+      <Select value={userType} onValueChange={(value: 'student' | 'department_admin' | 'admin' | 'teacher') => setUserType(value)}>
         <SelectTrigger className={glassInputClass}>
           <SelectValue placeholder="Select account type" />
         </SelectTrigger>

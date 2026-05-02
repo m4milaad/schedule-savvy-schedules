@@ -76,13 +76,14 @@ export async function resetApp(options: ResetOptions = {}): Promise<void> {
         await Promise.all(
           databases.map(db => {
             if (db.name) {
-              logProgress(`Deleting database: ${db.name}`);
+              const dbName = db.name;
+              logProgress(`Deleting database: ${dbName}`);
               return new Promise<void>((resolve, reject) => {
-                const request = window.indexedDB.deleteDatabase(db.name!);
+                const request = window.indexedDB.deleteDatabase(dbName);
                 request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
+                request.onerror = () => reject(request.error ?? new Error(`Failed to delete IndexedDB database: ${dbName}`));
                 request.onblocked = () => {
-                  logger.warn(`Database ${db.name} deletion blocked`);
+                  logger.warn(`Database ${dbName} deletion blocked`);
                   resolve(); // Continue anyway
                 };
               });
@@ -91,7 +92,7 @@ export async function resetApp(options: ResetOptions = {}): Promise<void> {
           })
         );
         logProgress(`Cleared ${databases.length} IndexedDB database(s)`);
-      } catch (error) {
+      } catch {
         // Some browsers don't support indexedDB.databases()
         logProgress('IndexedDB databases() not supported, skipping...');
       }
@@ -126,7 +127,7 @@ export async function resetApp(options: ResetOptions = {}): Promise<void> {
 
     // 7. Clear any application cache (deprecated but still check)
     if ('applicationCache' in window) {
-      const appCache = (window as any).applicationCache;
+      const appCache = (window as Window & { applicationCache?: { status?: number; UNCACHED?: number } }).applicationCache;
       if (appCache && appCache.status !== undefined && appCache.UNCACHED !== undefined) {
         if (appCache.status !== appCache.UNCACHED) {
           logProgress('Application cache detected (deprecated API)');

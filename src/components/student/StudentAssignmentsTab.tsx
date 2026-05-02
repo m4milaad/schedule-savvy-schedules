@@ -11,6 +11,7 @@ import { FileText, Upload, Clock, CheckCircle, AlertCircle, Download, X } from '
 import { format } from 'date-fns';
 import { TabLoader } from '@/components/ui/loading-screen';
 import logger from '@/lib/logger';
+import { AssignmentSchema } from '@/schemas/database';
 
 
 interface StudentAssignmentsTabProps {
@@ -113,7 +114,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
       });
 
       setAssignments(assignmentsWithSubmissions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading assignments:', error);
       toast({
         title: 'Error',
@@ -189,7 +190,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
           .from('assignment_submissions')
           .insert({
             assignment_id: selectedAssignment.id,
-            student_id: studentId,
+            student_id: studentId || '',
             file_url: urlData.publicUrl,
             status: 'submitted',
           });
@@ -206,7 +207,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
       setSelectedFile(null);
       setSelectedAssignment(null);
       loadAssignments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error submitting assignment:', error);
       toast({
         title: 'Error',
@@ -350,6 +351,14 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
                                 <div 
                                   className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
                                   onClick={() => fileInputRef.current?.click()}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      fileInputRef.current?.click();
+                                    }
+                                  }}
                                 >
                                   {selectedFile ? (
                                     <div className="flex items-center justify-center gap-2">

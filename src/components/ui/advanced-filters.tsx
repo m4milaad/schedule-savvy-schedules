@@ -54,8 +54,7 @@ export function AdvancedFilters({
     const newFilters = activeFilters.filter((f) => f.id !== id);
     onFilterChange(newFilters);
     setTempFilters((prev) => {
-      const updated = { ...prev };
-      delete updated[id];
+      const { [id]: _removed, ...updated } = prev;
       return updated;
     });
   };

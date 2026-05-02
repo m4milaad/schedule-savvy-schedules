@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ import logger from '@/lib/logger';
 
 interface AssignmentsTabProps {
   teacherId: string;
-  courses: any[];
+  courses: Record<string, unknown>[];
 }
 
 interface Assignment {
@@ -85,7 +85,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       );
 
       setAssignments(assignmentsWithCounts);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       logger.error('Error loading assignments:', error);
       toast({
         title: 'Error',
@@ -109,8 +110,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
   };
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${teacherId}/${Date.now()}-${file.name}`;
+        const filePath = `${teacherId}/${Date.now()}-${file.name}`;
     
     const { error } = await supabase.storage
       .from('assignment-files')
@@ -145,7 +145,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
         fileUrl = await uploadFile(attachmentFile);
       }
 
-      const assignmentData: any = {
+      const assignmentData: Record<string, unknown> = {
         teacher_id: teacherId,
         title: title.trim(),
         description: description.trim(),
@@ -177,7 +177,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
 
       resetForm();
       loadAssignments();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save assignment',
@@ -210,7 +211,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       if (error) throw error;
       toast({ title: 'Success', description: 'Assignment deleted successfully' });
       loadAssignments();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete assignment',
@@ -228,7 +230,8 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
 
       if (error) throw error;
       loadAssignments();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: 'Failed to update assignment status',

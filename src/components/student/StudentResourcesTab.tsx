@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -7,11 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  BookOpen, Search, Download, Eye, Bookmark, BookmarkCheck, 
-  FileText, Video, Presentation, File, FolderOpen 
-} from 'lucide-react';
-import { format } from 'date-fns';import logger from '@/lib/logger';
+import { Search, Download, Eye, Bookmark, BookmarkCheck, FileText, Video, Presentation, File } from 'lucide-react';
+import { format } from 'date-fns';
+import logger from '@/lib/logger';
 
 
 interface StudentResourcesTabProps {
@@ -47,6 +45,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
   const loadData = async () => {
@@ -58,7 +57,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
         .eq('student_id', studentId)
         .eq('is_active', true);
 
-      const courseList = (enrollments || []).map((e: any) => ({
+      const courseList = (enrollments || []).map((e: Record<string, unknown>) => ({
         course_id: e.course_id,
         course_code: e.courses?.course_code
       }));
@@ -101,7 +100,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
       }));
 
       setResources(resourcesWithBookmarks);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading resources:', error);
       toast({
         title: 'Error',

@@ -56,7 +56,7 @@ const ResetPassword = () => {
             logger.error('Password reset session exchange failed:', error);
             toast({
               title: "Session Error",
-              description: error.message || "We couldn't validate your reset link. Please request a new one.",
+              description: (error as Error).message || "We couldn't validate your reset link. Please request a new one.",
               variant: "destructive",
             });
             return;
@@ -65,11 +65,11 @@ const ResetPassword = () => {
         }
 
         setIsSessionReady(true);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error('Unexpected session error:', error);
         toast({
           title: "Error",
-          description: error.message || "Something went wrong while preparing the reset form.",
+          description: (error as Error).message || "Something went wrong while preparing the reset form.",
           variant: "destructive",
         });
       }
@@ -139,10 +139,10 @@ const ResetPassword = () => {
       setTimeout(() => {
         navigate('/');
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to update password",
+        description: (error as Error).message || "Failed to update password",
         variant: "destructive",
       });
     } finally {

@@ -7,7 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarCheck, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+import { TabLoader } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
 
 
 interface StudentAttendanceTabProps {
@@ -64,7 +65,7 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
       // Calculate course-wise stats
       const statsMap = new Map<string, CourseAttendance>();
       
-      (data || []).forEach((record: any) => {
+      (data || []).forEach((record: Record<string, unknown>) => {
         const courseId = record.course_id;
         if (!statsMap.has(courseId)) {
           statsMap.set(courseId, {
@@ -80,7 +81,10 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
           });
         }
         
-        const stats = statsMap.get(courseId)!;
+        const stats = statsMap.get(courseId);
+        if (!stats) {
+          return;
+        }
         stats.total++;
         
         switch (record.status?.toLowerCase()) {
@@ -104,7 +108,7 @@ export const StudentAttendanceTab: React.FC<StudentAttendanceTabProps> = ({ stud
       });
 
       setCourseStats(Array.from(statsMap.values()));
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading attendance:', error);
       toast({
         title: 'Error',

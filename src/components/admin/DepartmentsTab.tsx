@@ -16,7 +16,8 @@ import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Department, School } from "@/types/examSchedule";
-import BulkUploadModal from "./BulkUploadModal";import logger from '@/lib/logger';
+import BulkUploadModal from "./BulkUploadModal";
+import logger from '@/lib/logger';
 
 
 interface DepartmentsTabProps {
@@ -108,7 +109,7 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('departments').insert(data);
             if (error) throw error;
@@ -122,7 +123,7 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
     const openEditDialog = (dept: Department) => {
         setEditingDept(dept);
         setEditDeptName(dept.dept_name);
-        setEditDeptSchoolId(dept.school_id);
+        setEditDeptSchoolId(dept.school_id || "");
         setIsEditDialogOpen(true);
     };
 
@@ -223,10 +224,10 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
                                             <div className="font-medium">{dept.dept_name}</div>
                                         </td>
                                         <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
-                                            {getSchoolName(dept.school_id)}
+                                            {getSchoolName(dept.school_id || "")}
                                         </td>
                                         <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
-                                            {new Date(dept.created_at).toLocaleDateString()}
+                                            {new Date(dept.created_at || "").toLocaleDateString()}
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">

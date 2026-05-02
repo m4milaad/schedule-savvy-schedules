@@ -55,13 +55,13 @@ interface StudentWithCourse {
  * When a column's course runs out of students, the next available course
  * that isn't already in the same column slot is used as a fallback.
  */
-function scatterStudentsIntoGrid(
+export function scatterStudentsIntoGrid(
   students: StudentWithCourse[],
   rows: number,
   columns: number
 ): (StudentSeat | null)[][] {
   const grid: (StudentSeat | null)[][] = Array.from({ length: rows }, () =>
-    Array(columns).fill(null)
+    Array.from({ length: columns }, () => null as StudentSeat | null)
   );
 
   if (students.length === 0) return grid;
@@ -70,7 +70,7 @@ function scatterStudentsIntoGrid(
   const courseQueues = new Map<string, StudentWithCourse[]>();
   students.forEach(s => {
     if (!courseQueues.has(s.course_code)) courseQueues.set(s.course_code, []);
-    courseQueues.get(s.course_code)!.push(s);
+    courseQueues.get(s.course_code)?.push(s);
   });
 
   const courseCodes = Array.from(courseQueues.keys());
@@ -80,7 +80,7 @@ function scatterStudentsIntoGrid(
   // Column c is assigned course: courseCodes[c % numCourses]
   // This gives the strict A B A B (or A B C A B C ...) pattern across every row.
   for (let c = 0; c < columns; c++) {
-    const assignedCourse = courseCodes[c % numCourses];
+    const _assignedCourse = courseCodes[c % numCourses];
 
     for (let r = 0; r < rows; r++) {
       // Try the assigned course first
@@ -89,18 +89,23 @@ function scatterStudentsIntoGrid(
 
       for (let offset = 0; offset < numCourses; offset++) {
         const code = courseCodes[(startIdx + offset) % numCourses];
-        const queue = courseQueues.get(code)!;
-        if (queue.length === 0) continue;
+        if (!code) continue;
+        const queue = courseQueues.get(code);
+        if (!queue || queue.length === 0) continue;
 
-        const student = queue.shift()!;
-        grid[r][c] = {
+        const student = queue.shift();
+        if (!student) continue;
+        const row = grid[r];
+        if (row) {
+          row[c] = {
           student_id: student.student_id,
           student_name: student.student_name,
           student_enrollment_no: student.student_enrollment_no,
           course_id: student.course_id,
           course_code: student.course_code,
           seat: { row: r + 1, column: c + 1, label: `R${r + 1}C${c + 1}` }
-        };
+          };
+        }
         placed = true;
         break;
       }
@@ -109,15 +114,19 @@ function scatterStudentsIntoGrid(
       if (!placed) {
         for (const [, queue] of courseQueues) {
           if (queue.length > 0) {
-            const student = queue.shift()!;
-            grid[r][c] = {
+            const student = queue.shift();
+            if (!student) break;
+            const row = grid[r];
+            if (row) {
+              row[c] = {
               student_id: student.student_id,
               student_name: student.student_name,
               student_enrollment_no: student.student_enrollment_no,
               course_id: student.course_id,
               course_code: student.course_code,
               seat: { row: r + 1, column: c + 1, label: `R${r + 1}C${c + 1}` }
-            };
+              };
+            }
             break;
           }
         }
@@ -184,7 +193,7 @@ export async function generateSeatingArrangement(
     // Build course code map
     const courseMap = new Map<string, { course_code: string; dept_id: string | null }>();
     datesheets.forEach(d => {
-      const course = d.courses as any;
+      const course = d.courses as { course_id: string; course_code: string; dept_id: string | null } | null;
       if (course) {
         courseMap.set(course.course_id, {
           course_code: course.course_code,
@@ -196,7 +205,8 @@ export async function generateSeatingArrangement(
     // Build student list with course info
     const students: StudentWithCourse[] = [];
     (enrollments || []).forEach(e => {
-      const student = e.students as any;
+      const student = e.students as { student_id: string; student_name: string; student_enrollment_no: string; dept_id: string | null };
+      if (!e.course_id) return;
       const courseInfo = courseMap.get(e.course_id);
       if (student && courseInfo) {
         students.push({
@@ -205,7 +215,7 @@ export async function generateSeatingArrangement(
           student_enrollment_no: student.student_enrollment_no,
           course_id: e.course_id,
           course_code: courseInfo.course_code,
-          dept_id: student.dept_id || courseInfo.dept_id
+          dept_id: student.dept_id ?? courseInfo.dept_id
         });
       }
     });
@@ -238,7 +248,7 @@ export async function generateSeatingArrangement(
       if (!studentsByDept.has(key)) {
         studentsByDept.set(key, []);
       }
-      studentsByDept.get(key)!.push(s);
+      studentsByDept.get(key)?.push(s);
     });
 
     // 5. Group venues by department
@@ -248,7 +258,7 @@ export async function generateSeatingArrangement(
       if (!venuesByDept.has(key)) {
         venuesByDept.set(key, []);
       }
-      venuesByDept.get(key)!.push(v);
+      venuesByDept.get(key)?.push(v);
     });
 
     // 6. Generate seating for each department
@@ -274,7 +284,7 @@ export async function generateSeatingArrangement(
       const courseGroups = new Map<string, StudentWithCourse[]>();
       deptStudents.forEach(s => {
         if (!courseGroups.has(s.course_code)) courseGroups.set(s.course_code, []);
-        courseGroups.get(s.course_code)!.push(s);
+        courseGroups.get(s.course_code)?.push(s);
       });
 
       // Pool of remaining students (all courses together, kept per-course for scatter)
@@ -299,9 +309,10 @@ export async function generateSeatingArrangement(
           added = false;
           for (const code of courseKeys) {
             if (venueStudents.length >= capacity) break;
-            const q = remainingByCourse.get(code)!;
-            if (q.length > 0) {
-              venueStudents.push(q.shift()!);
+            const q = remainingByCourse.get(code);
+            if (q && q.length > 0) {
+              const st = q.shift();
+              if (st) venueStudents.push(st);
               added = true;
             }
           }
@@ -332,9 +343,10 @@ export async function generateSeatingArrangement(
     }
 
     return { success: true, venues: result, unassigned };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Seating generation error:', error);
-    return { success: false, venues: [], unassigned: [], error: error.message };
+    return { success: false, venues: [], unassigned: [], error: message };
   }
 }
 
@@ -366,8 +378,8 @@ export async function saveSeatingArrangement(
     }[] = [];
 
     venues.forEach(venue => {
-      venue.seats.forEach((row, rowIndex) => {
-        row.forEach((seat, colIndex) => {
+      venue.seats.forEach((row, _rowIndex) => {
+        row.forEach((seat, _colIndex) => {
           if (seat) {
             assignments.push({
               exam_date: examDate,
@@ -392,9 +404,10 @@ export async function saveSeatingArrangement(
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Save seating error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: message };
   }
 }
 
@@ -406,7 +419,7 @@ export async function getSavedSeatingArrangement(
   deptId?: string
 ): Promise<VenueSeatingPlan[]> {
   try {
-    let query = supabase
+    const query = supabase
       .from('seat_assignments')
       .select(`
         *,
@@ -424,9 +437,9 @@ export async function getSavedSeatingArrangement(
     const venueMap = new Map<string, VenueSeatingPlan>();
     
     data.forEach(assignment => {
-      const venue = assignment.venues as any;
-      const course = assignment.courses as any;
-      const student = assignment.students as any;
+      const venue = assignment.venues as { venue_id: string; venue_name: string; rows_count: number; columns_count: number; dept_id: string | null } | null;
+      const course = assignment.courses as { course_id: string; course_code: string } | null;
+      const student = assignment.students as { student_id: string; student_name: string; student_enrollment_no: string } | null;
 
       if (!venue || !course || !student) return;
 
@@ -442,27 +455,33 @@ export async function getSavedSeatingArrangement(
           rows,
           columns,
           total_capacity: rows * columns,
-          seats: Array(rows).fill(null).map(() => Array(columns).fill(null))
+          seats: Array.from({ length: rows }, () =>
+            Array.from({ length: columns }, () => null as StudentSeat | null)
+          )
         });
       }
 
-      const venuePlan = venueMap.get(venue.venue_id)!;
+      const venuePlan = venueMap.get(venue.venue_id);
+      if (!venuePlan) return;
       const rowIdx = assignment.row_number - 1;
       const colIdx = assignment.column_number - 1;
 
       if (rowIdx >= 0 && rowIdx < venuePlan.rows && colIdx >= 0 && colIdx < venuePlan.columns) {
-        venuePlan.seats[rowIdx][colIdx] = {
-          student_id: student.student_id,
-          student_name: student.student_name,
-          student_enrollment_no: student.student_enrollment_no,
-          course_id: course.course_id,
-          course_code: course.course_code,
-          seat: {
-            row: assignment.row_number,
-            column: assignment.column_number,
-            label: assignment.seat_label || `R${assignment.row_number}C${assignment.column_number}`
-          }
-        };
+        const seatsRow = venuePlan.seats[rowIdx];
+        if (seatsRow) {
+          seatsRow[colIdx] = {
+            student_id: student.student_id,
+            student_name: student.student_name,
+            student_enrollment_no: student.student_enrollment_no,
+            course_id: course.course_id,
+            course_code: course.course_code,
+            seat: {
+              row: assignment.row_number,
+              column: assignment.column_number,
+              label: assignment.seat_label || `R${assignment.row_number}C${assignment.column_number}`
+            }
+          };
+        }
       }
     });
 

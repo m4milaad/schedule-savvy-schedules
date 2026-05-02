@@ -14,7 +14,7 @@ import logger from '@/lib/logger';
 export const AuditLogsPage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     loadProfileData();

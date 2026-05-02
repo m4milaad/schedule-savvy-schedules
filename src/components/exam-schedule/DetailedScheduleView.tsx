@@ -104,7 +104,7 @@ export const DetailedScheduleView = ({ generatedSchedule }: DetailedScheduleView
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {examsOnDate.map((exam) => (
+                {(examsOnDate || []).map((exam) => (
                   <Collapsible key={exam.id}>
                     <CollapsibleTrigger
                       onClick={() => toggleItem(exam.id)}

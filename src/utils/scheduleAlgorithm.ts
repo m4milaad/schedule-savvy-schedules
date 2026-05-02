@@ -54,15 +54,16 @@ function mergeSimilarCourses(courses: CourseTeacher[]): CourseTeacher[] {
   const mergedCourses: CourseTeacher[] = [];
   
   groupedCourses.forEach((courseGroup, normalizedCode) => {
+    const first = courseGroup[0];
+    if (!first) return;
     if (courseGroup.length === 1) {
-      mergedCourses.push(courseGroup[0]);
+      mergedCourses.push(first);
     } else {
       // Merge multiple courses with same normalized code
-      const primaryCourse = courseGroup[0];
       const mergedTeachers = courseGroup.map(c => c.teacher_name).filter(Boolean).join(', ');
       
       mergedCourses.push({
-        ...primaryCourse,
+        ...first,
         course_code: normalizedCode,
         teacher_name: mergedTeachers,
         id: `merged_${normalizedCode}_${courseGroup.map(c => c.id).join('_')}`
@@ -81,14 +82,15 @@ function hasStudentConflict(
   dateStr: string,
   context: SchedulingContext
 ): boolean {
-  const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId =>
-    context.studentCourseMap[studentId].includes(course.course_code) ||
-    context.studentCourseMap[studentId].includes(normalizeCourseCode(course.course_code))
-  );
+  const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId => {
+    const courses = context.studentCourseMap[studentId];
+    return courses?.includes(course.course_code) ||
+      courses?.includes(normalizeCourseCode(course.course_code));
+  });
   
   return studentsInCourse.some(studentId => {
     const studentDates = context.studentExamDates[studentId];
-    return studentDates && studentDates.has(dateStr);
+    return studentDates?.has(dateStr) ?? false;
   });
 }
 
@@ -102,10 +104,11 @@ function satisfiesGapRequirement(
 ): boolean {
   const gapDays = course.gap_days || 2;
   const currentDate = new Date(dateStr);
-  const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId =>
-    context.studentCourseMap[studentId].includes(course.course_code) ||
-    context.studentCourseMap[studentId].includes(normalizeCourseCode(course.course_code))
-  );
+  const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId => {
+    const courses = context.studentCourseMap[studentId];
+    return courses?.includes(course.course_code) ||
+      courses?.includes(normalizeCourseCode(course.course_code));
+  });
   
   for (const studentId of studentsInCourse) {
     const studentDates = context.studentExamDates[studentId];
@@ -137,6 +140,7 @@ function scheduleWithBacktracking(
   }
   
   const course = courses[courseIndex];
+  if (!course) return false;
   
   // Skip if already scheduled (merged courses)
   if (context.scheduledCourses.has(course.normalizedCode)) {
@@ -146,7 +150,8 @@ function scheduleWithBacktracking(
   // Try each available date
   for (let dateIndex = 0; dateIndex < context.examDates.length; dateIndex++) {
     const examDate = context.examDates[dateIndex];
-    const dateStr = examDate.toISOString().split('T')[0];
+    if (!examDate) continue;
+    const dateStr = examDate.toISOString().split('T')[0] ?? '';
     
     // Check constraints
     if (hasStudentConflict(course, dateStr, context)) continue;
@@ -154,13 +159,13 @@ function scheduleWithBacktracking(
     
     // Check daily exam limit (max 2 exams per day)
     const dailyLimit = examDate.getDay() === 5 ? 1 : 2; // Friday: 1 exam, others: 2 exams
-    if ((context.dateScheduleCount[dateStr] || 0) >= dailyLimit) continue;
+    if ((context.dateScheduleCount[dateStr] ?? 0) >= dailyLimit) continue;
     
     // Attempt to schedule
     const scheduleItem: ExamScheduleItem = {
       id: course.id,
       course_code: course.course_code,
-      teacher_name: course.teacher_name || "",
+      teacher_name: course.teacher_name ?? "",
       exam_date: dateStr,
       day_of_week: examDate.toLocaleDateString('en-US', { weekday: 'long' }),
       time_slot: getExamTimeSlot(examDate),
@@ -177,19 +182,20 @@ function scheduleWithBacktracking(
     // Add to schedule
     context.schedule.push(scheduleItem);
     context.scheduledCourses.add(course.normalizedCode);
-    context.dateScheduleCount[dateStr] = (context.dateScheduleCount[dateStr] || 0) + 1;
+    context.dateScheduleCount[dateStr] = (context.dateScheduleCount[dateStr] ?? 0) + 1;
     
     // Update student exam dates
-    const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId =>
-      context.studentCourseMap[studentId].includes(course.course_code) ||
-      context.studentCourseMap[studentId].includes(normalizeCourseCode(course.course_code))
-    );
+    const studentsInCourse = Object.keys(context.studentCourseMap).filter(studentId => {
+      const courses = context.studentCourseMap[studentId];
+      return courses?.includes(course.course_code) ||
+        courses?.includes(normalizeCourseCode(course.course_code));
+    });
     
     studentsInCourse.forEach(studentId => {
       if (!context.studentExamDates[studentId]) {
         context.studentExamDates[studentId] = new Set();
       }
-      context.studentExamDates[studentId].add(dateStr);
+      context.studentExamDates[studentId]?.add(dateStr);
     });
     
     // Recursively schedule remaining courses
@@ -200,9 +206,9 @@ function scheduleWithBacktracking(
     // Backtrack
     context.schedule.pop();
     context.scheduledCourses.delete(course.normalizedCode);
-    context.dateScheduleCount[dateStr]--;
+    context.dateScheduleCount[dateStr] = (context.dateScheduleCount[dateStr] ?? 1) - 1;
     if (context.dateScheduleCount[dateStr] === 0) {
-      delete context.dateScheduleCount[dateStr];
+      Reflect.deleteProperty(context.dateScheduleCount, dateStr);
     }
     
     studentsInCourse.forEach(studentId => {
@@ -216,13 +222,13 @@ function scheduleWithBacktracking(
 /**
  * Enhanced exam schedule generation with all algorithm improvements
  */
-export async function generateEnhancedSchedule(
+export function generateEnhancedSchedule(
   courses: CourseTeacher[],
   startDate: Date,
   endDate: Date,
   holidays: Date[],
   studentCourseMap: Record<string, string[]>
-): Promise<ExamScheduleItem[]> {
+): ExamScheduleItem[] {
   
   // Step 1: Merge similar courses (BT/BTCS)
   const mergedCourses = mergeSimilarCourses(courses);
@@ -276,13 +282,13 @@ export async function generateEnhancedSchedule(
 /**
  * Performance optimized version for large datasets
  */
-export async function generateOptimizedSchedule(
+export function generateOptimizedSchedule(
   courses: CourseTeacher[],
   startDate: Date,
   endDate: Date,
   holidays: Date[],
   studentCourseMap: Record<string, string[]>
-): Promise<ExamScheduleItem[]> {
+): ExamScheduleItem[] {
   
   // Pre-compute student-course conflicts for better performance
   const studentConflictMap = new Map<string, Set<string>>();
@@ -293,7 +299,10 @@ export async function generateOptimizedSchedule(
       if (!studentConflictMap.has(normalizedCode)) {
         studentConflictMap.set(normalizedCode, new Set());
       }
-      studentConflictMap.get(normalizedCode)!.add(studentId);
+      const conflicts = studentConflictMap.get(normalizedCode);
+      if (conflicts) {
+        conflicts.add(studentId);
+      }
     });
   });
   

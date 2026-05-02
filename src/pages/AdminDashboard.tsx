@@ -17,7 +17,7 @@ import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
     const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
-    const [profileData, setProfileData] = useState<any>(null);
+    const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
     const [activeTab, setActiveTab] = useState<string>("overview");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,13 +54,14 @@ const AdminDashboard: React.FC = () => {
 
     useEffect(() => {
         checkUserRole();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (!userRole) return;
         const tab = searchParams.get("tab");
         setActiveTab(tab || "overview");
-    }, [userRole]);
+    }, [userRole, searchParams]);
 
     const checkUserRole = async () => {
         try {
@@ -86,7 +87,9 @@ const AdminDashboard: React.FC = () => {
             setAuthUserId(user.id);
 
             if (roles && roles.length > 0) {
-                const role = roles[0].role as "admin" | "department_admin";
+                const roleObj = roles[0];
+                if (!roleObj) return;
+                const role = roleObj.role as "admin" | "department_admin";
                 setUserRole(role);
 
                 if (role === "department_admin" && profile && !profile.is_approved) {
@@ -117,7 +120,7 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
-    const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+    const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
 
@@ -155,14 +158,14 @@ const AdminDashboard: React.FC = () => {
     const loadSchools = async () => {
         const { data, error } = await supabase.from("schools").select("*").order("school_name");
         if (error) throw error;
-        setSchools(data || []);
+        setSchools((data as School[]) || []);
     };
     const loadDepartments = async () => {
         const { data, error } = await supabase.from("departments").select("*").order("dept_name");
         if (error) throw error;
         setDepartments(data || []);
     };
-    const loadCourses = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+    const loadCourses = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         let q = supabase.from("courses").select("*");
@@ -171,9 +174,9 @@ const AdminDashboard: React.FC = () => {
         }
         const { data, error } = await q.order("course_name");
         if (error) throw error;
-        setCourses(data || []);
+        setCourses((data as Course[]) || []);
     };
-    const loadTeachers = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+    const loadTeachers = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         let q = supabase.from("teachers").select("*");
@@ -182,22 +185,22 @@ const AdminDashboard: React.FC = () => {
         }
         const { data, error } = await q.order("teacher_name");
         if (error) throw error;
-        setTeachers(data || []);
+        setTeachers((data as Teacher[]) || []);
     };
     const loadVenues = async () => {
         const { data, error } = await supabase.from("venues").select("*").order("venue_name");
         if (error) throw error;
-        setVenues(data || []);
+        setVenues((data as Venue[]) || []);
     };
     const loadSessions = async () => {
         const { data, error } = await supabase.from("sessions").select("*").order("session_year", { ascending: false });
         if (error) throw error;
-        setSessions(data || []);
+        setSessions((data as Session[]) || []);
     };
     const loadHolidays = async () => {
         const { data, error } = await supabase.from("holidays").select("*").order("holiday_date");
         if (error) throw error;
-        const transformed = (data || []).map((h: any) => ({
+        const transformed = (data || []).map((h: Record<string, unknown>) => ({
             id: h.holiday_id,
             holiday_date: h.holiday_date,
             holiday_name: h.holiday_name,
@@ -206,7 +209,7 @@ const AdminDashboard: React.FC = () => {
         }));
         setHolidays(transformed);
     };
-    const loadStudents = async (role?: "admin" | "department_admin" | null, profile?: any) => {
+    const loadStudents = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         try {
@@ -224,11 +227,11 @@ const AdminDashboard: React.FC = () => {
 
             const { data: profilesData } = await profilesQuery;
 
-            const existingStudentIds = new Set(studentsData?.map((s: any) => s.student_id) || []);
+            const existingStudentIds = new Set(studentsData?.map((s: Record<string, unknown>) => s.student_id) || []);
 
             const profileOnlyStudents = (profilesData || [])
-                .filter((p: any) => !existingStudentIds.has(p.id))
-                .map((p: any) => ({
+                .filter((p: Record<string, unknown>) => !existingStudentIds.has(p.id))
+                .map((p: Record<string, unknown>) => ({
                     student_id: p.id,
                     student_name: p.full_name || 'Unknown',
                     student_enrollment_no: p.student_enrollment_no || `PENDING-${p.id}`,
@@ -244,7 +247,7 @@ const AdminDashboard: React.FC = () => {
                 }));
 
             const allStudents = [...(studentsData || []), ...profileOnlyStudents];
-            setStudents(allStudents);
+            setStudents(allStudents as Student[]);
         } catch (error) {
             logger.error('Failed to load students:', error);
             toast({

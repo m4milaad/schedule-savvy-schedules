@@ -1,5 +1,17 @@
 import ExcelJS from 'exceljs';
 
+function toCellText(value: ExcelJS.CellValue | undefined): string {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) {
+    return String(value);
+  }
+  if (typeof value === 'object' && 'richText' in value) {
+    return value.richText.map((part) => part.text).join('');
+  }
+  return '';
+}
+
 /**
  * Create a new workbook
  */
@@ -10,7 +22,7 @@ export function createWorkbook(): ExcelJS.Workbook {
 /**
  * Add a worksheet with data from JSON array
  */
-export function addWorksheetFromJson<T extends Record<string, any>>(
+export function addWorksheetFromJson<T extends Record<string, unknown>>(
   workbook: ExcelJS.Workbook,
   sheetName: string,
   data: T[],
@@ -28,7 +40,7 @@ export function addWorksheetFromJson<T extends Record<string, any>>(
       width: col.width || Math.max(col.label.length + 2, 12),
     }));
   } else {
-    const keys = Object.keys(data[0]);
+    const keys = Object.keys(data[0] || {});
     worksheet.columns = keys.map((key) => ({
       header: key,
       key,
@@ -48,7 +60,7 @@ export function addWorksheetFromJson<T extends Record<string, any>>(
   // Add data rows
   data.forEach((item) => {
     if (columns) {
-      const rowData: Record<string, any> = {};
+      const rowData: Record<string, unknown> = {};
       columns.forEach((col) => {
         rowData[String(col.key)] = item[col.key];
       });
@@ -69,7 +81,7 @@ export function autoSizeColumns(worksheet: ExcelJS.Worksheet, maxWidth = 50): vo
     let maxLength = column.header?.toString().length || 10;
 
     column.eachCell?.({ includeEmpty: false }, (cell) => {
-      const cellLength = cell.value?.toString().length || 0;
+      const cellLength = toCellText(cell.value).length;
       if (cellLength > maxLength) {
         maxLength = cellLength;
       }
@@ -104,7 +116,7 @@ export async function downloadWorkbook(
 /**
  * Read Excel file and return JSON data
  */
-export async function readExcelFile(file: File): Promise<any[]> {
+export async function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -114,18 +126,18 @@ export async function readExcelFile(file: File): Promise<any[]> {
     throw new Error('No worksheet found in the file');
   }
 
-  const jsonData: any[] = [];
+  const jsonData: Record<string, unknown>[] = [];
   const headers: string[] = [];
 
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) {
       // First row is headers
       row.eachCell((cell, colNumber) => {
-        headers[colNumber - 1] = cell.value?.toString() || `Column${colNumber}`;
+        headers[colNumber - 1] = toCellText(cell.value) || `Column${colNumber}`;
       });
     } else {
       // Data rows
-      const rowData: Record<string, any> = {};
+      const rowData: Record<string, unknown> = {};
       row.eachCell((cell, colNumber) => {
         const header = headers[colNumber - 1];
         if (header) {
@@ -144,7 +156,7 @@ export async function readExcelFile(file: File): Promise<any[]> {
 /**
  * Export data to Excel format (convenience function)
  */
-export async function exportToExcel<T extends Record<string, any>>(
+export async function exportToExcel<T extends Record<string, unknown>>(
   data: T[],
   filename: string,
   sheetName: string = 'Sheet1',

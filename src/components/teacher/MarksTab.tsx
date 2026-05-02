@@ -9,12 +9,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, Save, FileSpreadsheet, Edit, Lock } from 'lucide-react';
-import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';import logger from '@/lib/logger';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
+import logger from '@/lib/logger';
 
 
 interface MarksTabProps {
   teacherId: string;
-  courses: any[];
+  courses: Record<string, unknown>[];
 }
 
 interface StudentMark {
@@ -79,13 +80,13 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       // Combine data
       const marksMap = new Map(existingMarks?.map(m => [m.student_id, m]) || []);
       
-      const studentMarks: StudentMark[] = enrollments?.map(e => {
-        const student = e.students as any;
-        const existing = marksMap.get(e.student_id);
+      const studentMarks: StudentMark[] = (enrollments || []).map(e => {
+        const student = e.students as { student_name: string; student_enrollment_no: string } | null;
+        const existing = marksMap.get(e.student_id || '');
         
         return {
           id: existing?.id,
-          student_id: e.student_id,
+          student_id: e.student_id || '',
           student_name: student?.student_name || 'Unknown',
           enrollment_no: student?.student_enrollment_no || 'N/A',
           test_1_marks: existing?.test_1_marks ?? null,
@@ -99,7 +100,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       }) || [];
 
       setMarks(studentMarks);
-    } catch (error: any) {
+    } catch (_error: unknown) {
+      console.error(error);
       logger.error('Error loading marks:', error);
       toast({
         title: 'Error',
@@ -133,13 +135,15 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
   const handleMarkChange = (index: number, field: keyof StudentMark, value: string) => {
     const newMarks = [...marks];
+    const mark = newMarks[index];
+    if (!mark) return;
     const numValue = value === '' ? null : parseFloat(value);
-    (newMarks[index] as any)[field] = numValue;
+    (mark as Record<string, unknown>)[field] = numValue;
     
     // Recalculate total and grade
-    const total = calculateTotal(newMarks[index]);
-    newMarks[index].total_marks = total;
-    newMarks[index].grade = calculateGrade(total);
+    const total = calculateTotal(mark);
+    mark.total_marks = total;
+    mark.grade = calculateGrade(total);
     
     setMarks(newMarks);
   };
@@ -183,7 +187,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       toast({ title: 'Success', description: 'Marks saved successfully' });
       loadMarks();
-    } catch (error: any) {
+    } catch (_error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save marks',
@@ -218,20 +223,21 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       const jsonData = await readExcelFile(file);
 
       const newMarks = [...marks];
-      jsonData.forEach((row: any) => {
+      jsonData.forEach((row: Record<string, unknown>) => {
         const enrollmentNo = row['Enrollment No'];
         const markIndex = newMarks.findIndex(m => m.enrollment_no === enrollmentNo);
         
-        if (markIndex !== -1) {
-          newMarks[markIndex].test_1_marks = row['Test I (20)'] || null;
-          newMarks[markIndex].test_2_marks = row['Test II (20)'] || null;
-          newMarks[markIndex].presentation_marks = row['Presentation (20)'] || null;
-          newMarks[markIndex].assignment_marks = row['Assignment (20)'] || null;
-          newMarks[markIndex].attendance_marks = row['Attendance (20)'] || null;
+        const mark = markIndex !== -1 ? newMarks[markIndex] : undefined;
+        if (mark) {
+          mark.test_1_marks = row['Test I (20)'] || null;
+          mark.test_2_marks = row['Test II (20)'] || null;
+          mark.presentation_marks = row['Presentation (20)'] || null;
+          mark.assignment_marks = row['Assignment (20)'] || null;
+          mark.attendance_marks = row['Attendance (20)'] || null;
           
-          const total = calculateTotal(newMarks[markIndex]);
-          newMarks[markIndex].total_marks = total;
-          newMarks[markIndex].grade = calculateGrade(total);
+          const total = calculateTotal(mark);
+          mark.total_marks = total;
+          mark.grade = calculateGrade(total);
         }
       });
 

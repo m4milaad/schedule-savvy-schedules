@@ -9,7 +9,6 @@ import { Separator } from '@/components/ui/separator';
 import {
   CalendarDays,
   Grid3X3,
-  Users,
   RefreshCw,
   Save,
   Trash2,
@@ -20,9 +19,7 @@ import {
   FileDown,
   GripVertical,
   Search,
-  X,
-  LayoutGrid,
-  Maximize2
+  X
 } from 'lucide-react';
 import { useSeatingAssignment } from '@/hooks/useSeatingAssignment';
 import { VenueSeatingPlan, StudentSeat } from '@/utils/seatingAlgorithm';
@@ -38,7 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { exportAllVenuesToPdf, exportSingleVenueToPdf } from '@/utils/seatingPdfExport';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,7 +56,6 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
   const {
     savedSeating,
     generatedPlan,
-    loadingSaved,
     isGenerating,
     isSaving,
     isClearing,
@@ -140,7 +136,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
       try {
         const filename = exportAllVenuesToPdf(displayVenues, selectedDate);
         toast.success(`Exported seating chart: ${filename}`);
-      } catch (error) {
+      } catch {
         toast.error('Failed to export PDF');
       }
     }
@@ -151,7 +147,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
       try {
         const filename = exportSingleVenueToPdf(currentVenue, selectedDate);
         toast.success(`Exported: ${filename}`);
-      } catch (error) {
+      } catch {
         toast.error('Failed to export PDF');
       }
     }
@@ -166,7 +162,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
     // Parse seat positions from droppable IDs (format: venue-{venueId}-seat-{row}-{col})
     const parsePosition = (droppableId: string) => {
       const match = droppableId.match(/venue-(.+)-seat-(\d+)-(\d+)/);
-      if (match) {
+      if (match && match[1] && match[2] && match[3]) {
         return { venueId: match[1], row: parseInt(match[2]), col: parseInt(match[3]) };
       }
       return null;
@@ -189,8 +185,13 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
     if (sourceVenueIndex === -1 || destVenueIndex === -1) return;
 
     // Get source and destination seats
-    const sourceSeat = venues[sourceVenueIndex].seats[sourcePos.row][sourcePos.col];
-    const destSeat = venues[destVenueIndex].seats[destPos.row][destPos.col];
+    const sourceRow = venues[sourceVenueIndex]?.seats[sourcePos.row];
+    const destRow = venues[destVenueIndex]?.seats[destPos.row];
+
+    if (!sourceRow || !destRow) return;
+
+    const sourceSeat = sourceRow[sourcePos.col];
+    const destSeat = destRow[destPos.col];
 
     // Swap seats
     if (sourceSeat) {
@@ -202,9 +203,9 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
           label: `R${destPos.row + 1}C${destPos.col + 1}`
         }
       };
-      venues[destVenueIndex].seats[destPos.row][destPos.col] = newSourceSeat;
+      destRow[destPos.col] = newSourceSeat;
     } else {
-      venues[destVenueIndex].seats[destPos.row][destPos.col] = null;
+      destRow[destPos.col] = null;
     }
 
     if (destSeat) {
@@ -216,9 +217,9 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
           label: `R${sourcePos.row + 1}C${sourcePos.col + 1}`
         }
       };
-      venues[sourceVenueIndex].seats[sourcePos.row][sourcePos.col] = newDestSeat;
+      sourceRow[sourcePos.col] = newDestSeat;
     } else {
-      venues[sourceVenueIndex].seats[sourcePos.row][sourcePos.col] = null;
+      sourceRow[sourcePos.col] = null;
     }
 
     setLocalVenues(venues);
@@ -245,7 +246,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
     'bg-cyan-50/50 dark:bg-cyan-900/10 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300',
   ];
   Array.from(courseCodes).sort().forEach((code, idx) => {
-    courseColorMap.set(code, colors[idx % colors.length]);
+    courseColorMap.set(code, colors[idx % colors.length] ?? (colors[0] as string));
   });
 
   return (

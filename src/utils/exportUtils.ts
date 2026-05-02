@@ -4,11 +4,20 @@ import { exportToExcel as excelJsExport, createWorkbook, addWorksheetFromJson, d
 /**
  * Export data to CSV format
  */
-export function exportToCSV<T extends Record<string, any>>(
+export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
   filename: string,
   columns?: { key: keyof T; label: string }[]
 ) {
+  const toCsvCell = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) {
+      return String(value);
+    }
+    return JSON.stringify(value);
+  };
+
   if (data.length === 0) {
     throw new Error('No data to export');
   }
@@ -16,19 +25,17 @@ export function exportToCSV<T extends Record<string, any>>(
   // Prepare headers
   const headers = columns
     ? columns.map((col) => col.label)
-    : Object.keys(data[0]);
+    : Object.keys(data[0] || {});
 
   // Prepare rows
   const rows = data.map((item) => {
     if (columns) {
       return columns.map((col) => {
         const value = item[col.key];
-        return value !== null && value !== undefined ? String(value) : '';
+        return toCsvCell(value);
       });
     }
-    return Object.values(item).map((val) =>
-      val !== null && val !== undefined ? String(val) : ''
-    );
+    return Object.values(item).map((val) => toCsvCell(val));
   });
 
   // Create CSV content
@@ -47,7 +54,7 @@ export function exportToCSV<T extends Record<string, any>>(
 /**
  * Export data to Excel format
  */
-export async function exportToExcel<T extends Record<string, any>>(
+export async function exportToExcel<T extends Record<string, unknown>>(
   data: T[],
   filename: string,
   sheetName: string = 'Sheet1',
@@ -90,7 +97,7 @@ function downloadBlob(blob: Blob, filename: string) {
 /**
  * Export table data with custom formatting
  */
-export async function exportTableData<T extends Record<string, any>>(
+export async function exportTableData<T extends Record<string, unknown>>(
   data: T[],
   filename: string,
   format: 'csv' | 'excel' | 'json',
@@ -111,7 +118,7 @@ export async function exportTableData<T extends Record<string, any>>(
         exportToJSON(data, filename);
         break;
       default:
-        throw new Error(`Unsupported format: ${format}`);
+        throw new Error('Unsupported export format');
     }
     return true;
   } catch (error) {

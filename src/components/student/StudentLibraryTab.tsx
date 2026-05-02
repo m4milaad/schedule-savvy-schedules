@@ -7,7 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Library, Search, BookOpen, Calendar, AlertCircle, RefreshCw, RotateCcw, Clock } from 'lucide-react';
-import { format, differenceInDays, addDays } from 'date-fns';import logger from '@/lib/logger';
+import { format, differenceInDays, addDays } from 'date-fns';
+import logger from '@/lib/logger';
+import { LibraryBookSchema } from '@/schemas/database';
 
 
 interface StudentLibraryTabProps {
@@ -76,7 +78,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       return;
     }
 
-    const transformed = (data || []).map((issue: any) => ({
+    const transformed = (data || []).map((issue: Record<string, unknown>) => ({
       ...issue,
       book: issue.library_books
     }));

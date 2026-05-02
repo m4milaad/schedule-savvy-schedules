@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Users, Clock, User, Building2, Edit2, Check, X } from "lucide-react";
 import { CourseTeacher } from "@/types/examSchedule";
-import { supabase } from "@/integrations/supabase/client";import logger from '@/lib/logger';
+import { supabase } from "@/integrations/supabase/client";
+import logger from '@/lib/logger';
 
 
 interface CourseEnrollmentCardProps {
@@ -161,7 +162,7 @@ export const CourseEnrollmentCard = ({
             <div className="flex items-center gap-1 bg-background/50 px-2 py-1 rounded-md">
               <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               {editingGap === courseTeacher.id ? (
-                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1">
                   <Input
                     type="number"
                     value={tempGapValue}
@@ -188,7 +189,7 @@ export const CourseEnrollmentCard = ({
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1">
                   <span className="text-xs font-medium">{courseTeacher.gap_days}d</span>
                   <Button
                     size="sm"

@@ -23,7 +23,7 @@
     },
     "skipLibCheck": true,
     "strict": true,
-    "strictNullChecks": false,
+    "noUncheckedIndexedAccess": true,
     "target": "ES2020",
     "useDefineForClassFields": true
   },

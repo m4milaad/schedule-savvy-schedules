@@ -8,11 +8,21 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "build:chatbot-kb": "node scripts/generate-chatbot-kb.mjs",
     "android:copy": "npm run build && powershell -NoProfile -ExecutionPolicy Bypass -Command \"if (Test-Path 'android\\\\app\\\\src\\\\main\\\\assets\\\\public') { Remove-Item -Recurse -Force 'android\\\\app\\\\src\\\\main\\\\assets\\\\public' }; New-Item -ItemType Directory -Force -Path 'android\\\\app\\\\src\\\\main\\\\assets\\\\public' | Out-Null; Copy-Item -Path 'dist\\\\*' -Destination 'android\\\\app\\\\src\\\\main\\\\assets\\\\public' -Recurse -Force\"",
     "android:build": "cd android && .\\gradlew assembleRelease",
-    "android:install": "cd android && .\\gradlew installRelease"
+    "android:install": "cd android && .\\gradlew installRelease",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "tsc-files --noEmit"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -78,22 +88,33 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.9.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
+    "lint-staged": "^16.4.0",
     "lovable-tagger": "^1.1.9",
+    "msw": "^2.14.2",
     "postcss": "^8.4.47",
     "supabase": "^2.82.0",
     "tailwindcss": "^3.4.11",
+    "tsc-files": "^1.1.4",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "vitest": "^4.1.5"
   }
 }

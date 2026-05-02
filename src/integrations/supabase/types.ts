@@ -1654,6 +1654,8 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
+/** Supabase-codegen conditional types use `never` defaults that trip no-redundant-type-constituents. */
+/* eslint-disable @typescript-eslint/no-redundant-type-constituents -- generated Database types */
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -1670,6 +1672,7 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+/* eslint-enable @typescript-eslint/no-redundant-type-constituents */
 
 export const Constants = {
   public: {

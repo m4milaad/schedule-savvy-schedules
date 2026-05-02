@@ -188,7 +188,7 @@ export const useExamData = () => {
           .eq('is_active', true);
 
         // Get unique student IDs
-        const studentIds = [...new Set((enrollmentsData || []).map(e => e.student_id).filter(Boolean))];
+        const studentIds = [...new Set((enrollmentsData || []).map(e => e.student_id).filter((id): id is string => id != null))];
 
         // Fetch student details
         const { data: studentsData } = await supabase
@@ -202,19 +202,24 @@ export const useExamData = () => {
         );
 
         // Group enrollments by course_id with student details
-        const enrollmentsByCourse = new Map<string, any[]>();
+        const enrollmentsByCourse = new Map<string, { student_id: string; student_name: string; student_enrollment_no: string; abc_id?: string }[]>();
         (enrollmentsData || []).forEach(enrollment => {
           const courseId = enrollment.course_id;
-          const student = studentMap.get(enrollment.student_id);
+          if (!courseId) return;
+          const student = studentMap.get(enrollment.student_id ?? '');
           if (!enrollmentsByCourse.has(courseId)) {
             enrollmentsByCourse.set(courseId, []);
           }
           if (student) {
-            enrollmentsByCourse.get(courseId)!.push({
+            const studentsForCourse = enrollmentsByCourse.get(courseId);
+            if (!studentsForCourse) {
+              return;
+            }
+            studentsForCourse.push({
               student_id: student.student_id,
               student_name: student.student_name,
               student_enrollment_no: student.student_enrollment_no,
-              abc_id: student.abc_id
+              abc_id: student.abc_id ?? undefined
             });
           }
         });
@@ -284,7 +289,7 @@ export const useExamData = () => {
     }
   };
 
-  const updateCourseGap = async (courseId: string, newGap: number) => {
+  const updateCourseGap = (courseId: string, newGap: number) => {
     try {
       // For now, we'll just update the local state
       // In a real implementation, you'd want to store gap days in the database
@@ -308,12 +313,13 @@ export const useExamData = () => {
 
   const saveScheduleToDatabase = async (schedule: ExamScheduleItem[]) => {
     try {
-      // Get or create a default session
-      let { data: sessionData, error: sessionError } = await supabase
+      const sessionResult = await supabase
         .from('sessions')
         .select('session_id')
         .eq('session_name', 'Current Session')
         .maybeSingle();
+      let sessionData = sessionResult.data;
+      const sessionError = sessionResult.error;
 
       if (sessionError) throw sessionError;
 
@@ -331,12 +337,13 @@ export const useExamData = () => {
         sessionData = newSession;
       }
 
-      // Get or create a default venue
-      let { data: venueData, error: venueError } = await supabase
+      const venueResult = await supabase
         .from('venues')
         .select('venue_id')
         .eq('venue_name', 'Main Hall')
         .maybeSingle();
+      let venueData = venueResult.data;
+      const venueError = venueResult.error;
 
       if (venueError) throw venueError;
 
@@ -370,12 +377,13 @@ export const useExamData = () => {
       const skippedCourses = [];
       
       for (const exam of schedule) {
-        // Get course_id from course_code - try exact match first, then normalized match
-        let { data: courseData, error: courseError } = await supabase
+        const courseResult = await supabase
           .from('courses')
           .select('course_id, course_code')
           .eq('course_code', exam.course_code)
           .maybeSingle();
+        let courseData = courseResult.data;
+        const courseError = courseResult.error;
 
         // If not found with exact match, try finding original code for normalized codes
         if (!courseData && !courseError) {
@@ -447,9 +455,10 @@ export const useExamData = () => {
   };
 
   useEffect(() => {
-    loadCourseTeachers();
-    loadHolidays();
-    loadLastSchedule();
+    void loadCourseTeachers();
+    void loadHolidays();
+    void loadLastSchedule();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

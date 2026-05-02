@@ -19,12 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';import logger from '@/lib/logger';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import logger from '@/lib/logger';
 
 
 interface AttendanceTabProps {
   teacherId: string;
-  courses: any[];
+  courses: Record<string, unknown>[];
 }
 
 interface StudentAttendance {
@@ -94,20 +95,20 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
       const attendanceMap = new Map(existingAttendance?.map(a => [a.student_id, a]) || []);
 
       const studentAttendance: StudentAttendance[] = enrollments?.map(e => {
-        const student = e.students as any;
+        const student = e.students as { student_name: string; student_enrollment_no: string } | null;
         const existing = attendanceMap.get(e.student_id);
         
         return {
-          student_id: e.student_id,
+          student_id: e.student_id || '',
           student_name: student?.student_name || 'Unknown',
           enrollment_no: student?.student_enrollment_no || 'N/A',
-          status: (existing?.status as StudentAttendance['status']) || 'present',
+          status: ((existing?.status as Record<string, unknown>) || 'present'),
           existing_id: existing?.id,
         };
       }) || [];
 
       setAttendance(studentAttendance);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading attendance:', error);
       toast({
         title: 'Error',
@@ -121,8 +122,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
   const handleStatusChange = (index: number, status: StudentAttendance['status']) => {
     const newAttendance = [...attendance];
-    newAttendance[index].status = status;
-    setAttendance(newAttendance);
+    const entry = newAttendance[index];
+    if (entry) {
+      entry.status = status;
+    }
+    setAttendance(newAttendance as Record<string, unknown>);
   };
 
   const saveAttendance = async () => {
@@ -157,7 +161,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       toast({ title: 'Success', description: 'Attendance saved successfully' });
       loadAttendance();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to save attendance',
@@ -241,9 +245,9 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       // Add data rows
       enrollments?.forEach(e => {
-        const student = e.students as any;
+        const student = e.students as { student_name: string; student_enrollment_no: string } | null;
         worksheet.addRow({
-          student_id: e.student_id,
+          student_id: e.student_id || '',
           enrollment_no: student?.student_enrollment_no || 'N/A',
           student_name: student?.student_name || 'Unknown',
           status: 'present', // Default to present
@@ -302,7 +306,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         title: 'Template Downloaded',
         description: 'Fill in the attendance and upload it back',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error downloading template:', error);
       toast({
         title: 'Error',
@@ -392,7 +396,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           }
 
           result.success++;
-        } catch (err: any) {
+        } catch (err: Record<string, unknown>) {
           result.failed++;
           result.errors.push(`Student ${studentId}: ${err.message}`);
         }
@@ -407,7 +411,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         });
         loadAttendance();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error uploading file:', error);
       toast({
         title: 'Upload Failed',

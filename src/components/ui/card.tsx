@@ -30,9 +30,10 @@ const CardHeader = React.forwardRef<
 CardHeader.displayName = "CardHeader"
 
 const CardTitle = React.forwardRef<
-  HTMLParagraphElement,
+  HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
+  // Render children explicitly so heading content is always discoverable by a11y linting.
   <h3
     ref={ref}
     className={cn(
@@ -40,7 +41,9 @@ const CardTitle = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {props.children}
+  </h3>
 ))
 CardTitle.displayName = "CardTitle"
 

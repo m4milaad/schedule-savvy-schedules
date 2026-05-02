@@ -15,7 +15,8 @@ import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { School } from "@/types/examSchedule";
-import BulkUploadModal from "./BulkUploadModal";import logger from '@/lib/logger';
+import BulkUploadModal from "./BulkUploadModal";
+import logger from '@/lib/logger';
 
 
 interface SchoolsTabProps {
@@ -96,7 +97,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('schools').insert(data);
             if (error) throw error;

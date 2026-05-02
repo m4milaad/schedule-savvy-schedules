@@ -103,7 +103,7 @@ export function CookieConsentBanner() {
               item.type === "link" ? (
                 <Link
                   key={item.label}
-                  to={item.to!}
+                  to={item.to}
                   className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground hover:bg-accent"
                 >
                   {item.label}
