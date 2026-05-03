@@ -33,12 +33,11 @@ export const generateExamSchedulePDF = (
   // Table headers
   const headers = ['Course Code', 'Teacher Code', 'Program & Semester', 'Exam Date', 'Day', 'Time Slot'];
   const headerY = 65;
-  const columnWidths = [30, 25, 35, 30, 25, 35];
   const columnX = [15, 45, 70, 105, 135, 160];
   
   // Draw header
   doc.setFontSize(10);
-  doc.setFont(undefined, 'bold');
+  doc.setFont('helvetica', 'bold');
   
   // Header background
   doc.setFillColor(240, 240, 240);
@@ -46,11 +45,11 @@ export const generateExamSchedulePDF = (
   
   // Header text
   headers.forEach((header, index) => {
-    doc.text(header, columnX[index], headerY, { align: 'left' });
+    doc.text(header, columnX[index] || 0, headerY, { align: 'left' });
   });
   
   // Draw table data
-  doc.setFont(undefined, 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   
   let currentY = headerY + 15;
@@ -89,12 +88,12 @@ export const generateExamSchedulePDF = (
       : 'N/A';
     
     // Data
-    doc.text(item.course_code, columnX[0], currentY + 2);
-    doc.text(item.teacher_code, columnX[1], currentY + 2);
-    doc.text(semesterDisplay, columnX[2], currentY + 2);
-    doc.text(new Date(item.exam_date).toLocaleDateString(), columnX[3], currentY + 2);
-    doc.text(item.day_of_week, columnX[4], currentY + 2);
-    doc.text(item.time_slot, columnX[5], currentY + 2);
+    doc.text(item.course_code, columnX[0] || 0, currentY + 2);
+    doc.text(item.teacher_code, columnX[1] || 0, currentY + 2);
+    doc.text(semesterDisplay, columnX[2] || 0, currentY + 2);
+    doc.text(new Date(item.exam_date).toLocaleDateString(), columnX[3] || 0, currentY + 2);
+    doc.text(item.day_of_week, columnX[4] || 0, currentY + 2);
+    doc.text(item.time_slot, columnX[5] || 0, currentY + 2);
     
     currentY += rowHeight;
     

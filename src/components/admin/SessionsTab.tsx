@@ -19,7 +19,8 @@ import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@/types/examSchedule";
-import BulkUploadModal from "./BulkUploadModal";import logger from '@/lib/logger';
+import BulkUploadModal from "./BulkUploadModal";
+import logger from '@/lib/logger';
 
 
 interface SessionsTabProps {
@@ -108,7 +109,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('sessions').insert(data);
             if (error) throw error;

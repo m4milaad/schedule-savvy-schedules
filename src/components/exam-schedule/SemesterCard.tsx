@@ -84,7 +84,15 @@ export const SemesterCard = ({
                     ? "bg-blue-50 border-blue-200"
                     : "bg-white border-gray-200 hover:bg-gray-50"
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => onToggleCourse(ct.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onToggleCourse(ct.id);
+                  }
+                }}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -112,20 +120,24 @@ export const SemesterCard = ({
                         )}
                       </div>
                       {editingGap === ct.id ? (
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1">
                           <Input
                             type="number"
                             min="0"
                             max="10"
                             value={tempGapValue}
                             onChange={(e) => onTempGapChange(parseInt(e.target.value) || 0)}
+                            onClick={(e) => e.stopPropagation()}
                             className="w-16 h-6 text-xs"
                           />
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-6 w-6 p-0"
-                            onClick={() => onSaveGap(ct.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSaveGap(ct.id);
+                            }}
                           >
                             <Check className="w-3 h-3" />
                           </Button>
@@ -133,7 +145,10 @@ export const SemesterCard = ({
                             size="sm"
                             variant="ghost"
                             className="h-6 w-6 p-0"
-                            onClick={onCancelGap}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancelGap();
+                            }}
                           >
                             <X className="w-3 h-3" />
                           </Button>

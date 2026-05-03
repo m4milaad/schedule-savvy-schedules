@@ -13,3 +13,8 @@ slowapi==0.1.9
 torch==2.11.0
 transformers==4.55.4
 uvicorn[standard]==0.35.0
+pytest>=8.0
+pytest-asyncio>=0.24
+pytest-cov>=5.0
+ruff>=0.8.0
+mypy>=1.13.0

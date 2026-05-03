@@ -1,0 +1,72 @@
+name: Android Release Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  android-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Secret policy gate
+        run: |
+          if rg -n "storePassword\\s+['\"]|keyPassword\\s+['\"]" android/app/build.gradle; then
+            echo "Hardcoded signing credentials detected in android/app/build.gradle"
+            exit 1
+          fi
+          if rg -n --glob "*.keystore" --glob "*.jks" "."; then
+            echo "Keystore artifacts must not be committed"
+            exit 1
+          fi
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Copy web assets for Android
+        run: |
+          rm -rf android/app/src/main/assets/public
+          mkdir -p android/app/src/main/assets/public
+          cp -r dist/. android/app/src/main/assets/public
+
+      - name: Android lint
+        working-directory: android
+        run: ./gradlew lint
+
+      - name: Android unit tests
+        working-directory: android
+        run: ./gradlew test
+
+      - name: Android release build
+        working-directory: android
+        run: ./gradlew :app:assembleRelease
+
+      - name: Upload release APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: ignore

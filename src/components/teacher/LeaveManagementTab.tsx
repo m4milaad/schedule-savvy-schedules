@@ -40,7 +40,8 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
 
   useEffect(() => {
     loadApplications();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
 
   const loadApplications = async () => {
     try {
@@ -63,11 +64,11 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
           .in('id', applicantIds);
 
         const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
-        setApplications(apps.map(a => ({ ...a, profiles: profileMap.get(a.applicant_id) })) as any);
+        setApplications(apps.map(a => ({ ...a, profiles: profileMap.get(a.applicant_id) })) as Record<string, unknown>);
       } else {
         setApplications([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading leave applications:', error);
       toast({
         title: 'Error',
@@ -95,7 +96,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
       toast({ title: 'Success', description: `Leave ${newStatus} successfully` });
       setPreviewApp(null);
       loadApplications();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to update leave status',
@@ -118,7 +119,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
   };
 
   const getStudentName = (app: LeaveApplication) =>
-    (app.profiles as any)?.full_name || 'Unknown Student';
+    (app.profiles as Record<string, unknown>)?.full_name || 'Unknown Student';
 
   const statusDot = (status: string) => {
     const colors: Record<string, string> = {

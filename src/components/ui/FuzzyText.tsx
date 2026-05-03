@@ -131,6 +131,7 @@ const FuzzyText: React.FC<FuzzyTextProps> = ({
         e.preventDefault();
         const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
+      if (!touch) return;
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         isHovering = isInsideTextArea(x, y);

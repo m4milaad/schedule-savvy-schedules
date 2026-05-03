@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,7 @@ import logger from '@/lib/logger';
 
 interface NoticesTabProps {
   teacherId: string;
-  courses: any[];
+  courses: Record<string, unknown>[];
   deptId?: string;
 }
 
@@ -64,8 +64,9 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotices((data || []) as any);
-    } catch (error: any) {
+      setNotices((data || []) as Record<string, unknown>);
+    } catch (error: unknown) {
+      console.error(error);
       logger.error('Error loading notices:', error);
       toast({
         title: 'Error',
@@ -139,7 +140,8 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       });
       resetForm();
       loadNotices();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save notice',
@@ -155,7 +157,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority(notice.priority);
     setTargetAudience(notice.target_audience);
     setTargetCourseId(notice.target_course_id || '');
-    setTargetSemesters((notice as any).target_semester ? [(notice as any).target_semester] : []);
+    setTargetSemesters((notice as Record<string, unknown>).target_semester ? [(notice as Record<string, unknown>).target_semester] : []);
     setExpiryDate(notice.expiry_date ? new Date(notice.expiry_date) : undefined);
     setShowForm(true);
   };
@@ -172,7 +174,8 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       if (error) throw error;
       toast({ title: 'Success', description: 'Notice deleted successfully' });
       loadNotices();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete notice',
@@ -190,7 +193,8 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
 
       if (error) throw error;
       loadNotices();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      console.error(error);
       toast({
         title: 'Error',
         description: 'Failed to update notice status',

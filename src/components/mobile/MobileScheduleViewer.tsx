@@ -231,7 +231,7 @@ export const MobileScheduleViewer = () => {
                   </CardHeader>
                   <CardContent className="pt-3">
                     <div className="space-y-3">
-                      {examsOnDate.map((exam, examIndex) => (
+                      {(examsOnDate || []).map((exam, examIndex) => (
                         <div
                           key={exam.id}
                           className="border rounded-lg p-3 bg-white dark:bg-slate-700 dark:border-slate-600 hover:shadow-sm transition-all duration-300 hover:scale-[1.02] animate-scale-in"

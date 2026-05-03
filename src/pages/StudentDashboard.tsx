@@ -101,14 +101,14 @@ interface ExamSchedule {
 const StudentDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
-  const [enrollments, setEnrollments] = useState<StudentEnrollment[]>([]);
-  const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
+  const [_enrollments, setEnrollments] = useState<StudentEnrollment[]>([]);
+  const [_availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [examSchedule, setExamSchedule] = useState<ExamSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(true);
-  const [studentData, setStudentData] = useState<any>(null);
+  const [studentData, setStudentData] = useState<Record<string, unknown> | null>(null);
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -132,20 +132,20 @@ const StudentDashboard = () => {
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {
     if (index >= 0 && index < TAB_VALUES.length) {
-      setActiveTab(TAB_VALUES[index]);
+      setActiveTab(TAB_VALUES[index] as TabValue);
     }
   }, []);
 
   const navigatePrevTab = useCallback(() => {
     const currentIndex = TAB_VALUES.indexOf(activeTab);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_VALUES.length - 1;
-    setActiveTab(TAB_VALUES[newIndex]);
+    setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   const navigateNextTab = useCallback(() => {
     const currentIndex = TAB_VALUES.indexOf(activeTab);
     const newIndex = currentIndex < TAB_VALUES.length - 1 ? currentIndex + 1 : 0;
-    setActiveTab(TAB_VALUES[newIndex]);
+    setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   useKeyboardShortcuts([
@@ -172,6 +172,7 @@ const StudentDashboard = () => {
     if (profile) {
       loadStudentData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
   const getMissingFields = () => {
@@ -273,7 +274,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const transformedEnrollments = (data || []).map((enrollment: any) => ({
+    const transformedEnrollments = (data || []).map((enrollment: Record<string, unknown>) => ({
       ...enrollment,
       course: {
         ...enrollment.courses,
@@ -310,7 +311,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const transformedCourses = (data || []).map((course: any) => ({
+    const transformedCourses = (data || []).map((course: Record<string, unknown>) => ({
       ...course,
       dept_name: course.departments?.dept_name
     }));
@@ -337,7 +338,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const courseIds = (studentCourses as any[]).map(sc => sc.course_id);
+    const courseIds = (studentCourses as Record<string, unknown>[]).map(sc => sc.course_id);
 
     const { data, error } = await supabase
       .from('datesheets')
@@ -370,7 +371,7 @@ const StudentDashboard = () => {
       .eq('student_id', profile.id);
 
     const seatMap = new Map<string, { seat_label: string; row_number: number; column_number: number }>();
-    (seatData || []).forEach((seat: any) => {
+    (seatData || []).forEach((seat: Record<string, unknown>) => {
       const key = `${seat.exam_date}-${seat.course_id}`;
       seatMap.set(key, {
         seat_label: seat.seat_label,
@@ -379,18 +380,19 @@ const StudentDashboard = () => {
       });
     });
 
-    const transformedSchedule = (data || []).map((item: any) => {
-      const courseId = item.course_id || item.courses?.course_id;
+    const transformedSchedule = (data || []).map((item: Record<string, unknown>) => {
+      const courses = item.courses as Record<string, unknown> | undefined;
+      const courseId = item.course_id || courses?.course_id;
       const seatKey = `${item.exam_date}-${courseId}`;
       const seatInfo = seatMap.get(seatKey);
       
       return {
         exam_date: item.exam_date,
         course_id: courseId,
-        course_code: item.courses?.course_code || '',
-        course_name: item.courses?.course_name || '',
-        venue_name: item.venues?.venue_name || 'TBD',
-        session_name: item.sessions?.session_name || 'Current Session',
+        course_code: (courses?.course_code as string) || '',
+        course_name: (courses?.course_name as string) || '',
+        venue_name: (item.venues as Record<string, unknown>)?.venue_name as string || 'TBD',
+        session_name: (item.sessions as Record<string, unknown>)?.session_name as string || 'Current Session',
         seat_label: seatInfo?.seat_label,
         row_number: seatInfo?.row_number,
         column_number: seatInfo?.column_number
@@ -400,11 +402,7 @@ const StudentDashboard = () => {
     setExamSchedule(transformedSchedule);
   };
 
-  const getDepartmentName = (deptId: string | null) => {
-    if (!deptId) return 'Not Set';
-    const dept = departments.find(d => d.dept_id === deptId);
-    return dept ? dept.dept_name : 'Unknown';
-  };
+
 
   const handleSignOut = async () => {
     await signOut();
@@ -574,7 +572,7 @@ const StudentDashboard = () => {
     }
   };
 
-  const themeColor = (profile as any)?.theme_color;
+  const themeColor = (profile as Record<string, unknown>)?.theme_color as string | undefined;
 
   return (
     <div
@@ -667,13 +665,15 @@ const StudentDashboard = () => {
       </motion.div>
 
       {/* Profile Edit Dialog */}
-      <ProfileEditDialog
-        isOpen={showProfileDialog}
-        onClose={() => setShowProfileDialog(false)}
-        profile={profile!}
-        departments={departments}
-        onUpdate={updateProfile}
-      />
+      {profile && (
+        <ProfileEditDialog
+          isOpen={showProfileDialog}
+          onClose={() => setShowProfileDialog(false)}
+          profile={profile}
+          departments={departments}
+          onUpdate={updateProfile}
+        />
+      )}
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp

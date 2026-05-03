@@ -27,7 +27,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';import logger from '@/lib/logger';
+import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';
+import logger from '@/lib/logger';
+import { CourseSchema } from '@/schemas/database';
 
 
 interface StudentCoursesTabProps {
@@ -131,7 +133,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       return;
     }
 
-    const transformed = (data || []).map((e: any) => ({
+    const transformed = (data || []).map((e: Record<string, unknown>) => ({
       ...e,
       course: e.courses
     }));
@@ -155,7 +157,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       return;
     }
 
-    const transformed = (data || []).map((c: any) => ({
+    const transformed = (data || []).map((c: Record<string, unknown>) => ({
       ...c,
       dept_name: c.departments?.dept_name || 'General'
     }));
@@ -179,12 +181,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     const gradesMap = new Map<string, { grade: string; attendance: number }>();
 
     // Process marks
-    (marks || []).forEach((m: any) => {
+    (marks || []).forEach((m: Record<string, unknown>) => {
       gradesMap.set(m.course_id, { grade: m.grade || 'N/A', attendance: 0 });
     });
 
     // Calculate attendance percentages
-    const attendanceByCourseFn = (data: any[]) => {
+    const attendanceByCourseFn = (data: Record<string, unknown>[]) => {
       const byCourse: Record<string, { present: number; total: number }> = {};
       data.forEach(a => {
         if (!byCourse[a.course_id]) byCourse[a.course_id] = { present: 0, total: 0 };
@@ -242,7 +244,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         description: 'Successfully enrolled in course',
       });
       loadEnrollments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to enroll',
@@ -279,7 +281,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         description: 'Successfully unenrolled from course',
       });
       loadEnrollments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to unenroll',
@@ -350,7 +352,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       
       setSelectedAvailableCourses(new Set());
       loadEnrollments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to bulk enroll',
@@ -389,7 +391,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       
       setSelectedEnrolledCourses(new Set());
       loadEnrollments();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to bulk unenroll',

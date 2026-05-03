@@ -15,12 +15,13 @@ import { queryKeys } from '@/lib/queryKeys';
 export function useSeatingAssignment(examDate: string | null, deptId?: string) {
   const queryClient = useQueryClient();
   const [generatedPlan, setGeneratedPlan] = useState<SeatingResult | null>(null);
+  const queryDate = examDate ?? '';
 
   // Fetch saved seating arrangement
   const { data: savedSeating, isLoading: loadingSaved, refetch } = useQuery({
     queryKey: deptId 
-      ? queryKeys.seatAssignments.byDateAndDept(examDate!, deptId)
-      : queryKeys.seatAssignments.byDate(examDate!),
+      ? queryKeys.seatAssignments.byDateAndDept(queryDate, deptId)
+      : queryKeys.seatAssignments.byDate(queryDate),
     queryFn: async () => {
       if (!examDate) return [];
 
@@ -67,8 +68,9 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
         toast.error(result.error || 'Failed to generate seating');
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to generate seating');
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : "Failed to generate seating";
+      toast.error(msg || "Failed to generate seating");
     }
   });
 
@@ -81,15 +83,16 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
     onSuccess: (result) => {
       if (result.success) {
         toast.success('Seating arrangement saved successfully');
-        queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
         setGeneratedPlan(null);
-        refetch();
+        void refetch();
       } else {
         toast.error(result.error || 'Failed to save seating');
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to save seating');
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : "Failed to save seating";
+      toast.error(msg || "Failed to save seating");
     }
   });
 
@@ -105,12 +108,13 @@ export function useSeatingAssignment(examDate: string | null, deptId?: string) {
     },
     onSuccess: () => {
       toast.success('Seating arrangement cleared');
-      queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.seatAssignments.all });
       setGeneratedPlan(null);
-      refetch();
+      void refetch();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to clear seating');
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : "Failed to clear seating";
+      toast.error(msg || "Failed to clear seating");
     }
   });
 

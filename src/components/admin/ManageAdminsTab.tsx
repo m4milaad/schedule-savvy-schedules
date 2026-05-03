@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, Trash2, UserPlus, GraduationCap, Search, Edit2 } from 'lucide-react';
+import { Trash2, UserPlus, Search } from 'lucide-react';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import {
     AlertDialog,
@@ -30,6 +30,7 @@ import {
     DialogTrigger
 } from "@/components/ui/dialog";
 import logger from '@/lib/logger';
+import { AdminUserSchema } from '@/schemas/database';
 
 interface AdminUser {
     email: string;
@@ -51,7 +52,7 @@ export const ManageAdminsTab = () => {
     const [fullName, setFullName] = useState('');
     const [role, setRole] = useState<'admin' | 'department_admin' | 'teacher'>('department_admin');
     const [deptId, setDeptId] = useState('');
-    const [departments, setDepartments] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<Record<string, unknown>[]>([]);
     const [creating, setCreating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -60,7 +61,8 @@ export const ManageAdminsTab = () => {
 
     useEffect(() => {
         loadData();
-    }, []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
     const loadData = async () => {
         setLoading(true);
@@ -127,16 +129,16 @@ export const ManageAdminsTab = () => {
                     created_at: new Date().toISOString(),
                     is_approved: profile?.is_approved ?? true,
                     dept_id: profile?.dept_id,
-                    dept_name: (profile as any)?.departments?.dept_name || 'N/A',
+                    dept_name: (profile as Record<string, unknown>)?.departments?.dept_name || 'N/A',
                 };
             });
 
-            setAdmins(combinedData);
-        } catch (error: any) {
+            setAdmins(AdminUserSchema.array().parse(combinedData));
+        } catch (error: unknown) {
             logger.error('Error loading admins:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to load admin users",
+                description: (error as Error).message || "Failed to load admin users",
                 variant: "destructive",
             });
         }
@@ -180,12 +182,12 @@ export const ManageAdminsTab = () => {
                     created_at: new Date().toISOString(),
                     is_approved: profile?.is_approved ?? false,
                     dept_id: profile?.dept_id,
-                    dept_name: (profile as any)?.departments?.dept_name || 'N/A',
+                    dept_name: (profile as Record<string, unknown>)?.departments?.dept_name || 'N/A',
                 };
             });
 
             setTeachers(combinedData);
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error loading teachers:', error);
         }
     };
@@ -277,11 +279,11 @@ export const ManageAdminsTab = () => {
             setRole('department_admin');
             setIsAddDialogOpen(false);
             loadData();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error creating user:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to create user",
+                description: (error as Error).message || "Failed to create user",
                 variant: "destructive",
             });
         } finally {
@@ -304,11 +306,11 @@ export const ManageAdminsTab = () => {
             });
 
             loadData();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error approving user:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to approve user",
+                description: (error as Error).message || "Failed to approve user",
                 variant: "destructive",
             });
         }
@@ -329,11 +331,11 @@ export const ManageAdminsTab = () => {
             });
 
             loadData();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error revoking user:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to revoke access",
+                description: (error as Error).message || "Failed to revoke access",
                 variant: "destructive",
             });
         }
@@ -355,11 +357,11 @@ export const ManageAdminsTab = () => {
             });
 
             loadData();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error removing user:', error);
             toast({
                 title: "Error",
-                description: error.message || "Failed to remove access",
+                description: (error as Error).message || "Failed to remove access",
                 variant: "destructive",
             });
         }
@@ -449,7 +451,7 @@ export const ManageAdminsTab = () => {
                                 </div>
                                 <div>
                                     <Label htmlFor="role">Role *</Label>
-                                    <Select value={role} onValueChange={(value: any) => setRole(value)}>
+                                    <Select value={role} onValueChange={(value: Record<string, unknown>) => setRole(value)}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>

@@ -14,9 +14,28 @@ dist-ssr
 # RAG / scraper output (txt, pdf, faiss, metadata — regenerate with scripts/scrape_cuk.py + ingest.py)
 /data/
 
+# Temporary / AI-generated files
+fix*.cjs
+fix*.py
+parse_eslint.cjs
+apply_zod.py
+eslint_report.json
+eslint-report.json
+eslint-results.json
+ts_errors.txt
+*.tmp
+*.temp
+*.bak
+*.old
+*.backup
+
+
+
 # Editor directories and files
 .vscode/*
 .github/*
+!.github/workflows/
+!.github/workflows/ci.yml
 .claude
 !.vscode/extensions.json
 .idea
@@ -65,6 +84,7 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
+coverage/
 .tox/
 .nox/
 .coverage

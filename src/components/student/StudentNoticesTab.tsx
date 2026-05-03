@@ -119,7 +119,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
       setReadNotices(readIds);
 
       // Fetch teacher course codes for display
-      const teacherIds = [...new Set(filteredNotices.map(n => (n as any).teacher_id).filter(Boolean))];
+      const teacherIds = [...new Set(filteredNotices.map(n => (n as Record<string, unknown>).teacher_id).filter(Boolean))];
       const teacherCourseMap = new Map<string, string>();
       if (teacherIds.length > 0) {
         const { data: tcData } = await supabase
@@ -127,7 +127,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
           .select('teacher_id, courses:course_id (course_code)')
           .in('teacher_id', teacherIds);
         // Use first course per teacher
-        (tcData || []).forEach((tc: any) => {
+        (tcData || []).forEach((tc: Record<string, unknown>) => {
           if (!teacherCourseMap.has(tc.teacher_id)) {
             teacherCourseMap.set(tc.teacher_id, tc.courses?.course_code || '');
           }
@@ -136,16 +136,16 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
-        teacher: (notice as any).profiles as any,
-        course: (notice as any).courses as any,
-        teacher_course_code: (notice as any).target_course_id
-          ? ((notice as any).courses as any)?.course_code
-          : teacherCourseMap.get((notice as any).teacher_id) || null,
+        teacher: (notice as Record<string, unknown>).profiles as Record<string, unknown>,
+        course: (notice as Record<string, unknown>).courses as Record<string, unknown>,
+        teacher_course_code: (notice as Record<string, unknown>).target_course_id
+          ? ((notice as Record<string, unknown>).courses as Record<string, unknown>)?.course_code
+          : teacherCourseMap.get((notice as Record<string, unknown>).teacher_id) || null,
         isRead: readIds.has(notice.id)
       }));
 
-      setNotices(noticesWithRead as any);
-    } catch (error: any) {
+      setNotices(noticesWithRead as Record<string, unknown>);
+    } catch (error: unknown) {
       logger.error('Error loading notices:', error);
       toast({
         title: 'Error',

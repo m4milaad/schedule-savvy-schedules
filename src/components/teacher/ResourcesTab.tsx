@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';import logger from '@/lib/logger';
+import { Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';
+import logger from '@/lib/logger';
+import { ResourceSchema } from '@/schemas/database';
 
 
 interface ResourcesTabProps {
   teacherId: string;
-  courses: any[];
+  courses: Record<string, unknown>[];
 }
 
 interface Resource {
@@ -62,11 +64,12 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
 
   useEffect(() => {
     loadResources();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacherId]);
 
   const loadResources = async () => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('resources')
         .select(`
           *,
@@ -76,8 +79,8 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setResources(data || []);
-    } catch (error: any) {
+      setResources(ResourceSchema.array().parse(data || []));
+    } catch (error: unknown) {
       logger.error('Error loading resources:', error);
       toast({
         title: 'Error',
@@ -145,7 +148,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 100);
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('resources')
         .upload(uniqueFileName, selectedFile);
 
@@ -160,7 +163,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       setUploadProgress(100);
       setUploadComplete(true);
       return urlData.publicUrl;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Upload error:', error);
       toast({
         title: 'Upload Error',
@@ -234,7 +237,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
 
       resetForm();
       loadResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to save resource',
@@ -268,7 +271,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       if (error) throw error;
       toast({ title: 'Success', description: 'Resource deleted successfully' });
       loadResources();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete resource',
@@ -377,6 +380,14 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
               <div className="space-y-2">
                 <Label>Upload File</Label>
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (!uploading) fileInputRef.current?.click();
+                    }
+                  }}
                   className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                     uploading ? 'border-primary bg-primary/5' : uploadComplete ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'hover:border-primary'
                   }`}

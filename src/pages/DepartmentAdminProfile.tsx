@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Lock } from 'lucide-react';
-import { ThemeColorPicker, getContrastColor } from '@/components/ThemeColorPicker';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';
 import { LoadingScreen } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
 
 
@@ -19,7 +19,7 @@ interface Department {
 const DepartmentAdminProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -34,6 +34,7 @@ const DepartmentAdminProfile = () => {
   useEffect(() => {
     loadProfile();
     loadDepartments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDepartments = async () => {
@@ -71,10 +72,10 @@ const DepartmentAdminProfile = () => {
         full_name: profileData.full_name || '',
         email: profileData.email || user.email || '',
         dept_id: profileData.dept_id || '',
-        contact_no: (profileData as any).contact_no || '',
-        theme_color: (profileData as any).theme_color || '#020817'  // Default theme color
+        contact_no: (profileData as Record<string, unknown>).contact_no as string || '',
+        theme_color: (profileData as Record<string, unknown>).theme_color as string || '#020817'  // Default theme color
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading profile:', error);
       toast({
         title: "Error",
@@ -95,7 +96,7 @@ const DepartmentAdminProfile = () => {
       if (!user) return;
 
       // Department admins can't change their department - only super admin can
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         full_name: formData.full_name,
         email: formData.email,
         contact_no: formData.contact_no || null,
@@ -116,11 +117,11 @@ const DepartmentAdminProfile = () => {
       });
       
       loadProfile();
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update profile",
+        description: (error as Error).message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {

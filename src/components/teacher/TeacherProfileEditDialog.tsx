@@ -23,7 +23,7 @@ interface TeacherProfileEditDialogProps {
   onClose: () => void;
   profile: UserProfile;
   departments: Department[];
-  onUpdate: (updates: Partial<UserProfile>) => Promise<any>;
+  onUpdate: (updates: Partial<UserProfile>) => Promise<Record<string, unknown>>;
 }
 
 export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> = ({
@@ -40,7 +40,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
     full_name: profile.full_name || '',
     email: profile.email || '',
     dept_id: profile.dept_id || '',
-    theme_color: (profile as any).theme_color || '#3b82f6',
+    theme_color: (profile as Record<string, unknown>).theme_color || '#3b82f6',
     // Teacher-specific fields (stored in teachers table)
     contact_no: '',
     address: '',
@@ -95,7 +95,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
     setLoading(true);
     try {
       // Update profile data including theme_color
-      const profileUpdates: any = {
+      const profileUpdates: Record<string, unknown> = {
         full_name: formData.full_name,
         email: formData.email || null,
         dept_id: formData.dept_id || null,

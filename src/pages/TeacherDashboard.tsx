@@ -60,12 +60,12 @@ const TeacherDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
-  const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
+  const [teacherCourses, setTeacherCourses] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [departmentName, setDepartmentName] = useState<string>('');
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -73,20 +73,20 @@ const TeacherDashboard = () => {
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {
     if (index >= 0 && index < TAB_VALUES.length) {
-      setActiveTab(TAB_VALUES[index]);
+      setActiveTab(TAB_VALUES[index] as TabValue);
     }
   }, []);
 
   const navigatePrevTab = useCallback(() => {
     const currentIndex = TAB_VALUES.indexOf(activeTab);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_VALUES.length - 1;
-    setActiveTab(TAB_VALUES[newIndex]);
+    setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   const navigateNextTab = useCallback(() => {
     const currentIndex = TAB_VALUES.indexOf(activeTab);
     const newIndex = currentIndex < TAB_VALUES.length - 1 ? currentIndex + 1 : 0;
-    setActiveTab(TAB_VALUES[newIndex]);
+    setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   useKeyboardShortcuts([
@@ -111,6 +111,7 @@ const TeacherDashboard = () => {
     if (profile?.id) {
       loadTeacherData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
   const loadTeacherData = async () => {
@@ -169,13 +170,7 @@ const TeacherDashboard = () => {
         }
       }
 
-      // Load department name
-      if (profile.dept_id) {
-        const dept = deptData?.find(d => d.dept_id === profile.dept_id);
-        if (dept) {
-          setDepartmentName(dept.dept_name);
-        }
-      }
+
     } catch (error) {
       logger.error('Error loading teacher data:', error);
     } finally {
@@ -239,7 +234,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  const themeColor = (profile as any)?.theme_color;
+  const themeColor = (profile as Record<string, unknown>)?.theme_color as string | undefined;
 
   return (
     <div

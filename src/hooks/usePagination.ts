@@ -1,74 +1,139 @@
-import { useState, useMemo } from 'react';
+/**
+ * Pagination hook for managing paginated data
+ * Provides state and controls for server-side pagination
+ */
 
-interface UsePaginationProps<T> {
-  items: T[];
-  itemsPerPage?: number;
+import { useState, useCallback, useMemo } from "react";
+
+export interface PaginationState {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
 }
 
-interface UsePaginationReturn<T> {
-  currentPage: number;
-  totalPages: number;
-  paginatedItems: T[];
+export interface PaginationControls {
   goToPage: (page: number) => void;
-  nextPage: () => void;
-  previousPage: () => void;
+  goToNextPage: () => void;
+  goToPreviousPage: () => void;
+  goToFirstPage: () => void;
+  goToLastPage: () => void;
+  setPageSize: (size: number) => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
-  startIndex: number;
-  endIndex: number;
+  range: { from: number; to: number };
+}
+
+export interface UsePaginationOptions {
+  initialPage?: number;
+  initialPageSize?: number;
   totalItems: number;
 }
 
+export interface UsePaginationReturn extends PaginationState, PaginationControls {}
+
 /**
- * Custom hook for pagination logic
- * @param items - Array of items to paginate
- * @param itemsPerPage - Number of items per page (default: 10)
- * @returns Pagination state and controls
+ * Hook for managing pagination state and controls
+ * 
+ * @example
+ * const pagination = usePagination({ totalItems: 100, initialPageSize: 20 });
+ * 
+ * // Use in query
+ * const { data } = useQuery({
+ *   queryKey: ['items', pagination.currentPage],
+ *   queryFn: () => fetchItems(pagination.range.from, pagination.range.to)
+ * });
+ * 
+ * // Use controls in UI
+ * <Button onClick={pagination.goToPreviousPage} disabled={!pagination.canGoPrevious}>
+ *   Previous
+ * </Button>
  */
-export function usePagination<T>({
-  items,
-  itemsPerPage = 10,
-}: UsePaginationProps<T>): UsePaginationReturn<T> {
-  const [currentPage, setCurrentPage] = useState(1);
+export function usePagination({
+  initialPage = 1,
+  initialPageSize = 20,
+  totalItems,
+}: UsePaginationOptions): UsePaginationReturn {
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
-  const totalPages = Math.ceil(items.length / itemsPerPage);
+  // Calculate total pages
+  const totalPages = useMemo(() => {
+    return Math.ceil(totalItems / pageSize);
+  }, [totalItems, pageSize]);
 
-  const paginatedItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return items.slice(startIndex, endIndex);
-  }, [items, currentPage, itemsPerPage]);
+  // Calculate range for Supabase .range(from, to)
+  const range = useMemo(() => {
+    const from = (currentPage - 1) * pageSize;
+    const to = from + pageSize - 1;
+    return { from, to };
+  }, [currentPage, pageSize]);
 
-  const goToPage = (page: number) => {
-    const pageNumber = Math.max(1, Math.min(page, totalPages));
-    setCurrentPage(pageNumber);
-  };
+  // Navigation controls
+  const goToPage = useCallback(
+    (page: number) => {
+      const validPage = Math.max(1, Math.min(page, totalPages));
+      setCurrentPage(validPage);
+    },
+    [totalPages]
+  );
 
-  const nextPage = () => {
+  const goToNextPage = useCallback(() => {
     goToPage(currentPage + 1);
-  };
+  }, [currentPage, goToPage]);
 
-  const previousPage = () => {
+  const goToPreviousPage = useCallback(() => {
     goToPage(currentPage - 1);
-  };
+  }, [currentPage, goToPage]);
 
+  const goToFirstPage = useCallback(() => {
+    goToPage(1);
+  }, [goToPage]);
+
+  const goToLastPage = useCallback(() => {
+    goToPage(totalPages);
+  }, [totalPages, goToPage]);
+
+  const handleSetPageSize = useCallback((size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when page size changes
+  }, []);
+
+  // Can navigate flags
   const canGoNext = currentPage < totalPages;
   const canGoPrevious = currentPage > 1;
 
-  const startIndex = (currentPage - 1) * itemsPerPage + 1;
-  const endIndex = Math.min(currentPage * itemsPerPage, items.length);
-
   return {
+    // State
     currentPage,
+    pageSize,
+    totalItems,
     totalPages,
-    paginatedItems,
+    // Controls
     goToPage,
-    nextPage,
-    previousPage,
+    goToNextPage,
+    goToPreviousPage,
+    goToFirstPage,
+    goToLastPage,
+    setPageSize: handleSetPageSize,
     canGoNext,
     canGoPrevious,
-    startIndex,
-    endIndex,
-    totalItems: items.length,
+    range,
   };
+}
+
+/**
+ * Get pagination info text (e.g., "Showing 1-20 of 100")
+ */
+export function getPaginationInfo(pagination: PaginationState): string {
+  const { currentPage, pageSize, totalItems } = pagination;
+  
+  if (totalItems === 0) {
+    return "No items";
+  }
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, totalItems);
+
+  return `Showing ${start}-${end} of ${totalItems}`;
 }

@@ -41,8 +41,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     isCollapsed,
     toggleSidebar,
     onLogout,
-    onNavigate,
-    onEditProfile,
+    
+    
     isInsideSheet = false,
 }) => {
 

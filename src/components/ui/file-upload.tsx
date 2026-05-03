@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, X, FileText, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';import logger from '@/lib/logger';
+import { cn } from '@/lib/utils';
+import logger from '@/lib/logger';
 
 
 interface FileUploadProps {
@@ -99,6 +100,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           uploadComplete && 'border-green-500 bg-green-50 dark:bg-green-950/20'
         )}
         onClick={() => !uploading && fileInputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !uploading) {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
       >
         {uploading ? (
           <div className="space-y-2">

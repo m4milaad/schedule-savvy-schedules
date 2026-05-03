@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { ChatbotErrorBoundary } from "@/components/ChatbotErrorBoundary";
 
 type ChatMessage = {
   id: string;
@@ -184,7 +185,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSubmit();
+      void onSubmit();
     }
   };
 
@@ -355,7 +356,9 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                         </div>
                         <button
                           type="button"
-                          onClick={() => copyMessage(message)}
+                          onClick={() => {
+                            void copyMessage(message);
+                          }}
                           className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-muted/40 hover:text-foreground transition-colors"
                           aria-label="Copy message"
                         >
@@ -468,7 +471,9 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                 }}
               >
                 <form
-                  onSubmit={onSubmit}
+                  onSubmit={(event) => {
+                    void onSubmit(event);
+                  }}
                   className="flex flex-col rounded-[15px] bg-card overflow-hidden outline-none"
                 >
                   {/* Textarea */}
@@ -546,4 +551,12 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
   );
 };
 
-export default ChatbotAssistant;
+function ChatbotAssistantWithErrorBoundary() {
+  return (
+    <ChatbotErrorBoundary>
+      <ChatbotAssistant />
+    </ChatbotErrorBoundary>
+  );
+}
+
+export default ChatbotAssistantWithErrorBoundary;

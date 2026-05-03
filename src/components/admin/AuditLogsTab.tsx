@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, RefreshCw, Download, Trash2, Search, Filter, History } from 'lucide-react';
+import { RefreshCw, Download, Trash2, Search, History } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from 'date-fns';
@@ -21,7 +21,8 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";import logger from '@/lib/logger';
+import { motion } from "framer-motion";
+import logger from '@/lib/logger';
 
 
 interface AuditLog {
@@ -32,8 +33,8 @@ interface AuditLog {
   table_name: string;
   description: string;
   created_at: string;
-  old_data?: Record<string, any> | null;
-  new_data?: Record<string, any> | null;
+  old_data?: Record<string, Record<string, unknown>> | null;
+  new_data?: Record<string, Record<string, unknown>> | null;
   profiles?: {
     full_name: string;
     email: string;
@@ -55,6 +56,7 @@ export const AuditLogsTab = () => {
 
   useEffect(() => {
     loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadLogs = async () => {
@@ -90,7 +92,7 @@ export const AuditLogsTab = () => {
 
       const logsWithProfiles = await attachProfiles(logsData);
       setLogs(logsWithProfiles);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading audit logs:', error);
       toast({
         title: "Error",
@@ -125,7 +127,7 @@ export const AuditLogsTab = () => {
       setHasMore(logsData.length >= PAGE_SIZE);
       const logsWithProfiles = await attachProfiles(logsData);
       setLogs(prev => [...prev, ...logsWithProfiles]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error loading more logs:', error);
       toast({
         title: "Error",
@@ -137,8 +139,8 @@ export const AuditLogsTab = () => {
     }
   };
 
-  const attachProfiles = async (logsData: any[]): Promise<AuditLog[]> => {
-    const userIds = [...new Set(logsData.map(log => log.user_id))];
+  const attachProfiles = async (logsData: Record<string, unknown>[]): Promise<AuditLog[]> => {
+    const userIds = [...new Set(logsData.map(log => log.user_id || "" || ''))];
 
     const { data: profilesData } = await supabase
       .from('profiles')
@@ -147,7 +149,7 @@ export const AuditLogsTab = () => {
 
     return logsData.map(log => ({
       ...log,
-      profiles: profilesData?.find(p => p.user_id === log.user_id) || null
+      profiles: profilesData?.find(p => p.user_id === log.user_id || "" || '') || null
     }));
   };
 
@@ -192,7 +194,7 @@ export const AuditLogsTab = () => {
       toast({ title: "Exporting...", description: `Fetching all ${totalCount} log entries...` });
 
       // Fetch ALL logs in batches of 1000
-      let allLogs: any[] = [];
+      let allLogs: Record<string, unknown>[] = [];
       let from = 0;
       const batchSize = 1000;
 
@@ -212,7 +214,7 @@ export const AuditLogsTab = () => {
       }
 
       // Fetch all related profiles
-      const userIds = [...new Set(allLogs.map(log => log.user_id))];
+      const userIds = [...new Set(allLogs.map(log => log.user_id || "" || ''))];
       const profileMap = new Map<string, { full_name: string; email: string }>();
 
       // Fetch profiles in batches (in() has limits)
@@ -228,11 +230,11 @@ export const AuditLogsTab = () => {
 
       const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
       const csvData = allLogs.map(log => {
-        const profile = profileMap.get(log.user_id);
+        const profile = profileMap.get(log.user_id || "" || '');
         return [
           format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
           profile?.full_name || 'Unknown',
-          profile?.email || log.user_id,
+          profile?.email || log.user_id || "" || '',
           log.user_type,
           log.action,
           log.table_name,
@@ -255,11 +257,11 @@ export const AuditLogsTab = () => {
         title: "Export Complete",
         description: `Exported all ${allLogs.length} log entries to CSV`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Export error:', error);
       toast({
         title: "Export Failed",
-        description: error.message || "Failed to export logs",
+        description: (error as Error).message || "Failed to export logs",
         variant: "destructive",
       });
     } finally {
@@ -283,11 +285,11 @@ export const AuditLogsTab = () => {
         title: "Logs Cleared",
         description: "All audit logs have been deleted",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error clearing logs:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to clear logs",
+        description: (error as Error).message || "Failed to clear logs",
         variant: "destructive",
       });
     } finally {
@@ -305,7 +307,7 @@ export const AuditLogsTab = () => {
       .join(' ');
   };
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: Record<string, unknown>): string => {
     if (value === null || value === undefined) return 'empty';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (typeof value === 'object') return JSON.stringify(value);
@@ -313,7 +315,7 @@ export const AuditLogsTab = () => {
     return str.length > 50 ? str.substring(0, 47) + '...' : str;
   };
 
-  const getChangedFields = (oldData: Record<string, any> | null | undefined, newData: Record<string, any> | null | undefined): string[] => {
+  const getChangedFields = (oldData: Record<string, Record<string, unknown>> | null | undefined, newData: Record<string, Record<string, unknown>> | null | undefined): string[] => {
     const changes: string[] = [];
     const ignoredFields = ['updated_at', 'created_at', 'id', 'user_id', 'student_id', 'course_id', 'dept_id', 'venue_id', 'teacher_id', 'session_id', 'school_id'];
 
@@ -544,7 +546,7 @@ export const AuditLogsTab = () => {
                             {log.profiles?.full_name || 'Unknown User'}
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-1 truncate max-w-[180px]">
-                            {log.profiles?.email || log.user_id}
+                            {log.profiles?.email || log.user_id || "" || ''}
                           </span>
                           <div className="mt-1.5">
                             {getUserTypeBadge(log.user_type)}

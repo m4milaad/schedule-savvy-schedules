@@ -107,9 +107,9 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
             toast.success(`${selectedCount} venue(s) deleted successfully`);
             clearSelection();
             onRefresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             logger.error('Error bulk deleting venues:', error);
-            toast.error(error.message || 'Failed to delete venues');
+            toast.error((error as Error).message || 'Failed to delete venues');
         }
     };
 
@@ -203,7 +203,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
         }
     };
 
-    const handleBulkUpload = async (data: any[]) => {
+    const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             const { error } = await supabase.from('venues').insert(data);
             if (error) throw error;

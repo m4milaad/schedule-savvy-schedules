@@ -20,7 +20,7 @@ export const fullNameSchema = z
   .max(100, 'Full name must be less than 100 characters')
   // Allow Unicode letters (plus combining marks), spaces, and common punctuation used in names/titles.
   .regex(
-    /^[\p{L}\p{M}\s'.,()\-]+$/u,
+    /^[\p{L}\p{M}\s'.,()-]+$/u,
     'Full name can only contain letters, spaces, and common punctuation (.,()\'-)'
   );
 

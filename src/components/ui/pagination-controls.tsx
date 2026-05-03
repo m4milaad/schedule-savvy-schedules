@@ -1,96 +1,119 @@
+/**
+ * Reusable pagination controls component
+ * Works with the usePagination hook
+ */
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { getPaginationInfo, type UsePaginationReturn } from "@/hooks/usePagination";
 
 interface PaginationControlsProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  canGoPrevious: boolean;
-  canGoNext: boolean;
-  startIndex: number;
-  endIndex: number;
-  totalItems: number;
+  pagination: UsePaginationReturn;
+  pageSizeOptions?: number[];
+  showPageSizeSelector?: boolean;
+  className?: string;
 }
 
 export function PaginationControls({
-  currentPage,
-  totalPages,
-  onPageChange,
-  canGoPrevious,
-  canGoNext,
-  startIndex,
-  endIndex,
-  totalItems,
+  pagination,
+  pageSizeOptions = [10, 20, 50, 100],
+  showPageSizeSelector = true,
+  className = "",
 }: PaginationControlsProps) {
-  if (totalItems === 0) return null;
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    goToFirstPage,
+    goToPreviousPage,
+    goToNextPage,
+    goToLastPage,
+    setPageSize,
+    canGoPrevious,
+    canGoNext,
+  } = pagination;
+
+  if (totalPages === 0) {
+    return null;
+  }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+    <div className={`flex items-center justify-between gap-4 ${className}`}>
+      {/* Info text */}
       <div className="text-sm text-muted-foreground">
-        Showing {startIndex} to {endIndex} of {totalItems} results
+        {getPaginationInfo(pagination)}
       </div>
-      
+
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(1)}
-          disabled={!canGoPrevious}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronsLeft className="h-4 w-4" />
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={!canGoPrevious}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        {/* Page size selector */}
+        {showPageSizeSelector && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rows per page:</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => setPageSize(Number(value))}
+            >
+              <SelectTrigger className="w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Page</span>
-          <Select
-            value={currentPage.toString()}
-            onValueChange={(value) => onPageChange(parseInt(value))}
+        {/* Page navigation */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToFirstPage}
+            disabled={!canGoPrevious}
+            aria-label="Go to first page"
           >
-            <SelectTrigger className="h-8 w-16">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <SelectItem key={page} value={page.toString()}>
-                  {page}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm">of {totalPages}</span>
-        </div>
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToPreviousPage}
+            disabled={!canGoPrevious}
+            aria-label="Go to previous page"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={!canGoNext}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(totalPages)}
-          disabled={!canGoNext}
-          className="h-8 w-8 p-0"
-        >
-          <ChevronsRight className="h-4 w-4" />
-        </Button>
+          <div className="flex items-center gap-1 px-2">
+            <span className="text-sm font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToNextPage}
+            disabled={!canGoNext}
+            aria-label="Go to next page"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToLastPage}
+            disabled={!canGoNext}
+            aria-label="Go to last page"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 
-import { CourseTeacher, ExamScheduleItem } from "@/types/examSchedule";
+import type { ExamScheduleItem } from "@/types/examSchedule";
 
 export const getBTechSemesters = (semesterType: "odd" | "even") => 
   semesterType === "odd" ? [1, 3, 5, 7] : [2, 4, 6, 8];
@@ -41,7 +41,7 @@ export const detectSemesterType = (scheduleItems: ExamScheduleItem[]): "odd" | "
 
 export const generateExamDates = (startDate: Date, endDate: Date, holidays: Date[]): Date[] => {
   const examDates: Date[] = [];
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   const endDateTime = new Date(endDate);
 
   while (currentDate <= endDateTime) {
