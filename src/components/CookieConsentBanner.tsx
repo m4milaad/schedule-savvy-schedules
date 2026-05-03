@@ -6,6 +6,13 @@ type ConsentChoice = "accepted" | "declined";
 
 const CONSENT_STORAGE_KEY = "cuk-cookie-consent-v1";
 
+/**
+ * Renders a cookie consent banner that prompts the user to accept or decline cookies.
+ *
+ * Persists the user's choice to localStorage under `CONSENT_STORAGE_KEY` and hides the banner after a short exit animation.
+ *
+ * @returns The banner element when consent has not been recorded, otherwise `null`.
+ */
 export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);

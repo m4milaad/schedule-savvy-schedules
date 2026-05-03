@@ -38,6 +38,15 @@ def batched(items: list[dict], size: int):
 
 
 def main() -> None:
+    """
+    Sync local metadata embeddings to the Supabase `rag_documents` table.
+    
+    Loads metadata.json, generates normalized sentence-transformer embeddings for each chunk, deduplicates rows by `content_hash`, and upserts the data to Supabase in configurable batches with retry logic for server (500) and network errors while printing progress.
+    
+    Raises:
+        FileNotFoundError: If the metadata.json file does not exist at META_PATH.
+        RuntimeError: If required Supabase environment variables are missing (propagated from load_env()).
+    """
     if not META_PATH.exists():
         raise FileNotFoundError(f"metadata.json not found at {META_PATH}. Run scripts/ingest.py first.")
 

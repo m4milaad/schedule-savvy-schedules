@@ -28,6 +28,18 @@ ENABLE_EXTRA_COLUMNS = os.getenv("SUPABASE_RAG_EXTRA_COLUMNS", "false").strip().
 
 
 def load_env() -> tuple[str, str]:
+    """
+    Load Supabase URL and service role key from environment files and return them.
+    
+    Reads backend/.env when present and always reads the root .env, then retrieves
+    SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from the process environment.
+    
+    Returns:
+        tuple[str, str]: (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    
+    Raises:
+        RuntimeError: if either environment variable is missing or empty.
+    """
     if ENV_PATH.exists():
         load_dotenv(ENV_PATH)
     load_dotenv(ROOT / ".env")
@@ -39,11 +51,29 @@ def load_env() -> tuple[str, str]:
 
 
 def batched(items: list[dict], size: int):
+    """
+    Yield successive contiguous slices of `items`, each with at most `size` elements.
+    
+    Parameters:
+        items (list[dict]): Sequence of dictionaries to split into batches.
+        size (int): Maximum number of items per yielded batch; must be >= 1.
+    
+    Returns:
+        iterator: An iterator that yields lists (sublists of `items`) each of length up to `size`.
+    """
     for i in range(0, len(items), size):
         yield items[i : i + size]
 
 
 def main() -> None:
+    """
+    Resume syncing document embeddings from data/metadata.json into the Supabase `rag_documents` table in batched upserts.
+    
+    Reads document metadata, optionally skips documents corresponding to already-processed batches (based on an optional CLI start batch), generates embeddings, deduplicates rows by `content_hash`, and uploads rows to Supabase in batches with retry logic for transient failures. Prints progress and a command to resume from the next batch when a non-recoverable error occurs.
+    
+    Raises:
+        FileNotFoundError: If the metadata file is not present at META_PATH.
+    """
     if not META_PATH.exists():
         raise FileNotFoundError(f"metadata.json not found at {META_PATH}. Run scripts/ingest.py first.")
 

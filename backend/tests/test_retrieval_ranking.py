@@ -13,6 +13,15 @@ class TestHeuristicScore:
     """Tests for RagPipeline._heuristic_score."""
 
     def _make_pipeline(self, heuristic_settings) -> RagPipeline:
+        """
+        Create a RagPipeline instance and replace its settings with the provided heuristic settings.
+        
+        Parameters:
+            heuristic_settings (Settings): Settings object containing heuristic configuration to apply to the pipeline.
+        
+        Returns:
+            RagPipeline: A pipeline configured with the supplied heuristic settings.
+        """
         pipeline = RagPipeline(settings=Settings())
         pipeline.settings = heuristic_settings
         return pipeline
@@ -161,6 +170,15 @@ class TestRRFFuse:
     """Tests for RagPipeline._rrf_fuse."""
 
     def _make_pipeline(self, heuristic_settings) -> RagPipeline:
+        """
+        Create a RagPipeline instance and replace its settings with the provided heuristic settings.
+        
+        Parameters:
+            heuristic_settings (Settings): Settings object containing heuristic configuration to apply to the pipeline.
+        
+        Returns:
+            RagPipeline: A pipeline configured with the supplied heuristic settings.
+        """
         pipeline = RagPipeline(settings=Settings())
         pipeline.settings = heuristic_settings
         return pipeline
