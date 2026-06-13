@@ -275,7 +275,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
           {/* Chat area */}
           <CardContent className="flex flex-1 flex-col p-0 min-h-0">
             <ScrollArea className="flex-1 min-h-0">
-              <div className="flex flex-col px-4 pt-6 pb-4 sm:px-8 space-y-6">
+              <div className="flex flex-col px-4 pt-6 pb-4 sm:px-6 space-y-6 w-full overflow-x-hidden">
 
                 {/* Empty state greeting */}
                 {isEmptyChat && (
@@ -314,8 +314,8 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                     <div
                       key={message.id}
                       className={cn(
-                        "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-                        isUser ? "flex-row-reverse" : "flex-row"
+                        "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full",
+                        isUser ? "flex-row-reverse justify-center" : "flex-row"
                       )}
                     >
                       {/* Avatar */}
@@ -334,8 +334,7 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                       <div
                         className={cn(
                           "flex flex-col gap-2",
-                          isUser ? "items-end" : "items-start",
-                          "max-w-[82%]"
+                          isUser ? "items-end max-w-[70%]" : "items-start max-w-[85%]"
                         )}
                       >
                         {/* Sender label */}
@@ -346,13 +345,13 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                         {/* Message bubble */}
                         <div
                           className={cn(
-                            "rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
+                            "rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm w-full",
                             isUser
                               ? "bg-primary text-primary-foreground rounded-tr-sm"
                               : "bg-card border border-border/40 text-card-foreground rounded-tl-sm"
                           )}
                         >
-                          <p className="whitespace-pre-line">{message.content}</p>
+                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         </div>
                         <button
                           type="button"

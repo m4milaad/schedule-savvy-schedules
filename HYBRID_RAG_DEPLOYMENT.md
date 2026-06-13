@@ -27,7 +27,7 @@ Then edit `backend/.env` and set:
 
 - `EXA_API_KEY=...` (required for Exa fallback/search)
 - `DEMO_MODE=false` (for full local tests)
-
+ 
 ---
 
 ## 3) Crawl websites and build index (important)
