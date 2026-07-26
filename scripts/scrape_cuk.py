@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
+import threading
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlparse
@@ -3060,6 +3063,14 @@ SEED_URLS = [
 ALLOWED_HOSTS = {"www.cukashmir.ac.in", "cukashmir.ac.in", "www.ugc.gov.in", "ugc.gov.in"}
 MAX_PAGES = len(SEED_URLS)
 
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+DEFAULT_WORKERS = 15
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger("scrape_cuk")
 
@@ -3443,65 +3454,65 @@ def _is_spa_hash_route(url: str) -> bool:
     return _is_cuk(url) and bool(parsed.fragment and parsed.fragment.startswith("/"))
 
 
-def _render_spa_html(url: str, max_retries: int = 3) -> str | None:
-    """Render Angular hash-route pages with retry logic and better error handling."""
-    try:
-        from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
-    except Exception:
-        logger.warning(
-            "Playwright not installed; SPA hash routes will be fetched as shell HTML. "
-            "Install playwright and run `playwright install chromium` for full scrape."
-        )
+def _render_spa_html(url: str, context, max_retries: int = 3) -> str | None:
+    """Render an Angular hash-route page using a long-lived browser ``context``.
+
+    The caller owns ``context`` (a persistent Playwright browser context shared
+    across many URLs by one worker thread); we only open/close a page per render.
+    ``context`` may be ``None`` when Playwright is unavailable, in which case the
+    caller falls back to the shell HTML returned by httpx.
+    """
+    if context is None:
         return None
 
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    except Exception:
+        PlaywrightTimeout = Exception
+
     for attempt in range(max_retries):
+        page = None
         try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-                )
-                context = browser.new_context(
-                    ignore_https_errors=True,
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                )
-                page = context.new_page()
-                
-                # Navigate with timeout
-                page.goto(url, wait_until="domcontentloaded", timeout=45000)
-                
-                # Wait for content to load (adaptive wait)
-                try:
-                    # Wait for main content to appear
-                    page.wait_for_selector("body", timeout=10000)
-                    # Give Angular time to render
-                    page.wait_for_timeout(5000)
-                    
-                    # Additional wait if page is still loading
-                    if page.evaluate("() => document.readyState") != "complete":
-                        page.wait_for_load_state("networkidle", timeout=10000)
-                except PlaywrightTimeout:
-                    logger.warning(f"Timeout waiting for content on {url}, attempt {attempt + 1}/{max_retries}")
-                    if attempt < max_retries - 1:
-                        continue
-                
-                html = page.content()
-                context.close()
-                browser.close()
-                
-                # Verify we got actual content
-                if len(html) > 1000:  # Minimum content threshold
-                    return html
-                else:
-                    logger.warning(f"Insufficient content from {url}, attempt {attempt + 1}/{max_retries}")
-                    if attempt < max_retries - 1:
-                        continue
-                    
+            page = context.new_page()
+            # Navigate with timeout
+            page.goto(url, wait_until="domcontentloaded", timeout=45000)
+
+            # Wait for content to load (adaptive wait)
+            try:
+                # Wait for main content to appear
+                page.wait_for_selector("body", timeout=10000)
+                # Give Angular time to render
+                page.wait_for_timeout(5000)
+
+                # Additional wait if page is still loading
+                if page.evaluate("() => document.readyState") != "complete":
+                    page.wait_for_load_state("networkidle", timeout=10000)
+            except PlaywrightTimeout:
+                logger.warning(f"Timeout waiting for content on {url}, attempt {attempt + 1}/{max_retries}")
+                if attempt < max_retries - 1:
+                    continue
+
+            html = page.content()
+
+            # Verify we got actual content
+            if len(html) > 1000:  # Minimum content threshold
+                return html
+            logger.warning(f"Insufficient content from {url}, attempt {attempt + 1}/{max_retries}")
+            if attempt < max_retries - 1:
+                continue
+            return None
         except Exception as exc:
             logger.warning(f"SPA render failed for {url} (attempt {attempt + 1}/{max_retries}): {exc}")
             if attempt < max_retries - 1:
                 continue
-    
+            return None
+        finally:
+            if page is not None:
+                try:
+                    page.close()
+                except Exception:
+                    pass
+
     return None
 
 
@@ -3524,6 +3535,9 @@ CUK_KEYWORDS = [
     "/contact",
     "/about",
 ]
+
+# Stricter link filter for non-CUK allowed hosts (e.g. UGC notices/admissions/exams).
+UGC_KEYWORDS = ["/admission", "/notice", "/notices", "/exam", "/examination"]
 
 
 def _fetch_with_retry(client: httpx.Client, url: str, max_retries: int = 3) -> httpx.Response | None:
@@ -3564,119 +3578,252 @@ def _fetch_with_retry(client: httpx.Client, url: str, max_retries: int = 3) -> h
     return None
 
 
+def _resolve_worker_count() -> int:
+    """Number of parallel workers. Override with the CUK_SCRAPE_WORKERS env var."""
+    raw = os.environ.get("CUK_SCRAPE_WORKERS")
+    if raw:
+        try:
+            n = int(raw)
+            if n >= 1:
+                return n
+        except ValueError:
+            logger.warning("Invalid CUK_SCRAPE_WORKERS=%r, using default %d", raw, DEFAULT_WORKERS)
+    return DEFAULT_WORKERS
+
+
+_BROWSER_WARNED = False
+
+
+def _open_browser():
+    """Start a persistent Playwright browser + context for one worker thread.
+
+    Returns ``(playwright, browser, context)`` or ``(None, None, None)`` when
+    Playwright is unavailable or fails to launch. Each worker owns its own
+    browser because Playwright's sync API is not safe to share across threads.
+    """
+    global _BROWSER_WARNED
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception:
+        if not _BROWSER_WARNED:
+            _BROWSER_WARNED = True
+            logger.warning(
+                "Playwright not installed; SPA hash routes will be fetched as shell HTML. "
+                "Install playwright and run `playwright install chromium` for full scrape."
+            )
+        return None, None, None
+    try:
+        pw = sync_playwright().start()
+        browser = pw.chromium.launch(
+            headless=True,
+            args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        )
+        context = browser.new_context(
+            ignore_https_errors=True,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        )
+        return pw, browser, context
+    except Exception as exc:
+        logger.warning(f"Failed to launch Playwright browser: {exc}")
+        return None, None, None
+
+
+def _close_browser(pw, browser, context) -> None:
+    for resource in (context, browser):
+        if resource is not None:
+            try:
+                resource.close()
+            except Exception:
+                pass
+    if pw is not None:
+        try:
+            pw.stop()
+        except Exception:
+            pass
+
+
+def _extract_links(soup: BeautifulSoup, base_url: str) -> list[str]:
+    """Return absolute http candidate URLs discovered on a page (fragments stripped)."""
+    out: list[str] = []
+    try:
+        for link in soup.find_all("a", href=True):
+            href = link.get("href", "").strip()
+            if not href:
+                continue
+            abs_url = urljoin(base_url, href).split("#")[0]
+            if abs_url.startswith("http"):
+                out.append(abs_url)
+    except Exception as exc:
+        logger.warning(f"Failed to extract links from {base_url}: {exc}")
+    return out
+
+
+def _process_url(url: str, client: httpx.Client, context) -> tuple[bool, int, list[str]]:
+    """Fetch, render (if SPA), parse, and save one URL.
+
+    Returns ``(saved_page, body_chars, discovered_links)``. PDFs and skipped
+    pages report ``saved_page=False`` and no links, matching the original
+    serial crawler's semantics.
+    """
+    res = _fetch_with_retry(client, url)
+    if res is None:
+        return False, 0, []
+
+    if _is_pdf(url):
+        pdf_name = _safe_name(url).replace(".txt", ".pdf")
+        pdf_path = DATA_DIR / pdf_name
+        try:
+            pdf_path.write_bytes(res.content)
+            logger.info("Saved PDF: %s", pdf_name)
+        except Exception as exc:
+            logger.warning("Failed to save PDF %s: %s", url, exc)
+        return False, 0, []  # PDFs do not yield further links
+
+    raw_html = res.text
+
+    # Enhanced SPA handling
+    if _is_spa_hash_route(url):
+        logger.info(f"Rendering SPA page: {url}")
+        rendered = _render_spa_html(url, context)
+        if rendered and len(rendered) > len(raw_html):
+            raw_html = rendered
+            logger.info(f"Successfully rendered SPA content ({len(rendered)} chars)")
+
+    try:
+        soup = BeautifulSoup(raw_html, "html.parser")
+        page_title = soup.title.get_text(strip=True) if soup.title else "Untitled"
+
+        # Clean up title
+        page_title = re.sub(r'\s+', ' ', page_title).strip()
+        if len(page_title) > 200:
+            page_title = page_title[:197] + "..."
+
+        body_text = _extract_text(soup)
+    except Exception as exc:
+        logger.error(f"Failed to process {url}: {exc}")
+        return False, 0, []
+
+    # Verify we got meaningful content
+    if len(body_text.strip()) < 50:
+        logger.warning(f"Insufficient content from {url}, skipping...")
+        return False, 0, []
+
+    try:
+        contact_block = _extract_emails_and_phones(soup, body_text, page_title)
+        now = datetime.now(timezone.utc).isoformat()
+
+        txt_path = DATA_DIR / _safe_name(url)
+        txt_path.write_text(
+            f"Source URL: {url}\nPage Title: {page_title}\nDate Scraped: {now}\n\n"
+            f"{contact_block}{body_text}",
+            encoding="utf-8",
+        )
+    except Exception as exc:
+        logger.error(f"Failed to save {url}: {exc}")
+        return False, 0, []
+
+    return True, len(body_text), _extract_links(soup, url)
+
+
+def _enqueue_links(candidates: list[str], state: dict) -> None:
+    """Filter and append discovered links to the shared queue. Caller holds the lock."""
+    queue: deque = state["queue"]
+    visited: set[str] = state["visited"]
+    pdf_seen: set[str] = state["pdf_seen"]
+    for abs_url in candidates:
+        if _is_pdf(abs_url):
+            if abs_url not in pdf_seen:
+                pdf_seen.add(abs_url)
+                queue.append(abs_url)
+            continue
+        if not _same_domain(abs_url):
+            continue
+        if abs_url in visited:
+            continue
+        if _is_cuk(abs_url):
+            # For CUK, follow a richer set of paths (admissions, departments, exams, contact, etc.)
+            if _is_pagination_link(abs_url) or any(key in abs_url.lower() for key in CUK_KEYWORDS):
+                queue.append(abs_url)
+        else:
+            # For UGC (or other allowed hosts), keep to the stricter notices/admissions/exam filters.
+            if _is_pagination_link(abs_url) or any(key in abs_url.lower() for key in UGC_KEYWORDS):
+                queue.append(abs_url)
+
+
+def _worker(cond: threading.Condition, state: dict, max_pages: int) -> None:
+    """Pull URLs from the shared queue and process them until the crawl drains.
+
+    Each worker owns its own httpx client and (if available) a persistent
+    Playwright browser, reused for every URL it handles. The shared queue /
+    visited / counters are guarded by ``cond``; a worker waiting on an empty
+    queue sleeps until another worker publishes newly discovered links or the
+    queue is confirmed drained (no work in flight).
+    """
+    client = httpx.Client(timeout=30, follow_redirects=True, headers=HTTP_HEADERS)
+    pw, browser, context = _open_browser()
+    try:
+        while True:
+            # Reserve the next URL to process, or wait/exit.
+            with cond:
+                while True:
+                    if state["pages_done"] >= max_pages:
+                        return
+                    if state["queue"]:
+                        url = state["queue"].popleft()
+                        if url in state["visited"]:
+                            continue
+                        state["visited"].add(url)
+                        state["in_flight"] += 1
+                        break
+                    # Queue empty: only exit if nothing is in flight that could
+                    # publish more work; otherwise wait for a publisher.
+                    if state["in_flight"] == 0:
+                        return
+                    cond.wait()
+
+            try:
+                saved, body_chars, links = _process_url(url, client, context)
+            except Exception as exc:
+                logger.error(f"Worker failed on {url}: {exc}")
+                saved, body_chars, links = False, 0, []
+
+            with cond:
+                state["in_flight"] -= 1
+                if saved:
+                    state["pages_done"] += 1
+                    logger.info(
+                        "Saved page %d/%d: %s (%d chars)",
+                        state["pages_done"], max_pages, url, body_chars,
+                    )
+                _enqueue_links(links, state)
+                cond.notify_all()
+    finally:
+        client.close()
+        _close_browser(pw, browser, context)
+
+
 def crawl() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    visited: set[str] = set()
-    queue = deque(SEED_URLS)
-    pdf_seen: set[str] = set()
 
-    with httpx.Client(
-        timeout=30,  # Increased timeout
-        follow_redirects=True, 
-        headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9",
-        }
-    ) as client:
-        pages_done = 0
-        while queue and pages_done < MAX_PAGES:
-            url = queue.popleft()
-            if url in visited:
-                continue
-            visited.add(url)
+    state: dict = {
+        "queue": deque(SEED_URLS),
+        "visited": set(),
+        "pdf_seen": set(),
+        "pages_done": 0,
+        "in_flight": 0,
+    }
+    cond = threading.Condition()
+    workers = _resolve_worker_count()
+    max_pages = MAX_PAGES
 
-            # Fetch with retry
-            res = _fetch_with_retry(client, url)
-            if res is None:
-                continue
+    logger.info("Crawling with %d parallel workers (max pages: %d)...", workers, max_pages)
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="cuk") as pool:
+        futures = [pool.submit(_worker, cond, state, max_pages) for _ in range(workers)]
+        for future in futures:
+            future.result()  # surface any worker exceptions
 
-            if _is_pdf(url):
-                pdf_name = _safe_name(url).replace(".txt", ".pdf")
-                pdf_path = DATA_DIR / pdf_name
-                try:
-                    pdf_path.write_bytes(res.content)
-                    logger.info("Saved PDF: %s", pdf_name)
-                except Exception as exc:
-                    logger.warning("Failed to save PDF %s: %s", url, exc)
-                continue
-
-            raw_html = res.text
-            
-            # Enhanced SPA handling
-            if _is_spa_hash_route(url):
-                logger.info(f"Rendering SPA page: {url}")
-                rendered = _render_spa_html(url)
-                if rendered and len(rendered) > len(raw_html):
-                    raw_html = rendered
-                    logger.info(f"Successfully rendered SPA content ({len(rendered)} chars)")
-            
-            try:
-                soup = BeautifulSoup(raw_html, "html.parser")
-                page_title = soup.title.get_text(strip=True) if soup.title else "Untitled"
-                
-                # Clean up title
-                page_title = re.sub(r'\s+', ' ', page_title).strip()
-                if len(page_title) > 200:
-                    page_title = page_title[:197] + "..."
-                
-                body_text = _extract_text(soup)
-                
-                # Verify we got meaningful content
-                if len(body_text.strip()) < 50:
-                    logger.warning(f"Insufficient content from {url}, skipping...")
-                    continue
-                
-                contact_block = _extract_emails_and_phones(soup, body_text, page_title)
-                now = datetime.now(timezone.utc).isoformat()
-
-                txt_path = DATA_DIR / _safe_name(url)
-                txt_path.write_text(
-                    f"Source URL: {url}\nPage Title: {page_title}\nDate Scraped: {now}\n\n"
-                    f"{contact_block}{body_text}",
-                    encoding="utf-8",
-                )
-                pages_done += 1
-                logger.info("Saved page %d/%d: %s (%d chars)", pages_done, MAX_PAGES, url, len(body_text))
-            
-            except Exception as exc:
-                logger.error(f"Failed to process {url}: {exc}")
-                continue
-
-            # Extract links
-            try:
-                for link in soup.find_all("a", href=True):
-                    href = link.get("href", "").strip()
-                    if not href:
-                        continue
-                    abs_url = urljoin(url, href)
-                    abs_url = abs_url.split("#")[0]
-                    if not abs_url.startswith("http"):
-                        continue
-                    if _is_pdf(abs_url):
-                        if abs_url not in pdf_seen:
-                            pdf_seen.add(abs_url)
-                            queue.append(abs_url)
-                        continue
-                    if not _same_domain(abs_url):
-                        continue
-                    if abs_url in visited:
-                        continue
-                    if _is_cuk(abs_url):
-                        # For CUK, follow a richer set of paths (admissions, departments, exams, contact, etc.)
-                        if _is_pagination_link(abs_url) or any(key in abs_url.lower() for key in CUK_KEYWORDS):
-                            queue.append(abs_url)
-                    else:
-                        # For UGC (or other allowed hosts), keep to the stricter notices/admissions/exam filters.
-                        if _is_pagination_link(abs_url) or any(
-                            key in abs_url.lower() for key in ["/admission", "/notice", "/notices", "/exam", "/examination"]
-                        ):
-                            queue.append(abs_url)
-            except Exception as exc:
-                logger.warning(f"Failed to extract links from {url}: {exc}")
-
-    logger.info("Crawl finished. Pages saved: %d, PDFs queued: %d", pages_done, len(pdf_seen))
-    logger.info("Total URLs visited: %d", len(visited))
+    logger.info("Crawl finished. Pages saved: %d, PDFs queued: %d", state["pages_done"], len(state["pdf_seen"]))
+    logger.info("Total URLs visited: %d", len(state["visited"]))
 
 
 if __name__ == "__main__":
