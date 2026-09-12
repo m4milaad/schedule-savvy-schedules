@@ -1,9 +1,24 @@
 {
   "base_url": "https://cukashmir.ac.in",
-  "start_paths": ["/#/publiczone"],
+  "start_paths": [
+    "/#/publiczone",
+    "/#/publiczone/admissions",
+    "/#/publiczone/academics",
+    "/#/publiczone/departments",
+    "/#/publiczone/faculty",
+    "/#/publiczone/examinations",
+    "/#/publiczone/notices",
+    "/#/publiczone/research",
+    "/#/publiczone/student-corner",
+    "/#/publiczone/about",
+    "/",
+    "/academics",
+    "/admissions",
+    "/departments"
+  ],
   "output_dir": "data",
   "log_file": "crawler.log",
-  "max_pages": 5000,
+  "max_pages": 10000,
   "max_pdf_size_mb": 25,
   "headless": true,
   "nav_timeout_ms": 30000,
@@ -22,7 +37,9 @@
     "www.cukashmir.ac.in",
     "results.cukashmir.in",
     "www.results.cukashmir.in",
-    "cukapi.disgenweb.in"
+    "cukapi.disgenweb.in",
+    "publications.cukashmir.ac.in",
+    "library.cukashmir.ac.in"
   ],
   "block_patterns": [
     "/wp-admin",

@@ -1,0 +1,53 @@
+# Manual seed URLs for comprehensive scraping
+# Add important pages that might be missed by automatic discovery
+
+# Main sections
+https://cukashmir.ac.in/#/publiczone
+https://cukashmir.ac.in/#/publiczone/admissions
+https://cukashmir.ac.in/#/publiczone/academics
+https://cukashmir.ac.in/#/publiczone/departments
+https://cukashmir.ac.in/#/publiczone/faculty
+https://cukashmir.ac.in/#/publiczone/examinations
+https://cukashmir.ac.in/#/publiczone/notices
+https://cukashmir.ac.in/#/publiczone/research
+https://cukashmir.ac.in/#/publiczone/student-corner
+https://cukashmir.ac.in/#/publiczone/about
+https://cukashmir.ac.in/#/publiczone/contact
+
+# Admission related
+https://cukashmir.ac.in/#/publiczone/admissions/undergraduate
+https://cukashmir.ac.in/#/publiczone/admissions/postgraduate
+https://cukashmir.ac.in/#/publiczone/admissions/phd
+https://cukashmir.ac.in/#/publiczone/admissions/notices
+https://cukashmir.ac.in/#/publiczone/admissions/merit-lists
+
+# Academic pages
+https://cukashmir.ac.in/#/publiczone/academics/programmes
+https://cukashmir.ac.in/#/publiczone/academics/syllabus
+https://cukashmir.ac.in/#/publiczone/academics/calendar
+https://cukashmir.ac.in/#/publiczone/academics/regulations
+
+# Department pages
+https://cukashmir.ac.in/#/publiczone/departments/computer-science
+https://cukashmir.ac.in/#/publiczone/departments/mathematics
+https://cukashmir.ac.in/#/publiczone/departments/physics
+https://cukashmir.ac.in/#/publiczone/departments/chemistry
+https://cukashmir.ac.in/#/publiczone/departments/english
+https://cukashmir.ac.in/#/publiczone/departments/management
+
+# Examination pages
+https://cukashmir.ac.in/#/publiczone/examinations/datesheet
+https://cukashmir.ac.in/#/publiczone/examinations/results
+https://cukashmir.ac.in/#/publiczone/examinations/notifications
+
+# Results portal
+https://results.cukashmir.in
+
+# Notice boards
+https://cukashmir.ac.in/#/publiczone/notices/academic
+https://cukashmir.ac.in/#/publiczone/notices/general
+https://cukashmir.ac.in/#/publiczone/notices/recruitment
+https://cukashmir.ac.in/#/publiczone/notices/tenders
+
+# Add your own important URLs below:
+# (one URL per line, lines starting with # are ignored)
