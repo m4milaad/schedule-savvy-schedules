@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { SCRAPED_CUK_DATA, type ScrapedChunk } from "@/lib/chatbot/scraped_data";
 
 type SourceType = "web" | "pdf" | "doc";
 
@@ -90,8 +91,54 @@ const CUK_KNOWLEDGE_BASE = [
 async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse> {
   const startedAt = performance.now();
   const qLower = question.toLowerCase();
+  const tokens = qLower.split(/\W+/).filter((t) => t.length > 2);
 
-  // 1. Try querying Supabase for live notices and matching rag_documents
+  // 1. Search scraped university database (236 records from CUK APIs & PDFs)
+  const scrapedMatches: { chunk: ScrapedChunk; score: number }[] = [];
+  for (const chunk of SCRAPED_CUK_DATA) {
+    const textLower = chunk.text.toLowerCase();
+    const titleLower = chunk.title.toLowerCase();
+    let score = 0;
+    for (const t of tokens) {
+      if (titleLower.includes(t)) score += 3;
+      if (textLower.includes(t)) score += 1;
+    }
+    if (score > 0) {
+      scrapedMatches.push({ chunk, score });
+    }
+  }
+  scrapedMatches.sort((a, b) => b.score - a.score);
+
+  if (scrapedMatches.length > 0 && scrapedMatches[0].score >= 2) {
+    const topMatches = scrapedMatches.slice(0, 3);
+    const top = topMatches[0].chunk;
+
+    const sources: ChatbotSource[] = topMatches.map((m) => {
+      const u = m.chunk.url || "https://cukashmir.ac.in";
+      return {
+        title: m.chunk.title || "Scraped CUK Record",
+        url: u,
+        sourceType: u.endsWith(".pdf") ? "pdf" : u.endsWith(".doc") || u.endsWith(".docx") ? "doc" : "web",
+        score: Math.min(0.98, 0.7 + m.score * 0.05),
+      };
+    });
+
+    let formattedAnswer = `### Grounded Information: ${top.title}\n\n${top.text}`;
+    if (topMatches.length > 1) {
+      formattedAnswer += `\n\n### Related University Notices & Information:\n` +
+        topMatches.slice(1).map((m) => `- **${m.chunk.title}**: ${m.chunk.text.split("\n")[1] || m.chunk.text.slice(0, 120)}...`).join("\n");
+    }
+
+    return {
+      answer: formattedAnswer,
+      sources,
+      matchCount: sources.length,
+      elapsedMs: Math.round(performance.now() - startedAt),
+      mode: "scraped_data_retrieval",
+    };
+  }
+
+  // 2. Try querying Supabase for live notices and matching rag_documents
   const supabaseSources: ChatbotSource[] = [];
   let supabaseAnswerExt = "";
 
@@ -104,7 +151,7 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
 
     if (notices && notices.length > 0) {
       const matchingNotice = notices.find((n) =>
-        qLower.split(" ").some((word) => word.length > 3 && n.title.toLowerCase().includes(word))
+        tokens.some((word) => n.title.toLowerCase().includes(word))
       );
       if (matchingNotice) {
         supabaseAnswerExt = `\n\n### Latest Notice: ${matchingNotice.title}\n${matchingNotice.content}`;
@@ -116,34 +163,11 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
         });
       }
     }
-
-    const { data: ragDocs } = await supabase
-      .from("rag_documents")
-      .select("content, page_title, source_url")
-      .limit(20);
-
-    if (ragDocs && ragDocs.length > 0) {
-      const matched = ragDocs.filter((doc) =>
-        qLower.split(" ").some((w) => w.length > 3 && (doc.content.toLowerCase().includes(w) || doc.page_title.toLowerCase().includes(w)))
-      );
-      if (matched.length > 0) {
-        const top = matched[0];
-        if (!supabaseAnswerExt) {
-          supabaseAnswerExt = `\n\n### Grounded Excerpt from ${top.page_title}\n${top.content.slice(0, 350)}...`;
-        }
-        supabaseSources.push({
-          title: top.page_title || "CUK Index",
-          url: top.source_url || "https://cukashmir.ac.in",
-          sourceType: top.source_url?.endsWith(".pdf") ? "pdf" : "web",
-          score: 0.89,
-        });
-      }
-    }
   } catch {
     // Ignore Supabase connection issues silently
   }
 
-  // 2. Search local curated knowledge base
+  // 3. Search local curated knowledge base
   const match = CUK_KNOWLEDGE_BASE.find((entry) =>
     entry.keywords.some((kw) => qLower.includes(kw))
   );
@@ -187,6 +211,7 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
     mode: "grounded_fallback",
   };
 }
+
 
 export const askKnowledgeBase = async (
   question: string,
