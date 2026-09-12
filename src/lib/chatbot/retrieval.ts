@@ -37,7 +37,8 @@ type BackendChatResponse = {
 
 const envApiUrl = (import.meta.env.VITE_CHATBOT_API_URL as string | undefined) || "";
 const rawApiBaseUrl = envApiUrl.replace(/\/+$/, "");
-const isLocalhostChatbotUrl = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(rawApiBaseUrl);
+const API_BASE_URL = rawApiBaseUrl;
+const isLocalhostChatbotUrl = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/i.test(API_BASE_URL);
 const isHttpsProduction = typeof window !== "undefined" && window.location.protocol === "https:";
 
 const REQUEST_TIMEOUT_MS = 12000;
