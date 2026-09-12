@@ -29,14 +29,150 @@ type ChatMessage = {
 
 const starterPrompts = [
   "Latest CUK admission notification",
-  "CUET UG information bulletin PDF",
-  "UGC fake universities notice",
-  "Scholarship portals for students",
-  "How do I contact the examination department?",
-  "What are the MBA admission requirements?",
+  "Contact details for Biotechnology department",
+  "How do I apply for leave?",
+  "What are the MBA eligibility & requirements?",
+  "Where can I find exam timetable & seating?",
+  "Scholarships & fee structure details",
 ];
 
-const MIN_REQUEST_GAP_MS = 1500;
+const MIN_REQUEST_GAP_MS = 1000;
+
+function FormattedMarkdown({ text }: { text: string }) {
+  // Simple table & markdown parser to make grounded output wows the user
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let inTable = false;
+  let tableRows: string[][] = [];
+  let tableHeader: string[] = [];
+
+  const parseInline = (str: string): React.ReactNode[] => {
+    // Bold, links, code
+    const parts: React.ReactNode[] = [];
+    const regex = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.substring(lastIndex, match.index));
+      }
+      const token = match[0];
+      if (token.startsWith("**") && token.endsWith("**")) {
+        parts.push(<strong key={match.index} className="font-semibold text-foreground">{token.slice(2, -2)}</strong>);
+      } else if (token.startsWith("`") && token.endsWith("`")) {
+        parts.push(<code key={match.index} className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">{token.slice(1, -1)}</code>);
+      } else if (token.startsWith("[")) {
+        const linkText = token.match(/\[(.*?)\]/)?.[1] || "link";
+        const linkUrl = token.match(/\((.*?)\)/)?.[1] || "#";
+        parts.push(
+          <a
+            key={match.index}
+            href={linkUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-2 hover:opacity-80 inline-flex items-center gap-0.5"
+          >
+            {linkText}
+            <ExternalLink className="h-3 w-3 inline" />
+          </a>
+        );
+      }
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < str.length) {
+      parts.push(str.substring(lastIndex));
+    }
+    return parts;
+  };
+
+  const renderTable = (header: string[], rows: string[][], key: number) => (
+    <div key={key} className="my-3 overflow-x-auto rounded-lg border border-border/50 bg-background/50">
+      <table className="w-full text-left text-xs border-collapse">
+        {header.length > 0 && (
+          <thead className="bg-muted/60 text-foreground font-semibold border-b border-border/50">
+            <tr>
+              {header.map((col, i) => (
+                <th key={i} className="px-3 py-2 border-r border-border/30 last:border-r-0">
+                  {parseInline(col.trim())}
+                </th>
+              ))}
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {rows.map((row, rIdx) => (
+            <tr key={rIdx} className="border-b border-border/20 last:border-b-0 hover:bg-muted/30">
+              {row.map((cell, cIdx) => (
+                <td key={cIdx} className="px-3 py-2 border-r border-border/20 last:border-r-0 text-foreground/90">
+                  {parseInline(cell.trim())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      const cells = trimmed.split("|").slice(1, -1);
+      if (cells.every((c) => /^:?-+:?$/.test(c.trim()))) {
+        // Divider line in markdown table, ignore
+        return;
+      }
+      if (!inTable) {
+        inTable = true;
+        tableHeader = cells;
+        tableRows = [];
+      } else {
+        tableRows.push(cells);
+      }
+      return;
+    }
+
+    if (inTable) {
+      inTable = false;
+      elements.push(renderTable(tableHeader, tableRows, idx));
+      tableHeader = [];
+      tableRows = [];
+    }
+
+    if (trimmed.startsWith("### ")) {
+      elements.push(<h4 key={idx} className="mt-3 mb-1 text-sm font-bold tracking-tight text-foreground">{parseInline(trimmed.slice(4))}</h4>);
+    } else if (trimmed.startsWith("## ")) {
+      elements.push(<h3 key={idx} className="mt-4 mb-1.5 text-base font-bold tracking-tight text-foreground">{parseInline(trimmed.slice(3))}</h3>);
+    } else if (trimmed.startsWith("# ")) {
+      elements.push(<h2 key={idx} className="mt-4 mb-2 text-lg font-extrabold tracking-tight text-foreground">{parseInline(trimmed.slice(2))}</h2>);
+    } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      elements.push(
+        <li key={idx} className="ml-4 list-disc text-sm text-foreground/90 my-0.5">
+          {parseInline(trimmed.slice(2))}
+        </li>
+      );
+    } else if (/^\d+\.\s/.test(trimmed)) {
+      const content = trimmed.replace(/^\d+\.\s/, "");
+      elements.push(
+        <li key={idx} className="ml-4 list-decimal text-sm text-foreground/90 my-0.5">
+          {parseInline(content)}
+        </li>
+      );
+    } else if (trimmed.length > 0) {
+      elements.push(<p key={idx} className="my-1 text-sm leading-relaxed text-foreground/90">{parseInline(trimmed)}</p>);
+    } else {
+      elements.push(<div key={idx} className="h-1.5" />);
+    }
+  });
+
+  if (inTable) {
+    elements.push(renderTable(tableHeader, tableRows, lines.length));
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -351,7 +487,11 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                               : "bg-card border border-border/40 text-card-foreground rounded-tl-sm"
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          {isUser ? (
+                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+                          ) : (
+                            <FormattedMarkdown text={message.content} />
+                          )}
                         </div>
                         <button
                           type="button"
