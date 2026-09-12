@@ -96,16 +96,19 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
 
   // 1. Search scraped university database (236 records from CUK APIs & PDFs)
   const scrapedMatches: { chunk: ScrapedChunk; score: number }[] = [];
-  for (const chunk of SCRAPED_CUK_DATA) {
-    const textLower = chunk.text.toLowerCase();
-    const titleLower = chunk.title.toLowerCase();
-    let score = 0;
-    for (const t of tokens) {
-      if (titleLower.includes(t)) score += 3;
-      if (textLower.includes(t)) score += 1;
-    }
-    if (score > 0) {
-      scrapedMatches.push({ chunk, score });
+  if (Array.isArray(SCRAPED_CUK_DATA)) {
+    for (const chunk of SCRAPED_CUK_DATA) {
+      if (!chunk) continue;
+      const textLower = (chunk.text || "").toLowerCase();
+      const titleLower = (chunk.title || "").toLowerCase();
+      let score = 0;
+      for (const t of tokens) {
+        if (titleLower.includes(t)) score += 3;
+        if (textLower.includes(t)) score += 1;
+      }
+      if (score > 0) {
+        scrapedMatches.push({ chunk, score });
+      }
     }
   }
   scrapedMatches.sort((a, b) => b.score - a.score);
@@ -124,10 +127,10 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
       };
     });
 
-    let formattedAnswer = `### Grounded Information: ${top.title}\n\n${top.text}`;
+    let formattedAnswer = `### Grounded Information: ${top.title || "CUK Record"}\n\n${top.text || ""}`;
     if (topMatches.length > 1) {
       formattedAnswer += `\n\n### Related University Notices & Information:\n` +
-        topMatches.slice(1).map((m) => `- **${m.chunk.title}**: ${m.chunk.text.split("\n")[1] || m.chunk.text.slice(0, 120)}...`).join("\n");
+        topMatches.slice(1).map((m) => `- **${m.chunk.title || "Record"}**: ${(m.chunk.text || "").split("\n")[1] || (m.chunk.text || "").slice(0, 120)}...`).join("\n");
     }
 
     return {
@@ -152,7 +155,7 @@ async function fallbackGroundedSearch(question: string): Promise<ChatbotResponse
 
     if (notices && notices.length > 0) {
       const matchingNotice = notices.find((n) =>
-        tokens.some((word) => n.title.toLowerCase().includes(word))
+        Boolean(n && n.title) && tokens.some((word) => (n.title || "").toLowerCase().includes(word))
       );
       if (matchingNotice) {
         supabaseAnswerExt = `\n\n### Latest Notice: ${matchingNotice.title}\n${matchingNotice.content}`;
