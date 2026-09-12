@@ -158,13 +158,23 @@ npm run android:build  # Build release APK
 
 ### 🤖 AI Chatbot Assistant (NeMoX)
 - **Intelligent Q&A System**: Answers questions about CUK admissions, faculty, departments, courses, and policies
-- **Advanced RAG Pipeline**: Retrieval-augmented generation with Supabase pgvector for semantic search
-- **Smart Query Processing**: Automatic query expansion and department detection
+- **Advanced RAG Pipeline**: Hybrid retrieval (vector + BM25) with cross-encoder reranking
+- **Smart Query Processing**: Conversational memory with automatic query rewriting
 - **High Accuracy**: 95% accuracy in extracting contact information (emails, phones, names)
 - **Comprehensive Knowledge**: 3,500+ chunks from 150+ pages and 300+ PDFs
 - **Source Attribution**: Every answer includes clickable source links for verification
 - **Real-time Updates**: Skeleton loading UI with streaming response support
 - **Multi-role Access**: Available to students, teachers, and administrators
+
+**RAG System Components:**
+- **Web Crawler**: Autonomous Playwright crawler for CUK website data
+- **Data Pipeline**: PDF/DOCX/XLSX extraction with table preservation
+- **Vector Search**: sentence-transformers/all-MiniLM-L6-v2 embeddings
+- **Hybrid Retrieval**: Combined semantic + lexical (BM25) search
+- **Reranking**: cross-encoder/ms-marco-MiniLM-L-6-v2 for improved relevance
+- **LLM Generation**: Groq API with Llama 3.1 8B Instant
+
+📖 **[Complete RAG System Documentation →](RAG_SYSTEM.md)**
 
 ### Student Features (Web & Android App)
 - Personalized dashboard with all academic information

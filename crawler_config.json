@@ -1,0 +1,113 @@
+{
+  "base_url": "https://cukashmir.ac.in",
+  "start_paths": ["/#/publiczone"],
+  "output_dir": "data",
+  "log_file": "crawler.log",
+  "max_pages": 5000,
+  "max_pdf_size_mb": 25,
+  "headless": true,
+  "nav_timeout_ms": 30000,
+  "render_wait_max_ms": 8000,
+  "dom_stable_ms": 500,
+  "max_scrolls": 12,
+  "max_retries": 3,
+  "retry_backoff_seconds": 3,
+  "min_delay_seconds": 0.2,
+  "default_delay_seconds": 0.5,
+  "max_delay_seconds": 8.0,
+  "max_sitemap_urls": 5000,
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "allowed_domains": [
+    "cukashmir.ac.in",
+    "www.cukashmir.ac.in",
+    "results.cukashmir.in",
+    "www.results.cukashmir.in",
+    "cukapi.disgenweb.in"
+  ],
+  "block_patterns": [
+    "/wp-admin",
+    "/login",
+    "/signin",
+    "\\.js(\\?|$)",
+    "\\.css(\\?|$)",
+    "\\.ico$",
+    "\\.woff",
+    "\\.ttf",
+    "\\.mp4$",
+    "\\.mp3$",
+    "javascript:",
+    "mailto:",
+    "tel:",
+    "whatsapp:",
+    "facebook\\.com",
+    "twitter\\.com",
+    "instagram\\.com",
+    "youtube\\.com",
+    "linkedin\\.com",
+    "google\\.com"
+  ],
+  "blocked_fragments": [
+    "siteNav",
+    "pkp_content_main",
+    "pkp_content_footer"
+  ],
+  "drop_low_quality_records": true,
+  "min_quality_score": 2,
+  "button_trigger_words": ["all", "more", "view", "show", "load", "browse", "explore", "read"],
+  "department_detail_words": [
+    "about",
+    "achievement",
+    "contact",
+    "course",
+    "curriculum",
+    "faculty",
+    "programme",
+    "research",
+    "staff",
+    "students",
+    "syllabus"
+  ],
+  "category_synonyms": {
+    "admissions": [
+      "admission",
+      "admissions",
+      "apply",
+      "application",
+      "entrance",
+      "cuet",
+      "merit list",
+      "counselling"
+    ],
+    "fees": [
+      "fee",
+      "fees",
+      "fee structure",
+      "payment"
+    ],
+    "results": [
+      "result",
+      "results",
+      "marksheet",
+      "grade card"
+    ],
+    "examinations": [
+      "exam",
+      "examination",
+      "date sheet",
+      "timetable"
+    ],
+    "academics": [
+      "academic",
+      "syllabus",
+      "course",
+      "programme",
+      "curriculum"
+    ],
+    "faculty": ["faculty", "teacher", "professor"],
+    "departments": ["department", "school", "centre"],
+    "scholarships": ["scholarship", "fellowship", "stipend"],
+    "notices": ["notice", "notification", "circular", "announcement"],
+    "recruitment": ["job", "career", "recruitment", "vacancy"],
+    "contact": ["contact", "email", "phone", "address"]
+  }
+}
