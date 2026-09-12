@@ -49,5 +49,113 @@ https://cukashmir.ac.in/#/publiczone/notices/general
 https://cukashmir.ac.in/#/publiczone/notices/recruitment
 https://cukashmir.ac.in/#/publiczone/notices/tenders
 
+# Faculty lists by department
+https://cukashmir.ac.in/#/publiczone/facultylist
+https://cukashmir.ac.in/#/publiczone/facultylist/computer-science
+https://cukashmir.ac.in/#/publiczone/facultylist/mathematics
+https://cukashmir.ac.in/#/publiczone/facultylist/physics
+https://cukashmir.ac.in/#/publiczone/facultylist/chemistry
+https://cukashmir.ac.in/#/publiczone/facultylist/botany
+https://cukashmir.ac.in/#/publiczone/facultylist/zoology
+https://cukashmir.ac.in/#/publiczone/facultylist/biotechnology
+https://cukashmir.ac.in/#/publiczone/facultylist/english
+https://cukashmir.ac.in/#/publiczone/facultylist/arabic
+https://cukashmir.ac.in/#/publiczone/facultylist/urdu
+https://cukashmir.ac.in/#/publiczone/facultylist/history
+https://cukashmir.ac.in/#/publiczone/facultylist/education
+https://cukashmir.ac.in/#/publiczone/facultylist/law
+https://cukashmir.ac.in/#/publiczone/facultylist/management
+https://cukashmir.ac.in/#/publiczone/facultylist/commerce
+https://cukashmir.ac.in/#/publiczone/facultylist/economics
+
+# Department detail pages
+https://cukashmir.ac.in/#/publiczone/departmentlist
+https://cukashmir.ac.in/#/publiczone/departmentlist/computer-science
+https://cukashmir.ac.in/#/publiczone/departmentlist/mathematics
+https://cukashmir.ac.in/#/publiczone/departmentlist/physics
+https://cukashmir.ac.in/#/publiczone/departmentlist/chemistry
+https://cukashmir.ac.in/#/publiczone/departmentlist/botany
+https://cukashmir.ac.in/#/publiczone/departmentlist/zoology
+https://cukashmir.ac.in/#/publiczone/departmentlist/biotechnology
+https://cukashmir.ac.in/#/publiczone/departmentlist/english
+https://cukashmir.ac.in/#/publiczone/departmentlist/arabic
+https://cukashmir.ac.in/#/publiczone/departmentlist/urdu
+https://cukashmir.ac.in/#/publiczone/departmentlist/history
+https://cukashmir.ac.in/#/publiczone/departmentlist/education
+https://cukashmir.ac.in/#/publiczone/departmentlist/law
+https://cukashmir.ac.in/#/publiczone/departmentlist/management
+https://cukashmir.ac.in/#/publiczone/departmentlist/commerce
+https://cukashmir.ac.in/#/publiczone/departmentlist/economics
+https://cukashmir.ac.in/#/publiczone/departmentlist/library-science
+https://cukashmir.ac.in/#/publiczone/departmentlist/social-work
+
+# Schools
+https://cukashmir.ac.in/#/publiczone/schools
+https://cukashmir.ac.in/#/publiczone/schools/physical-sciences
+https://cukashmir.ac.in/#/publiczone/schools/life-sciences
+https://cukashmir.ac.in/#/publiczone/schools/social-sciences
+https://cukashmir.ac.in/#/publiczone/schools/legal-studies
+https://cukashmir.ac.in/#/publiczone/schools/education
+https://cukashmir.ac.in/#/publiczone/schools/languages
+https://cukashmir.ac.in/#/publiczone/schools/management
+
+# Administration
+https://cukashmir.ac.in/#/publiczone/administration
+https://cukashmir.ac.in/#/publiczone/administration/vice-chancellor
+https://cukashmir.ac.in/#/publiczone/administration/registrar
+https://cukashmir.ac.in/#/publiczone/administration/finance-officer
+https://cukashmir.ac.in/#/publiczone/administration/deans
+https://cukashmir.ac.in/#/publiczone/administration/statutory-bodies
+
+# Student services
+https://cukashmir.ac.in/#/publiczone/student-services
+https://cukashmir.ac.in/#/publiczone/student-services/scholarships
+https://cukashmir.ac.in/#/publiczone/student-services/hostels
+https://cukashmir.ac.in/#/publiczone/student-services/library
+https://cukashmir.ac.in/#/publiczone/student-services/sports
+https://cukashmir.ac.in/#/publiczone/student-services/health
+https://cukashmir.ac.in/#/publiczone/student-services/counseling
+
+# Infrastructure
+https://cukashmir.ac.in/#/publiczone/infrastructure
+https://cukashmir.ac.in/#/publiczone/infrastructure/library
+https://cukashmir.ac.in/#/publiczone/infrastructure/laboratories
+https://cukashmir.ac.in/#/publiczone/infrastructure/hostels
+https://cukashmir.ac.in/#/publiczone/infrastructure/sports-facilities
+https://cukashmir.ac.in/#/publiczone/infrastructure/auditorium
+
+# NAAC & NIRF
+https://cukashmir.ac.in/#/publiczone/naac
+https://cukashmir.ac.in/#/publiczone/nirf
+https://cukashmir.ac.in/#/publiczone/iqac
+https://cukashmir.ac.in/#/publiczone/aqar
+
+# RTI
+https://cukashmir.ac.in/#/publiczone/rti
+https://cukashmir.ac.in/#/publiczone/rti/officers
+https://cukashmir.ac.in/#/publiczone/rti/manual
+
+# Tenders
+https://cukashmir.ac.in/#/publiczone/tenders
+https://cukashmir.ac.in/#/publiczone/tenders/active
+https://cukashmir.ac.in/#/publiczone/tenders/archive
+
+# Campuses
+https://cukashmir.ac.in/#/publiczone/campuses
+https://cukashmir.ac.in/#/publiczone/campuses/main-campus
+https://cukashmir.ac.in/#/publiczone/campuses/south-campus
+
+# Gallery
+https://cukashmir.ac.in/#/publiczone/gallery
+https://cukashmir.ac.in/#/publiczone/gallery/events
+https://cukashmir.ac.in/#/publiczone/gallery/infrastructure
+
+# Downloads
+https://cukashmir.ac.in/#/publiczone/downloads
+https://cukashmir.ac.in/#/publiczone/downloads/forms
+https://cukashmir.ac.in/#/publiczone/downloads/prospectus
+https://cukashmir.ac.in/#/publiczone/downloads/syllabus
+https://cukashmir.ac.in/#/publiczone/downloads/ordinances
+
 # Add your own important URLs below:
 # (one URL per line, lines starting with # are ignored)
