@@ -14,7 +14,8 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
-    User
+    User,
+    Award
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -43,6 +44,7 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
         { id: "courses", label: "My Courses", icon: BookOpen },
         { id: "exams", label: "Exams", icon: Calendar },
         { id: "marks", label: "Marks", icon: GraduationCap },
+        { id: "ese-result", label: "ESE Result", icon: Award },
         { id: "performance", label: "Performance", icon: TrendingUp },
         { id: "resources", label: "Resources", icon: FolderOpen },
         { id: "assignments", label: "Assignments", icon: FileText },

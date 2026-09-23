@@ -16,6 +16,7 @@ import { ProfileEditDialog } from '@/components/ProfileEditDialog';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { StudentMarksTab } from '@/components/student/StudentMarksTab';
+import { StudentEseResultTab } from '@/components/student/StudentEseResultTab';
 import { StudentAssignmentsTab } from '@/components/student/StudentAssignmentsTab';
 import { StudentNoticesTab } from '@/components/student/StudentNoticesTab';
 import { StudentCoursesTab } from '@/components/student/StudentCoursesTab';
@@ -37,7 +38,7 @@ import { useNavigate } from 'react-router-dom';
 import logger from '@/lib/logger';
 
 
-const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
+const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'ese-result', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
 type TabValue = typeof TAB_VALUES[number];
 
 const KEYBOARD_SHORTCUTS = [
@@ -48,11 +49,12 @@ const KEYBOARD_SHORTCUTS = [
       { keys: ['2'], description: 'Go to Courses' },
       { keys: ['3'], description: 'Go to Exams' },
       { keys: ['4'], description: 'Go to Marks' },
-      { keys: ['5'], description: 'Go to Performance' },
-      { keys: ['6'], description: 'Go to Resources' },
-      { keys: ['7'], description: 'Go to Assignments' },
-      { keys: ['8'], description: 'Go to Library' },
-      { keys: ['9'], description: 'Go to Leave' },
+      { keys: ['5'], description: 'Go to ESE Results' },
+      { keys: ['6'], description: 'Go to Performance' },
+      { keys: ['7'], description: 'Go to Resources' },
+      { keys: ['8'], description: 'Go to Assignments' },
+      { keys: ['9'], description: 'Go to Library' },
+      { keys: ['0'], description: 'Go to Leave' },
       { keys: ['←'], description: 'Previous tab' },
       { keys: ['→'], description: 'Next tab' },
     ],
@@ -158,6 +160,7 @@ const StudentDashboard = () => {
     { shortcut: { key: '7' }, callback: () => navigateToTab(6) },
     { shortcut: { key: '8' }, callback: () => navigateToTab(7) },
     { shortcut: { key: '9' }, callback: () => navigateToTab(8) },
+    { shortcut: { key: '0' }, callback: () => navigateToTab(9) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
     { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
@@ -419,6 +422,7 @@ const StudentDashboard = () => {
       courses: "My Courses",
       exams: "Exam Schedule",
       marks: "My Marks",
+      "ese-result": "ESE Results",
       performance: "Performance",
       resources: "Resources",
       assignments: "Assignments",
@@ -434,6 +438,7 @@ const StudentDashboard = () => {
       courses: "View and manage your course enrollments",
       exams: "Check your exam schedule and seating",
       marks: "View your marks and grades",
+      "ese-result": "View your End Semester Examination marks, CIA, ESE, and grand totals",
       performance: "Track your academic performance",
       resources: "Access learning materials and resources",
       assignments: "View and submit your assignments",
@@ -557,6 +562,8 @@ const StudentDashboard = () => {
         );
       case "marks":
         return <StudentMarksTab studentId={profile?.id || ''} />;
+      case "ese-result":
+        return <StudentEseResultTab studentId={profile?.id || ''} />;
       case "performance":
         return <StudentPerformanceTab studentId={profile?.id || ''} />;
       case "resources":

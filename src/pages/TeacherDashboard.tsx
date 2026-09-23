@@ -7,6 +7,7 @@ import { MarksTab } from '@/components/teacher/MarksTab';
 import { AttendanceTab } from '@/components/teacher/AttendanceTab';
 import { AssignmentsTab } from '@/components/teacher/AssignmentsTab';
 import { ResourcesTab } from '@/components/teacher/ResourcesTab';
+import { EseResultsTab } from '@/components/teacher/EseResultsTab';
 import { LeaveManagementTab } from '@/components/teacher/LeaveManagementTab';
 import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab';
 import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
@@ -28,7 +29,7 @@ interface Department {
   dept_name: string;
 }
 
-const TAB_VALUES = ['notices', 'marks', 'attendance', 'assignments', 'resources', 'leave-management', 'apply-leave'] as const;
+const TAB_VALUES = ['notices', 'marks', 'attendance', 'assignments', 'resources', 'ese-results', 'leave-management', 'apply-leave'] as const;
 type TabValue = typeof TAB_VALUES[number];
 
 const KEYBOARD_SHORTCUTS = [
@@ -40,8 +41,9 @@ const KEYBOARD_SHORTCUTS = [
       { keys: ['3'], description: 'Go to Attendance' },
       { keys: ['4'], description: 'Go to Assignments' },
       { keys: ['5'], description: 'Go to Resources' },
-      { keys: ['6'], description: 'Go to Leave Management' },
-      { keys: ['7'], description: 'Go to Apply Leave' },
+      { keys: ['6'], description: 'Go to ESE Results' },
+      { keys: ['7'], description: 'Go to Leave Management' },
+      { keys: ['8'], description: 'Go to Apply Leave' },
       { keys: ['←'], description: 'Previous tab' },
       { keys: ['→'], description: 'Next tab' },
     ],
@@ -97,6 +99,7 @@ const TeacherDashboard = () => {
     { shortcut: { key: '5' }, callback: () => navigateToTab(4) },
     { shortcut: { key: '6' }, callback: () => navigateToTab(5) },
     { shortcut: { key: '7' }, callback: () => navigateToTab(6) },
+    { shortcut: { key: '8' }, callback: () => navigateToTab(7) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
     { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
@@ -194,6 +197,7 @@ const TeacherDashboard = () => {
       attendance: "Attendance",
       assignments: "Assignments",
       resources: "Resources",
+      "ese-results": "ESE Results",
       "leave-management": "Leave Management",
       "apply-leave": "Apply Leave",
     };
@@ -207,6 +211,7 @@ const TeacherDashboard = () => {
       attendance: "Track and record student attendance",
       assignments: "Create and grade student assignments",
       resources: "Upload and manage learning materials",
+      "ese-results": "Bulk upload PDF and manage university End Semester Examination results",
       "leave-management": "Review and approve student leave requests",
       "apply-leave": "Submit your own leave applications",
     };
@@ -225,6 +230,8 @@ const TeacherDashboard = () => {
         return <AssignmentsTab teacherId={profile?.id || ''} courses={teacherCourses} />;
       case "resources":
         return <ResourcesTab teacherId={profile?.id || ''} courses={teacherCourses} />;
+      case "ese-results":
+        return <EseResultsTab teacherId={profile?.id || ''} />;
       case "leave-management":
         return <LeaveManagementTab teacherId={profile?.id || ''} />;
       case "apply-leave":
