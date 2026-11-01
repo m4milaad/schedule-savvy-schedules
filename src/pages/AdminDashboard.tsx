@@ -66,23 +66,18 @@ const AdminDashboard: React.FC = () => {
 
     const checkUserRole = async () => {
         try {
-            const { data } = await supabase.auth.getUser();
-            const user = data?.user;
+            // Local session read (the route guard already checked it); RLS guards the data.
+            const { data } = await supabase.auth.getSession();
+            const user = data?.session?.user;
             if (!user) {
                 navigate("/");
                 return;
             }
 
-            const { data: roles } = await supabase
-                .from("user_roles")
-                .select("role")
-                .eq("user_id", user.id);
-
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq("user_id", user.id)
-                .single();
+            const [{ data: roles }, { data: profile }] = await Promise.all([
+                supabase.from("user_roles").select("role").eq("user_id", user.id),
+                supabase.from("profiles").select("*").eq("user_id", user.id).single(),
+            ]);
 
             setProfileData(profile || null);
             setAuthUserId(user.id);
