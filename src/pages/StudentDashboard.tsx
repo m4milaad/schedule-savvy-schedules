@@ -164,11 +164,7 @@ const StudentDashboard = () => {
   useSearchShortcut(searchInputRef);
 
   // Enable real-time notifications for seat assignments and datesheets
-  useRealtimeNotifications({
-    studentId: profile?.id,
-    userId: user?.id,
-    enabled: !!profile?.id && !!user?.id
-  });
+  useRealtimeNotifications({ userId: user?.id });
 
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {

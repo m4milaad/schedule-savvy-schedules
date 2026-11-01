@@ -20,9 +20,8 @@ export default tseslint.config(
       ".pytest_cache",
       "__pycache__",
       "android",
+      "supabase/functions", // Deno, not part of the web tsconfig
       "data",
-      // Parsed by ESLint but not listed in tsconfig.eslint.json
-      "capacitor.config.ts",
     ],
   },
   {

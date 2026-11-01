@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { downloadBlob } from '@/lib/download';
 
 function toCellText(value: ExcelJS.CellValue | undefined): string {
   if (value == null) return '';
@@ -102,15 +103,7 @@ export async function downloadWorkbook(
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadBlob(blob, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
 }
 
 /**

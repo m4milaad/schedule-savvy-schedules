@@ -121,8 +121,10 @@ gradle-wrapper.jar
 .claude/skills/migrate-radix-to-base
 .claude/skills/shadcn
 
-# Claude Code per-user settings
+# Claude Code per-user settings and MCP servers
 .claude/settings.local.json
+.claude/launch.json
+.mcp.json
 
 # taste-skill working files (screenshots, direction sheet)
 .taste-skill/

@@ -766,6 +766,8 @@ html.admin-theme [role="alertdialog"] {
 /* Auth page: double-slider sign in / sign up (pattern from BOSS0exe/Sign-in-and-Sign-up-page),
    mirrored so the brand panel sits left for sign in and sweeps right for sign up. */
 .auth-slider { position: relative; min-height: 100vh; width: 100%; overflow: hidden; background: #000; color: #fff; }
+/* The safe-area padding on <html> (status bar strip in the Android app) shows the page background. */
+html:has(.auth-slider) { background: #000; }
 .auth-pane { position: absolute; top: 0; right: 0; width: 50%; height: 100%; transition: transform .6s ease-in-out, opacity .6s ease-in-out; }
 .auth-pane-signin { z-index: 2; }
 .auth-pane-signup { opacity: 0; z-index: 1; }

@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { VenueSeatingPlan } from './seatingAlgorithm';
 import { format } from 'date-fns';
+import { downloadBlob } from '@/lib/download';
 
 export function exportSeatingToPdf(
   venues: VenueSeatingPlan[],
@@ -178,7 +179,7 @@ export function exportSeatingToPdf(
 
   // Save the PDF
   const filename = `seating-arrangement-${examDate}.pdf`;
-  doc.save(filename);
+  void downloadBlob(doc.output('blob'), filename);
 
   return filename;
 }

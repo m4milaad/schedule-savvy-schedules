@@ -9,13 +9,10 @@ import { z } from 'zod';
 import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/appUrl';
+import { registerPush, unregisterPush } from '@/lib/push';
 
 
 export type UserProfile = Profile;
-
-function appHomeUrl(): string {
-  return `${getAppBaseUrl()}/`;
-}
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -73,6 +70,10 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (user?.id) registerPush();
+  }, [user?.id]);
 
   const loadUserProfile = async (userId: string) => {
     try {
@@ -233,15 +234,18 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
+      // While the session still exists: the RPC needs it.
+      await unregisterPush().catch(() => {});
       cleanupAuthState();
-      
+
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch {
         // Continue even if this fails
       }
       
-      window.location.replace(appHomeUrl());
+      // Same origin, not VITE_APP_URL: inside the Android app that would open the website in a browser.
+      window.location.replace(new URL(import.meta.env.BASE_URL, `${window.location.origin}/`).href);
     } catch (error: unknown) {
       logger.error('Sign out error:', error);
       toast({

@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import logger from '@/lib/logger';
+import { downloadBlob } from '@/lib/download';
 
 
 interface AuditLog {
@@ -236,10 +237,7 @@ export const AuditLogsTab = () => {
       ].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-      link.click();
+      await downloadBlob(blob, `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
 
       toast({
         title: "Export Complete",

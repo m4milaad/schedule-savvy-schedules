@@ -61,8 +61,8 @@ keystore.properties
 .externalNativeBuild
 .cxx/
 
-# Google Services (e.g. APIs or Firebase)
-# google-services.json
+# Firebase project config: kept per machine, builds without it simply skip push
+google-services.json
 
 # Freeline
 freeline.py
@@ -89,13 +89,7 @@ lint/tmp/
 # Android Profiling
 *.hprof
 
-# Cordova plugins for Capacitor
-capacitor-cordova-android-plugins
 
-# Copied web assets
+# Web build copied in by npm run android:copy
 app/src/main/assets/public
 
-# Generated Config files
-app/src/main/assets/capacitor.config.json
-app/src/main/assets/capacitor.plugins.json
-app/src/main/res/xml/config.xml
