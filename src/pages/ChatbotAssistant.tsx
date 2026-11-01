@@ -9,12 +9,23 @@ import {
   Globe,
   RotateCcw,
   ArrowUp,
-
+  Plus,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 import { askKnowledgeBase, type ChatbotResponse, type ChatHistoryTurn } from "@/lib/chatbot/retrieval";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -465,11 +476,47 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                 aria-label="Message"
                 disabled={loading}
                 rows={1}
-                className="min-h-0 text-sm"
+                className="min-h-14 text-sm"
                 style={{ maxHeight: "140px", overflowY: "auto" }}
               />
-              <InputGroupAddon align="block-end" className="border-t">
-                <InputGroupButton type="submit" variant="default" size="icon-sm" className="ml-auto rounded-full" disabled={!canSubmit} aria-label="Send">
+              <InputGroupAddon align="block-end" className="pt-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <InputGroupButton type="button" variant="outline" size="icon-sm" aria-label="More options">
+                      <Plus />
+                    </InputGroupButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    side="top"
+                    className="w-80"
+                    // Back to typing, not to the + button.
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault();
+                      textareaRef.current?.focus();
+                    }}
+                  >
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Suggested questions</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {starterPrompts.map((prompt) => (
+                        <DropdownMenuItem
+                          key={prompt}
+                          className="gap-2"
+                          onSelect={() => setQuery(prompt)}
+                        >
+                          <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          {prompt}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="gap-2" onSelect={clearChat} disabled={loading}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      Clear chat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <InputGroupButton type="submit" variant="default" size="icon-sm" className="ml-auto" disabled={!canSubmit} aria-label="Send">
                   <ArrowUp />
                 </InputGroupButton>
               </InputGroupAddon>
