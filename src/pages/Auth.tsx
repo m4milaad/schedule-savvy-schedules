@@ -211,9 +211,7 @@ const Auth = () => {
                 {isSignUp ? 'Sign in' : 'Create an account'}
               </button>
             </div>
-            <p className="text-[11px] text-white/40">
-              © Central University of Kashmir {new Date().getFullYear()}. All rights reserved.
-            </p>
+            <Credits />
           </div>
         </div>
       </aside>
@@ -318,6 +316,27 @@ const fieldInput =
   'w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white placeholder:text-white/25 outline-none transition-colors focus:border-white';
 const fieldLabel = 'block text-[11px] font-medium text-white/60';
 
+const creditLink = 'underline-offset-4 transition-colors hover:text-white hover:underline';
+
+/** University link, copyright and developer credits. */
+const Credits = ({ className }: { className?: string }) => (
+  <div className={cn('flex flex-wrap justify-between gap-x-6 gap-y-1 text-[11px] text-white/40', className)}>
+    <p>
+      ©{' '}
+      <a href="https://www.cukashmir.ac.in" target="_blank" rel="noopener noreferrer" className={creditLink}>
+        Central University of Kashmir
+      </a>{' '}
+      {new Date().getFullYear()}. All rights reserved.
+    </p>
+    <p>
+      Developed by{' '}
+      <a href="https://m4milaad.github.io" target="_blank" rel="noopener noreferrer" className={creditLink}>Milad</a>
+      {' '}and{' '}
+      <a href="https://nimrawani.vercel.app/" target="_blank" rel="noopener noreferrer" className={creditLink}>Nimra</a>
+    </p>
+  </div>
+);
+
 interface AuthCardProps {
   title: string;
   switchLabel: string;
@@ -345,6 +364,8 @@ const AuthCard: React.FC<AuthCardProps> = ({ title, switchLabel, onSwitch, onSub
         <div className="mx-auto my-auto w-full max-w-lg py-10">
           <h1 className="mb-10 text-5xl font-light tracking-tight sm:text-6xl">{title}</h1>
           {children}
+          {/* Phones only: the brand panel that normally carries these is hidden below lg. */}
+          <Credits className="mt-12 lg:hidden" />
         </div>
       </div>
 
