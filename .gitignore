@@ -109,3 +109,17 @@ android/captures/
 # Gradle
 .gradle/
 gradle-wrapper.jar
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Agent skills: .agents/skills is the source of truth (see skills-lock.json).
+# These .claude/skills entries are local junctions/symlinks into it, recreated by `npx skills add`.
+.claude/skills/design-taste-frontend
+.claude/skills/migrate-radix-to-base
+.claude/skills/shadcn
+
+# Claude Code per-user settings
+.claude/settings.local.json

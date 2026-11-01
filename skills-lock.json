@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "53590ee9325bee34d7888bf0d81bd3941a108b1e7850df46802d93104e3f2b90"
+    },
+    "migrate-radix-to-base": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/migrate-radix-to-base/SKILL.md",
+      "computedHash": "4fdc31bf287f674ba6bf91a648120f7b34cd7ef370f998f2cc116fed067789c5"
+    },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "7859e9a064940a1a0010c992b63e4633c4f5f39ed367a23c16f24029816b1703"
+    }
+  }
+}
