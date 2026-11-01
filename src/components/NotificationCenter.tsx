@@ -25,9 +25,11 @@ interface Notification {
 
 interface NotificationCenterProps {
   userId?: string;
+  /** Plain ghost trigger, no glass or shadow (admin shell). */
+  minimal?: boolean;
 }
 
-export function NotificationCenter({ userId }: NotificationCenterProps) {
+export function NotificationCenter({ userId, minimal = false }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -186,9 +188,9 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant={minimal ? "ghost" : "outline"}
           size="icon"
-          className="relative bg-background/20 border-white/20 dark:border-white/10 backdrop-blur-xl hover:bg-background/30 shadow-[0_18px_60px_rgba(15,23,42,0.45)] transition-colors"
+          className={minimal ? "relative h-8 w-8 text-muted-foreground" : "relative bg-background/20 border-white/20 dark:border-white/10 backdrop-blur-xl hover:bg-background/30 shadow-[0_18px_60px_rgba(15,23,42,0.45)] transition-colors"}
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (

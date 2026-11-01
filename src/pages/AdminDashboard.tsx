@@ -17,11 +17,10 @@ import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
-import { AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { PageTransition } from "@/components/layout/PageTransition";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
+import { formatDay, relativeDays, summariseExamDates } from "@/lib/examDates";
 import { OverviewTab } from "@/components/admin/OverviewTab";
 import Index from "@/pages/Index";
 import ChatbotAssistant from "@/pages/ChatbotAssistant";
@@ -55,6 +54,12 @@ const AdminDashboard: React.FC = () => {
     useEffect(() => {
         checkUserRole();
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Scoped admin theme (see index.css). On <html> so dialogs and menus in portals get it too.
+    useEffect(() => {
+        document.documentElement.classList.add("admin-theme");
+        return () => document.documentElement.classList.remove("admin-theme");
     }, []);
 
     useEffect(() => {
@@ -280,6 +285,7 @@ const AdminDashboard: React.FC = () => {
                     <OverviewTab
                         role={userRole}
                         adminName={profileData?.full_name}
+                        examDates={examDates}
                         setActiveTab={setActiveTab}
                         counts={{
                             schools: schools.length,
@@ -315,51 +321,51 @@ const AdminDashboard: React.FC = () => {
     const getTabTitle = () => {
         const titles: { [key: string]: string } = {
             overview: "Overview",
-            schools: "School Management",
-            departments: "Department Management",
-            courses: "Course Catalog",
-            teachers: "Faculty Directory",
-            venues: "Exam Venues",
-            sessions: "Academic Sessions",
-            holidays: "Holiday Calendar",
-            students: "Student Records",
-            seating: "Seating Arrangement",
-            generator: "Schedule Generator",
-            assistant: "CUK Knowledge Assistant",
-            logs: "System Audit Logs",
-            admins: "Manage Administrators",
-            profile: "Profile Settings",
+            schools: "Schools",
+            departments: "Departments",
+            courses: "Courses",
+            teachers: "Teachers",
+            venues: "Exam venues",
+            sessions: "Sessions",
+            holidays: "Holidays",
+            students: "Students",
+            seating: "Seating",
+            generator: "Datesheet generator",
+            assistant: "Assistant",
+            logs: "Audit log",
+            admins: "Administrators",
+            profile: "Profile",
         };
-        return titles[activeTab] || "Dashboard";
+        return titles[activeTab] || "Overview";
     };
 
+    // One line about the data on screen, never about the interface.
     const getTabDescription = () => {
+        const n = (count: number, one: string, many: string) => `${count.toLocaleString("en-IN")} ${count === 1 ? one : many}`;
+        const depts = n(departments.length, "department", "departments");
+        const seats = venues.reduce((sum, v) => sum + (v.venue_capacity || 0), 0);
+        const { next, daysUntilNext } = summariseExamDates(examDates);
         const descs: { [key: string]: string } = {
-            overview: "Quick access to your most important admin tools and stats",
-            schools: "Manage university schools and faculties",
-            departments: "Configure academic departments",
-            courses: "View and manage all course offerings",
-            teachers: "Manage faculty members and assignments",
-            venues: "Configure exam halls and seating capacities",
-            sessions: "Set up academic years and terms",
-            holidays: "Manage non-working days",
-            students: "Manage student enrollments and profiles",
-            seating: "Generate and view exam seating plans",
-            generator: "Generate and manage exam schedules in one place",
-            assistant: "Ask questions from crawled CUK and UGC data with citations",
-            logs: "Monitor system activity and changes",
-            admins: "Create and manage admin users and permissions",
-            profile: "Manage your account settings and preferences",
+            overview: next && daysUntilNext !== null
+                ? `Next exam ${formatDay(next)}, ${relativeDays(daysUntilNext)}`
+                : "No upcoming exams on the datesheet",
+            schools: `${n(schools.length, "school", "schools")}, ${depts}`,
+            departments: `${depts} across ${n(schools.length, "school", "schools")}`,
+            courses: n(courses.length, "course", "courses"),
+            teachers: n(teachers.length, "teacher", "teachers"),
+            venues: `${n(venues.length, "venue", "venues")}, ${n(seats, "seat", "seats")} in total`,
+            sessions: n(sessions.length, "session", "sessions"),
+            holidays: n(holidays.length, "holiday", "holidays"),
+            students: n(students.length, "student", "students"),
+            seating: n(examDates.length, "exam day", "exam days") + " on the datesheet",
+            assistant: "Answers from CUK and UGC documents, with citations",
         };
-        return descs[activeTab] || "Manage university data";
+        return descs[activeTab];
     };
 
     return (
         <div
-            className={cn(
-                "flex min-h-screen overflow-hidden transition-colors duration-300",
-                !profileData?.theme_color && "bg-gradient-to-b from-background to-muted/30"
-            )}
+            className="flex min-h-screen overflow-hidden bg-background"
             style={{
                 backgroundColor: profileData?.theme_color || undefined
             }}
@@ -383,6 +389,7 @@ const AdminDashboard: React.FC = () => {
                                 setIsMobileMenuOpen(false);
                             }}
                             isInsideSheet
+                            userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
                         />
                     </SheetContent>
                 </Sheet>
@@ -398,20 +405,21 @@ const AdminDashboard: React.FC = () => {
                     toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                     onLogout={handleLogout}
                     onNavigate={navigate}
+                    userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
                 />
             )}
 
             {/* Main Content */}
             <div
                 className={cn(
-                    "flex min-w-0 flex-1 flex-col transition-[margin] duration-300 ease-out",
-                    !isMobile && (isSidebarCollapsed ? "ml-20" : "ml-64")
+                    "flex min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-out",
+                    !isMobile && (isSidebarCollapsed ? "ml-16" : "ml-60")
                 )}
             >
                 <AdminTopbar
                     title={getTabTitle()}
                     description={getTabDescription()}
-                    userLabel={profileData?.full_name || profileData?.email || undefined}
+                    userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
                     userId={authUserId}
                     isMobile={isMobile}
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}
@@ -420,13 +428,12 @@ const AdminDashboard: React.FC = () => {
                     onNavigate={(path) => navigate(path)}
                 />
 
-                <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
-                    <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
-                        <AnimatePresence mode="wait">
-                            <PageTransition key={activeTab}>
-                                {renderContent()}
-                            </PageTransition>
-                        </AnimatePresence>
+                <main className="min-w-0 flex-1 overflow-y-auto">
+                    <div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 md:pb-8 md:pt-0">
+                        {isMobile && getTabDescription() && (
+                            <p className="mb-4 text-sm text-muted-foreground">{getTabDescription()}</p>
+                        )}
+                        {renderContent()}
                     </div>
                 </main>
             </div>
