@@ -123,3 +123,5 @@ gradle-wrapper.jar
 
 # Claude Code per-user settings
 .claude/settings.local.json
+# Python's lib/ rule above must not swallow vendored skill code
+!.agents/skills/**/lib/
