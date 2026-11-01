@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff } from 'lucide-react';
-import Squares from '@/components/Squares';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Eye, EyeOff, GraduationCap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
-import { useTheme } from '@/components/ThemeProvider';
 import logger from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/appUrl';
 
@@ -46,9 +46,7 @@ const Auth = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { theme } = useTheme();
 
-  const isLightMode = theme === 'light' || (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
   const isSignUp = activeTab === 'Sign Up';
 
   useEffect(() => {
@@ -178,227 +176,158 @@ const Auth = () => {
     }
   };
 
-  const direction = isSignUp ? 1 : -1;
-
-  const formVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 30 : -30, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir < 0 ? 30 : -30, opacity: 0 }),
-  };
-
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 z-0">
-        <Squares
-          speed={0.5}
-          squareSize={40}
-          direction="diagonal"
-          borderColor={isLightMode ? 'rgb(200,200,210)' : 'rgb(39,30,55)'}
-          hoverFillColor={isLightMode ? 'rgb(59,130,246)' : 'rgb(34,34,34)'}
-          vignetteColor={isLightMode ? '#ffffff' : '#060010'}
-        />
+    <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-2">
+      {/* Brand panel (desktop) */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10 ring-1 ring-primary-foreground/20">
+            <img
+              src="./CUKLogo.ico"
+              alt=""
+              className="size-6 object-contain"
+              onError={(e) => {
+                const t = e.target as HTMLImageElement;
+                if (t.src.includes('CUKLogo.ico')) t.src = '/favicon.ico';
+                else t.replaceWith(Object.assign(document.createElement('span'), { textContent: '🎓' }));
+              }}
+            />
+          </span>
+          <span className="text-lg font-semibold tracking-tight">CUK Acadex</span>
+        </div>
+
+        <div className="max-w-md">
+          <h2 className="text-3xl font-semibold leading-tight tracking-tight">
+            Your campus, organised.
+          </h2>
+          <p className="mt-4 text-base leading-relaxed text-primary-foreground/80">
+            Exam schedules, marks, attendance, resources and notices — one place for
+            students, teachers and administrators at the Central University of Kashmir.
+          </p>
+        </div>
+
+        <p className="text-sm text-primary-foreground/70">
+          Central University of Kashmir · Ganderbal, J&amp;K
+        </p>
       </div>
 
-      <div className="relative z-10 w-full max-w-[420px] px-4 py-8">
-        {/* Top bar */}
-        <div className="flex justify-end mb-6">
+      {/* Form panel */}
+      <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
+        <div className="absolute right-4 top-4">
           <ThemeToggle />
         </div>
 
-        {/* Logo & Title */}
         <motion.div
-          className="text-center mb-8"
           initial={{ y: 12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-sm"
         >
-          <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center">
-            <img 
-              src="./CUKLogo.ico" 
-              alt="CUK Logo" 
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                // Try multiple fallbacks
-                if (target.src.includes('CUKLogo.ico')) {
-                  target.src = '/favicon.ico';
-                } else if (target.src.includes('favicon.ico')) {
-                  // If both fail, hide the image
-                  target.style.display = 'none';
-                }
-              }}
-            />
+          {/* Mobile logo */}
+          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
+            <GraduationCap className="size-6 text-primary" />
+            <span className="text-lg font-semibold tracking-tight">CUK Acadex</span>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">CUK Acadex</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Central University of Kashmir</p>
-        </motion.div>
 
-        {/* Glassmorphic Tab Switcher — Lovable-style */}
-        <motion.div
-          className="mb-6"
-          initial={{ y: 12, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <div className="relative flex p-1 rounded-xl bg-white/30 dark:bg-white/[0.06] backdrop-blur-xl border border-white/40 dark:border-white/[0.08] shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
-            {/* Sliding pill */}
-            <motion.div
-              className="absolute top-1 bottom-1 rounded-[10px] bg-white/80 dark:bg-white/[0.12] shadow-sm backdrop-blur-sm border border-white/50 dark:border-white/[0.1]"
-              style={{ width: 'calc(50% - 4px)' }}
-              animate={{
-                left: activeTab === 'Sign In' ? '4px' : 'calc(50%)',
-              }}
-              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-            />
-            {AUTH_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`relative z-10 flex-1 py-2.5 text-[13px] font-semibold rounded-[10px] transition-colors duration-200 ${
-                  activeTab === tab
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground/70'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {isSignUp ? 'Create your account' : 'Welcome back'}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isSignUp
+                ? 'Fill in your details to get started.'
+                : 'Sign in to continue to your dashboard.'}
+            </p>
           </div>
-        </motion.div>
 
-        {/* Glassmorphic Form Card */}
-        <motion.div
-          initial={{ y: 16, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="rounded-2xl bg-white/40 dark:bg-white/[0.04] backdrop-blur-2xl border border-white/50 dark:border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.4)] p-6"
-        >
-          <div className="relative overflow-hidden min-h-[260px]">
-            <AnimatePresence mode="wait" custom={direction}>
-              {!isSignUp ? (
-                <motion.form
-                  key="signin"
-                  custom={direction}
-                  variants={formVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  onSubmit={(e) => {
-                    void handleSubmit(e);
-                  }}
-                  className="space-y-4"
-                >
-                  <SignInForm
-                    email={email}
-                    setEmail={setEmail}
-                    password={password}
-                    setPassword={setPassword}
-                    showPassword={showPassword}
-                    setShowPassword={setShowPassword}
-                    loading={loading}
-                    onForgotPassword={() => setShowForgotPassword(true)}
-                  />
-                </motion.form>
-              ) : (
-                <motion.form
-                  key="signup"
-                  custom={direction}
-                  variants={formVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  onSubmit={(e) => {
-                    void handleSubmit(e);
-                  }}
-                  className="space-y-4"
-                >
-                  <SignUpForm
-                    fullName={fullName}
-                    setFullName={setFullName}
-                    email={email}
-                    setEmail={setEmail}
-                    password={password}
-                    setPassword={setPassword}
-                    confirmPassword={confirmPassword}
-                    setConfirmPassword={setConfirmPassword}
-                    showPassword={showPassword}
-                    setShowPassword={setShowPassword}
-                    showConfirmPassword={showConfirmPassword}
-                    setShowConfirmPassword={setShowConfirmPassword}
-                    userType={userType}
-                    setUserType={setUserType}
-                    deptId={deptId}
-                    setDeptId={setDeptId}
-                    enrollmentNo={enrollmentNo}
-                    setEnrollmentNo={setEnrollmentNo}
-                    departments={departments}
-                    loadingDepartments={loadingDepartments}
-                    loading={loading}
-                  />
-                </motion.form>
-              )}
-            </AnimatePresence>
-          </div>
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AuthTab)}>
+            <TabsList className="grid w-full grid-cols-2">
+              {AUTH_TABS.map((tab) => (
+                <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          <form
+            onSubmit={(e) => { void handleSubmit(e); }}
+            className="mt-6 space-y-4"
+          >
+            {!isSignUp ? (
+              <SignInForm
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                loading={loading}
+                onForgotPassword={() => setShowForgotPassword(true)}
+              />
+            ) : (
+              <SignUpForm
+                fullName={fullName}
+                setFullName={setFullName}
+                email={email}
+                setEmail={setEmail}
+                password={password}
+                setPassword={setPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                showConfirmPassword={showConfirmPassword}
+                setShowConfirmPassword={setShowConfirmPassword}
+                userType={userType}
+                setUserType={setUserType}
+                deptId={deptId}
+                setDeptId={setDeptId}
+                enrollmentNo={enrollmentNo}
+                setEnrollmentNo={setEnrollmentNo}
+                departments={departments}
+                loadingDepartments={loadingDepartments}
+                loading={loading}
+              />
+            )}
+          </form>
+
+          <LegalLinks className="mt-8 justify-center" />
         </motion.div>
       </div>
 
-      {/* Forgot Password Modal */}
-      <AnimatePresence>
-        {showForgotPassword && (
-          <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center p-4 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-md rounded-2xl bg-white/60 dark:bg-white/[0.06] backdrop-blur-2xl border border-white/50 dark:border-white/[0.08] shadow-2xl p-6"
-            >
-              <h2 className="text-lg font-semibold text-foreground mb-1">Reset Password</h2>
-              <p className="text-sm text-muted-foreground mb-5">We'll send you a link to reset your password.</p>
-              <form
-                onSubmit={(e) => {
-                  void handleForgotPassword(e);
-                }}
-                className="space-y-4"
+      {/* Forgot Password */}
+      <Dialog open={showForgotPassword} onOpenChange={(o) => { setShowForgotPassword(o); if (!o) setResetEmail(''); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+            <DialogDescription>We'll email you a link to reset your password.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { void handleForgotPassword(e); }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-sm font-medium">Email address</Label>
+              <Input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="your.email@cukashmir.ac.in"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setShowForgotPassword(false); setResetEmail(''); }}
               >
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-sm font-medium">Email Address</Label>
-                  <Input
-                    id="reset-email"
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="your.email@cukashmir.ac.in"
-                    required
-                  />
-                </div>
-                <div className="flex gap-3 pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 backdrop-blur-sm"
-                    onClick={() => { setShowForgotPassword(false); setResetEmail(''); }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? "Sending..." : "Send Reset Link"}
-                  </Button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <LegalLinks className="relative z-10 mt-6" />
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Sending…' : 'Send reset link'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -429,7 +358,7 @@ const SignInForm: React.FC<SignInFormProps> = ({
         onChange={(e) => setEmail(e.target.value)}
         required
         placeholder="your.email@cukashmir.ac.in"
-        className="h-10 bg-white/50 dark:bg-white/[0.06] border-white/60 dark:border-white/[0.1] backdrop-blur-sm"
+       
       />
     </div>
     <div className="space-y-1.5">
@@ -442,7 +371,7 @@ const SignInForm: React.FC<SignInFormProps> = ({
           onChange={(e) => setPassword(e.target.value)}
           required
           placeholder="Enter your password"
-          className="h-10 pr-10 bg-white/50 dark:bg-white/[0.06] border-white/60 dark:border-white/[0.1] backdrop-blur-sm"
+          className="pr-10"
         />
         <button
           type="button"
@@ -497,7 +426,7 @@ interface SignUpFormProps {
   loading: boolean;
 }
 
-const glassInputClass = "h-10 bg-white/50 dark:bg-white/[0.06] border-white/60 dark:border-white/[0.1] backdrop-blur-sm";
+const glassInputClass = "";
 
 const SignUpForm: React.FC<SignUpFormProps> = ({
   fullName, setFullName, email, setEmail,
