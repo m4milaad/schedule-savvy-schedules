@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { TabLoader } from '@/components/ui/loading-screen';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { TrendingUp, Target, BookOpen, Calendar, Star, AlertCircle, CheckCircle } from 'lucide-react';
+import { AttendanceBar, StatStrip } from '@/components/admin/StatStrip';
 import logger from '@/lib/logger';
 
 
@@ -143,75 +142,32 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
     }
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Excellent': return 'bg-green-500';
-      case 'Good': return 'bg-blue-500';
-      case 'Average': return 'bg-yellow-500';
-      default: return 'bg-red-500';
-    }
-  };
-
-  const getLevelIcon = (level: string) => {
-    switch (level) {
-      case 'Excellent': return <Star className="h-4 w-4" />;
-      case 'Good': return <CheckCircle className="h-4 w-4" />;
-      case 'Average': return <TrendingUp className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
-    }
-  };
-
-  const recommendations = [
-    { icon: BookOpen, text: 'Focus on subjects with attendance below 75%', type: 'warning' },
-    { icon: Target, text: 'Complete pending assignments to improve scores', type: 'info' },
-    { icon: TrendingUp, text: 'Great progress in overall performance!', type: 'success' },
-  ];
+  // Built from the student's own numbers, so only real issues show up.
+  const lowAttendance = performance.filter((p) => p.attendance < 75);
+  const pendingWork = performance.filter((p) => p.assignmentCompletion < 100);
+  const notes = [
+    lowAttendance.length > 0 &&
+      `Attendance is under 75% in ${lowAttendance.map((p) => p.courseCode).join(', ')}.`,
+    pendingWork.length > 0 &&
+      `Assignments are still pending in ${pendingWork.map((p) => p.courseCode).join(', ')}.`,
+  ].filter(Boolean) as string[];
 
   if (loading) {
     return <TabLoader message="Loading…" />;
   }
 
+  const empty = performance.length === 0;
+
   return (
     <Card className="linear-surface overflow-hidden">
-      <CardHeader className="linear-toolbar flex flex-col gap-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="linear-kicker">Analytics</div>
-            <CardTitle className="text-base font-semibold">
-              Academic Performance
-            </CardTitle>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{overallStats.avgMarks}%</p>
-                <p className="text-[11px] text-muted-foreground">Avg Marks</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Calendar className="h-4 w-4 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{overallStats.avgAttendance}%</p>
-                <p className="text-[11px] text-muted-foreground">Attendance</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Target className="h-4 w-4 text-green-500" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{overallStats.avgAssignment}%</p>
-                <p className="text-[11px] text-muted-foreground">Assignments</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
+      <StatStrip
+        className="border-t-0"
+        stats={[
+          { label: 'Average marks', value: empty ? '—' : `${overallStats.avgMarks}%`, muted: empty },
+          { label: 'Average attendance', value: empty ? '—' : `${overallStats.avgAttendance}%`, muted: empty },
+          { label: 'Assignments done', value: empty ? '—' : `${overallStats.avgAssignment}%`, muted: empty },
+        ]}
+      />
 
       <CardContent className="p-0">
         {performance.length === 0 ? (
@@ -238,35 +194,24 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
                 {performance.map((p) => (
                   <tr key={p.courseId} className="linear-tr">
                     <td className="linear-td">
-                      <div>
-                        <Badge variant="outline" className="mb-1">{p.courseCode}</Badge>
-                        <div className="font-medium">{p.courseName}</div>
-                      </div>
+                      <div className="font-medium">{p.courseName}</div>
+                      <div className="text-xs text-muted-foreground">{p.courseCode}</div>
                     </td>
                     <td className="linear-td hidden md:table-cell">
-                      <Badge>{p.grade}</Badge>
+                      <span className="text-sm font-medium">{p.grade}</span>
                     </td>
                     <td className="linear-td hidden lg:table-cell">
-                      <span className="text-sm font-medium">{p.totalMarks}%</span>
+                      <span className="text-sm tabular-nums">{p.totalMarks}%</span>
                     </td>
                     <td className="linear-td hidden lg:table-cell">
-                      <div className="flex items-center gap-2">
-                        <Progress value={p.attendance} className="h-2 w-20" />
-                        <span className={`text-sm ${p.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}`}>
-                          {p.attendance}%
-                        </span>
-                      </div>
+                      <AttendanceBar value={p.attendance} />
                     </td>
                     <td className="linear-td hidden xl:table-cell">
-                      <div className="flex items-center gap-2">
-                        <Progress value={p.assignmentCompletion} className="h-2 w-20" />
-                        <span className="text-sm">{p.assignmentCompletion}%</span>
-                      </div>
+                      <AttendanceBar value={p.assignmentCompletion} threshold={null} />
                     </td>
                     <td className="linear-td">
-                      <Badge className={getLevelColor(p.level)}>
-                        {getLevelIcon(p.level)}
-                        <span className="ml-1">{p.level}</span>
+                      <Badge variant={p.level === 'Needs Improvement' ? 'destructive' : 'outline'} className="font-normal">
+                        {p.level}
                       </Badge>
                     </td>
                   </tr>
@@ -277,29 +222,14 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
         )}
       </CardContent>
 
-      {/* Recommendations at the bottom */}
-      <CardContent className="border-t">
-        <div className="space-y-2">
-          <div className="text-xs font-medium text-muted-foreground">Personalized Recommendations</div>
-          <div className="space-y-2">
-            {recommendations.map((rec, idx) => (
-              <div 
-                key={idx} 
-                className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                  rec.type === 'success' ? 'bg-green-500/10' : 
-                  rec.type === 'warning' ? 'bg-yellow-500/10' : 'bg-blue-500/10'
-                }`}
-              >
-                <rec.icon className={`h-4 w-4 ${
-                  rec.type === 'success' ? 'text-green-500' : 
-                  rec.type === 'warning' ? 'text-yellow-500' : 'text-blue-500'
-                }`} />
-                <span>{rec.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
+      {notes.length > 0 && (
+        <section aria-labelledby="perf-notes-h" className="border-t px-5 py-4">
+          <h3 id="perf-notes-h" className="text-sm font-semibold">Worth a look</h3>
+          <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
+            {notes.map((n) => <li key={n}>{n}</li>)}
+          </ul>
+        </section>
+      )}
     </Card>
   );
 };

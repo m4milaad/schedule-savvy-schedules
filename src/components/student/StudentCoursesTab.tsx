@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TabLoader } from '@/components/ui/loading-screen';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AttendanceBar, StatStrip } from '@/components/admin/StatStrip';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -28,7 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { BookOpen, GraduationCap, Search, Plus, Clock, TrendingUp, X, CheckSquare, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 import logger from '@/lib/logger';
 import { CourseSchema } from '@/schemas/database';
 
@@ -466,125 +465,59 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
         className="w-full"
       >
         <Card className="linear-surface overflow-hidden">
-          <CardHeader className="linear-toolbar flex flex-col gap-3">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="linear-kicker">Courses</div>
-                <CardTitle className="text-base font-semibold">
-                  My Courses & Enrollment
-                </CardTitle>
-                <CardDescription>
-                  See what you&apos;re enrolled in and discover new courses to add.
-                </CardDescription>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-w-[220px]">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{enrollments.length}</p>
-                    <p className="text-[11px] text-muted-foreground">Enrolled</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-500/10 rounded-lg">
-                    <GraduationCap className="h-4 w-4 text-green-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{totalCredits}</p>
-                    <p className="text-[11px] text-muted-foreground">Credits</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-yellow-500/10 rounded-lg">
-                    <Clock className="h-4 w-4 text-yellow-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{avgAttendance}%</p>
-                    <p className="text-[11px] text-muted-foreground">Attendance</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <TrendingUp className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">--</p>
-                    <p className="text-[11px] text-muted-foreground">GPA</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <StatStrip
+            className="border-t-0"
+            stats={[
+              { label: 'Enrolled', value: enrollments.length, muted: enrollments.length === 0 },
+              { label: 'Credits', value: totalCredits, muted: totalCredits === 0 },
+              { label: 'Average attendance', value: `${avgAttendance}%`, muted: avgAttendance === 0 },
+              { label: 'Available to add', value: availableCount, muted: availableCount === 0 },
+            ]}
+          />
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>
-                  Enrolled:{' '}
-                  <span className="font-medium text-foreground">
-                    {enrollments.length}
-                  </span>
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span>
-                  Available:{' '}
-                  <span className="font-medium text-foreground">
-                    {availableCount}
-                  </span>
-                </span>
-              </div>
-              <TabsList className="bg-muted/40 rounded-full h-9 px-1 py-1 w-full sm:w-auto">
-                <TabsTrigger
-                  value="enrolled"
-                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
-                >
-                  Currently Enrolled ({enrollments.length})
-                </TabsTrigger>
-                <TabsTrigger
-                  value="available"
-                  className="rounded-full px-3 py-1 text-xs sm:text-sm data-[state=active]:bg-background data-[state=active]:shadow-sm flex-1 sm:flex-none"
-                >
-                  Available Courses
-                </TabsTrigger>
-              </TabsList>
-            </div>
+          <div className="flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center">
+            <TabsList className="h-9 w-full sm:w-auto">
+              <TabsTrigger value="enrolled" className="flex-1 sm:flex-none">
+                Enrolled ({enrollments.length})
+              </TabsTrigger>
+              <TabsTrigger value="available" className="flex-1 sm:flex-none">
+                Available ({availableCount})
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Search and filters - shown only on available tab */}
             {activeTab === 'available' && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:justify-end">
+                <div className="relative sm:w-72">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search courses..."
+                    placeholder="Search courses"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className="h-9 pl-9"
+                    aria-label="Search courses"
                   />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="All Departments" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Departments</SelectItem>
-                      {uniqueDepartments.map((dept) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="h-9 sm:w-[200px]" aria-label="Department">
+                    <SelectValue placeholder="All departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All departments</SelectItem>
+                    {uniqueDepartments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
-          </CardHeader>
+          </div>
 
           <CardContent className="p-0">
             <TabsContent value="enrolled" className="mt-0">
               {selectedEnrolledCourses.size > 0 && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-6 py-3 border-b bg-muted/30">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-2 border-b bg-muted/40">
                   <div className="text-sm text-muted-foreground">
                     {selectedEnrolledCourses.size} selected
                   </div>
@@ -595,7 +528,6 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                       onClick={confirmBulkUnenroll}
                       disabled={isBulkUnenrolling}
                     >
-                      <X className="h-4 w-4 mr-1" />
                       {isBulkUnenrolling ? 'Unenrolling...' : `Unenroll ${selectedEnrolledCourses.size}`}
                     </Button>
                     <Button
@@ -636,8 +568,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                         <th className="linear-th hidden lg:table-cell">Credits</th>
                         <th className="linear-th hidden lg:table-cell">Grade</th>
                         <th className="linear-th hidden xl:table-cell">Attendance</th>
-                        <th className="linear-th">Status</th>
-                        <th className="linear-th text-right">Actions</th>
+                        <th className="linear-th"><span className="sr-only">Actions</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -655,12 +586,8 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                               />
                             </td>
                             <td className="linear-td">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Badge variant="outline">{enrollment.course.course_code}</Badge>
-                                </div>
-                                <div className="font-medium">{enrollment.course.course_name}</div>
-                              </div>
+                              <div className="font-medium">{enrollment.course.course_name}</div>
+                              <div className="text-xs text-muted-foreground">{enrollment.course.course_code}</div>
                             </td>
                             <td className="linear-td hidden md:table-cell">
                               <span className="text-sm text-muted-foreground">{enrollment.course.course_type}</span>
@@ -669,38 +596,23 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                               <span className="text-sm">{enrollment.course.course_credits}</span>
                             </td>
                             <td className="linear-td hidden lg:table-cell">
-                              <Badge variant={gradeInfo?.grade && gradeInfo.grade !== 'N/A' ? 'default' : 'outline'}>
-                                {gradeInfo?.grade || 'N/A'}
-                              </Badge>
+                              {gradeInfo?.grade && gradeInfo.grade !== 'N/A'
+                                ? <span className="text-sm font-medium">{gradeInfo.grade}</span>
+                                : <span className="text-sm text-muted-foreground">—</span>}
                             </td>
                             <td className="linear-td hidden xl:table-cell">
-                              <div className="flex items-center gap-2">
-                                <Progress value={gradeInfo?.attendance || 0} className="h-2 w-20" />
-                                <span className={`text-sm ${gradeInfo?.attendance && gradeInfo.attendance >= 75 ? 'text-green-500' : 'text-yellow-500'}`}>
-                                  {gradeInfo?.attendance || 0}%
-                                </span>
-                              </div>
-                            </td>
-                            <td className="linear-td">
-                              <Badge className="bg-green-500">Active</Badge>
+                              <AttendanceBar value={gradeInfo?.attendance || 0} />
                             </td>
                             <td className="linear-td">
                               <div className="flex justify-end">
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  className="h-8 text-muted-foreground hover:text-destructive"
                                   onClick={() => confirmUnenroll(enrollment.id, enrollment.course.course_name)}
                                   disabled={unenrolling === enrollment.id}
                                 >
-                                  {unenrolling === enrollment.id ? (
-                                    'Unenrolling...'
-                                  ) : (
-                                    <>
-                                      <X className="h-4 w-4 mr-1" />
-                                      Unenroll
-                                    </>
-                                  )}
+                                  {unenrolling === enrollment.id ? 'Unenrolling…' : 'Unenroll'}
                                 </Button>
                               </div>
                             </td>
@@ -715,7 +627,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
 
             <TabsContent value="available" className="mt-0">
               {selectedAvailableCourses.size > 0 && (
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-6 py-3 border-b bg-muted/30">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 py-2 border-b bg-muted/40">
                   <div className="text-sm text-muted-foreground">
                     {selectedAvailableCourses.size} selected
                   </div>
@@ -725,7 +637,6 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                       onClick={handleBulkEnroll}
                       disabled={isBulkEnrolling}
                     >
-                      <CheckSquare className="h-4 w-4 mr-1" />
                       {isBulkEnrolling ? 'Enrolling...' : `Enroll ${selectedAvailableCourses.size} courses`}
                     </Button>
                     <Button
@@ -770,7 +681,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                         <th className="linear-th hidden lg:table-cell">Semester</th>
                         <th className="linear-th hidden lg:table-cell">Credits</th>
                         <th className="linear-th hidden xl:table-cell">Type</th>
-                        <th className="linear-th text-right">Actions</th>
+                        <th className="linear-th"><span className="sr-only">Actions</span></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -786,18 +697,14 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                             />
                           </td>
                           <td className="linear-td">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline">{course.course_code}</Badge>
-                              </div>
-                              <div className="font-medium">{course.course_name}</div>
-                            </div>
+                            <div className="font-medium">{course.course_name}</div>
+                            <div className="text-xs text-muted-foreground">{course.course_code}</div>
                           </td>
                           <td className="linear-td hidden md:table-cell">
-                            <Badge variant="secondary" className="text-xs">{course.dept_name}</Badge>
+                            <span className="text-sm text-muted-foreground">{course.dept_name}</span>
                           </td>
                           <td className="linear-td hidden lg:table-cell">
-                            <span className="text-sm">Semester {course.semester}</span>
+                            <span className="text-sm">{course.semester}</span>
                           </td>
                           <td className="linear-td hidden lg:table-cell">
                             <span className="text-sm">{course.course_credits}</span>
@@ -809,17 +716,12 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                             <div className="flex justify-end">
                               <Button
                                 size="sm"
+                                variant="outline"
+                                className="h-8"
                                 onClick={() => enrollInCourse(course.course_id)}
                                 disabled={enrolling === course.course_id}
                               >
-                                {enrolling === course.course_id ? (
-                                  'Enrolling...'
-                                ) : (
-                                  <>
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    Enroll
-                                  </>
-                                )}
+                                {enrolling === course.course_id ? 'Enrolling…' : 'Enroll'}
                               </Button>
                             </div>
                           </td>

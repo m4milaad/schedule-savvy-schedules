@@ -6,10 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, Eye, EyeOff } from 'lucide-react';
-import { BACKGROUND_PRESETS, customBackground, isHexColor } from '@/lib/adminBackground';
-import { cn } from '@/lib/utils';
+import { Eye, EyeOff } from 'lucide-react';
+import { customBackground, isHexColor } from '@/lib/adminBackground';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import { BackgroundSwatches } from './BackgroundSwatches';
 import logger from '@/lib/logger';
 
 interface Department {
@@ -295,39 +295,7 @@ export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | n
 
       <Section title="Background" description="The colour behind your dashboard. Only you see it.">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Background colour">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={background === null}
-              disabled={savingBackground}
-              onClick={() => void saveBackground(null)}
-              className={cn(
-                "flex h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 text-sm",
-                background === null && "ring-2 ring-ring ring-offset-2 ring-offset-card"
-              )}
-            >
-              {background === null && <Check className="h-3.5 w-3.5" />}
-              Default
-            </button>
-            {BACKGROUND_PRESETS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                role="radio"
-                aria-checked={background === color}
-                aria-label={color}
-                title={color}
-                disabled={savingBackground}
-                onClick={() => void saveBackground(color)}
-                className={cn(
-                  "h-8 w-8 rounded-md border",
-                  background === color && "ring-2 ring-ring ring-offset-2 ring-offset-card"
-                )}
-                style={{ backgroundColor: color }}
-              />
-            ))}
-          </div>
+          <BackgroundSwatches value={background} onChange={(c) => void saveBackground(c)} disabled={savingBackground} />
           <form
             className="flex items-end gap-2"
             onSubmit={(e) => {

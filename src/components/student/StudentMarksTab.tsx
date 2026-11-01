@@ -44,7 +44,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
         .from('student_marks')
         .select(`
           *,
-          courses:course_id (course_code, course_name)
+          course:course_id (course_code, course_name)
         `)
         .eq('student_id', studentId)
         .order('semester', { ascending: false });
