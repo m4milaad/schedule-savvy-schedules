@@ -734,7 +734,9 @@ html.admin-theme .backdrop-blur-3xl {
 /* Leading icons sit above their input. */
 html.admin-theme .relative > svg.absolute { z-index: 1; pointer-events: none; }
 html.admin-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-html.admin-theme textarea {
+html.admin-theme textarea,
+html.admin-theme button[role="combobox"],
+html.admin-theme button.bg-white\/60 {
   background-color: hsl(var(--card));
 }
 /* Dialogs: an opaque surface that floats (the one place a shadow belongs). */

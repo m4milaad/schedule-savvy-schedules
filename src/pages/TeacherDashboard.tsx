@@ -13,15 +13,18 @@ import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab'
 import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
-import { LoadingScreen } from '@/components/ui/loading-screen';
-import { TeacherSidebar } from '@/components/teacher/layout/TeacherSidebar';
-import { TeacherTopbar } from '@/components/teacher/layout/TeacherTopbar';
+import { AdminSidebar, type NavGroup } from '@/components/admin/layout/AdminSidebar';
+import { AdminTopbar } from '@/components/admin/layout/AdminTopbar';
+import { AdminShellSkeleton, useAdminTheme } from '@/components/admin/AdminPanel';
+import { customBackground } from '@/lib/adminBackground';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import logger from '@/lib/logger';
+import { Bell, BookOpen, Calendar, ClipboardCheck, FileText, FolderOpen, GraduationCap, Keyboard, User } from 'lucide-react';
 
 
 interface Department {
@@ -58,6 +61,27 @@ const KEYBOARD_SHORTCUTS = [
   },
 ];
 
+const TEACHER_NAV: NavGroup[] = [
+  { items: [{ id: "notices", label: "Notices", icon: Bell }] },
+  {
+    label: "Teaching",
+    items: [
+      { id: "marks", label: "Marks", icon: BookOpen },
+      { id: "attendance", label: "Attendance", icon: ClipboardCheck },
+      { id: "assignments", label: "Assignments", icon: FileText },
+      { id: "resources", label: "Resources", icon: FolderOpen },
+      { id: "ese-results", label: "ESE results", icon: GraduationCap },
+    ],
+  },
+  {
+    label: "Leave",
+    items: [
+      { id: "leave-management", label: "Leave requests", icon: Calendar },
+      { id: "apply-leave", label: "Apply for leave", icon: User },
+    ],
+  },
+];
+
 const TeacherDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
@@ -71,6 +95,7 @@ const TeacherDashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  useAdminTheme(customBackground((profile as Record<string, unknown> | null)?.theme_color));
 
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {
@@ -187,7 +212,7 @@ const TeacherDashboard = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
+    return <AdminShellSkeleton />;
   }
 
   const getTabTitle = () => {
@@ -241,24 +266,24 @@ const TeacherDashboard = () => {
     }
   };
 
-  const themeColor = (profile as Record<string, unknown>)?.theme_color as string | undefined;
+  const sidebarProps = {
+    groups: TEACHER_NAV,
+    subtitle: "Teacher",
+    userRole: null,
+    onNavigate: navigate,
+    onLogout: handleSignOut,
+    userLabel: profile?.full_name || profile?.email || undefined,
+  };
 
   return (
-    <div
-      className={cn(
-        "flex min-h-screen overflow-hidden transition-colors duration-300",
-        !themeColor && "bg-gradient-to-b from-background to-muted/30"
-      )}
-      style={{
-        backgroundColor: themeColor || undefined
-      }}
-    >
+    <div className="flex min-h-screen overflow-hidden bg-background">
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <TeacherSidebar
+            <AdminSidebar
+              {...sidebarProps}
               activeTab={activeTab}
               setActiveTab={(tab) => {
                 setActiveTab(tab as TabValue);
@@ -266,7 +291,6 @@ const TeacherDashboard = () => {
               }}
               isCollapsed={false}
               toggleSidebar={() => setIsMobileMenuOpen(false)}
-              onLogout={handleSignOut}
               onEditProfile={() => {
                 setShowProfileDialog(true);
                 setIsMobileMenuOpen(false);
@@ -279,26 +303,24 @@ const TeacherDashboard = () => {
 
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <TeacherSidebar
+        <AdminSidebar
+          {...sidebarProps}
           activeTab={activeTab}
           setActiveTab={(tab) => setActiveTab(tab as TabValue)}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onLogout={handleSignOut}
           onEditProfile={() => setShowProfileDialog(true)}
         />
       )}
 
       {/* Main Content */}
-      <motion.div
-        className="flex min-w-0 flex-1 flex-col"
-        animate={{
-          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 80 : 256)
-        }}
-        initial={false}
-        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-out",
+          !isMobile && (isSidebarCollapsed ? "ml-16" : "ml-60")
+        )}
       >
-        <TeacherTopbar
+        <AdminTopbar
           title={getTabTitle()}
           description={getTabDescription()}
           userLabel={profile?.full_name || profile?.email || undefined}
@@ -306,22 +328,26 @@ const TeacherDashboard = () => {
           isMobile={isMobile}
           onOpenSidebar={() => setIsMobileMenuOpen(true)}
           onLogout={handleSignOut}
-          onEditProfile={() => setShowProfileDialog(true)}
-          onShowShortcuts={() => setShowShortcutsHelp(true)}
+          onOpenProfile={() => setShowProfileDialog(true)}
+          actions={!isMobile && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+              <Keyboard className="h-4 w-4" />
+            </Button>
+          )}
         />
 
-        <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
-          <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 md:pb-8 md:pt-0">
             <AnimatePresence mode="wait">
               <PageTransition key={activeTab}>
-                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
+                <div className="overflow-hidden rounded-lg border bg-card">
                   {renderContent()}
                 </div>
               </PageTransition>
             </AnimatePresence>
           </div>
         </main>
-      </motion.div>
+      </div>
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp

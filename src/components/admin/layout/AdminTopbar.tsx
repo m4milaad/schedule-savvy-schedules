@@ -18,6 +18,8 @@ interface AdminTopbarProps {
   notificationsPinned?: React.ComponentProps<typeof NotificationCenter>["pinned"];
   isMobile?: boolean;
   className?: string;
+  /** Extra buttons before the bell (e.g. keyboard shortcuts). */
+  actions?: React.ReactNode;
 }
 
 function initialsFromLabel(label?: string) {
@@ -40,6 +42,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   notificationsPinned,
   isMobile,
   className,
+  actions,
 }) => {
   const accountMenu = (
     <Button
@@ -71,6 +74,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="min-w-0 flex-1 truncate text-base font-semibold">{title}</h1>
+          {actions}
           <NotificationCenter userId={userId} minimal pinned={notificationsPinned} />
           <ThemeToggle minimal />
           {accountMenu}
@@ -89,6 +93,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                 Refresh
               </Button>
             )}
+            {actions}
             <NotificationCenter userId={userId} minimal pinned={notificationsPinned} />
             <ThemeToggle minimal />
             {accountMenu}

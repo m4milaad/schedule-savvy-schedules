@@ -32,15 +32,20 @@ interface AdminSidebarProps {
     onLogout: () => void;
     isInsideSheet?: boolean;
     onNavigate: (path: string) => void;
+    /** Opens the profile; defaults to the "profile" tab. */
     onEditProfile?: () => void;
     userLabel?: string;
+    /** Navigation for other dashboards (student, teacher); defaults to the admin menu. */
+    groups?: NavGroup[];
+    /** Line under the product name; defaults to the admin role. */
+    subtitle?: string;
 }
 
 type Role = "all" | "admin";
-interface NavItem { id: string; label: string; icon: LucideIcon; role: Role }
-interface NavGroup { label?: string; items: NavItem[] }
+interface NavItem { id: string; label: string; icon: LucideIcon; role?: Role }
+export interface NavGroup { label?: string; items: NavItem[] }
 
-const groups: NavGroup[] = [
+const adminGroups: NavGroup[] = [
     { items: [{ id: "overview", label: "Overview", icon: LayoutDashboard, role: "all" }] },
     {
         label: "Academic",
@@ -80,11 +85,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     toggleSidebar,
     onLogout,
     isInsideSheet = false,
+    onEditProfile,
     userLabel,
+    groups = adminGroups,
+    subtitle,
 }) => {
     const collapsed = isCollapsed && !isInsideSheet;
     const visible = groups
-        .map(g => ({ ...g, items: g.items.filter(i => i.role === "all" || i.role === userRole) }))
+        .map(g => ({ ...g, items: g.items.filter(i => !i.role || i.role === "all" || i.role === userRole) }))
         .filter(g => g.items.length > 0);
 
     const row = (id: string, label: string, Icon: LucideIcon, onClick: () => void) => {
@@ -114,7 +122,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
     return (
         <nav
-            aria-label="Admin"
+            aria-label="Main"
             className={cn(
                 "flex flex-col bg-sidebar",
                 isInsideSheet
@@ -138,7 +146,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     <div className="min-w-0 leading-tight">
                         <div className="truncate text-sm font-semibold">CUK Acadex</div>
                         <div className="truncate text-xs text-muted-foreground">
-                            {userRole === "admin" ? "Exams office · Super admin" : "Department admin"}
+                            {subtitle ?? (userRole === "admin" ? "Exams office · Super admin" : "Department admin")}
                         </div>
                     </div>
                 )}
@@ -160,7 +168,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
             {/* Account */}
             <div className={cn("space-y-0.5 border-t border-sidebar-border py-3", collapsed ? "px-2" : "px-3")}>
-                {row("profile", userLabel || "Profile", User, () => setActiveTab("profile"))}
+                {row("profile", userLabel || "Profile", User, onEditProfile ?? (() => setActiveTab("profile")))}
                 {row("__logout", "Log out", LogOut, onLogout)}
                 {!isInsideSheet && row(
                     "__collapse",

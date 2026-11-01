@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { TableSkeleton } from '@/components/admin/AdminPanel';
 
 interface LoadingScreenProps {
   message?: string;
@@ -210,29 +211,11 @@ const PulseLoader: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) => {
 };
 
 // Tab/Section loader
-export const TabLoader: React.FC<{ message?: string; className?: string }> = ({
-  message,
-  className,
-}) => (
-  <div className={cn('flex flex-col items-center justify-center py-16 gap-5', className)}>
-    <div className="flex items-end gap-1.5" style={{ height: 35 }}>
-      {[...Array(4)].map((_, i) => (
-        <div
-          key={i}
-          className="bg-primary rounded-sm"
-          style={{
-            width: 12,
-            height: 12,
-            animation: 'cascadeDrop 1.2s ease-in-out infinite',
-            animationDelay: `${i * 0.15}s`,
-            boxShadow: '0 0 8px var(--primary)',
-          }}
-        />
-      ))}
-    </div>
-    {message && (
-      <p className="text-sm text-muted-foreground">{message}</p>
-    )}
+/** Tab content loading: the same skeleton rows the admin tables use. `message` is for screen readers. */
+export const TabLoader: React.FC<{ message?: string; className?: string }> = ({ message, className }) => (
+  <div className={className}>
+    {message && <span className="sr-only">{message}</span>}
+    <TableSkeleton rows={6} />
   </div>
 );
 
