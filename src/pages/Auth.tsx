@@ -6,15 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Eye, EyeOff, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import logger from '@/lib/logger';
+import { cn } from '@/lib/utils';
 import { getAppBaseUrl } from '@/lib/appUrl';
 
 
@@ -23,8 +22,7 @@ interface Department {
   dept_name: string;
 }
 
-const AUTH_TABS = ['Sign In', 'Sign Up'] as const;
-type AuthTab = typeof AUTH_TABS[number];
+type AuthTab = 'Sign In' | 'Sign Up';
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<AuthTab>('Sign In');
@@ -176,122 +174,86 @@ const Auth = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen w-full bg-background lg:grid lg:grid-cols-2">
-      {/* Brand panel (desktop) */}
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10 ring-1 ring-primary-foreground/20">
-            <img
-              src="./CUKLogo.ico"
-              alt=""
-              className="size-6 object-contain"
-              onError={(e) => {
-                const t = e.target as HTMLImageElement;
-                if (t.src.includes('CUKLogo.ico')) t.src = '/favicon.ico';
-                else t.replaceWith(Object.assign(document.createElement('span'), { textContent: '🎓' }));
-              }}
-            />
-          </span>
-          <span className="text-lg font-semibold tracking-tight">CUK Acadex</span>
-        </div>
+  const submit = (e: React.FormEvent) => { void handleSubmit(e); };
 
-        <div className="max-w-md">
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            Your campus, organised.
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-primary-foreground/80">
-            Exam schedules, marks, attendance, resources and notices — one place for
-            students, teachers and administrators at the Central University of Kashmir.
+  return (
+    <div className={cn('auth-slider', isSignUp && 'is-signup')}>
+      {/* Brand panel: sweeps across to reveal the other form */}
+      <aside className="auth-brand bg-black">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-0 h-full w-px bg-white/10" />
+          <div className="absolute left-0 top-1/2 h-px w-full bg-white/10" />
+          <div
+            className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top right, transparent calc(50% - 0.5px), rgb(255 255 255 / 0.08) 50%, transparent calc(50% + 0.5px))' }}
+          />
+        </div>
+        <div className="relative flex h-full flex-col justify-between p-10">
+          <span className="text-xl font-semibold tracking-tight">
+            CUK Acadex<sup className="ml-0.5 text-[10px] font-normal text-white/60">®</sup>
+          </span>
+          <Burst className="mx-auto size-40" />
+          <p className="text-[11px] text-white/40">
+            © Central University of Kashmir {new Date().getFullYear()}. All rights reserved.
           </p>
         </div>
+      </aside>
 
-        <p className="text-sm text-primary-foreground/70">
-          Central University of Kashmir · Ganderbal, J&amp;K
-        </p>
+      <div className="auth-pane auth-pane-signin">
+        <AuthCard
+          title="Login"
+          switchLabel="Create an account"
+          onSwitch={() => setActiveTab('Sign Up')}
+          onSubmit={submit}
+          submitLabel="Sign in"
+          loading={loading}
+          inert={isSignUp}
+        >
+          <SignInForm
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            onForgotPassword={() => setShowForgotPassword(true)}
+          />
+        </AuthCard>
       </div>
 
-      {/* Form panel */}
-      <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
-        <div className="absolute right-4 top-4">
-          <ThemeToggle />
-        </div>
-
-        <motion.div
-          initial={{ y: 12, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-sm"
+      <div className="auth-pane auth-pane-signup">
+        <AuthCard
+          title="Sign up"
+          switchLabel="I have an account"
+          onSwitch={() => setActiveTab('Sign In')}
+          onSubmit={submit}
+          submitLabel="Create"
+          loading={loading}
+          inert={!isSignUp}
         >
-          {/* Mobile logo */}
-          <div className="mb-8 flex items-center justify-center gap-2 lg:hidden">
-            <GraduationCap className="size-6 text-primary" />
-            <span className="text-lg font-semibold tracking-tight">CUK Acadex</span>
-          </div>
-
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isSignUp
-                ? 'Fill in your details to get started.'
-                : 'Sign in to continue to your dashboard.'}
-            </p>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AuthTab)}>
-            <TabsList className="grid w-full grid-cols-2">
-              {AUTH_TABS.map((tab) => (
-                <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
-          <form
-            onSubmit={(e) => { void handleSubmit(e); }}
-            className="mt-6 space-y-4"
-          >
-            {!isSignUp ? (
-              <SignInForm
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                showPassword={showPassword}
-                setShowPassword={setShowPassword}
-                loading={loading}
-                onForgotPassword={() => setShowForgotPassword(true)}
-              />
-            ) : (
-              <SignUpForm
-                fullName={fullName}
-                setFullName={setFullName}
-                email={email}
-                setEmail={setEmail}
-                password={password}
-                setPassword={setPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-                showPassword={showPassword}
-                setShowPassword={setShowPassword}
-                showConfirmPassword={showConfirmPassword}
-                setShowConfirmPassword={setShowConfirmPassword}
-                userType={userType}
-                setUserType={setUserType}
-                deptId={deptId}
-                setDeptId={setDeptId}
-                enrollmentNo={enrollmentNo}
-                setEnrollmentNo={setEnrollmentNo}
-                departments={departments}
-                loadingDepartments={loadingDepartments}
-                loading={loading}
-              />
-            )}
-          </form>
-
-          <LegalLinks className="mt-8 justify-center" />
-        </motion.div>
+          <SignUpForm
+            fullName={fullName}
+            setFullName={setFullName}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+            userType={userType}
+            setUserType={setUserType}
+            deptId={deptId}
+            setDeptId={setDeptId}
+            enrollmentNo={enrollmentNo}
+            setEnrollmentNo={setEnrollmentNo}
+            departments={departments}
+            loadingDepartments={loadingDepartments}
+          />
+        </AuthCard>
       </div>
 
       {/* Forgot Password */}
@@ -332,6 +294,66 @@ const Auth = () => {
   );
 };
 
+/* ─── Shared pieces ─── */
+const fieldInput =
+  'w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white placeholder:text-white/25 outline-none transition-colors focus:border-white';
+const fieldLabel = 'block text-[11px] font-medium text-white/60';
+
+/** Eight strokes around an empty centre, like the reference mark. */
+const Burst = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 100 100" className={className} aria-hidden>
+    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+      <line
+        key={deg}
+        x1="50" y1={deg % 90 ? 32 : 22} x2="50" y2={deg % 90 ? 42 : 44}
+        transform={`rotate(${deg} 50 50)`}
+        stroke="white" strokeWidth="2.5"
+      />
+    ))}
+  </svg>
+);
+
+interface AuthCardProps {
+  title: string;
+  switchLabel: string;
+  onSwitch: () => void;
+  onSubmit: (e: React.FormEvent) => void;
+  submitLabel: string;
+  loading: boolean;
+  /** The hidden form must not take focus or clicks while the other one is shown. */
+  inert: boolean;
+  children: React.ReactNode;
+}
+
+const AuthCard: React.FC<AuthCardProps> = ({ title, switchLabel, onSwitch, onSubmit, submitLabel, loading, inert, children }) => (
+  <div className="flex h-full min-h-screen bg-black p-3 lg:p-4" {...(inert ? { inert: '' } : {})} aria-hidden={inert}>
+    <form onSubmit={onSubmit} className="relative flex w-full flex-col rounded-[28px] bg-[#141414] px-8 pt-8 sm:px-12">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold tracking-tight lg:invisible">CUK Acadex</span>
+        <button type="button" onClick={onSwitch} className="text-xs text-white/70 transition-colors hover:text-white">
+          {switchLabel}
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-36">
+        <div className="mx-auto my-auto w-full max-w-lg py-10">
+          <h1 className="mb-10 text-5xl font-light tracking-tight sm:text-6xl">{title}</h1>
+          {children}
+        </div>
+      </div>
+
+      <LegalLinks className="absolute bottom-9 left-8 text-white/40 sm:left-12 [&_a:hover]:text-white" />
+      <button
+        type="submit"
+        disabled={loading}
+        className="absolute bottom-6 right-6 flex size-20 items-center justify-center rounded-full bg-white text-[11px] font-semibold uppercase tracking-wider text-black transition-transform hover:scale-105 active:scale-95 disabled:opacity-60 sm:bottom-8 sm:right-8 sm:size-24"
+      >
+        {loading ? '…' : submitLabel}
+      </button>
+    </form>
+  </div>
+);
+
 /* ─── Sign In Form ─── */
 interface SignInFormProps {
   email: string;
@@ -340,65 +362,60 @@ interface SignInFormProps {
   setPassword: (v: string) => void;
   showPassword: boolean;
   setShowPassword: (v: boolean) => void;
-  loading: boolean;
   onForgotPassword: () => void;
 }
 
 const SignInForm: React.FC<SignInFormProps> = ({
   email, setEmail, password, setPassword,
-  showPassword, setShowPassword, loading, onForgotPassword,
+  showPassword, setShowPassword, onForgotPassword,
 }) => (
-  <>
-    <div className="space-y-1.5">
-      <Label htmlFor="signin-email" className="text-xs font-medium text-foreground/80">Email</Label>
-      <Input
+  <div className="grid gap-8 sm:grid-cols-2">
+    <div>
+      <label htmlFor="signin-email" className={fieldLabel}>Email</label>
+      <input
         id="signin-email"
         type="email"
+        autoComplete="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        placeholder="your.email@cukashmir.ac.in"
-       
+        placeholder="you@cukashmir.ac.in"
+        className={fieldInput}
       />
     </div>
-    <div className="space-y-1.5">
-      <Label htmlFor="signin-password" className="text-xs font-medium text-foreground/80">Password</Label>
-      <div className="relative">
-        <Input
-          id="signin-password"
-          type={showPassword ? "text" : "password"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          placeholder="Enter your password"
-          className="pr-10"
-        />
-        <button
-          type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setShowPassword(!showPassword)}
-        >
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </div>
-    <div className="flex justify-end">
-      <button
-        type="button"
-        onClick={onForgotPassword}
-        className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-      >
-        Forgot Password?
+    <div>
+      <label htmlFor="signin-password" className={fieldLabel}>Password</label>
+      <PasswordField id="signin-password" value={password} onChange={setPassword} show={showPassword} setShow={setShowPassword} autoComplete="current-password" />
+      <button type="button" onClick={onForgotPassword} className="mt-3 text-[11px] text-white/50 transition-colors hover:text-white">
+        Forgot?
       </button>
     </div>
-    <Button
-      type="submit"
-      className="w-full h-10 text-sm font-medium mt-2 shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-      disabled={loading}
+  </div>
+);
+
+const PasswordField = ({ id, value, onChange, show, setShow, placeholder = '••••••••', autoComplete }: {
+  id: string; value: string; onChange: (v: string) => void; show: boolean; setShow: (v: boolean) => void; placeholder?: string; autoComplete?: string;
+}) => (
+  <div className="relative">
+    <input
+      id={id}
+      type={show ? 'text' : 'password'}
+      autoComplete={autoComplete}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      required
+      placeholder={placeholder}
+      className={cn(fieldInput, 'pr-8')}
+    />
+    <button
+      type="button"
+      aria-label={show ? 'Hide password' : 'Show password'}
+      className="absolute right-0 top-1/2 -translate-y-1/2 text-white/50 transition-colors hover:text-white"
+      onClick={() => setShow(!show)}
     >
-      {loading ? "Signing In..." : "Sign In"}
-    </Button>
-  </>
+      {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+    </button>
+  </div>
 );
 
 /* ─── Sign Up Form ─── */
@@ -423,33 +440,31 @@ interface SignUpFormProps {
   setEnrollmentNo: (v: string) => void;
   departments: Department[];
   loadingDepartments: boolean;
-  loading: boolean;
 }
 
-const glassInputClass = "";
+const darkSelect = 'h-auto rounded-none border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white shadow-none focus:ring-0 focus:ring-offset-0 data-[placeholder]:text-white/25';
 
 const SignUpForm: React.FC<SignUpFormProps> = ({
   fullName, setFullName, email, setEmail,
   password, setPassword, confirmPassword, setConfirmPassword,
   showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword,
   userType, setUserType, deptId, setDeptId,
-  enrollmentNo, setEnrollmentNo, departments, loadingDepartments, loading,
+  enrollmentNo, setEnrollmentNo, departments, loadingDepartments,
 }) => (
-  <>
-    <div className="space-y-1.5">
-      <Label htmlFor="signup-name" className="text-xs font-medium text-foreground/80">Full Name</Label>
-      <Input id="signup-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Enter your full name" className={glassInputClass} />
+  <div className="grid gap-x-8 gap-y-7 sm:grid-cols-2">
+    <div>
+      <label htmlFor="signup-name" className={fieldLabel}>Full name</label>
+      <input id="signup-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Your name" className={fieldInput} />
+    </div>
+    <div>
+      <label htmlFor="signup-email" className={fieldLabel}>Email</label>
+      <input id="signup-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@cukashmir.ac.in" className={fieldInput} />
     </div>
 
-    <div className="space-y-1.5">
-      <Label htmlFor="signup-email" className="text-xs font-medium text-foreground/80">Email</Label>
-      <Input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="your.email@cukashmir.ac.in" className={glassInputClass} />
-    </div>
-
-    <div className="space-y-1.5">
-      <Label htmlFor="user-type" className="text-xs font-medium text-foreground/80">Account Type</Label>
+    <div>
+      <label htmlFor="user-type" className={fieldLabel}>Account type</label>
       <Select value={userType} onValueChange={(value: 'student' | 'department_admin' | 'admin' | 'teacher') => setUserType(value)}>
-        <SelectTrigger className={glassInputClass}>
+        <SelectTrigger id="user-type" className={darkSelect}>
           <SelectValue placeholder="Select account type" />
         </SelectTrigger>
         <SelectContent>
@@ -462,90 +477,50 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
       </Select>
     </div>
 
-    <AnimatePresence mode="wait">
-      {userType === 'student' && (
-        <motion.div
-          key="enrollment"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
-        >
-          <div className="space-y-1.5 pt-1">
-            <Label htmlFor="enrollment-no" className="text-xs font-medium text-foreground/80">Enrollment Number</Label>
-            <Input id="enrollment-no" type="text" value={enrollmentNo} onChange={(e) => setEnrollmentNo(e.target.value)} required placeholder="Enter enrollment number" className={glassInputClass} />
-          </div>
+    <AnimatePresence mode="wait" initial={false}>
+      {userType === 'student' ? (
+        <motion.div key="enrollment" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          <label htmlFor="enrollment-no" className={fieldLabel}>Enrollment number</label>
+          <input id="enrollment-no" type="text" value={enrollmentNo} onChange={(e) => setEnrollmentNo(e.target.value)} required placeholder="e.g. 21BCS001" className={fieldInput} />
         </motion.div>
-      )}
-
-      {(userType === 'department_admin' || userType === 'admin' || userType === 'teacher') && (
-        <motion.div
-          key="department"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
-        >
-          <div className="space-y-1.5 pt-1">
-            <Label htmlFor="department" className="text-xs font-medium text-foreground/80">Department</Label>
-            <Select value={deptId} onValueChange={setDeptId} disabled={loadingDepartments}>
-              <SelectTrigger className={glassInputClass}>
-                <SelectValue placeholder={loadingDepartments ? "Loading..." : "Select department"} />
-              </SelectTrigger>
-              <SelectContent className="bg-background">
-                {loadingDepartments ? (
-                  <SelectItem value="loading" disabled>Loading...</SelectItem>
-                ) : departments.length === 0 ? (
-                  <SelectItem value="none" disabled>No departments available</SelectItem>
-                ) : (
-                  departments.map((dept) => (
-                    <SelectItem key={dept.dept_id} value={dept.dept_id}>{dept.dept_name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+      ) : (
+        <motion.div key="department" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          <label htmlFor="department" className={fieldLabel}>Department</label>
+          <Select value={deptId} onValueChange={setDeptId} disabled={loadingDepartments}>
+            <SelectTrigger id="department" className={darkSelect}>
+              <SelectValue placeholder={loadingDepartments ? 'Loading…' : 'Select department'} />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.length === 0 ? (
+                <SelectItem value="none" disabled>{loadingDepartments ? 'Loading…' : 'No departments available'}</SelectItem>
+              ) : (
+                departments.map((dept) => (
+                  <SelectItem key={dept.dept_id} value={dept.dept_id}>{dept.dept_name}</SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
         </motion.div>
       )}
     </AnimatePresence>
 
-    <div className="space-y-1.5">
-      <Label htmlFor="signup-password" className="text-xs font-medium text-foreground/80">Password</Label>
-      <div className="relative">
-        <Input id="signup-password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Min 8 characters" className={`${glassInputClass} pr-10`} />
-        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setShowPassword(!showPassword)}>
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-      <PasswordStrengthChecker password={password} />
+    <div>
+      <label htmlFor="signup-password" className={fieldLabel}>Password</label>
+      <PasswordField id="signup-password" value={password} onChange={setPassword} show={showPassword} setShow={setShowPassword} placeholder="Min 8 characters" autoComplete="new-password" />
+      <div className="mt-3"><PasswordStrengthChecker password={password} /></div>
+    </div>
+    <div>
+      <label htmlFor="confirm-password" className={fieldLabel}>Confirm password</label>
+      <PasswordField id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPassword} setShow={setShowConfirmPassword} placeholder="Repeat password" autoComplete="new-password" />
     </div>
 
-    <div className="space-y-1.5">
-      <Label htmlFor="confirm-password" className="text-xs font-medium text-foreground/80">Confirm Password</Label>
-      <div className="relative">
-        <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required placeholder="Confirm your password" className={`${glassInputClass} pr-10`} />
-        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-    </div>
-
-    <Button
-      type="submit"
-      className="w-full h-10 text-sm font-medium mt-1 shadow-sm hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-      disabled={loading}
-    >
-      {loading ? "Creating Account..." : "Create Account"}
-    </Button>
-    <p className="text-center text-xs text-muted-foreground">
+    <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
       By creating an account you agree to the{' '}
-      <Link to="/terms-and-conditions" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
+      <Link to="/terms-and-conditions" className="underline underline-offset-4 hover:text-white">Terms</Link>
       {' '}and{' '}
-      <Link to="/privacy-policy" className="underline underline-offset-4 hover:text-foreground">Privacy policy</Link>.
+      <Link to="/privacy-policy" className="underline underline-offset-4 hover:text-white">Privacy policy</Link>.
     </p>
-  </>
+  </div>
 );
 
 export default Auth;

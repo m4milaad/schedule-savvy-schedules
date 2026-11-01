@@ -762,3 +762,27 @@ html.admin-theme [role="alertdialog"] {
 .admin-toolbar > .contents > .relative { order: -1; flex: 1 1 16rem; max-width: 22rem; }
 .admin-toolbar > .flex-wrap,
 .admin-toolbar > .contents > :last-child:not(.relative) { margin-left: auto; }
+
+/* Auth page: double-slider sign in / sign up (pattern from BOSS0exe/Sign-in-and-Sign-up-page),
+   mirrored so the brand panel sits left for sign in and sweeps right for sign up. */
+.auth-slider { position: relative; min-height: 100vh; width: 100%; overflow: hidden; background: #000; color: #fff; }
+.auth-pane { position: absolute; top: 0; right: 0; width: 50%; height: 100%; transition: transform .6s ease-in-out; }
+.auth-pane-signin { z-index: 2; }
+.auth-pane-signup { opacity: 0; z-index: 1; }
+.auth-slider.is-signup .auth-pane-signin { transform: translateX(-100%); }
+.auth-slider.is-signup .auth-pane-signup { transform: translateX(-100%); opacity: 1; z-index: 5; animation: auth-swap .6s; }
+/* The incoming form stays hidden until the panel has covered the midpoint. */
+@keyframes auth-swap { 0%, 49.99% { opacity: 0; z-index: 1; } 50%, 100% { opacity: 1; z-index: 5; } }
+.auth-brand { position: absolute; top: 0; left: 0; width: 50%; height: 100%; z-index: 10; transition: transform .6s ease-in-out; }
+.auth-slider.is-signup .auth-brand { transform: translateX(100%); }
+/* Phones/tablets: no room for two halves, so show only the active form. */
+@media (max-width: 1023px) {
+  .auth-brand { display: none; }
+  .auth-pane { position: relative; width: 100%; min-height: 100vh; transform: none !important; animation: none !important; opacity: 1; }
+  .auth-slider:not(.is-signup) .auth-pane-signup,
+  .auth-slider.is-signup .auth-pane-signin { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane, .auth-brand { transition: none; }
+  .auth-slider.is-signup .auth-pane-signup { animation: none; }
+}
