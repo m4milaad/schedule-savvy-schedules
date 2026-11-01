@@ -1,22 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
+import { AdminPanel, RowActions } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
+import { Plus, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Holiday } from "@/types/examSchedule";
@@ -160,24 +149,9 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
     };
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Calendar</div>
-                        <CardTitle className="text-base font-semibold">
-                            Holidays
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{filteredHolidays.length}</span>
-                        <span className="hidden sm:inline">shown</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="font-medium text-foreground">{holidays.length}</span>
-                        <span className="hidden sm:inline">total</span>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminPanel>
+            <div className="admin-toolbar">
+                <div className="contents">
                     <div className="relative max-w-md w-full">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -251,9 +225,9 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         </Dialog>
                     </div>
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-0">
+            <div>
                 {filteredHolidays.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">
@@ -293,30 +267,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(holiday)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete Holiday</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Are you sure you want to delete "{holiday.holiday_name}"?
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteHoliday(holiday.id)}>
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <RowActions onEdit={() => openEditDialog(holiday)} onDelete={() => handleDeleteHoliday(holiday.id)} title="Delete holiday?" description={<>Are you sure you want to delete "{holiday.holiday_name}"?</>} />
                                             </div>
                                         </td>
                                     </tr>
@@ -325,7 +276,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                         </table>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
@@ -373,6 +324,6 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
                 type="holidays"
                 onUpload={handleBulkUpload}
             />
-        </Card>
+        </AdminPanel>
     );
 };

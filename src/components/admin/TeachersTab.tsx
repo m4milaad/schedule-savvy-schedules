@@ -1,24 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { AdminPanel, RowActions } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload, Search, BookOpen, X } from 'lucide-react';
+import { Plus, Upload, Search, BookOpen, X } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Teacher, Department } from "@/types/examSchedule";
@@ -365,23 +355,8 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     };
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Faculty</div>
-                        <CardTitle className="text-base font-semibold">
-                            Teachers
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{filteredTeachers.length}</span>
-                        <span className="hidden sm:inline">shown</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="font-medium text-foreground">{teachers.length}</span>
-                        <span className="hidden sm:inline">total</span>
-                    </div>
-                </div>
+        <AdminPanel>
+            <div className="admin-toolbar">
                 <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
@@ -450,9 +425,9 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         className="w-full pl-10"
                     />
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-0">
+            <div>
                 {filteredTeachers.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">
@@ -524,30 +499,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                                                 <Button variant="outline" size="sm" onClick={() => openCourseDialog(teacher)} title="Assign Courses">
                                                     <BookOpen className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(teacher)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete Teacher</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Are you sure you want to delete "{teacher.teacher_name}"?
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteTeacher(teacher.teacher_id)}>
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <RowActions onEdit={() => openEditDialog(teacher)} onDelete={() => handleDeleteTeacher(teacher.teacher_id)} title="Delete teacher?" description={<>Are you sure you want to delete "{teacher.teacher_name}"?</>} />
                                             </div>
                                         </td>
                                     </tr>
@@ -556,7 +508,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         </table>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             {/* Edit Teacher Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -697,12 +649,12 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
                         <AlertDialogAction onClick={() => {
                             handleBulkDelete();
                             setShowBulkDeleteConfirm(false);
-                        }} className="bg-red-600 hover:bg-red-700">
+                        }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </Card >
+        </AdminPanel>
     );
 };

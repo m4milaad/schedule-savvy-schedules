@@ -1,23 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
+import { AdminPanel, RowActions } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Upload, Search } from 'lucide-react';
+import { Plus, Upload, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Course, Department } from "@/types/examSchedule";
@@ -216,24 +206,9 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
     };
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Catalog</div>
-                        <CardTitle className="text-base font-semibold">
-                            Courses
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{filteredCourses.length}</span>
-                        <span className="hidden sm:inline">shown</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="font-medium text-foreground">{courses.length}</span>
-                        <span className="hidden sm:inline">total</span>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminPanel>
+            <div className="admin-toolbar">
+                <div className="contents">
                     <div className="relative max-w-md w-full">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -331,9 +306,9 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                         </Dialog>
                     </div>
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-0">
+            <div>
                 {filteredCourses.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">
@@ -385,30 +360,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(course)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete Course</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Are you sure you want to delete "{course.course_name}"? This will also delete related data.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteCourse(course.course_id)}>
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <RowActions onEdit={() => openEditDialog(course)} onDelete={() => handleDeleteCourse(course.course_id)} title="Delete course?" description={<>Are you sure you want to delete "{course.course_name}"? This will also delete related data.</>} />
                                             </div>
                                         </td>
                                     </tr>
@@ -417,7 +369,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                         </table>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
@@ -515,12 +467,12 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
                         <AlertDialogAction onClick={() => {
                             handleBulkDelete();
                             setShowBulkDeleteConfirm(false);
-                        }} className="bg-red-600 hover:bg-red-700">
+                        }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </Card>
+        </AdminPanel>
     );
 };

@@ -422,14 +422,7 @@ export default function Index({ embedded = false }: IndexProps) {
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "selection" | "schedule")}>
 
       {/* ── Toolbar card with tabs + actions ── */}
-      <Card className="linear-surface overflow-hidden mb-6">
-        <CardHeader className="linear-toolbar">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="linear-kicker">Exam Planner</div>
-              <CardTitle className="text-base font-semibold">Schedule Generator</CardTitle>
-            </div>
-            <div className="flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <TabsList>
                 <TabsTrigger value="selection" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -457,13 +450,10 @@ export default function Index({ embedded = false }: IndexProps) {
                   disabled={loadingLastSchedule}
                 >
                   <RefreshCw className={cn("w-4 h-4", loadingLastSchedule && "animate-spin")} />
-                  <span className="hidden sm:inline ml-2">Reload Last</span>
+                  <span className="hidden sm:inline ml-2">Reload last</span>
                 </Button>
               </div>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      </div>
 
       {/* ── Course Selection Tab ── */}
       <TabsContent value="selection" className="mt-0">

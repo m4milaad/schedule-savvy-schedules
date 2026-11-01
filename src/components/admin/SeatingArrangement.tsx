@@ -1,14 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
-  CalendarDays,
-  Grid3X3,
   RefreshCw,
   Save,
   Trash2,
@@ -258,22 +256,12 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
         transition={{ duration: 0.3 }}
       >
         {/* Header Controls */}
-        <Card className="prof-card bg-background/50">
-          <CardHeader className="pb-4">
+        <Card className="overflow-hidden rounded-lg border bg-card">
+          <CardHeader className="px-4 py-3">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-                  <Grid3X3 className="h-5 w-5 text-primary" />
-                  Seating Arrangement
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  Plan, generate, and fine-tune seating assignments for upcoming exams.
-                </CardDescription>
-              </div>
-
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-1.5 shadow-sm">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Exam Date</span>
+                <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-1">
+                  <span className="text-sm text-muted-foreground">Exam date</span>
                   <Select value={selectedDate || ''} onValueChange={setSelectedDate}>
                     <SelectTrigger className="h-8 w-[200px] border-none bg-transparent focus:ring-0 px-2 text-sm font-semibold">
                       <SelectValue placeholder="Select a date..." />
@@ -293,7 +281,7 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
           <Separator />
 
-          <CardContent className="pt-6">
+          <CardContent className="px-4 py-3">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
               {/* Action Toolbar */}
@@ -478,13 +466,10 @@ export const SeatingArrangement = ({ examDates, userDeptId }: SeatingArrangement
 
         {/* Empty State */}
         {!selectedDate && (
-          <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border/50 rounded-xl bg-muted/5">
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <CalendarDays className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-medium">No Exam Date Selected</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm text-center">
-              Please select an exam date from the dropdown above to view or generate seating layouts.
+          <div className="flex flex-col items-center justify-center rounded-lg border bg-card px-6 py-14 text-center">
+            <h3 className="text-sm font-medium">No exam date selected</h3>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Pick an exam date above to see or generate its seating.
             </p>
           </div>
         )}

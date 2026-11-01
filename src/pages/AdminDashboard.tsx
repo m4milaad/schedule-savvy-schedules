@@ -15,7 +15,7 @@ import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
-import { LoadingScreen } from "@/components/ui/loading-screen";
+import { AdminShellSkeleton } from "@/components/admin/AdminPanel";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,6 +44,7 @@ const AdminDashboard: React.FC = () => {
     const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
     const [activeTab, setActiveTab] = useState<string>("overview");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [passwordFocus, setPasswordFocus] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navigate = useNavigate();
@@ -275,7 +276,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     if (loading) {
-        return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
+        return <AdminShellSkeleton />;
     }
 
     const renderContent = () => {
@@ -313,7 +314,7 @@ const AdminDashboard: React.FC = () => {
             case "assistant": return <ChatbotAssistant embedded />;
             case "logs": return <AuditLogsTab />;
             case "admins": return <ManageAdminsTab />;
-            case "profile": return <AdminProfileTab />;
+            case "profile": return <AdminProfileTab focusPassword={passwordFocus} />;
             default: return null;
         }
     };
@@ -359,17 +360,16 @@ const AdminDashboard: React.FC = () => {
             students: n(students.length, "student", "students"),
             seating: n(examDates.length, "exam day", "exam days") + " on the datesheet",
             assistant: "Answers from CUK and UGC documents, with citations",
+            generator: `${n(courses.length, "course", "courses")} available to schedule`,
+            admins: "Who can sign in to this dashboard, and their approval",
+            logs: "Every change made from this dashboard",
+            profile: "Your account details and password",
         };
         return descs[activeTab];
     };
 
     return (
-        <div
-            className="flex min-h-screen overflow-hidden bg-background"
-            style={{
-                backgroundColor: profileData?.theme_color || undefined
-            }}
-        >
+        <div className="flex min-h-screen overflow-hidden bg-background">
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -425,7 +425,10 @@ const AdminDashboard: React.FC = () => {
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}
                     onLogout={handleLogout}
                     onRefresh={() => loadAllData()}
-                    onNavigate={(path) => navigate(path)}
+                    onOpenProfile={(password) => {
+                        setActiveTab("profile");
+                        if (password) setPasswordFocus((n) => n + 1);
+                    }}
                 />
 
                 <main className="min-w-0 flex-1 overflow-y-auto">

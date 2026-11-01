@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +11,6 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Menu, RefreshCw, LogOut, UserRound, Settings2 } from "lucide-react";
-import { AdminProfileDialog } from "@/components/admin/AdminProfileDialog";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 
@@ -23,7 +22,8 @@ interface AdminTopbarProps {
   onLogout: () => void;
   onRefresh?: () => void;
   onOpenSidebar?: () => void;
-  onNavigate?: (path: string) => void;
+  /** Opens the Profile tab; `password` jumps to the password section. */
+  onOpenProfile?: (password: boolean) => void;
   isMobile?: boolean;
   className?: string;
 }
@@ -44,12 +44,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   onLogout,
   onRefresh,
   onOpenSidebar,
-  onNavigate,
+  onOpenProfile,
   isMobile,
   className,
 }) => {
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-
   const accountMenu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -64,13 +62,13 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="truncate text-sm font-medium">{userLabel || "Admin"}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {onNavigate && (
+        {onOpenProfile && (
           <>
-            <DropdownMenuItem className="cursor-pointer" onClick={() => setIsProfileDialogOpen(true)}>
+            <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenProfile(false)}>
               <UserRound className="mr-2 h-4 w-4" />
               Profile
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" onClick={() => onNavigate("/update-password")}>
+            <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenProfile(true)}>
               <Settings2 className="mr-2 h-4 w-4" />
               Change password
             </DropdownMenuItem>
@@ -106,9 +104,8 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <header className={cn("mx-auto flex w-full max-w-[1440px] items-start gap-6 px-8 pb-6 pt-8", className)}>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
-            {description && (
-              <p className="mt-1 truncate text-sm text-muted-foreground">{description}</p>
-            )}
+            {/* Always reserve the line so every tab's panel starts at the same height. */}
+            <p className="mt-1 h-5 truncate text-sm text-muted-foreground">{description}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {onRefresh && (
@@ -123,8 +120,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           </div>
         </header>
       )}
-
-      <AdminProfileDialog isOpen={isProfileDialogOpen} onClose={() => setIsProfileDialogOpen(false)} />
     </>
   );
 };

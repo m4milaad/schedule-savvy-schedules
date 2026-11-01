@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { AdminPanel, RowActions } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from "@/components/ui/dialog";
-import {
-    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
-    AlertDialogTitle, AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
-import { Plus, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { School } from "@/types/examSchedule";
@@ -115,20 +110,8 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
     };
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Configuration</div>
-                        <CardTitle className="text-base font-semibold">
-                            Schools
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{schools.length}</span>
-                        <span>total</span>
-                    </div>
-                </div>
+        <AdminPanel>
+            <div className="admin-toolbar">
                 <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setShowBulkUpload(true)} variant="outline" size="sm">
                         <Upload className="w-4 h-4 mr-2" />
@@ -163,9 +146,9 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
                         </DialogContent>
                     </Dialog>
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-0">
+            <div>
                 {schools.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">No schools yet</div>
@@ -194,30 +177,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => openEditDialog(school)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete School</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Are you sure you want to delete "{school.school_name}"? This will also delete all associated departments and data.
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteSchool(school.school_id)}>
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <RowActions onEdit={() => openEditDialog(school)} onDelete={() => handleDeleteSchool(school.school_id)} title="Delete school?" description={<>Are you sure you want to delete "{school.school_name}"? This will also delete all associated departments and data.</>} />
                                             </div>
                                         </td>
                                     </tr>
@@ -226,7 +186,7 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
                         </table>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
@@ -257,6 +217,6 @@ export const SchoolsTab = ({ schools, onRefresh }: SchoolsTabProps) => {
                 type="schools"
                 onUpload={handleBulkUpload}
             />
-        </Card>
+        </AdminPanel>
     );
 };

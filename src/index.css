@@ -746,3 +746,17 @@ html.admin-theme [role="alertdialog"] {
   border-radius: 12px;
   box-shadow: 0 16px 48px rgb(0 0 0 / 0.16);
 }
+
+/* Admin list toolbar: search on the left, actions on the right, one row. */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.admin-toolbar > .relative,
+.admin-toolbar > .contents > .relative { order: -1; flex: 1 1 16rem; max-width: 22rem; }
+.admin-toolbar > .flex-wrap,
+.admin-toolbar > .contents > :last-child:not(.relative) { margin-left: auto; }
