@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Calendar, 
-  MapPin,
+import {
+  Award,
+  Bell,
+  BookOpen,
   Building,
+  Calendar,
+  CalendarDays,
+  FileText,
+  FolderOpen,
   GraduationCap,
+  Keyboard,
+  Library,
+  MapPin,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,17 +31,19 @@ import { StudentNoticesTab } from '@/components/student/StudentNoticesTab';
 import { StudentCoursesTab } from '@/components/student/StudentCoursesTab';
 import { StudentPerformanceTab } from '@/components/student/StudentPerformanceTab';
 import { StudentResourcesTab } from '@/components/student/StudentResourcesTab';
-import { LoadingScreen } from '@/components/ui/loading-screen';
 import { StudentLibraryTab } from '@/components/student/StudentLibraryTab';
 import { StudentLeaveTab } from '@/components/student/StudentLeaveTab';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
-import { StudentSidebar } from '@/components/student/layout/StudentSidebar';
-import { StudentTopbar } from '@/components/student/layout/StudentTopbar';
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { AdminSidebar, type NavGroup } from '@/components/admin/layout/AdminSidebar';
+import { AdminTopbar } from '@/components/admin/layout/AdminTopbar';
+import { AdminShellSkeleton, useAdminTheme } from '@/components/admin/AdminPanel';
+import { customBackground } from '@/lib/adminBackground';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useNavigate } from 'react-router-dom';
 import logger from '@/lib/logger';
@@ -100,6 +111,33 @@ interface ExamSchedule {
   column_number?: number;
 }
 
+const STUDENT_NAV: NavGroup[] = [
+  {
+    items: [
+      { id: "notices", label: "Notices", icon: Bell },
+      { id: "courses", label: "My courses", icon: BookOpen },
+      { id: "exams", label: "Exams", icon: Calendar },
+    ],
+  },
+  {
+    label: "Results",
+    items: [
+      { id: "marks", label: "Marks", icon: GraduationCap },
+      { id: "ese-result", label: "ESE result", icon: Award },
+      { id: "performance", label: "Performance", icon: TrendingUp },
+    ],
+  },
+  {
+    label: "Study",
+    items: [
+      { id: "resources", label: "Resources", icon: FolderOpen },
+      { id: "assignments", label: "Assignments", icon: FileText },
+      { id: "library", label: "Library", icon: Library },
+      { id: "leave", label: "Leave", icon: CalendarDays },
+    ],
+  },
+];
+
 const StudentDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
@@ -117,6 +155,7 @@ const StudentDashboard = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  useAdminTheme(customBackground((profile as Record<string, unknown> | null)?.theme_color));
   
   // Ref for search input
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -125,11 +164,7 @@ const StudentDashboard = () => {
   useSearchShortcut(searchInputRef);
 
   // Enable real-time notifications for seat assignments and datesheets
-  useRealtimeNotifications({
-    studentId: profile?.id,
-    userId: user?.id,
-    enabled: !!profile?.id && !!user?.id
-  });
+  useRealtimeNotifications({ userId: user?.id });
 
   // Keyboard shortcuts
   const navigateToTab = useCallback((index: number) => {
@@ -413,7 +448,7 @@ const StudentDashboard = () => {
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading dashboard..." variant="morphing" size="lg" />;
+    return <AdminShellSkeleton />;
   }
 
   const getTabTitle = () => {
@@ -579,23 +614,24 @@ const StudentDashboard = () => {
     }
   };
 
-  const themeColor = (profile as Record<string, unknown>)?.theme_color as string | undefined;
+  const sidebarProps = {
+    groups: STUDENT_NAV,
+    subtitle: "Student",
+    userRole: null,
+    onNavigate: navigate,
+    onLogout: handleSignOut,
+    userLabel: profile?.full_name || profile?.email || undefined,
+  };
 
   return (
-    <div
-      className={cn(
-        "flex min-h-screen overflow-hidden transition-colors duration-300",
-        !themeColor && "bg-gradient-to-b from-background to-muted/30"
-      )}
-      style={{
-        backgroundColor: themeColor || undefined
-      }}
-    >
+    <div className="flex min-h-screen overflow-hidden bg-background">
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-            <StudentSidebar
+          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
+            <AdminSidebar
+              {...sidebarProps}
               activeTab={activeTab}
               setActiveTab={(tab) => {
                 setActiveTab(tab as TabValue);
@@ -603,7 +639,6 @@ const StudentDashboard = () => {
               }}
               isCollapsed={false}
               toggleSidebar={() => setIsMobileMenuOpen(false)}
-              onLogout={handleSignOut}
               onEditProfile={() => {
                 setShowProfileDialog(true);
                 setIsMobileMenuOpen(false);
@@ -616,26 +651,24 @@ const StudentDashboard = () => {
 
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <StudentSidebar
+        <AdminSidebar
+          {...sidebarProps}
           activeTab={activeTab}
           setActiveTab={(tab) => setActiveTab(tab as TabValue)}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onLogout={handleSignOut}
           onEditProfile={() => setShowProfileDialog(true)}
         />
       )}
 
       {/* Main Content */}
-      <motion.div
-        className="flex min-w-0 flex-1 flex-col"
-        animate={{
-          marginLeft: isMobile ? 0 : (isSidebarCollapsed ? 80 : 256)
-        }}
-        initial={false}
-        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-out",
+          !isMobile && (isSidebarCollapsed ? "ml-16" : "ml-60")
+        )}
       >
-        <StudentTopbar
+        <AdminTopbar
           title={getTabTitle()}
           description={getTabDescription()}
           userLabel={profile?.full_name || profile?.email || undefined}
@@ -643,12 +676,16 @@ const StudentDashboard = () => {
           isMobile={isMobile}
           onOpenSidebar={() => setIsMobileMenuOpen(true)}
           onLogout={handleSignOut}
-          onEditProfile={() => setShowProfileDialog(true)}
-          onShowShortcuts={() => setShowShortcutsHelp(true)}
+          onOpenProfile={() => setShowProfileDialog(true)}
+          actions={!isMobile && (
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+              <Keyboard className="h-4 w-4" />
+            </Button>
+          )}
         />
 
-        <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">
-          <div className="mx-auto w-full max-w-[1680px] px-4 py-6 md:px-8 md:py-8">
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 md:pb-8 md:pt-0">
             {/* Profile Completion Banner */}
             {!isProfileComplete() && showCompletionBanner && (
               <div className="mb-6">
@@ -662,14 +699,14 @@ const StudentDashboard = () => {
 
             <AnimatePresence mode="wait">
               <PageTransition key={activeTab}>
-                <div className="overflow-hidden rounded-2xl border border-border/40 bg-card/40 shadow-sm backdrop-blur-xl">
+                <div className="overflow-hidden rounded-lg border bg-card">
                   {renderContent()}
                 </div>
               </PageTransition>
             </AnimatePresence>
           </div>
         </main>
-      </motion.div>
+      </div>
 
       {/* Profile Edit Dialog */}
       {profile && (

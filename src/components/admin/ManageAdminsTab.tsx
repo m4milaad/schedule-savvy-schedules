@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPanel, TableSkeleton } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Trash2, UserPlus, Search } from 'lucide-react';
-import { LoadingScreen } from '@/components/ui/loading-screen';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -379,24 +378,9 @@ export const ManageAdminsTab = () => {
     });
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Settings</div>
-                        <CardTitle className="text-base font-semibold">
-                            Manage Administrators
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{filteredUsers.length}</span>
-                        <span className="hidden sm:inline">shown</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="font-medium text-foreground">{allUsers.length}</span>
-                        <span className="hidden sm:inline">total</span>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminPanel>
+            <div className="admin-toolbar">
+                <div className="contents">
                     <div className="relative max-w-md w-full">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -406,6 +390,7 @@ export const ManageAdminsTab = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
+                    <span className="text-sm tabular-nums text-muted-foreground">{filteredUsers.length} of {allUsers.length}</span>
                     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                         <DialogTrigger asChild>
                             <Button size="sm">
@@ -486,17 +471,10 @@ export const ManageAdminsTab = () => {
                         </DialogContent>
                     </Dialog>
                 </div>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+            <div>
                 {loading ? (
-                    <div className="py-14 text-center">
-                        <LoadingScreen
-                            message="Loading users..."
-                            variant="cascade"
-                            size="sm"
-                            fullScreen={false}
-                        />
-                    </div>
+                    <TableSkeleton cols={5} />
                 ) : filteredUsers.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">
@@ -535,51 +513,50 @@ export const ManageAdminsTab = () => {
                                         </td>
                                         <td className="linear-td hidden lg:table-cell">
                                             {user.role === 'admin' ? (
-                                                <Badge variant="default" className="bg-green-600">Active</Badge>
+                                                <Badge variant="outline" className="font-normal">Active</Badge>
                                             ) : user.is_approved ? (
-                                                <Badge variant="default" className="bg-green-600">Approved</Badge>
+                                                <Badge variant="outline" className="font-normal">Approved</Badge>
                                             ) : (
-                                                <Badge variant="destructive">Pending</Badge>
+                                                <Badge variant="secondary" className="font-normal">Pending</Badge>
                                             )}
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">
                                                 {user.role !== 'admin' && !user.is_approved && (
                                                     <Button
-                                                        variant="outline"
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => approveUser(user.user_id, user.full_name, user.role === 'department_admin' ? 'department admin' : 'teacher')}
-                                                        className="text-green-600 hover:text-green-700"
                                                     >
                                                         Approve
                                                     </Button>
                                                 )}
                                                 {user.role !== 'admin' && user.is_approved && (
                                                     <Button
-                                                        variant="outline"
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => revokeUser(user.user_id, user.full_name)}
-                                                        className="text-orange-600 hover:text-orange-700"
+                                                        className="text-muted-foreground"
                                                     >
                                                         Revoke
                                                     </Button>
                                                 )}
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" aria-label="Remove user">
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle>Remove User</AlertDialogTitle>
+                                                            <AlertDialogTitle>Remove user?</AlertDialogTitle>
                                                             <AlertDialogDescription>
                                                                 Are you sure you want to remove "{user.full_name}"'s access?
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => removeUser(user.user_id, user.email, user.role)}>
+                                                            <AlertDialogAction onClick={() => removeUser(user.user_id, user.email, user.role)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                                                 Remove
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
@@ -593,7 +570,7 @@ export const ManageAdminsTab = () => {
                         </table>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </AdminPanel>
     );
 };

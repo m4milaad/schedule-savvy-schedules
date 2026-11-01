@@ -109,6 +109,7 @@ export const ResourceSchema = z.object({
   file_name: z.string().nullable(),
   course_id: z.string(),
   teacher_id: z.string().nullable(),
+  resource_type: z.string(),
   created_at: stringNullableToString,
   access_level: z.string().nullable(),
   download_count: z.number().nullable(),

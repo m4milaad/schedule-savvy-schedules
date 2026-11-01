@@ -8,13 +8,24 @@ import {
   FileText,
   Globe,
   RotateCcw,
-  SendHorizonal,
+  ArrowUp,
+  Plus,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { askKnowledgeBase, type ChatbotResponse, type ChatHistoryTurn } from "@/lib/chatbot/retrieval";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -174,12 +185,6 @@ function FormattedMarkdown({ text }: { text: string }) {
 }
 
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
 
 function getDisplayName(fullName?: string | null, email?: string | null) {
   const trimmedName = fullName?.trim();
@@ -342,358 +347,191 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
     }
   };
 
+
+  const sendPrompt = (prompt: string) => {
+    setQuery(prompt);
+    textareaRef.current?.focus();
+  };
+
   return (
-    <div
-      className={cn(
-        "flex flex-col",
-        embedded ? "h-full text-foreground" : "min-h-screen bg-background text-foreground"
-      )}
-    >
-      <div
-        className={cn(
-          "mx-auto flex h-full w-full flex-col",
-          embedded ? "" : "max-w-3xl px-4 py-6 sm:px-6"
-        )}
-      >
-        {/* Top nav (non-embedded only) */}
+    <div className={cn("flex flex-col text-foreground", embedded ? "h-[calc(100dvh-10rem)] min-h-[480px]" : "min-h-screen bg-background")}>
+      <div className={cn("mx-auto flex w-full flex-1 flex-col min-h-0", !embedded && "max-w-3xl px-4 py-6 sm:px-6")}>
         {!embedded && (
           <div className="mb-4 flex items-center justify-between">
-            <Button asChild variant="ghost" size="sm" className="hover:bg-accent/50">
+            <Button asChild variant="ghost" size="sm">
               <Link to={dashboardHome}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                Back to dashboard
               </Link>
             </Button>
-            <div className="flex items-center gap-1.5 rounded-full border border-border/40 bg-background/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-              <Sparkles className="h-3 w-3 text-primary" />
-              Retrieval-Only
-            </div>
+            <span className="text-xs text-muted-foreground">Answers from CUK and UGC documents</span>
           </div>
         )}
 
-        {/* Main card */}
-        <Card
-          className={cn(
-            "flex flex-col overflow-hidden transition-all duration-300",
-            embedded
-              ? "linear-surface border-0 shadow-none flex-1"
-              : "flex-1 border border-border/50 shadow-sm"
-          )}
-          style={{ minHeight: embedded ? undefined : "calc(100vh - 120px)" }}
-        >
-          {/* Card header */}
-          <CardHeader
-            className={cn(
-              "flex flex-col gap-3 shrink-0",
-              embedded ? "linear-toolbar" : "border-b bg-muted/10 pb-4"
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+          <div className="flex h-12 shrink-0 items-center justify-between border-b px-4">
+            <span className="text-sm font-medium">{isEmptyChat ? "New conversation" : `${messages.length} messages`}</span>
+            {!isEmptyChat && (
+              <Button variant="ghost" size="sm" onClick={clearChat} disabled={loading} className="h-8 gap-1.5 text-muted-foreground">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Clear
+              </Button>
             )}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="linear-kicker">AI Support</div>
-                <p className="text-base font-semibold tracking-tight">NeMoX</p>
-              </div>
-              {messages.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearChat}
-                  disabled={loading}
-                  className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  Clear chat
-                </Button>
-              )}
-            </div>
-          </CardHeader>
+          </div>
 
-          {/* Chat area */}
-          <CardContent className="flex flex-1 flex-col p-0 min-h-0">
-            <ScrollArea className="flex-1 min-h-0">
-              <div className="flex flex-col px-4 pt-6 pb-4 sm:px-6 space-y-6 w-full overflow-x-hidden">
-
-                {/* Empty state greeting */}
-                {isEmptyChat && (
-                  <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in duration-500">
-                    <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                      <Sparkles className="h-6 w-6 text-primary" />
-                    </div>
-                    <h2 className="text-2xl font-semibold tracking-tight">
-                      {getGreeting()}, {userDisplayName}
-                    </h2>
-                    <p className="mt-1.5 text-sm text-muted-foreground max-w-xs">
-                      Ask me anything about admissions, exams, scholarships, or university notices.
-                    </p>
-                    {/* Starter prompts */}
-                    <div className="mt-8 flex flex-wrap justify-center gap-2 max-w-lg">
-                      {starterPrompts.map((prompt) => (
-                        <button
-                          key={prompt}
-                          onClick={() => setQuery(prompt)}
-                          disabled={loading}
-                          className="rounded-full border border-border/50 bg-muted/40 px-3.5 py-1.5 text-xs text-foreground/80 transition-all hover:border-primary/40 hover:bg-muted hover:text-foreground disabled:opacity-50"
-                        >
-                          {prompt}
-                        </button>
-                      ))}
-                    </div>
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6">
+              {isEmptyChat && (
+                <div>
+                  <h2 className="text-base font-semibold">Ask NeMoX</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Admissions, exams, departments, scholarships and notices, with the documents it used.
+                  </p>
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                    {starterPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => sendPrompt(prompt)}
+                        disabled={loading}
+                        className="rounded-md border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Messages */}
-                {messages.map((message) => {
-                  const isUser = message.role === "user";
-                  const sources = message.response?.sources ?? [];
-
+              {messages.map((message) => {
+                const isUser = message.role === "user";
+                const sources = message.response?.sources ?? [];
+                if (isUser) {
                   return (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full",
-                        isUser ? "flex-row-reverse justify-center" : "flex-row"
-                      )}
-                    >
-                      {/* Avatar */}
-                      <div
-                        className={cn(
-                          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold uppercase tracking-widest",
-                          isUser
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted border border-border/50 text-muted-foreground"
-                        )}
-                      >
-                        {isUser ? userInitial : "N"}
-                      </div>
-
-                      {/* Bubble + sources */}
-                      <div
-                        className={cn(
-                          "flex flex-col gap-2",
-                          isUser ? "items-end max-w-[70%]" : "items-start max-w-[85%]"
-                        )}
-                      >
-                        {/* Sender label */}
-                        <span className="px-0.5 text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium">
-                          {isUser ? userDisplayName : "NeMoX"}
-                        </span>
-
-                        {/* Message bubble */}
-                        <div
-                          className={cn(
-                            "rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm w-full",
-                            isUser
-                              ? "bg-primary text-primary-foreground rounded-tr-sm"
-                              : "bg-card border border-border/40 text-card-foreground rounded-tl-sm"
-                          )}
-                        >
-                          {isUser ? (
-                            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-                          ) : (
-                            <FormattedMarkdown text={message.content} />
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void copyMessage(message);
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-muted-foreground/80 hover:bg-muted/40 hover:text-foreground transition-colors"
-                          aria-label="Copy message"
-                        >
-                          {copiedMessageId === message.id ? (
-                            <>
-                              <Check className="h-3 w-3" />
-                              Copied
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              Copy
-                            </>
-                          )}
-                        </button>
-
-                        {/* Inline sources */}
-                        {!isUser && sources.length > 0 && (
-                          <div className="flex flex-col gap-1.5 w-full pl-0.5">
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
-                              Sources
-                            </p>
-                            <div className="flex flex-col gap-1.5">
-                              {sources.slice(0, 5).map((source) => (
-                                <a
-                                  key={`${source.url}-${source.title}`}
-                                  href={source.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="group flex items-center gap-2 rounded-lg border border-border/30 bg-muted/30 px-3 py-2 text-xs transition-all hover:border-border/70 hover:bg-muted/60"
-                                >
-                                  {source.sourceType === "pdf" ? (
-                                    <FileText className="h-3 w-3 shrink-0 text-amber-500" />
-                                  ) : (
-                                    <Globe className="h-3 w-3 shrink-0 text-blue-500" />
-                                  )}
-                                  <span className="flex-1 truncate font-medium text-foreground/80 group-hover:text-foreground">
-                                    {source.title}
-                                  </span>
-                                  {source.score !== undefined && (
-                                    <span className="shrink-0 text-[10px] text-muted-foreground/60">
-                                      {(source.score * 100).toFixed(0)}%
-                                    </span>
-                                  )}
-                                  <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                    <div key={message.id} className="flex justify-end">
+                      <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-lg bg-muted px-3.5 py-2.5 text-sm">
+                        {message.content}
+                      </p>
                     </div>
                   );
-                })}
-
-                {/* Loading indicator with skeleton */}
-                {loading && (
-                  <div className="flex gap-3 animate-in fade-in duration-300">
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted border border-border/50 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      N
-                    </div>
-                    <div className="flex flex-col gap-2 items-start max-w-[82%]">
-                      <span className="px-0.5 text-[10px] uppercase tracking-widest text-muted-foreground/70 font-medium">
-                        NeMoX
-                      </span>
-                      <div className="rounded-2xl rounded-tl-sm border border-border/40 bg-card px-4 py-3 shadow-sm w-full">
-                        {/* Thinking indicator */}
-                        <div className="flex items-center gap-1.5 mb-3">
-                          <span
-                            className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50"
-                            style={{ animationDelay: "0ms" }}
-                          />
-                          <span
-                            className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50"
-                            style={{ animationDelay: "150ms" }}
-                          />
-                          <span
-                            className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary/50"
-                            style={{ animationDelay: "300ms" }}
-                          />
-                          <span className="ml-1 text-xs text-muted-foreground/60">Thinking...</span>
-                        </div>
-                        {/* Skeleton lines */}
-                        <div className="space-y-2 animate-pulse">
-                          <div className="h-3 bg-muted/60 rounded w-full"></div>
-                          <div className="h-3 bg-muted/60 rounded w-11/12"></div>
-                          <div className="h-3 bg-muted/60 rounded w-4/5"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div ref={bottomRef} />
-              </div>
-            </ScrollArea>
-
-            {/* Input area */}
-            <div className="shrink-0 px-4 pb-4 pt-3 sm:px-8">
-              {/* Gradient border wrapper */}
-              <div
-                className="rounded-2xl p-px transition-all duration-300"
-                style={{
-                  background: query.trim().length > 0
-                    ? "linear-gradient(135deg, hsl(var(--primary) / 0.6), hsl(var(--primary) / 0.2), hsl(var(--border) / 0.4))"
-                    : "linear-gradient(135deg, hsl(var(--border) / 0.6), hsl(var(--border) / 0.2))",
-                  boxShadow: query.trim().length > 0
-                    ? "0 0 0 3px hsl(var(--primary) / 0.08), 0 4px 24px hsl(var(--primary) / 0.10)"
-                    : "0 2px 12px hsl(var(--foreground) / 0.04)",
-                }}
-              >
-                <form
-                  onSubmit={(event) => {
-                    void onSubmit(event);
-                  }}
-                  className="flex flex-col rounded-[15px] bg-card overflow-hidden outline-none"
-                >
-                  {/* Textarea */}
-                  <Textarea
-                    ref={textareaRef}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={onKeyDown}
-                    placeholder="Ask about admissions, exams, notices…"
-                    disabled={loading}
-                    rows={1}
-                    className="resize-none border-0 bg-transparent px-4 pt-3.5 pb-1 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none placeholder:text-muted-foreground/40 min-h-0 leading-relaxed"
-                    style={{ maxHeight: "140px", overflowY: "auto" }}
-                  />
-
-                  {/* Bottom toolbar */}
-                  <div className="flex items-center justify-between px-3 pb-3 pt-1">
-                    {/* Left hint */}
-                    <span className="text-[10px] text-muted-foreground/40 select-none">
-                      {loading ? (
-                        <span className="flex items-center gap-1.5">
-                          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary/50" />
-                          NeMoX is thinking…
-                        </span>
-                      ) : (
-                        "Shift+Enter for new line"
-                      )}
-                    </span>
-
-                    {/* Send button */}
+                }
+                return (
+                  <div key={message.id} className="group flex flex-col gap-2">
+                    <FormattedMarkdown text={message.content} />
+                    {sources.length > 0 && (
+                      <ul className="flex flex-col gap-1 border-l pl-3">
+                        {sources.slice(0, 5).map((source) => (
+                          <li key={`${source.url}-${source.title}`}>
+                            <a
+                              href={source.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              {source.sourceType === "pdf" ? <FileText className="h-3 w-3 shrink-0" /> : <Globe className="h-3 w-3 shrink-0" />}
+                              <span className="truncate">{source.title}</span>
+                              <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100" />
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <button
-                      type="submit"
-                      disabled={!canSubmit}
-                      className={cn(
-                        "group relative flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 overflow-hidden",
-                        canSubmit
-                          ? "opacity-100 scale-100 shadow-md"
-                          : "opacity-35 scale-95 cursor-not-allowed"
-                      )}
-                      style={
-                        canSubmit
-                          ? {
-                              background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75))",
-                              boxShadow: "0 2px 8px hsl(var(--primary) / 0.35)",
-                            }
-                          : {
-                              background: "hsl(var(--muted))",
-                            }
-                      }
+                      type="button"
+                      onClick={() => void copyMessage(message)}
+                      className="inline-flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                      aria-label="Copy answer"
                     >
-                      {/* Shine sweep on hover */}
-                      <span
-                        className="absolute inset-0 translate-x-[-100%] bg-white/20 skew-x-12 transition-transform duration-500 group-hover:translate-x-[150%]"
-                        aria-hidden
-                      />
-                      <SendHorizonal
-                        className={cn(
-                          "h-3.5 w-3.5 relative z-10 transition-transform duration-200",
-                          canSubmit ? "text-primary-foreground group-hover:translate-x-0.5" : "text-muted-foreground"
-                        )}
-                      />
+                      {copiedMessageId === message.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedMessageId === message.id ? "Copied" : "Copy"}
                     </button>
                   </div>
-                </form>
-              </div>
+                );
+              })}
 
-              <p className="mt-2 text-center text-[10px] text-muted-foreground/35 select-none">
-                Powered by NeMoX · Verified knowledge base
-              </p>
+              {loading && (
+                <div className="flex flex-col gap-2" aria-live="polite">
+                  <span className="text-xs text-muted-foreground">Searching documents…</span>
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3.5 w-11/12" />
+                  <Skeleton className="h-3.5 w-3/5" />
+                </div>
+              )}
+
+              <div ref={bottomRef} />
             </div>
-          </CardContent>
-        </Card>
+          </ScrollArea>
+
+          <form
+            onSubmit={(event) => void onSubmit(event)}
+            className="shrink-0 border-t p-3"
+          >
+            <InputGroup className="mx-auto max-w-3xl bg-card">
+              <InputGroupTextarea
+                ref={textareaRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Ask about admissions, exams, notices…"
+                aria-label="Message"
+                disabled={loading}
+                rows={1}
+                className="min-h-14 text-sm"
+                style={{ maxHeight: "140px", overflowY: "auto" }}
+              />
+              <InputGroupAddon align="block-end" className="pt-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <InputGroupButton type="button" variant="outline" size="icon-sm" aria-label="More options">
+                      <Plus />
+                    </InputGroupButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="start"
+                    side="top"
+                    className="w-80"
+                    // Back to typing, not to the + button.
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault();
+                      textareaRef.current?.focus();
+                    }}
+                  >
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Suggested questions</DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      {starterPrompts.map((prompt) => (
+                        <DropdownMenuItem
+                          key={prompt}
+                          className="gap-2"
+                          onSelect={() => setQuery(prompt)}
+                        >
+                          <Sparkles className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          {prompt}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuGroup>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="gap-2" onSelect={clearChat} disabled={loading}>
+                      <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      Clear chat
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <InputGroupButton type="submit" variant="default" size="icon-sm" className="ml-auto" disabled={!canSubmit} aria-label="Send">
+                  <ArrowUp />
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
+          </form>
+        </section>
       </div>
     </div>
   );
 };
 
-function ChatbotAssistantWithErrorBoundary() {
+function ChatbotAssistantWithErrorBoundary(props: ChatbotAssistantProps) {
   return (
     <ChatbotErrorBoundary>
-      <ChatbotAssistant />
+      <ChatbotAssistant {...props} />
     </ChatbotErrorBoundary>
   );
 }

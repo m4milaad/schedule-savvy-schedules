@@ -554,7 +554,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
                 date={selectedDate}
                 onDateChange={(date) => date && setSelectedDate(date)}
                 placeholder="Select date"
-                className="h-9 w-[160px] text-sm"
+                className="h-9 w-[200px] text-sm"
               />
 
               {selectedCourse && selectedDate && (

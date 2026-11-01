@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { TabLoader } from '@/components/ui/loading-screen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,7 +70,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
 
   const loadResources = async () => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('resources')
         .select(`
           *,
@@ -301,11 +302,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading…" />;
   }
 
   return (
@@ -561,7 +558,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
                         </Badge>
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
-                        {resource.access_level.replace('_', ' ')}
+                        {resource.access_level?.replace('_', ' ')}
                       </td>
                       <td className="linear-td hidden xl:table-cell">
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">

@@ -1511,6 +1511,11 @@ export type Database = {
       }
       get_user_department: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
+      register_device_token: {
+        Args: { p_platform?: string; p_token: string }
+        Returns: undefined
+      }
+      unregister_device_token: { Args: { p_token: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 type ConsentChoice = "accepted" | "declined";
 
-const CONSENT_STORAGE_KEY = "cuk-cookie-consent-v1";
+export const CONSENT_STORAGE_KEY = "cuk-cookie-consent-v1";
 
 /**
  * Renders a cookie consent banner that prompts the user to accept or decline cookies.
@@ -13,7 +13,7 @@ const CONSENT_STORAGE_KEY = "cuk-cookie-consent-v1";
  *
  * @returns The banner element when consent has not been recorded, otherwise `null`.
  */
-export function CookieConsentBanner() {
+export function CookieConsentBanner({ onChoice }: { onChoice?: (choice: ConsentChoice) => void } = {}) {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const supportEmail = "mb4milad.bhattt@cukashmir.edu.in";
@@ -25,7 +25,7 @@ export function CookieConsentBanner() {
 
   const message = useMemo(
     () =>
-      "We use essential cookies for login, security, and offline reliability. Optional analytics cookies help us improve your experience.",
+      "We use essential cookies for login, security, and offline reliability. Optional, anonymous usage analytics help us improve the app, and only run if you accept.",
     []
   );
 
@@ -33,6 +33,7 @@ export function CookieConsentBanner() {
     setLeaving(true);
     setTimeout(() => {
       localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+      onChoice?.(choice);
       setVisible(false);
     }, 300);
   };

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { registerServiceWorker } from './lib/serviceWorkerRegistration'
+import logger from './lib/logger'
 
 const rootEl = document.getElementById("root")
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
@@ -33,7 +34,7 @@ if (!supabaseUrl || !supabaseKey) {
       )
     })
     .catch((err) => {
-      console.error(err)
+      logger.error(err)
       rootEl.innerHTML = `
         <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;font-family:system-ui,sans-serif;">
           <p style="max-width:24rem;">The app failed to load. Check the browser console for details.</p>

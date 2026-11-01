@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { LoadingScreen } from '@/components/ui/loading-screen';
 import logger from '@/lib/logger';
+import { AdminShellSkeleton } from '@/components/admin/AdminPanel';
 
 
 interface AdminProtectedRouteProps {
@@ -19,7 +19,9 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
 
   const checkAdminAccess = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // Local session read, no network round trip. This only gates the UI; RLS guards the data.
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       
       if (!user) {
         setIsAdmin(false);
@@ -57,7 +59,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   };
 
   if (loading) {
-    return <LoadingScreen message="Verifying admin access..." variant="morphing" />;
+    // Same themed skeleton the dashboard shows next, so the handover is invisible.
+    return <AdminShellSkeleton />;
   }
 
   if (!isAdmin) {

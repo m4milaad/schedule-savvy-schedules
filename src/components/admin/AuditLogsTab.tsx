@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPanel, TableSkeleton } from "./AdminPanel";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +8,6 @@ import { RefreshCw, Download, Trash2, Search, History } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { format } from 'date-fns';
-import { LoadingScreen } from "@/components/ui/loading-screen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import logger from '@/lib/logger';
+import { downloadBlob } from '@/lib/download';
 
 
 interface AuditLog {
@@ -154,29 +154,18 @@ export const AuditLogsTab = () => {
   };
 
   const getActionBadge = (action: string) => {
-    const variants: { [key: string]: string } = {
-      INSERT: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/15',
-      UPDATE: 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/15',
-      DELETE: 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/15',
-    };
+    // Only deletions get colour; inserts and updates are routine.
+    const label = { INSERT: 'Created', UPDATE: 'Updated', DELETE: 'Deleted' }[action] ?? action;
     return (
-      <Badge variant="outline" className={cn("font-mono text-[10px] uppercase font-semibold", variants[action] || 'text-muted-foreground')}>
-        {action}
+      <Badge variant="outline" className={cn("font-normal", action === 'DELETE' && "border-destructive/40 text-destructive")}>
+        {label}
       </Badge>
     );
   };
 
   const getUserTypeBadge = (userType: string) => {
-    const variants: { [key: string]: string } = {
-      admin: 'bg-primary/10 text-primary border-primary/20',
-      department_admin: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-      student: 'bg-slate-500/10 text-slate-600 border-slate-500/20',
-    };
-    return (
-      <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border", variants[userType] || 'bg-muted text-muted-foreground')}>
-        {userType === 'department_admin' ? 'Dept Admin' : userType}
-      </span>
-    );
+    const label = { admin: 'Super admin', department_admin: 'Department admin' }[userType] ?? userType;
+    return <span className="text-xs capitalize text-muted-foreground">{label}</span>;
   };
 
   const exportToCSV = async () => {
@@ -248,10 +237,7 @@ export const AuditLogsTab = () => {
       ].join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-      link.click();
+      await downloadBlob(blob, `audit_logs_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
 
       toast({
         title: "Export Complete",
@@ -421,24 +407,9 @@ export const AuditLogsTab = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4 max-w-[1600px] mx-auto"
     >
-      <Card className="linear-surface overflow-hidden">
-        <CardHeader className="linear-toolbar flex flex-col gap-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="linear-kicker">System</div>
-              <CardTitle className="text-base font-semibold">
-                Audit Logs
-              </CardTitle>
-            </div>
-            <div className="linear-pill">
-              <span className="font-medium text-foreground">{filteredLogs.length}</span>
-              <span className="hidden sm:inline">shown</span>
-              <span className="text-muted-foreground">/</span>
-              <span className="font-medium text-foreground">{totalCount}</span>
-              <span className="hidden sm:inline">total</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <AdminPanel>
+        <div className="admin-toolbar">
+          <div className="contents">
             <div className="relative max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -448,6 +419,7 @@ export const AuditLogsTab = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <span className="text-sm tabular-nums text-muted-foreground">{filteredLogs.length} of {totalCount}</span>
             <div className="flex flex-wrap gap-2">
               <Button onClick={loadLogs} variant="outline" size="sm">
                 <RefreshCw className={cn("w-4 h-4 mr-2", loading && "animate-spin")} />
@@ -491,18 +463,11 @@ export const AuditLogsTab = () => {
               </AlertDialog>
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-0">
+        <div>
           {loading ? (
-            <div className="py-20">
-              <LoadingScreen
-                message="Loading records..."
-                variant="cascade"
-                size="sm"
-                fullScreen={false}
-              />
-            </div>
+            <TableSkeleton cols={5} />
           ) : filteredLogs.length === 0 ? (
             <div className="text-center py-20 px-4">
               <div className="bg-muted/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -516,28 +481,22 @@ export const AuditLogsTab = () => {
           ) : (
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader className="bg-muted/40">
+                <TableHeader>
                   <TableRow className="hover:bg-transparent border-b border-border/60">
-                    <TableHead className="w-[160px] text-xs uppercase tracking-wide font-semibold pl-6">Timestamp</TableHead>
-                    <TableHead className="w-[200px] text-xs uppercase tracking-wide font-semibold">User</TableHead>
-                    <TableHead className="w-[120px] text-xs uppercase tracking-wide font-semibold">Action</TableHead>
-                    <TableHead className="w-[140px] text-xs uppercase tracking-wide font-semibold">Entity</TableHead>
-                    <TableHead className="min-w-[300px] text-xs uppercase tracking-wide font-semibold">Details</TableHead>
+                    <TableHead className="w-[160px] text-xs font-medium pl-6">Timestamp</TableHead>
+                    <TableHead className="w-[200px] text-xs font-medium">User</TableHead>
+                    <TableHead className="w-[120px] text-xs font-medium">Action</TableHead>
+                    <TableHead className="w-[140px] text-xs font-medium">Entity</TableHead>
+                    <TableHead className="min-w-[300px] text-xs font-medium">Details</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLogs.map((log, index) => (
-                    <motion.tr
-                      key={log.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02, duration: 0.2 }}
-                      className="group transition-colors border-b border-border/40 hover:bg-muted/30"
-                    >
-                      <TableCell className="font-mono text-[10px] text-muted-foreground pl-6 py-3">
-                        {format(new Date(log.created_at), 'MMM dd, yyyy')}
-                        <div className="text-foreground/80 font-medium">
-                          {format(new Date(log.created_at), 'HH:mm:ss')}
+                  {filteredLogs.map((log) => (
+                    <TableRow key={log.id} className="group">
+                      <TableCell className="pl-6 py-3 text-sm tabular-nums">
+                        {format(new Date(log.created_at), 'd MMM yyyy')}
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), 'HH:mm')}
                         </div>
                       </TableCell>
                       <TableCell className="py-3">
@@ -545,26 +504,22 @@ export const AuditLogsTab = () => {
                           <span className="text-sm font-medium leading-none text-foreground/90">
                             {log.profiles?.full_name || 'Unknown User'}
                           </span>
-                          <span className="text-[10px] text-muted-foreground mt-1 truncate max-w-[180px]">
+                          <span className="text-xs text-muted-foreground mt-1 truncate max-w-[180px]">
                             {log.profiles?.email || log.user_id || "" || ''}
                           </span>
-                          <div className="mt-1.5">
-                            {getUserTypeBadge(log.user_type)}
-                          </div>
+                          {getUserTypeBadge(log.user_type)}
                         </div>
                       </TableCell>
                       <TableCell className="py-3">
                         {getActionBadge(log.action)}
                       </TableCell>
                       <TableCell className="py-3">
-                        <Badge variant="secondary" className="font-normal text-[10px] text-foreground/80 bg-muted/60">
-                          {log.table_name}
-                        </Badge>
+                        <span className="text-sm text-muted-foreground">{log.table_name}</span>
                       </TableCell>
                       <TableCell className="py-3 pr-6">
                         {getDetailedDescription(log)}
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -585,8 +540,8 @@ export const AuditLogsTab = () => {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </AdminPanel>
 
       <div className="text-xs text-center text-muted-foreground py-2">
         Showing {filteredLogs.length} of {totalCount} total records

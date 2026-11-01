@@ -1,16 +1,16 @@
 import React, { useState, useRef } from 'react';
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminPanel, RowActions } from "./AdminPanel";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { Plus, Search, Edit2, Trash2, Upload } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import BulkUploadModal from "./BulkUploadModal";
@@ -331,24 +331,9 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     };
 
     return (
-        <Card className="linear-surface overflow-hidden">
-            <CardHeader className="linear-toolbar flex flex-col gap-3">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="linear-kicker">Enrollment</div>
-                        <CardTitle className="text-base font-semibold">
-                            Students
-                        </CardTitle>
-                    </div>
-                    <div className="linear-pill">
-                        <span className="font-medium text-foreground">{filteredStudents.length}</span>
-                        <span className="hidden sm:inline">shown</span>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="font-medium text-foreground">{students.length}</span>
-                        <span className="hidden sm:inline">total</span>
-                    </div>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <AdminPanel>
+            <div className="admin-toolbar">
+                <div className="contents">
                     <div className="relative max-w-md w-full">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <Input
@@ -379,8 +364,8 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         </Dialog>
                     </div>
                 </div>
-            </CardHeader>
-            <CardContent className="p-0">
+            </div>
+            <div>
                 {filteredStudents.length === 0 ? (
                     <div className="py-14 text-center">
                         <div className="text-sm font-medium">
@@ -439,30 +424,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                                         </td>
                                         <td className="linear-td">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="outline" size="sm" onClick={() => handleEdit(student)}>
-                                                    <Edit2 className="w-4 h-4" />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>Delete Student</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Are you sure you want to delete "{student.student_name}"?
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDelete(student.student_id)}>
-                                                                Delete
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                <RowActions onEdit={() => handleEdit(student)} onDelete={() => handleDelete(student.student_id)} title="Delete student?" description={<>Are you sure you want to delete "{student.student_name}"?</>} />
                                             </div>
                                         </td>
                                     </tr>
@@ -471,7 +433,7 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         </table>
                     </div>
                 )}
-            </CardContent>
+            </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -620,12 +582,12 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
                         <AlertDialogAction onClick={() => {
                             handleBulkDelete();
                             setShowBulkDeleteConfirm(false);
-                        }} className="bg-red-600 hover:bg-red-700">
+                        }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </Card>
+        </AdminPanel>
     );
 };

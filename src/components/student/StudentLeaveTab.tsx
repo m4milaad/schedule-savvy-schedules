@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TabLoader } from '@/components/ui/loading-screen';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -196,11 +197,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
     .reduce((sum, a) => sum + differenceInDays(new Date(a.end_date), new Date(a.start_date)) + 1, 0);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-      </div>
-    );
+    return <TabLoader message="Loading…" />;
   }
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, Check, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,11 +26,16 @@ interface Notification {
 
 interface NotificationCenterProps {
   userId?: string;
+  /** Plain ghost trigger and opaque panel, no glass (admin shell). */
+  minimal?: boolean;
+  /** Live items that aren't stored rows (e.g. pending approvals). Shown first, counted as unread. */
+  pinned?: { id: string; title: string; message: string; onSelect: () => void }[];
 }
 
-export function NotificationCenter({ userId }: NotificationCenterProps) {
+export function NotificationCenter({ userId, minimal = false, pinned = [] }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  // Derived, so inserts, updates and deletes (local or realtime) can't drift it.
+  const unreadCount = notifications.filter((n) => !n.is_read).length + pinned.length;
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +46,8 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
     // Subscribe to new notifications
     const channel = supabase
-      .channel('user-notifications')
+      // Unique per mount: a reused topic throws when callbacks are added after subscribe (StrictMode, two bells).
+      .channel(`user-notifications:${userId}:${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
@@ -51,8 +58,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
         },
         (payload) => {
           const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
+          setNotifications(prev => prev.some(n => n.id === newNotification.id) ? prev : [newNotification, ...prev]);
         }
       )
       .on(
@@ -65,14 +71,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
         },
         (payload) => {
           const updated = payload.new as Notification;
-          setNotifications(prev => 
-            prev.map(n => n.id === updated.id ? updated : n)
-          );
-          // Recalculate unread count
-          setNotifications(prev => {
-            setUnreadCount(prev.filter(n => !n.is_read).length);
-            return prev;
-          });
+          setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
         }
       )
       .on(
@@ -108,7 +107,6 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
     if (!error && data) {
       setNotifications(data as Notification[]);
-      setUnreadCount(data.filter((n: any) => !n.is_read).length);
     }
     setLoading(false);
   };
@@ -120,14 +118,12 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
       .eq('id', id);
 
     if (!error) {
-      setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     }
   };
 
   const markAllAsRead = async () => {
+    if (!userId) return;
     const { error } = await supabase
       .from('user_notifications')
       .update({ is_read: true })
@@ -136,12 +132,10 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
     if (!error) {
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
     }
   };
 
   const deleteNotification = async (id: string) => {
-    const notification = notifications.find(n => n.id === id);
     const { error } = await supabase
       .from('user_notifications')
       .delete()
@@ -149,13 +143,11 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
     if (!error) {
       setNotifications(prev => prev.filter(n => n.id !== id));
-      if (notification && !notification.is_read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
     }
   };
 
   const clearAll = async () => {
+    if (!userId) return;
     const { error } = await supabase
       .from('user_notifications')
       .delete()
@@ -163,11 +155,12 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
 
     if (!error) {
       setNotifications([]);
-      setUnreadCount(0);
     }
   };
 
   const getTypeStyles = (type: Notification['type']) => {
+    // Admin shell: neutral rows, only errors keep a coloured edge.
+    if (minimal) return type === 'error' ? 'border-l-destructive' : 'border-l-transparent';
     switch (type) {
       case 'success':
         return 'border-l-green-500 bg-green-50 dark:bg-green-950/20';
@@ -186,9 +179,10 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant={minimal ? "ghost" : "outline"}
           size="icon"
-          className="relative bg-background/20 border-white/20 dark:border-white/10 backdrop-blur-xl hover:bg-background/30 shadow-[0_18px_60px_rgba(15,23,42,0.45)] transition-colors"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+          className={minimal ? "relative h-8 w-8 text-muted-foreground" : "relative bg-background/20 border-white/20 dark:border-white/10 backdrop-blur-xl hover:bg-background/30 shadow-[0_18px_60px_rgba(15,23,42,0.45)] transition-colors"}
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
@@ -201,13 +195,15 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-80 md:w-96 p-0 border border-white/15 dark:border-white/5 bg-background/20 backdrop-blur-2xl shadow-[0_22px_80px_rgba(15,23,42,0.65)] rounded-2xl overflow-hidden"
+        className={minimal
+          ? "w-80 overflow-hidden rounded-lg border bg-popover p-0 md:w-96"
+          : "w-80 md:w-96 p-0 border border-white/15 dark:border-white/5 bg-background/20 backdrop-blur-2xl shadow-[0_22px_80px_rgba(15,23,42,0.65)] rounded-2xl overflow-hidden"}
         align="end"
       >
-        <div className="flex items-center justify-between p-3 border-b border-white/10/10 bg-background/10">
+        <div className={cn("flex items-center justify-between border-b p-3", !minimal && "border-white/10 bg-background/10")}>
           <h3 className="font-semibold text-sm tracking-tight">Notifications</h3>
           <div className="flex gap-1">
-            {unreadCount > 0 && (
+            {notifications.some((n) => !n.is_read) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -222,6 +218,8 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Clear all notifications"
+                title="Clear all"
                 onClick={clearAll}
                 className="h-7 text-xs text-destructive hover:text-destructive"
               >
@@ -231,15 +229,40 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
           </div>
         </div>
 
-        <ScrollArea className="h-[300px] md:h-[400px]">
-          {loading ? (
-            <div className="flex items-center justify-center h-20">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+        <ScrollArea className={cn(notifications.length + pinned.length > 3 && "h-[300px] md:h-[400px]")}>
+          {pinned.length > 0 && (
+            <div className="divide-y border-b">
+              {pinned.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    item.onSelect();
+                  }}
+                  className="flex w-full flex-col gap-1 p-3 text-left hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold">
+                    {item.title}
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  </span>
+                  <span className="text-xs text-muted-foreground">{item.message}</span>
+                </button>
+              ))}
             </div>
-          ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-              <Bell className="h-8 w-8 mb-2 opacity-50" />
-              <p className="text-sm">No notifications yet</p>
+          )}
+          {loading ? (
+            <div className="flex flex-col gap-2 p-3" aria-busy="true">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex flex-col gap-1.5 py-1">
+                  <Skeleton className="h-3.5 w-2/3" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              ))}
+            </div>
+          ) : notifications.length === 0 && pinned.length === 0 ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <p className="text-sm">You're all caught up</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -278,6 +301,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
+                          aria-label="Mark as read"
                           onClick={() => markAsRead(notification.id)}
                         >
                           <Check className="h-3 w-3" />
@@ -287,6 +311,7 @@ export function NotificationCenter({ userId }: NotificationCenterProps) {
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        aria-label="Dismiss"
                         onClick={() => deleteNotification(notification.id)}
                       >
                         <X className="h-3 w-3" />

@@ -101,7 +101,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       setMarks(studentMarks);
     } catch (_error: unknown) {
-      console.error(error);
+      logger.error(error);
       logger.error('Error loading marks:', error);
       toast({
         title: 'Error',
@@ -188,7 +188,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       toast({ title: 'Success', description: 'Marks saved successfully' });
       loadMarks();
     } catch (_error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save marks',

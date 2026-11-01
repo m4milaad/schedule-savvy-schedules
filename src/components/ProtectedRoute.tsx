@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { LoadingScreen } from '@/components/ui/loading-screen';
+import { AdminShellSkeleton } from '@/components/admin/AdminPanel';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,7 +19,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, profile, loading } = useAuth();
 
   if (loading) {
-    return <LoadingScreen message="Authenticating..." variant="morphing" />;
+    // Same skeleton the dashboard shows next, so the handover is invisible.
+    return <AdminShellSkeleton />;
   }
 
   if (requireAuth && !user) {

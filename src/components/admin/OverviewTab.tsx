@@ -1,21 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  BookOpen,
-  CalendarDays,
-  GraduationCap,
-  MapPin,
-  School,
-  Users,
-  Armchair,
-  Sparkles,
-  Building2,
-  Calendar,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-} from "lucide-react";
+import { formatDay, parseIsoDay, relativeDays, summariseExamDates } from "@/lib/examDates";
 
 type AdminRole = "admin" | "department_admin" | null;
 
@@ -33,132 +19,131 @@ interface OverviewTabProps {
     students: number;
     examDates: number;
   };
+  examDates?: string[];
   setActiveTab: (tab: string) => void;
   className?: string;
 }
 
-export const OverviewTab: React.FC<OverviewTabProps> = ({
-  role,
-  adminName,
-  counts,
-  setActiveTab,
-  className,
-}) => {
-  const [greeting, setGreeting] = useState("Good morning");
+const MAX_DAYS_SHOWN = 10;
 
-  useEffect(() => {
-    const hours = new Date().getHours();
-    if (hours < 12) setGreeting("Good morning");
-    else if (hours < 18) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
-  }, []);
+/**
+ * The overview answers one question: "When is the next exam, and is the datesheet ready?"
+ * The datesheet strip is the biggest block and carries the one data hue (the next exam day).
+ * Below it, every record count in one divided card, each a link to its screen.
+ */
+export const OverviewTab: React.FC<OverviewTabProps> = ({ role, counts, examDates = [], setActiveTab, className }) => {
+  const { upcoming, next, daysUntilNext, last } = summariseExamDates(examDates);
+  const shown = upcoming.slice(0, MAX_DAYS_SHOWN);
+  const hidden = upcoming.length - shown.length;
+  const isAdmin = role === "admin";
 
-  const stats =
-    role === "admin"
+  const records = [
+    ...(isAdmin
       ? [
-          { title: "Schools", value: counts.schools, icon: School, tab: "schools" },
-          { title: "Departments", value: counts.departments, icon: Building2, tab: "departments" },
-          { title: "Courses", value: counts.courses, icon: BookOpen, tab: "courses" },
-          { title: "Students", value: counts.students, icon: GraduationCap, tab: "students" },
-          { title: "Teachers", value: counts.teachers, icon: Users, tab: "teachers" },
-          { title: "Venues", value: counts.venues, icon: MapPin, tab: "venues" },
-          { title: "Sessions", value: counts.sessions, icon: Calendar, tab: "sessions" },
-          { title: "Holidays", value: counts.holidays, icon: CalendarDays, tab: "holidays" },
-          { title: "Exam Dates", value: counts.examDates, icon: Clock, tab: "seating" },
+          { label: "Schools", value: counts.schools, tab: "schools" },
+          { label: "Departments", value: counts.departments, tab: "departments" },
         ]
-      : [
-          { title: "Courses", value: counts.courses, icon: BookOpen, tab: "courses" },
-          { title: "Teachers", value: counts.teachers, icon: Users, tab: "teachers" },
-          { title: "Students", value: counts.students, icon: GraduationCap, tab: "students" },
-          { title: "Venues", value: counts.venues, icon: MapPin, tab: "venues" },
-          { title: "Sessions", value: counts.sessions, icon: Calendar, tab: "sessions" },
-          { title: "Holidays", value: counts.holidays, icon: CalendarDays, tab: "holidays" },
-          { title: "Exam Dates", value: counts.examDates, icon: Clock, tab: "seating" },
-        ];
-
-  const totalRecords = stats.reduce((sum, s) => sum + s.value, 0);
+      : []),
+    { label: "Courses", value: counts.courses, tab: "courses" },
+    { label: "Teachers", value: counts.teachers, tab: "teachers" },
+    { label: "Students", value: counts.students, tab: "students" },
+    { label: "Exam venues", value: counts.venues, tab: "venues" },
+    { label: "Sessions", value: counts.sessions, tab: "sessions" },
+    { label: "Holidays", value: counts.holidays, tab: "holidays" },
+  ];
+  // 8 records → 4 columns × 2 rows; 6 → 3 × 2. Phone: 2 columns (both counts are even).
+  const cols = records.length % 4 === 0 ? "lg:grid-cols-4" : "lg:grid-cols-3";
 
   return (
-    <Card className={cn("linear-surface overflow-hidden", className)}>
-      <CardHeader className="linear-toolbar flex flex-col gap-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className={cn("space-y-4", className)}>
+      {/* Datesheet: the screen's question */}
+      <section aria-labelledby="datesheet-h" className="overflow-hidden rounded-lg border bg-card">
+        <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5">
           <div>
-            <div className="linear-kicker">Dashboard</div>
-            <CardTitle className="text-base font-semibold">
-              {greeting}, {adminName || "Admin"}
-            </CardTitle>
+            <h2 id="datesheet-h" className="text-base font-semibold">Datesheet</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {next
+                ? `${upcoming.length} exam ${upcoming.length === 1 ? "day" : "days"}, ${formatDay(next, { day: "numeric", month: "short" })} – ${formatDay(last!, { day: "numeric", month: "short", year: "numeric" })}`
+                : "No upcoming exam days"}
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-              <span>All systems operational</span>
-            </div>
-            <div className="linear-pill">
-              <span className="font-medium text-foreground">{totalRecords}</span>
-              <span>records</span>
-            </div>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <Button variant="outline" size="sm" className="h-8" onClick={() => setActiveTab("generator")}>
+                Open generator
+              </Button>
+            )}
+            <Button size="sm" className="h-8" onClick={() => setActiveTab("seating")} disabled={!next}>
+              Plan seating
+            </Button>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-0">
-        <table className="linear-table">
-          <thead>
-            <tr>
-              <th className="linear-th">Category</th>
-              <th className="linear-th text-right">Count</th>
-              <th className="linear-th w-8 hidden sm:table-cell"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.map((stat, i) => (
-              <tr
-                key={i}
-                className="linear-tr cursor-pointer"
-                onClick={() => setActiveTab(stat.tab)}
-              >
-                <td className="linear-td">
-                  <div className="flex items-center gap-2">
-                    <stat.icon className="h-4 w-4 text-muted-foreground/60" />
-                    <span className="font-medium text-sm">{stat.title}</span>
+        {next ? (
+          <ol className="-mb-px -mr-px mt-5 grid auto-cols-[minmax(88px,1fr)] grid-flow-col overflow-x-auto border-t">
+            {shown.map((d) => {
+              const isNext = d === next;
+              const date = parseIsoDay(d);
+              return (
+                <li
+                  key={d}
+                  className={cn("border-b border-r px-4 py-3", isNext && "shadow-[inset_0_2px_0_var(--data)]")}
+                  aria-current={isNext ? "date" : undefined}
+                >
+                  <div className="text-xs text-muted-foreground">
+                    {date.toLocaleDateString("en-GB", { weekday: "short" })}
                   </div>
-                </td>
-                <td className="linear-td text-right">
-                  <span className="font-semibold tabular-nums">{stat.value}</span>
-                </td>
-                <td className="linear-td text-right hidden sm:table-cell">
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/30" />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Compact quick actions */}
-        <div className="border-t border-border/40 px-4 py-3">
-          <div className="linear-kicker mb-2">Quick Actions</div>
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { icon: Sparkles, label: "Generate Seating", tab: "seating" },
-              { icon: Armchair, label: "Seating Plan", tab: "seating" },
-              { icon: BookOpen, label: "Courses", tab: "courses" },
-              { icon: Users, label: "Teachers", tab: "teachers" },
-              { icon: GraduationCap, label: "Students", tab: "students" },
-              { icon: MapPin, label: "Venues", tab: "venues" },
-              ...(role === "admin" ? [{ icon: CalendarDays, label: "Holidays", tab: "holidays" }] : []),
-            ].map((a, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveTab(a.tab)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border/30 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border/50 hover:text-foreground hover:bg-accent/20"
-              >
-                <a.icon className="h-3 w-3" />
-                {a.label}
+                  <div
+                    className="text-2xl tabular-nums leading-tight"
+                    style={isNext ? { color: "var(--data)" } : undefined}
+                  >
+                    {date.getDate()}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {isNext && daysUntilNext !== null
+                      ? relativeDays(daysUntilNext)
+                      : date.toLocaleDateString("en-GB", { month: "short" })}
+                  </div>
+                </li>
+              );
+            })}
+            {hidden > 0 && (
+              <li className="flex items-center border-b border-r px-4 py-3 text-sm text-muted-foreground">
+                +{hidden} more
+              </li>
+            )}
+          </ol>
+        ) : (
+          <div className="mx-5 mb-5 mt-4 rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground">
+            {examDates.length > 0 ? "Every exam day on the datesheet has passed." : "Nothing is on the datesheet yet."}{" "}
+            {isAdmin && (
+              <button className="text-foreground underline-offset-4 hover:underline" onClick={() => setActiveTab("generator")}>
+                {examDates.length > 0 ? "Generate a new one" : "Generate one"}
               </button>
-            ))}
+            )}
           </div>
+        )}
+      </section>
+
+      {/* Records: one divided card, each count links to its screen */}
+      <section aria-labelledby="records-h" className="overflow-hidden rounded-lg border bg-card">
+        <h2 id="records-h" className="px-5 pt-5 text-base font-semibold">Records</h2>
+        <div className={cn("-mb-px -mr-px mt-3 grid grid-cols-2 border-t", cols)}>
+          {records.map((r) => (
+            <button
+              key={r.tab}
+              type="button"
+              onClick={() => setActiveTab(r.tab)}
+              className="border-b border-r px-5 py-4 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <div className="text-sm text-muted-foreground">{r.label}</div>
+              <div className={cn("mt-1 text-2xl tabular-nums", r.value === 0 && "text-muted-foreground")}>
+                {r.value.toLocaleString("en-IN")}
+              </div>
+            </button>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      </section>
+    </div>
   );
 };

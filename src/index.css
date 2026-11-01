@@ -604,3 +604,188 @@
     @apply focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50;
   }
 }
+/* ------------------------------------------------------------------
+   Admin theme: "achromatic ledger".
+   AdminDashboard puts .admin-theme on <html> while it is mounted, so
+   portals (dialogs, menus, sheets) pick it up too. Student and teacher
+   panels keep the default theme.
+   The chrome is ink; the one hue (--data) marks the main data element.
+   ------------------------------------------------------------------ */
+html.admin-theme {
+  --background: 216 24% 96%;          /* #f2f4f7 blue-grey ledger ground */
+  --foreground: 0 0% 7%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
+  --primary: 200 5% 12%;              /* near-black primary action */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 213 5% 39%;     /* #5f6368, 6:1 on white */
+  --accent: 0 0% 93%;
+  --accent-foreground: 0 0% 7%;
+  --destructive: 358 69% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 90%;
+  --input: 216 12% 84%;
+  --ring: 200 5% 12%;
+  --radius: 0.5rem;
+  --sidebar-background: 216 24% 96%;
+  --sidebar-foreground: 0 0% 7%;
+  --sidebar-primary: 200 5% 12%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 90%;
+  --sidebar-accent-foreground: 0 0% 7%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-ring: 200 5% 12%;
+  --data: #1d5fbf;
+}
+
+html.admin-theme.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 98%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 11%;
+  --muted-foreground: 0 0% 71%;
+  --accent: 0 0% 13%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 350 73% 62%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 14%;
+  --input: 0 0% 27%;
+  --ring: 0 0% 83%;
+  --sidebar-background: 0 0% 4%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-primary: 0 0% 98%;
+  --sidebar-primary-foreground: 0 0% 7%;
+  --sidebar-accent: 0 0% 13%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-border: 0 0% 14%;
+  --sidebar-ring: 0 0% 83%;
+  --data: #7aa7ff;
+}
+
+html.admin-theme body::before { display: none; }
+
+/* Flat surfaces: one border, no shadow at rest, no glass. */
+html.admin-theme .shadow-sm,
+html.admin-theme .shadow { box-shadow: none; }
+
+html.admin-theme .linear-surface {
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html.admin-theme .linear-toolbar {
+  border-bottom: 1px solid hsl(var(--border));
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* The card title below already names the block. */
+html.admin-theme .linear-kicker { display: none; }
+html.admin-theme .linear-th {
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: 1px solid hsl(var(--border));
+}
+html.admin-theme .linear-td { border-bottom: 1px solid hsl(var(--border) / 0.6); }
+html.admin-theme .linear-tr:hover { background: hsl(var(--muted) / 0.6); }
+html.admin-theme .linear-pill,
+html.admin-theme .linear-input,
+html.admin-theme .linear-button {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html.admin-theme .linear-pill {
+  background: transparent;
+  border-color: hsl(var(--border));
+}
+html.admin-theme .linear-input { background: hsl(var(--card)); border-color: hsl(var(--input)); }
+html.admin-theme .linear-input:focus { box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15); }
+
+/* No glass anywhere in the admin shell (cards, inputs, dialog overlays). */
+html.admin-theme .backdrop-blur-sm,
+html.admin-theme .backdrop-blur,
+html.admin-theme .backdrop-blur-md,
+html.admin-theme .backdrop-blur-lg,
+html.admin-theme .backdrop-blur-xl,
+html.admin-theme .backdrop-blur-2xl,
+html.admin-theme .backdrop-blur-3xl {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* Leading icons sit above their input. */
+html.admin-theme .relative > svg.absolute { z-index: 1; pointer-events: none; }
+html.admin-theme input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.admin-theme textarea,
+html.admin-theme button[role="combobox"],
+html.admin-theme button.bg-white\/60 {
+  background-color: hsl(var(--card));
+}
+/* Dialogs: an opaque surface that floats (the one place a shadow belongs). */
+html.admin-theme [role="dialog"],
+html.admin-theme [role="alertdialog"] {
+  background-color: hsl(var(--popover));
+  background-image: none;
+  border-color: hsl(var(--border));
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.16);
+}
+
+/* Admin list toolbar: search on the left, actions on the right, one row. */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.admin-toolbar > .relative,
+.admin-toolbar > .contents > .relative { order: -1; flex: 1 1 16rem; max-width: 22rem; }
+.admin-toolbar > .flex-wrap,
+.admin-toolbar > .contents > :last-child:not(.relative) { margin-left: auto; }
+
+/* Auth page: double-slider sign in / sign up (pattern from BOSS0exe/Sign-in-and-Sign-up-page),
+   mirrored so the brand panel sits left for sign in and sweeps right for sign up. */
+.auth-slider { position: relative; min-height: 100vh; width: 100%; overflow: hidden; background: #000; color: #fff; }
+/* The safe-area padding on <html> (status bar strip in the Android app) shows the page background. */
+html:has(.auth-slider) { background: #000; }
+.auth-pane { position: absolute; top: 0; right: 0; width: 50%; height: 100%; transition: transform .6s ease-in-out, opacity .6s ease-in-out; }
+.auth-pane-signin { z-index: 2; }
+.auth-pane-signup { opacity: 0; z-index: 1; }
+.auth-slider.is-signup .auth-pane-signin { transform: translateX(-100%); }
+.auth-slider.is-signup .auth-pane-signup { transform: translateX(-100%); opacity: 1; z-index: 5; animation: auth-swap .6s; }
+/* The incoming form stays hidden until the panel has covered the midpoint. */
+@keyframes auth-swap { 0%, 49.99% { opacity: 0; z-index: 1; } 50%, 100% { opacity: 1; z-index: 5; } }
+.auth-brand { position: absolute; top: 0; left: 0; width: 50%; height: 100%; z-index: 10; transition: transform .6s ease-in-out; }
+.auth-slider.is-signup .auth-brand { transform: translateX(100%); }
+/* Phones/tablets: no room for two halves, so show only the active form. */
+@media (max-width: 1023px) {
+  .auth-brand { display: none; }
+  .auth-pane { position: relative; width: 100%; min-height: 100vh; transform: none !important; animation: none !important; opacity: 1; }
+  .auth-slider:not(.is-signup) .auth-pane-signup,
+  .auth-slider.is-signup .auth-pane-signin { display: none; }
+}
+/* Reduced motion (e.g. Windows "Animation effects" off): keep the slide, just shorter. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-pane, .auth-brand { transition-duration: .35s; }
+  .auth-slider.is-signup .auth-pane-signup { animation-duration: .35s; }
+}

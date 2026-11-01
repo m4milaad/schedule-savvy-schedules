@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfile } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, X } from 'lucide-react';
-import { ThemeColorPicker } from '@/components/ThemeColorPicker';import logger from '@/lib/logger';
+import { customBackground } from '@/lib/adminBackground';
+import { BackgroundSwatches } from '@/components/admin/BackgroundSwatches';
+import { Field, ProfileSection, optional } from '@/components/ProfileEditDialog';
+import logger from '@/lib/logger';
 
 
 interface Department {
@@ -40,7 +42,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
     full_name: profile.full_name || '',
     email: profile.email || '',
     dept_id: profile.dept_id || '',
-    theme_color: (profile as Record<string, unknown>).theme_color || '#3b82f6',
+    theme_color: customBackground((profile as Record<string, unknown>).theme_color),
     // Teacher-specific fields (stored in teachers table)
     contact_no: '',
     address: '',
@@ -145,130 +147,102 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="dark:text-gray-100 transition-colors duration-300">
-            Edit Profile
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Update your profile details and theme color.
-          </DialogDescription>
+      <DialogContent className="max-h-[90vh] max-w-2xl gap-0 overflow-y-auto p-0">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle>Your profile</DialogTitle>
+          <DialogDescription>Shown to students on notices, marks and leave requests.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="full_name" className="dark:text-gray-300 transition-colors duration-300">Full Name *</Label>
-            <Input
-              id="full_name"
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              placeholder="Enter your full name"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <ProfileSection title="Details">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="full_name" label="Full name">
+                <Input
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  required
+                />
+              </Field>
+              <Field id="designation" label={<>Designation {optional}</>}>
+                <Input
+                  id="designation"
+                  value={formData.designation}
+                  onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+                  placeholder="e.g. Assistant Professor"
+                />
+              </Field>
+              <Field id="email" label="Email">
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </Field>
+              <Field id="contact_no" label={<>Contact number {optional}</>}>
+                <Input
+                  id="contact_no"
+                  type="tel"
+                  value={formData.contact_no}
+                  onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
+                />
+              </Field>
+              <Field id="dept_id" label="Department" className="sm:col-span-2">
+                <Select value={formData.dept_id} onValueChange={(value) => setFormData({ ...formData, dept_id: value })}>
+                  <SelectTrigger id="dept_id">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.dept_id} value={dept.dept_id}>
+                        {dept.dept_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field id="address" label={<>Address {optional}</>} className="sm:col-span-2">
+                <Textarea
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows={2}
+                />
+              </Field>
+            </div>
+          </ProfileSection>
 
-          <div>
-            <Label htmlFor="email" className="dark:text-gray-300 transition-colors duration-300">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="Enter email address"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-            />
-          </div>
+          <Separator />
 
-          <div>
-            <Label htmlFor="designation" className="dark:text-gray-300 transition-colors duration-300">Designation</Label>
-            <Input
-              id="designation"
-              value={formData.designation}
-              onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-              placeholder="e.g., Assistant Professor"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-            />
-          </div>
+          <ProfileSection title="Background" description="The colour behind your dashboard. Only you see it.">
+            <BackgroundSwatches value={formData.theme_color} onChange={(c) => setFormData({ ...formData, theme_color: c })} />
+          </ProfileSection>
 
-          <div>
-            <Label htmlFor="contact_no" className="dark:text-gray-300 transition-colors duration-300">Contact Number</Label>
-            <Input
-              id="contact_no"
-              value={formData.contact_no}
-              onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
-              placeholder="Enter contact number"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-            />
-          </div>
+          <Separator />
 
-          <div>
-            <Label htmlFor="address" className="dark:text-gray-300 transition-colors duration-300">Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Enter your address"
-              className="transition-all duration-300 hover:border-blue-400 focus:scale-[1.02]"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="dept_id" className="dark:text-gray-300 transition-colors duration-300">Department</Label>
-            <Select value={formData.dept_id} onValueChange={(value) => setFormData({ ...formData, dept_id: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.dept_id} value={dept.dept_id}>
-                    {dept.dept_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Theme Color Picker */}
-          <div className="pt-2 border-t">
-            <ThemeColorPicker 
-              color={formData.theme_color} 
-              onChange={(color) => setFormData({ ...formData, theme_color: color })}
-            />
-          </div>
-
-          {/* Update Password Button */}
-          <div className="pt-2 border-t">
+          <ProfileSection title="Password" description="Opens the password page.">
             <Button
               type="button"
               variant="outline"
-              className="w-full flex items-center justify-center gap-2"
+              size="sm"
+              className="w-fit"
               onClick={() => {
                 onClose();
                 navigate('/update-password');
               }}
             >
-              <Lock className="w-4 h-4" />
-              Change Password
+              Change password
             </Button>
-          </div>
+          </ProfileSection>
 
-          <div className="flex gap-2 pt-4">
-            <Button 
-              type="submit" 
-              className="flex-1" 
-              disabled={loading}
-            >
-              {loading ? 'Updating...' : 'Update Profile'}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-            >
+          <DialogFooter className="gap-2 border-t px-6 py-4">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-          </div>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Saving…' : 'Save profile'}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

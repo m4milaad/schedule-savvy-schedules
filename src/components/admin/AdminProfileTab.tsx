@@ -2,73 +2,100 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Lock, RefreshCw, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { customBackground, isHexColor } from '@/lib/adminBackground';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
+import { BackgroundSwatches } from './BackgroundSwatches';
 import logger from '@/lib/logger';
-
 
 interface Department {
   dept_id: string;
   dept_name: string;
 }
 
-const presetColors = [
-  '#020817', // Default dark
-  '#1e293b', // Slate
-  '#1f2937', // Gray
-  '#374151', // Cool gray
-  '#1e40af', // Blue
-  '#059669', // Emerald
-  '#7c3aed', // Violet
-  '#dc2626', // Red
-  '#ea580c', // Orange
-  '#ca8a04', // Yellow
-  '#be185d', // Pink
-  '#0891b2', // Cyan
-];
+const PasswordInput = ({ id, label, value, onChange }: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="pr-10"
+          autoComplete={id === "currentPassword" ? "current-password" : "new-password"}
+          required
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 top-0 h-full w-10 text-muted-foreground hover:bg-transparent"
+          onClick={() => setVisible((v) => !v)}
+          aria-label={visible ? "Hide password" : "Show password"}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
-export const AdminProfileTab: React.FC = () => {
+/** A settings row: what the section is on the left, its controls on the right. */
+const Section = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
+  <section className="grid gap-4 px-5 py-6 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:gap-10">
+    <div>
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    </div>
+    <div className="max-w-md">{children}</div>
+  </section>
+);
+
+const isPasswordStrong = (password: string) =>
+  password.length >= 8 &&
+  /[A-Z]/.test(password) &&
+  /[a-z]/.test(password) &&
+  /[0-9]/.test(password) &&
+  /[^A-Za-z0-9]/.test(password);
+
+export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | null) => void }> = ({ onBackgroundChange }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Record<string, unknown>>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    dept_id: '',
-    contact_no: '',
-    theme_color: '#020817'
-  });
-  
-  // Password change state
+  const [formData, setFormData] = useState({ full_name: '', email: '', dept_id: '', contact_no: '' });
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+  const [background, setBackground] = useState<string | null>(null);
+  const [customHex, setCustomHex] = useState('');
+  const [savingBackground, setSavingBackground] = useState(false);
+
   const { toast } = useToast();
-  
 
   useEffect(() => {
-    loadProfile();
-    loadDepartments();
+    void loadProfile();
+    void loadDepartments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadDepartments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('departments')
-        .select('*')
-        .order('dept_name');
-      
+      const { data, error } = await supabase.from('departments').select('*').order('dept_name');
       if (error) throw error;
       setDepartments(data || []);
     } catch (error) {
@@ -89,21 +116,18 @@ export const AdminProfileTab: React.FC = () => {
 
       if (error) throw error;
 
-      setProfile(profileData);
+      const p = profileData as Record<string, unknown>;
+      setProfile(p);
       setFormData({
-        full_name: profileData.full_name || '',
-        email: profileData.email || user.email || '',
-        dept_id: profileData.dept_id || '',
-        contact_no: (profileData as Record<string, unknown>).contact_no || '',
-        theme_color: (profileData as Record<string, unknown>).theme_color || '#020817'
+        full_name: (p.full_name as string) || '',
+        email: (p.email as string) || user.email || '',
+        dept_id: (p.dept_id as string) || '',
+        contact_no: (p.contact_no as string) || '',
       });
+      setBackground(customBackground(p.theme_color));
     } catch (error: unknown) {
       logger.error('Error loading profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load profile", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -117,528 +141,211 @@ export const AdminProfileTab: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const updateData: Record<string, unknown> = {
-        full_name: formData.full_name,
-        email: formData.email,
-        contact_no: formData.contact_no || null,
-        theme_color: formData.theme_color,
-        updated_at: new Date().toISOString()
-      };
-
       const { error } = await supabase
         .from('profiles')
-        .update(updateData)
+        .update({
+          full_name: formData.full_name,
+          email: formData.email,
+          contact_no: formData.contact_no || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('user_id', user.id);
 
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-      
-      // Reload the page to apply theme changes
-      window.location.reload();
+      toast({ title: "Saved", description: "Profile updated" });
     } catch (error: unknown) {
       logger.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: (error as Error).message || "Failed to update profile",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: (error as Error).message || "Failed to update profile", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  const getDepartmentName = (deptId: string | null | undefined) => {
-    if (!deptId) return 'Super Admin';
-    const dept = departments.find(d => d.dept_id === deptId);
-    return dept ? dept.dept_name : 'Not Assigned';
-  };
-
-  const getRoleBadge = (deptId: string | null | undefined) => {
-    return deptId ? 'Department Admin' : 'Super Admin';
-  };
-
-  const isPasswordStrong = (password: string) => {
-    return (
-      password.length >= 8 &&
-      /[A-Z]/.test(password) &&
-      /[a-z]/.test(password) &&
-      /[0-9]/.test(password) &&
-      /[^A-Za-z0-9]/.test(password)
-    );
+  // Saves on pick, like a setting toggle. null = the default background.
+  const saveBackground = async (color: string | null) => {
+    if (color !== null && !isHexColor(color)) {
+      toast({ title: "Error", description: "Use a hex colour like #1e293b", variant: "destructive" });
+      return;
+    }
+    const previous = background;
+    setBackground(color);
+    onBackgroundChange?.(color);
+    setSavingBackground(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+      const { error } = await supabase
+        .from('profiles')
+        .update({ theme_color: color, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+      if (error) throw error;
+    } catch (error: unknown) {
+      logger.error('Error saving background:', error);
+      setBackground(previous);
+      onBackgroundChange?.(previous);
+      toast({ title: "Error", description: "Couldn't save the background", variant: "destructive" });
+    } finally {
+      setSavingBackground(false);
+    }
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const fail = (description: string) => toast({ title: "Error", description, variant: "destructive" });
 
-    if (!currentPassword) {
-      toast({
-        title: "Error",
-        description: "Please enter your current password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isPasswordStrong(newPassword)) {
-      toast({
-        title: "Error",
-        description: "New password does not meet the strength requirements",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New passwords do not match",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      toast({
-        title: "Error",
-        description: "New password must be different from current password",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!currentPassword) return fail("Please enter your current password");
+    if (!isPasswordStrong(newPassword)) return fail("New password does not meet the strength requirements");
+    if (newPassword !== confirmPassword) return fail("New passwords do not match");
+    if (currentPassword === newPassword) return fail("New password must be different from current password");
 
     setPasswordLoading(true);
-
     try {
-      // First verify current password by attempting to sign in
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) {
-        throw new Error('User not found');
-      }
+      if (!user?.email) throw new Error('User not found');
 
-      // Verify current password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: currentPassword,
-      });
+      // Verify the current password before changing it.
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+      if (signInError) return fail("Current password is incorrect");
 
-      if (signInError) {
-        toast({
-          title: "Error",
-          description: "Current password is incorrect",
-          variant: "destructive",
-        });
-        setPasswordLoading(false);
-        return;
-      }
-
-      // Update password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
       if (updateError) throw updateError;
 
-      toast({
-        title: "Success",
-        description: "Password updated successfully",
-      });
-
-      // Clear form
+      toast({ title: "Saved", description: "Password updated" });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: unknown) {
       logger.error('Error updating password:', error);
-      toast({
-        title: "Error",
-        description: (error as Error).message || "Failed to update password",
-        variant: "destructive",
-      });
+      fail((error as Error).message || "Failed to update password");
     } finally {
       setPasswordLoading(false);
     }
   };
 
+  const deptName = formData.dept_id
+    ? departments.find((d) => d.dept_id === formData.dept_id)?.dept_name ?? 'Not assigned'
+    : null;
+
   if (loading) {
     return (
-      <Card className="linear-surface overflow-hidden">
-        <CardHeader className="linear-toolbar">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="linear-kicker">Account</div>
-              <CardTitle className="text-base font-semibold">
-                Profile Settings
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="border-b border-border/40 mb-8">
-            <div className="flex space-x-0">
-              <div className="h-10 px-4 pb-3 pt-2">
-                <div className="h-4 w-12 bg-muted/30 rounded"></div>
+      <div className="rounded-lg border bg-card" aria-busy="true">
+        {[3, 1, 2, 3].map((fields, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <Separator />}
+            <div className="grid gap-4 px-5 py-6 md:grid-cols-[280px_1fr] md:gap-10">
+              <div className="flex flex-col gap-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3.5 w-48" />
               </div>
-              <div className="h-10 px-4 pb-3 pt-2">
-                <div className="h-4 w-16 bg-muted/20 rounded"></div>
+              <div className="flex max-w-md flex-col gap-5">
+                {Array.from({ length: fields }, (_, f) => (
+                  <div key={f} className="flex flex-col gap-2">
+                    <Skeleton className="h-3.5 w-20" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column Skeleton */}
-            <div className="space-y-6">
-              <div>
-                <div className="h-4 w-36 bg-muted/30 rounded mb-4"></div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="h-3 w-16 bg-muted/20 rounded mb-2"></div>
-                    <div className="h-9 bg-muted/20 rounded-md"></div>
-                  </div>
-                  <div>
-                    <div className="h-3 w-20 bg-muted/20 rounded mb-2"></div>
-                    <div className="h-9 bg-muted/20 rounded-md"></div>
-                  </div>
-                  <div>
-                    <div className="h-3 w-24 bg-muted/20 rounded mb-2"></div>
-                    <div className="h-9 bg-muted/20 rounded-md"></div>
-                  </div>
-                  <div className="pt-4">
-                    <div className="h-8 w-24 bg-muted/30 rounded-md"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column Skeleton */}
-            <div className="space-y-6">
-              {/* Department Section */}
-              <div>
-                <div className="h-4 w-32 bg-muted/30 rounded mb-4"></div>
-                <div className="p-3 rounded-lg bg-muted/10 border border-border/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="h-4 w-28 bg-muted/20 rounded"></div>
-                    <div className="h-5 w-20 bg-muted/20 rounded-md"></div>
-                  </div>
-                  <div className="h-3 w-48 bg-muted/15 rounded"></div>
-                </div>
-              </div>
-
-              {/* Theme Section */}
-              <div>
-                <div className="h-4 w-24 bg-muted/30 rounded mb-4"></div>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-6 gap-2">
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <div key={i} className="w-full h-8 bg-muted/20 rounded-md"></div>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-20 bg-muted/20 rounded-md"></div>
-                    <div className="w-8 h-8 bg-muted/20 rounded-md"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </React.Fragment>
+        ))}
+      </div>
     );
   }
 
   return (
-    <Card className="linear-surface overflow-hidden">
-      <CardHeader className="linear-toolbar">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="linear-kicker">Account</div>
-            <CardTitle className="text-base font-semibold">
-              Profile Settings
-            </CardTitle>
+    <div className="rounded-lg border bg-card">
+      {profile && !profile.is_approved && (
+        <p className="border-b bg-amber-50 px-5 py-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          Your account is waiting for approval by a super administrator.
+        </p>
+      )}
+
+      <Section title="Profile" description="Your name and contact details, shown in the audit log and to other administrators.">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="full_name">Full name</Label>
+            <Input id="full_name" value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
           </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="contact_no">Contact number <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Input id="contact_no" type="tel" value={formData.contact_no} onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })} />
+          </div>
+          <Button type="submit" size="sm" className="w-fit" disabled={saving}>
+            {saving ? "Saving…" : "Save profile"}
+          </Button>
+        </form>
+      </Section>
+
+      <Separator />
+
+      <Section title="Role" description="Set by a super administrator.">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+          <dt className="text-muted-foreground">Role</dt>
+          <dd>{formData.dept_id ? "Department admin" : "Super admin"}</dd>
+          <dt className="text-muted-foreground">Department</dt>
+          <dd>{deptName ?? "All departments"}</dd>
+        </dl>
+      </Section>
+
+      <Separator />
+
+      <Section title="Background" description="The colour behind your dashboard. Only you see it.">
+        <div className="flex flex-col gap-4">
+          <BackgroundSwatches value={background} onChange={(c) => void saveBackground(c)} disabled={savingBackground} />
+          <form
+            className="flex items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveBackground(customHex.trim());
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="custom-bg">Custom colour</Label>
+              <Input
+                id="custom-bg"
+                value={customHex}
+                onChange={(e) => setCustomHex(e.target.value)}
+                placeholder={background ?? "#1e293b"}
+                maxLength={7}
+                className="w-32 font-mono"
+              />
+            </div>
+            <Button type="submit" variant="outline" size="sm" className="h-10" disabled={savingBackground || !isHexColor(customHex.trim())}>
+              Apply
+            </Button>
+          </form>
         </div>
-      </CardHeader>
+      </Section>
 
-      <CardContent className="p-8">
-        {/* Approval Status */}
-        {!profile?.is_approved && (
-          <div className="mb-8 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm text-amber-700 dark:text-amber-400">
-                Account pending approval by super administrator
-              </span>
-            </div>
+      <Separator />
+
+      <Section title="Password" description="You'll need your current password to set a new one.">
+        <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+          <PasswordInput id="currentPassword" label="Current password" value={currentPassword} onChange={setCurrentPassword} />
+          <div className="flex flex-col gap-2">
+            <PasswordInput id="newPassword" label="New password" value={newPassword} onChange={setNewPassword} />
+            {newPassword && <PasswordStrengthChecker password={newPassword} />}
           </div>
-        )}
-
-        <Tabs defaultValue="profile" className="w-full">
-          <div className="border-b border-border/40 mb-8">
-            <TabsList className="h-auto p-0 bg-transparent">
-              <TabsTrigger 
-                value="profile" 
-                className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-all hover:bg-transparent hover:text-foreground focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-              >
-                Profile
-              </TabsTrigger>
-              <TabsTrigger 
-                value="security" 
-                className="relative h-10 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-all hover:bg-transparent hover:text-foreground focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-              >
-                Security
-              </TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col gap-2">
+            <PasswordInput id="confirmPassword" label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} />
+            {confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-sm text-destructive">Passwords don't match</p>
+            )}
           </div>
-          
-          <TabsContent value="profile" className="space-y-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Personal Information */}
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-sm font-medium text-foreground mb-4">Personal Information</h2>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <Label htmlFor="full_name" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                        Full Name
-                      </Label>
-                      <Input
-                        id="full_name"
-                        value={formData.full_name}
-                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                        Email Address
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="contact_no" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                        Contact Number
-                      </Label>
-                      <Input
-                        id="contact_no"
-                        type="tel"
-                        value={formData.contact_no}
-                        onChange={(e) => setFormData({ ...formData, contact_no: e.target.value })}
-                        className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm"
-                        placeholder="Optional"
-                      />
-                    </div>
-
-                    <div className="pt-4">
-                      <Button 
-                        type="submit" 
-                        size="sm"
-                        className="h-8 px-3 text-xs bg-primary/90 hover:bg-primary text-primary-foreground rounded-md"
-                        disabled={saving}
-                      >
-                        {saving ? (
-                          <>
-                            <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          'Save Changes'
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Department Assignment */}
-                <div>
-                  <h2 className="text-sm font-medium text-foreground mb-4">Department & Role</h2>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/40">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-foreground">{getDepartmentName(formData.dept_id)}</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-xs text-primary font-medium">
-                        {getRoleBadge(formData.dept_id)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground/60">
-                      Department assignments are managed by super administrators
-                    </p>
-                  </div>
-                </div>
-
-                {/* Theme Color */}
-                <div>
-                  <h2 className="text-sm font-medium text-foreground mb-4">Theme Color</h2>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-6 gap-2">
-                      {presetColors.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          className={`w-full h-8 rounded-md border-2 transition-all ${
-                            formData.theme_color === color 
-                              ? 'border-primary ring-1 ring-primary/30' 
-                              : 'border-border/40 hover:border-border'
-                          }`}
-                          style={{ backgroundColor: color }}
-                          onClick={() => setFormData({ ...formData, theme_color: color })}
-                          title={color}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="text"
-                        value={formData.theme_color}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                            setFormData({ ...formData, theme_color: value });
-                          }
-                        }}
-                        className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-8 text-xs font-mono w-20"
-                        placeholder="#020817"
-                        maxLength={7}
-                      />
-                      <div 
-                        className="w-8 h-8 rounded-md border border-border/40"
-                        style={{ backgroundColor: formData.theme_color }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="security" className="space-y-0">
-            <div className="max-w-md">
-              <h2 className="text-sm font-medium text-foreground mb-4">Change Password</h2>
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="currentPassword" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                    Current Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="currentPassword"
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm pr-10"
-                      placeholder="Enter current password"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    >
-                      {showCurrentPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="newPassword" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                    New Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="newPassword"
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm pr-10"
-                      placeholder="Enter new password"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                    >
-                      {showNewPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-                    </Button>
-                  </div>
-                  {newPassword && <PasswordStrengthChecker password={newPassword} />}
-                </div>
-
-                <div>
-                  <Label htmlFor="confirmPassword" className="text-xs text-muted-foreground/70 uppercase tracking-wide mb-2 block">
-                    Confirm New Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="border-0 bg-muted/30 focus:bg-muted/50 focus:ring-1 focus:ring-primary/50 rounded-md h-9 text-sm pr-10"
-                      placeholder="Confirm new password"
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-                    </Button>
-                  </div>
-                  {confirmPassword && newPassword !== confirmPassword && (
-                    <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
-                  )}
-                  {confirmPassword && newPassword === confirmPassword && newPassword.length > 0 && (
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">Passwords match ✓</p>
-                  )}
-                </div>
-
-                <div className="pt-4">
-                  <Button 
-                    type="submit" 
-                    size="sm"
-                    className="h-8 px-3 text-xs bg-primary/90 hover:bg-primary text-primary-foreground rounded-md"
-                    disabled={passwordLoading || !isPasswordStrong(newPassword) || newPassword !== confirmPassword}
-                  >
-                    {passwordLoading ? (
-                      <>
-                        <RefreshCw className="w-3 h-3 mr-2 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-3 h-3 mr-2" />
-                        Update Password
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+          <Button
+            type="submit"
+            size="sm"
+            className="w-fit"
+            disabled={passwordLoading || !isPasswordStrong(newPassword) || newPassword !== confirmPassword}
+          >
+            {passwordLoading ? "Updating…" : "Update password"}
+          </Button>
+        </form>
+      </Section>
+    </div>
   );
 };

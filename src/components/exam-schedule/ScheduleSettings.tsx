@@ -66,8 +66,8 @@ export const ScheduleSettings = ({
   return (
     <Card className="linear-surface overflow-hidden lg:col-span-1">
       <CardHeader>
-        <CardTitle>Schedule Settings</CardTitle>
-        <CardDescription>Configure exam dates or view last schedule</CardDescription>
+        <CardTitle className="text-base">Exam window</CardTitle>
+        <CardDescription>Pick the first and last exam day.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
