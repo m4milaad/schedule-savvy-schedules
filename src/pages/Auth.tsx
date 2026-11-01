@@ -527,7 +527,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           <SelectItem value="student">Student</SelectItem>
           <SelectItem value="teacher">Teacher</SelectItem>
           <SelectItem value="department_admin">Department Admin</SelectItem>
-          <SelectItem value="admin">Administrator</SelectItem>
+          {/* No "Administrator": super admins are created only by an existing admin.
+              The DB also rejects user_type='admin' from signup (security_hardening migration). */}
         </SelectContent>
       </Select>
     </div>
