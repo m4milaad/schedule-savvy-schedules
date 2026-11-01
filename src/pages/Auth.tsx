@@ -188,14 +188,33 @@ const Auth = () => {
             style={{ background: 'linear-gradient(to top right, transparent calc(50% - 0.5px), rgb(255 255 255 / 0.08) 50%, transparent calc(50% + 0.5px))' }}
           />
         </div>
+        <img
+          src={`${import.meta.env.BASE_URL}CUKLogo.ico`}
+          alt="Central University of Kashmir"
+          className="absolute left-1/2 top-1/2 size-36 -translate-x-1/2 -translate-y-1/2 object-contain"
+        />
         <div className="relative flex h-full flex-col justify-between p-10">
           <span className="text-xl font-semibold tracking-tight">
             CUK Acadex<sup className="ml-0.5 text-[10px] font-normal text-white/60">®</sup>
           </span>
-          <Burst className="mx-auto size-40" />
-          <p className="text-[11px] text-white/40">
-            © Central University of Kashmir {new Date().getFullYear()}. All rights reserved.
-          </p>
+          <div className="flex flex-col gap-8">
+            {/* The only switch on desktop; re-keyed so the new prompt fades in as the panel lands. */}
+            <div key={activeTab} className="flex items-center justify-between gap-6 animate-in fade-in duration-700">
+              <p className="text-sm text-white/60">
+                {isSignUp ? 'Already have an account?' : 'New to CUK Acadex?'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab(isSignUp ? 'Sign In' : 'Sign Up')}
+                className="rounded-full border border-white/30 px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white hover:text-black"
+              >
+                {isSignUp ? 'Sign in' : 'Create an account'}
+              </button>
+            </div>
+            <p className="text-[11px] text-white/40">
+              © Central University of Kashmir {new Date().getFullYear()}. All rights reserved.
+            </p>
+          </div>
         </div>
       </aside>
 
@@ -299,20 +318,6 @@ const fieldInput =
   'w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white placeholder:text-white/25 outline-none transition-colors focus:border-white';
 const fieldLabel = 'block text-[11px] font-medium text-white/60';
 
-/** Eight strokes around an empty centre, like the reference mark. */
-const Burst = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 100 100" className={className} aria-hidden>
-    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-      <line
-        key={deg}
-        x1="50" y1={deg % 90 ? 32 : 22} x2="50" y2={deg % 90 ? 42 : 44}
-        transform={`rotate(${deg} 50 50)`}
-        stroke="white" strokeWidth="2.5"
-      />
-    ))}
-  </svg>
-);
-
 interface AuthCardProps {
   title: string;
   switchLabel: string;
@@ -328,8 +333,9 @@ interface AuthCardProps {
 const AuthCard: React.FC<AuthCardProps> = ({ title, switchLabel, onSwitch, onSubmit, submitLabel, loading, inert, children }) => (
   <div className="flex h-full min-h-screen bg-black p-3 lg:p-4" {...(inert ? { inert: '' } : {})} aria-hidden={inert}>
     <form onSubmit={onSubmit} className="relative flex w-full flex-col rounded-[28px] bg-[#141414] px-8 pt-8 sm:px-12">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold tracking-tight lg:invisible">CUK Acadex</span>
+      {/* Phones only: the brand panel (and its switch) is hidden below lg. */}
+      <div className="flex items-center justify-between lg:hidden">
+        <span className="text-sm font-semibold tracking-tight">CUK Acadex</span>
         <button type="button" onClick={onSwitch} className="text-xs text-white/70 transition-colors hover:text-white">
           {switchLabel}
         </button>
@@ -442,7 +448,7 @@ interface SignUpFormProps {
   loadingDepartments: boolean;
 }
 
-const darkSelect = 'h-auto rounded-none border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white shadow-none focus:ring-0 focus:ring-offset-0 data-[placeholder]:text-white/25';
+const darkSelect = 'h-auto rounded-none border-0 border-b border-white/20 bg-transparent dark:bg-transparent backdrop-blur-none px-0 py-2 text-base text-white shadow-none focus:ring-0 focus:ring-offset-0 data-[placeholder]:text-white/25';
 
 const SignUpForm: React.FC<SignUpFormProps> = ({
   fullName, setFullName, email, setEmail,
