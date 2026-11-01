@@ -16,7 +16,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { TeacherSidebar } from '@/components/teacher/layout/TeacherSidebar';
 import { TeacherTopbar } from '@/components/teacher/layout/TeacherTopbar';
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
@@ -256,7 +256,8 @@ const TeacherDashboard = () => {
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
             <TeacherSidebar
               activeTab={activeTab}
               setActiveTab={(tab) => {

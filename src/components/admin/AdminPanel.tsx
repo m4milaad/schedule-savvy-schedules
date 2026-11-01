@@ -1,5 +1,6 @@
 import React, { useLayoutEffect } from "react";
 import { adminPalette } from "@/lib/adminBackground";
+import { useTheme } from "@/components/ThemeProvider";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,9 +23,14 @@ let themeUsers = 0;
 
 /**
  * Admin look (see html.admin-theme in index.css), on <html> so portals get it too.
- * With a custom background, the whole palette is tinted from it (sidebar, cards, menus).
+ * With a custom background, the whole palette is tinted from it (sidebar, cards, menus),
+ * in light mode only: dark mode keeps the dark palette, so the theme toggle still works.
  */
 export function useAdminTheme(background?: string | null) {
+  const { theme } = useTheme();
+  const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const tint = dark ? null : background;
+
   useLayoutEffect(() => {
     themeUsers += 1;
     document.documentElement.classList.add("admin-theme");
@@ -35,12 +41,12 @@ export function useAdminTheme(background?: string | null) {
   }, []);
 
   useLayoutEffect(() => {
-    if (!background) return;
+    if (!tint) return;
     const root = document.documentElement.style;
-    const vars = adminPalette(background);
+    const vars = adminPalette(tint);
     for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
     return () => { for (const k of Object.keys(vars)) root.removeProperty(k); };
-  }, [background]);
+  }, [tint]);
 }
 
 /** The bordered surface every admin list sits in. Its first child is usually a `.admin-toolbar`. */

@@ -29,7 +29,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import { StudentSidebar } from '@/components/student/layout/StudentSidebar';
 import { StudentTopbar } from '@/components/student/layout/StudentTopbar';
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { motion, AnimatePresence } from "framer-motion";
@@ -594,7 +594,8 @@ const StudentDashboard = () => {
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
             <StudentSidebar
               activeTab={activeTab}
               setActiveTab={(tab) => {

@@ -118,7 +118,7 @@
   <script>
     (function () {
       var path = location.pathname;
-      if (!/\/(admin-dashboard|admin-logs|manage-admins)/.test(path)) return;
+      if (!/\/admin-dashboard/.test(path)) return;
       var t = null;
       try { t = localStorage.getItem("cuk-exam-theme"); } catch (e) {}
       var dark = t === "dark" || ((!t || t === "system") && matchMedia("(prefers-color-scheme: dark)").matches);
