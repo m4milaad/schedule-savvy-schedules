@@ -61,13 +61,13 @@ const Auth = () => {
       switch (profile.user_type) {
         case 'admin':
         case 'department_admin':
-          navigate('/admin-dashboard');
+          navigate('/admin-dashboard', { replace: true });
           break;
         case 'teacher':
-          navigate('/teacher-dashboard');
+          navigate('/teacher-dashboard', { replace: true });
           break;
         default:
-          navigate('/student-dashboard');
+          navigate('/student-dashboard', { replace: true });
       }
     }
   }, [user, profile, navigate]);

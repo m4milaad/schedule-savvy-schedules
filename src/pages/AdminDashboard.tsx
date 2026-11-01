@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion, MotionConfig } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -15,8 +16,8 @@ import { SeatingArrangement } from "@/components/admin/SeatingArrangement";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
-import { AdminShellSkeleton } from "@/components/admin/AdminPanel";
-import { customBackground, textOn } from "@/lib/adminBackground";
+import { AdminShellSkeleton, useAdminTheme } from "@/components/admin/AdminPanel";
+import { customBackground } from "@/lib/adminBackground";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -44,12 +45,14 @@ const AdminDashboard: React.FC = () => {
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
     const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
     const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
-    const [activeTab, setActiveTab] = useState<string>("overview");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    // The open tab lives in the URL, so reload and Back return to it. Replace, so tabs don't fill history.
+    const activeTab = searchParams.get("tab") || "overview";
+    const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
     const { toast } = useToast();
     const isMobile = useIsMobile();
 
@@ -58,17 +61,8 @@ const AdminDashboard: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Scoped admin theme (see index.css). On <html> so dialogs and menus in portals get it too.
-    useEffect(() => {
-        document.documentElement.classList.add("admin-theme");
-        return () => document.documentElement.classList.remove("admin-theme");
-    }, []);
-
-    useEffect(() => {
-        if (!userRole) return;
-        const tab = searchParams.get("tab");
-        setActiveTab(tab || "overview");
-    }, [userRole, searchParams]);
+    const background = customBackground(profileData?.theme_color);
+    useAdminTheme(background);
 
     const checkUserRole = async () => {
         try {
@@ -292,8 +286,6 @@ const AdminDashboard: React.FC = () => {
         return <AdminShellSkeleton />;
     }
 
-    const background = customBackground(profileData?.theme_color);
-
     const renderContent = () => {
         switch (activeTab) {
             case "overview":
@@ -384,7 +376,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen overflow-hidden bg-background" style={background ? { backgroundColor: background } : undefined}>
+        <div className="flex min-h-screen overflow-hidden bg-background">
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -447,15 +439,23 @@ const AdminDashboard: React.FC = () => {
                         message: "Review them in Administrators.",
                         onSelect: () => setActiveTab("admins"),
                     }] : undefined}
-                    style={background ? textOn(background) : undefined}
                 />
 
                 <main className="min-w-0 flex-1 overflow-y-auto">
                     <div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 md:pb-8 md:pt-0">
                         {isMobile && getTabDescription() && (
-                            <p className="mb-4 text-sm text-muted-foreground" style={background ? textOn(background) : undefined}>{getTabDescription()}</p>
+                            <p className="mb-4 text-sm text-muted-foreground">{getTabDescription()}</p>
                         )}
-                        {renderContent()}
+                        <MotionConfig reducedMotion="user">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.18, ease: "easeOut" }}
+                            >
+                                {renderContent()}
+                            </motion.div>
+                        </MotionConfig>
                     </div>
                 </main>
             </div>

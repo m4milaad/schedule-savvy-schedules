@@ -98,7 +98,45 @@
 </head>
 
 <body>
+  <!--
+    Paints before any JS/CSS loads. On dashboard routes it draws the same shell skeleton the app
+    shows next (AdminShellSkeleton), so a reload never flashes an empty or black page.
+    React replaces #root's contents on first render.
+  -->
+  <style>
+    body { margin: 0; }
+    .boot { --pb: #f2f4f7; --pc: #fff; --pm: #ededed; --pl: #e6e6e6; display: flex; min-height: 100vh; background: var(--pb); }
+    .boot-dark .boot { --pb: #0a0a0a; --pc: #121212; --pm: #1c1c1c; --pl: #242424; }
+    .boot i { display: block; border-radius: 6px; background: var(--pm); }
+    .boot-side { display: none; width: 240px; flex-shrink: 0; flex-direction: column; gap: 16px; padding: 16px; border-right: 1px solid var(--pl); }
+    .boot-main { flex: 1; max-width: 1440px; margin: 0 auto; padding: 32px 16px 0; }
+    .boot-card { margin-top: 32px; border: 1px solid var(--pl); border-radius: 8px; background: var(--pc); }
+    .boot-row { display: flex; gap: 24px; align-items: center; height: 56px; padding: 0 16px; border-top: 1px solid var(--pl); }
+    @media (min-width: 768px) { .boot-side { display: flex; } .boot-main { padding: 32px 32px 0; } }
+  </style>
   <div id="root"></div>
+  <script>
+    (function () {
+      var path = location.pathname;
+      if (!/\/(admin-dashboard|admin-logs|manage-admins)/.test(path)) return;
+      var t = null;
+      try { t = localStorage.getItem("cuk-exam-theme"); } catch (e) {}
+      var dark = t === "dark" || ((!t || t === "system") && matchMedia("(prefers-color-scheme: dark)").matches);
+      if (dark) document.documentElement.classList.add("boot-dark");
+      var bar = function (w, h) { return '<i style="width:' + w + ';height:' + h + 'px"></i>'; };
+      var side = "", rows = "";
+      for (var i = 0; i < 11; i++) side += bar("144px", 16);
+      for (var r = 0; r < 7; r++) rows += '<div class="boot-row">' + bar("192px", 14) + bar("96px", 14) + bar("96px", 14) + '<i style="width:64px;height:14px;margin-left:auto"></i></div>';
+      document.getElementById("root").innerHTML =
+        '<div class="boot" aria-busy="true" aria-label="Loading dashboard">' +
+          '<div class="boot-side">' + bar("160px", 28) + side + "</div>" +
+          '<div class="boot-main">' + bar("160px", 28) + '<div style="height:12px"></div>' + bar("256px", 16) +
+            '<div class="boot-card"><div style="display:flex;gap:8px;padding:12px 16px">' + bar("288px", 36) +
+            '<i style="width:112px;height:36px;margin-left:auto"></i></div>' + rows + "</div>" +
+          "</div>" +
+        "</div>";
+    })();
+  </script>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
+import { adminPalette } from "@/lib/adminBackground";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,33 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+
+// Several components can need the theme at once (guard skeleton -> dashboard skeleton -> dashboard).
+// Counting users means a handover never drops the class for a frame.
+let themeUsers = 0;
+
+/**
+ * Admin look (see html.admin-theme in index.css), on <html> so portals get it too.
+ * With a custom background, the whole palette is tinted from it (sidebar, cards, menus).
+ */
+export function useAdminTheme(background?: string | null) {
+  useLayoutEffect(() => {
+    themeUsers += 1;
+    document.documentElement.classList.add("admin-theme");
+    return () => {
+      themeUsers -= 1;
+      if (themeUsers === 0) document.documentElement.classList.remove("admin-theme");
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!background) return;
+    const root = document.documentElement.style;
+    const vars = adminPalette(background);
+    for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
+    return () => { for (const k of Object.keys(vars)) root.removeProperty(k); };
+  }, [background]);
+}
 
 /** The bordered surface every admin list sits in. Its first child is usually a `.admin-toolbar`. */
 export const AdminPanel = ({ className, children }: { className?: string; children: React.ReactNode }) => (
@@ -75,7 +103,9 @@ export const TableSkeleton = ({ rows = 6, cols = 4 }: { rows?: number; cols?: nu
 );
 
 /** The whole dashboard while auth and data load: sidebar, title row and one panel. */
-export const AdminShellSkeleton = () => (
+export const AdminShellSkeleton = () => {
+  useAdminTheme();
+  return (
   <div className="flex min-h-screen bg-background" aria-busy="true" aria-label="Loading dashboard">
     <div className="hidden w-60 shrink-0 flex-col gap-2 border-r p-4 md:flex">
       <div className="mb-4 flex items-center gap-2.5">
@@ -101,4 +131,5 @@ export const AdminShellSkeleton = () => (
       </div>
     </div>
   </div>
-);
+  );
+};

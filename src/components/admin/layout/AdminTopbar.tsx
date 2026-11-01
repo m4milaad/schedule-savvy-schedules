@@ -16,8 +16,6 @@ interface AdminTopbarProps {
   onOpenSidebar?: () => void;
   onOpenProfile?: () => void;
   notificationsPinned?: React.ComponentProps<typeof NotificationCenter>["pinned"];
-  /** Text tokens for a custom page background (desktop title row only). */
-  style?: React.CSSProperties;
   isMobile?: boolean;
   className?: string;
 }
@@ -42,7 +40,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   notificationsPinned,
   isMobile,
   className,
-  style,
 }) => {
   const accountMenu = (
     <Button
@@ -79,7 +76,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           {accountMenu}
         </header>
       ) : (
-        <header className={cn("mx-auto flex w-full max-w-[1440px] items-start gap-6 px-8 pb-6 pt-8", className)} style={style}>
+        <header className={cn("mx-auto flex w-full max-w-[1440px] items-start gap-6 px-8 pb-6 pt-8", className)}>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
             {/* Always reserve the line so every tab's panel starts at the same height. */}

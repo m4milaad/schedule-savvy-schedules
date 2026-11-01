@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import logger from '@/lib/logger';
+import { AdminShellSkeleton } from '@/components/admin/AdminPanel';
 
 
 interface AdminProtectedRouteProps {
@@ -56,8 +57,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   };
 
   if (loading) {
-    // Render nothing: the dashboard shows its own skeleton next, and two in a row flicker.
-    return null;
+    // Same themed skeleton the dashboard shows next, so the handover is invisible.
+    return <AdminShellSkeleton />;
   }
 
   if (!isAdmin) {
