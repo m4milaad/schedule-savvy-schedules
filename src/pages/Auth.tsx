@@ -512,12 +512,19 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
 
     <div>
       <label htmlFor="signup-password" className={fieldLabel}>Password</label>
-      <PasswordField id="signup-password" value={password} onChange={setPassword} show={showPassword} setShow={setShowPassword} placeholder="Min 8 characters" autoComplete="new-password" />
-      <div className="mt-3"><PasswordStrengthChecker password={password} /></div>
+      <PasswordField id="signup-password" value={password} onChange={setPassword} show={showPassword} setShow={setShowPassword} placeholder="Create a password" autoComplete="new-password" />
     </div>
     <div>
       <label htmlFor="confirm-password" className={fieldLabel}>Confirm password</label>
-      <PasswordField id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPassword} setShow={setShowConfirmPassword} placeholder="Repeat password" autoComplete="new-password" />
+      <PasswordField id="confirm-password" value={confirmPassword} onChange={setConfirmPassword} show={showConfirmPassword} setShow={setShowConfirmPassword} placeholder="Type it again" autoComplete="new-password" />
+      {confirmPassword && (
+        <p aria-live="polite" className={cn('mt-2 text-xs', confirmPassword === password ? 'text-emerald-500' : 'text-red-400')}>
+          {confirmPassword === password ? '✓ Passwords match' : "Passwords don't match yet"}
+        </p>
+      )}
+    </div>
+    <div className="-mt-3 sm:col-span-2">
+      <PasswordStrengthChecker password={password} />
     </div>
 
     <p className="text-[11px] leading-relaxed text-white/40 sm:col-span-2">
