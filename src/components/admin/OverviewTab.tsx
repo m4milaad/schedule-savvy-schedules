@@ -115,10 +115,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ role, counts, examDate
           </ol>
         ) : (
           <div className="mx-5 mb-5 mt-4 rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground">
-            Nothing is on the datesheet yet.{" "}
+            {examDates.length > 0 ? "Every exam day on the datesheet has passed." : "Nothing is on the datesheet yet."}{" "}
             {isAdmin && (
               <button className="text-foreground underline-offset-4 hover:underline" onClick={() => setActiveTab("generator")}>
-                Generate one
+                {examDates.length > 0 ? "Generate a new one" : "Generate one"}
               </button>
             )}
           </div>

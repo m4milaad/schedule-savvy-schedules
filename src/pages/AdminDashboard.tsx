@@ -19,7 +19,7 @@ import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
 import { AdminShellSkeleton, useAdminTheme } from "@/components/admin/AdminPanel";
 import { customBackground } from "@/lib/adminBackground";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
 import { formatDay, relativeDays, summariseExamDates } from "@/lib/examDates";
@@ -375,7 +375,8 @@ const AdminDashboard: React.FC = () => {
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                    <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+                    <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+                        <SheetTitle className="sr-only">Navigation</SheetTitle>
                         <AdminSidebar
                             activeTab={activeTab}
                             setActiveTab={(tab) => {
