@@ -25,7 +25,8 @@ import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { SplashScreen } from "@/components/mobile/SplashScreen";
 import ChatbotAssistant from "@/pages/ChatbotAssistant";
 import { useState } from "react";
-import { CookieConsentBanner } from "@/components/CookieConsentBanner";
+import { CookieConsentBanner, CONSENT_STORAGE_KEY } from "@/components/CookieConsentBanner";
+import { LegalFooter } from "@/components/LegalLinks";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
 
@@ -61,6 +62,10 @@ const App = () => {
     },
   }));
   const [showSplash, setShowSplash] = useState(isNativeApp);
+  // Analytics only with consent ("Accept all"); "Essential only" keeps them off.
+  const [analyticsAllowed, setAnalyticsAllowed] = useState(() => {
+    try { return localStorage.getItem(CONSENT_STORAGE_KEY) === "accepted"; } catch { return false; }
+  });
 
   if (showSplash && isNativeApp) {
     return <SplashScreen onComplete={() => setShowSplash(false)} />;
@@ -158,12 +163,13 @@ const App = () => {
               />
               <Route path="*" element={<NotFound />} />
               </Routes>
+              <LegalFooter />
               <OfflineIndicator />
-              <CookieConsentBanner />
+              <CookieConsentBanner onChoice={(c) => setAnalyticsAllowed(c === "accepted")} />
             </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>
-        {!isNativeApp && (
+        {!isNativeApp && analyticsAllowed && (
           <>
             <Analytics />
             <SpeedInsights />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { LegalLinks } from "@/components/LegalLinks";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -380,6 +381,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
                         </motion.div>
                     </motion.div>
                 )}
+                {!isCollapsed && <LegalLinks className="mt-3 justify-center" />}
             </motion.div>
         </motion.div>
     );

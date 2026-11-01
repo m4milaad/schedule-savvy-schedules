@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from "react-router-dom";
+import { LegalLinks } from "@/components/LegalLinks";
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +11,6 @@ import Squares from '@/components/Squares';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import { useTheme } from '@/components/ThemeProvider';
@@ -397,6 +398,7 @@ const Auth = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      <LegalLinks className="relative z-10 mt-6" />
     </div>
   );
 };
@@ -607,6 +609,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
     >
       {loading ? "Creating Account..." : "Create Account"}
     </Button>
+    <p className="text-center text-xs text-muted-foreground">
+      By creating an account you agree to the{' '}
+      <Link to="/terms-and-conditions" className="underline underline-offset-4 hover:text-foreground">Terms</Link>
+      {' '}and{' '}
+      <Link to="/privacy-policy" className="underline underline-offset-4 hover:text-foreground">Privacy policy</Link>.
+    </p>
   </>
 );
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { LegalLinks } from "@/components/LegalLinks";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -167,6 +168,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                     collapsed ? PanelLeftOpen : PanelLeftClose,
                     toggleSidebar
                 )}
+                {!collapsed && <LegalLinks className="px-2.5 pt-2" />}
             </div>
         </nav>
     );

@@ -1,67 +1,90 @@
 import { Link } from "react-router-dom";
-
-const supportEmail = "mb4milad.bhattt@cukashmir.edu.in";
+import { LegalPage, SupportEmail } from "@/components/LegalPage";
 
 export default function TermsAndConditions() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="max-w-4xl mx-auto px-4 py-10 md:py-14">
-        <div className="glass-card rounded-2xl border border-border/60 p-6 md:p-8">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Terms and Conditions</h1>
-          <p className="text-sm text-muted-foreground mt-2">Last updated: April 6, 2026</p>
+    <LegalPage
+      title="Terms of use"
+      updated="1 November 2026"
+      intro={
+        <p>
+          These terms apply to everyone who uses CUK Acadex, the academic management app for Central
+          University of Kashmir. By creating an account or signing in, you agree to them.
+        </p>
+      }
+    >
+      <section>
+        <h2>Who can use it</h2>
+        <p>
+          The app is for students, teachers and staff of Central University of Kashmir. Some accounts,
+          such as department administrators and teachers, must be approved by a super administrator
+          before they can be used.
+        </p>
+      </section>
 
-          <section className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground">
-            <p>
-              By using this platform, you agree to use it for legitimate academic and
-              administrative purposes only. Unauthorized access, abuse, or disruption of services
-              is prohibited.
-            </p>
-            <p>
-              Features, availability, and policies may be updated over time. Continued use after
-              updates indicates acceptance of the revised terms.
-            </p>
-            <p>
-              You are responsible for keeping your account credentials secure and for reporting any
-              suspicious activity immediately.
-            </p>
-          </section>
+      <section>
+        <h2>Your account</h2>
+        <ul>
+          <li>Give accurate details and keep them up to date.</li>
+          <li>Keep your password private and don't share your account.</li>
+          <li>Tell us straight away at <SupportEmail /> if you think someone else has used it.</li>
+        </ul>
+      </section>
 
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold">Contact and Support</h2>
-            <p className="text-sm text-muted-foreground mt-2">
-              General support:{" "}
-              <a
-                className="text-primary underline underline-offset-4"
-                href={`mailto:${supportEmail}`}
-              >
-                {supportEmail}
-              </a>
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Report a bug:{" "}
-              <a
-                className="text-primary underline underline-offset-4"
-                href={`mailto:${supportEmail}?subject=${encodeURIComponent(
-                  "Bug Report - CUK Acadex"
-                )}&body=${encodeURIComponent(
-                  "Please describe the issue, expected behavior, and steps to reproduce."
-                )}`}
-              >
-                Open bug report email
-              </a>
-            </p>
-          </section>
+      <section>
+        <h2>Acceptable use</h2>
+        <p>Use the app only for genuine academic and administrative work. Don't:</p>
+        <ul>
+          <li>try to access records, accounts or features your role doesn't allow;</li>
+          <li>enter false marks, attendance, results or other records;</li>
+          <li>upload harmful files, or try to disrupt, overload or probe the service;</li>
+          <li>copy or publish other people's personal data from the app.</li>
+        </ul>
+        <p>
+          Misuse may lead to your account being suspended and may be reported under university
+          regulations.
+        </p>
+      </section>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/privacy-policy" className="text-sm text-primary underline underline-offset-4">
-              Privacy Policy
-            </Link>
-            <Link to="/" className="text-sm text-primary underline underline-offset-4">
-              Back to app
-            </Link>
-          </div>
-        </div>
-      </main>
-    </div>
+      <section>
+        <h2>Academic records</h2>
+        <p>
+          The app shows records entered by university staff. If something looks wrong, contact your
+          department or the exams office. Where the app and the university's official records disagree,
+          the official records apply.
+        </p>
+      </section>
+
+      <section>
+        <h2>The AI assistant</h2>
+        <p>
+          The assistant answers from university documents and public sources, but it can be wrong or
+          out of date. Check anything important, such as dates, eligibility or fees, against official
+          university notices before relying on it.
+        </p>
+      </section>
+
+      <section>
+        <h2>Availability and changes</h2>
+        <p>
+          We work to keep the app available but can't promise it will always be free of interruptions
+          or errors. Features and these terms may change; we'll update the date at the top when they do,
+          and continuing to use the app means you accept the updated terms.
+        </p>
+      </section>
+
+      <section>
+        <h2>Privacy</h2>
+        <p>
+          How we handle personal data is explained in the{" "}
+          <Link to="/privacy-policy" className="text-foreground underline underline-offset-4">privacy policy</Link>.
+        </p>
+      </section>
+
+      <section>
+        <h2>Contact</h2>
+        <p>Questions about these terms, or to report a problem: <SupportEmail />.</p>
+      </section>
+    </LegalPage>
   );
 }

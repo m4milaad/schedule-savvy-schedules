@@ -14,7 +14,7 @@ import {
 import { askKnowledgeBase, type ChatbotResponse, type ChatHistoryTurn } from "@/lib/chatbot/retrieval";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -469,7 +469,6 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                 style={{ maxHeight: "140px", overflowY: "auto" }}
               />
               <InputGroupAddon align="block-end" className="border-t">
-                <InputGroupText className="text-xs">Enter to send · Shift+Enter for a new line</InputGroupText>
                 <InputGroupButton type="submit" variant="default" size="icon-sm" className="ml-auto rounded-full" disabled={!canSubmit} aria-label="Send">
                   <ArrowUp />
                 </InputGroupButton>

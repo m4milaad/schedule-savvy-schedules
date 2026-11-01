@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { LegalLinks } from '@/components/LegalLinks';
 
 export const Footer = () => {
   return (
@@ -33,6 +33,7 @@ export const Footer = () => {
                       | All Rights Reserved.
                   </p>
                   <div className="flex items-center gap-4">
+                      <LegalLinks />
                       <img
                           src="./favicon.ico"
                           alt="CUK Logo"
