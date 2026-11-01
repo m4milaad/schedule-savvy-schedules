@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { AdminShellSkeleton } from '@/components/admin/AdminPanel';
 import logger from '@/lib/logger';
 
 
@@ -57,7 +56,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   };
 
   if (loading) {
-    return <AdminShellSkeleton />;
+    // Render nothing: the dashboard shows its own skeleton next, and two in a row flicker.
+    return null;
   }
 
   if (!isAdmin) {

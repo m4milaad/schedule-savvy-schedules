@@ -1,16 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Menu, RefreshCw, LogOut, UserRound, Settings2 } from "lucide-react";
+import { Menu, RefreshCw } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationCenter } from "@/components/NotificationCenter";
 
@@ -22,8 +14,10 @@ interface AdminTopbarProps {
   onLogout: () => void;
   onRefresh?: () => void;
   onOpenSidebar?: () => void;
-  /** Opens the Profile tab; `password` jumps to the password section. */
-  onOpenProfile?: (password: boolean) => void;
+  onOpenProfile?: () => void;
+  notificationsPinned?: React.ComponentProps<typeof NotificationCenter>["pinned"];
+  /** Text tokens for a custom page background (desktop title row only). */
+  style?: React.CSSProperties;
   isMobile?: boolean;
   className?: string;
 }
@@ -45,42 +39,26 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   onRefresh,
   onOpenSidebar,
   onOpenProfile,
+  notificationsPinned,
   isMobile,
   className,
+  style,
 }) => {
   const accountMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" aria-label="Account">
-          <Avatar className="h-7 w-7">
-            <AvatarFallback className="bg-muted text-[11px] font-medium">
-              {initialsFromLabel(userLabel)}
-            </AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate text-sm font-medium">{userLabel || "Admin"}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {onOpenProfile && (
-          <>
-            <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenProfile(false)}>
-              <UserRound className="mr-2 h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" onClick={() => onOpenProfile(true)}>
-              <Settings2 className="mr-2 h-4 w-4" />
-              Change password
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
-        <DropdownMenuItem className="cursor-pointer" onClick={onLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Log out
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 rounded-full"
+      onClick={onOpenProfile}
+      aria-label="Profile"
+      title={userLabel || "Profile"}
+    >
+      <Avatar className="h-7 w-7 border">
+        <AvatarFallback className="bg-card text-[11px] font-medium text-card-foreground">
+          {initialsFromLabel(userLabel)}
+        </AvatarFallback>
+      </Avatar>
+    </Button>
   );
 
   return (
@@ -96,12 +74,12 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="min-w-0 flex-1 truncate text-base font-semibold">{title}</h1>
-          <NotificationCenter userId={userId} minimal />
+          <NotificationCenter userId={userId} minimal pinned={notificationsPinned} />
           <ThemeToggle minimal />
           {accountMenu}
         </header>
       ) : (
-        <header className={cn("mx-auto flex w-full max-w-[1440px] items-start gap-6 px-8 pb-6 pt-8", className)}>
+        <header className={cn("mx-auto flex w-full max-w-[1440px] items-start gap-6 px-8 pb-6 pt-8", className)} style={style}>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
             {/* Always reserve the line so every tab's panel starts at the same height. */}
@@ -114,7 +92,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
                 Refresh
               </Button>
             )}
-            <NotificationCenter userId={userId} minimal />
+            <NotificationCenter userId={userId} minimal pinned={notificationsPinned} />
             <ThemeToggle minimal />
             {accountMenu}
           </div>

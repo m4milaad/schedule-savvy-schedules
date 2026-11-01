@@ -16,6 +16,7 @@ import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { ManageAdminsTab } from "@/components/admin/ManageAdminsTab";
 import { AdminProfileTab } from "@/components/admin/AdminProfileTab";
 import { AdminShellSkeleton } from "@/components/admin/AdminPanel";
+import { customBackground, textOn } from "@/lib/adminBackground";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,13 +39,13 @@ const AdminDashboard: React.FC = () => {
     const [holidays, setHolidays] = useState<Holiday[]>([]);
     const [students, setStudents] = useState<Student[]>([]);
     const [examDates, setExamDates] = useState<string[]>([]);
+    const [pendingApprovals, setPendingApprovals] = useState(0);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
     const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
     const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
     const [activeTab, setActiveTab] = useState<string>("overview");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [passwordFocus, setPasswordFocus] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const navigate = useNavigate();
@@ -126,6 +127,17 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    // Department admins and teachers wait for a super admin; surfaced in the bell.
+    const loadPendingApprovals = async () => {
+        const { count, error } = await supabase
+            .from("profiles")
+            .select("user_id", { count: "exact", head: true })
+            .eq("is_approved", false)
+            .in("user_type", ["department_admin", "teacher"]);
+        if (error) throw error;
+        setPendingApprovals(count ?? 0);
+    };
+
     const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
@@ -142,6 +154,7 @@ const AdminDashboard: React.FC = () => {
                 loadHolidays(),
                 loadStudents(currentRole, currentProfile),
                 loadExamDates(),
+                currentRole === "admin" ? loadPendingApprovals() : Promise.resolve(),
             ]);
         } catch (err) {
             logger.error("Error loading data:", err);
@@ -279,6 +292,8 @@ const AdminDashboard: React.FC = () => {
         return <AdminShellSkeleton />;
     }
 
+    const background = customBackground(profileData?.theme_color);
+
     const renderContent = () => {
         switch (activeTab) {
             case "overview":
@@ -314,7 +329,7 @@ const AdminDashboard: React.FC = () => {
             case "assistant": return <ChatbotAssistant embedded />;
             case "logs": return <AuditLogsTab />;
             case "admins": return <ManageAdminsTab />;
-            case "profile": return <AdminProfileTab focusPassword={passwordFocus} />;
+            case "profile": return <AdminProfileTab onBackgroundChange={(theme_color) => setProfileData((p) => ({ ...(p ?? {}), theme_color }))} />;
             default: return null;
         }
     };
@@ -369,7 +384,7 @@ const AdminDashboard: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen overflow-hidden bg-background">
+        <div className="flex min-h-screen overflow-hidden bg-background" style={background ? { backgroundColor: background } : undefined}>
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -425,16 +440,20 @@ const AdminDashboard: React.FC = () => {
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}
                     onLogout={handleLogout}
                     onRefresh={() => loadAllData()}
-                    onOpenProfile={(password) => {
-                        setActiveTab("profile");
-                        if (password) setPasswordFocus((n) => n + 1);
-                    }}
+                    onOpenProfile={() => setActiveTab("profile")}
+                    notificationsPinned={pendingApprovals > 0 ? [{
+                        id: "pending-approvals",
+                        title: `${pendingApprovals} ${pendingApprovals === 1 ? "account is" : "accounts are"} waiting for approval`,
+                        message: "Review them in Administrators.",
+                        onSelect: () => setActiveTab("admins"),
+                    }] : undefined}
+                    style={background ? textOn(background) : undefined}
                 />
 
                 <main className="min-w-0 flex-1 overflow-y-auto">
                     <div className="mx-auto w-full max-w-[1440px] px-4 py-4 md:px-8 md:pb-8 md:pt-0">
                         {isMobile && getTabDescription() && (
-                            <p className="mb-4 text-sm text-muted-foreground">{getTabDescription()}</p>
+                            <p className="mb-4 text-sm text-muted-foreground" style={background ? textOn(background) : undefined}>{getTabDescription()}</p>
                         )}
                         {renderContent()}
                     </div>

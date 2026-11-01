@@ -8,13 +8,13 @@ import {
   FileText,
   Globe,
   RotateCcw,
-  SendHorizonal,
+  ArrowUp,
 
 } from "lucide-react";
 import { askKnowledgeBase, type ChatbotResponse, type ChatHistoryTurn } from "@/lib/chatbot/retrieval";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupText, InputGroupTextarea } from "@/components/ui/input-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -455,8 +455,8 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
             onSubmit={(event) => void onSubmit(event)}
             className="shrink-0 border-t p-3"
           >
-            <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-lg border bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-ring/20">
-              <Textarea
+            <InputGroup className="mx-auto max-w-3xl bg-card">
+              <InputGroupTextarea
                 ref={textareaRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -465,14 +465,16 @@ const ChatbotAssistant = ({ embedded = false }: ChatbotAssistantProps) => {
                 aria-label="Message"
                 disabled={loading}
                 rows={1}
-                className="min-h-0 resize-none border-0 bg-transparent px-1.5 py-1.5 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="min-h-0 text-sm"
                 style={{ maxHeight: "140px", overflowY: "auto" }}
               />
-              <Button type="submit" size="icon" className="h-8 w-8 shrink-0" disabled={!canSubmit} aria-label="Send">
-                <SendHorizonal className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="mx-auto mt-1.5 max-w-3xl px-1 text-xs text-muted-foreground">Enter to send · Shift+Enter for a new line</p>
+              <InputGroupAddon align="block-end" className="border-t">
+                <InputGroupText className="text-xs">Enter to send · Shift+Enter for a new line</InputGroupText>
+                <InputGroupButton type="submit" variant="default" size="icon-sm" className="ml-auto rounded-full" disabled={!canSubmit} aria-label="Send">
+                  <ArrowUp />
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
           </form>
         </section>
       </div>

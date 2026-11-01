@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff } from 'lucide-react';
+import { BACKGROUND_PRESETS, customBackground, isHexColor } from '@/lib/adminBackground';
+import { cn } from '@/lib/utils';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import logger from '@/lib/logger';
 
@@ -15,12 +17,11 @@ interface Department {
   dept_name: string;
 }
 
-const PasswordInput = ({ id, label, value, onChange, inputRef }: {
+const PasswordInput = ({ id, label, value, onChange }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
-  inputRef?: React.Ref<HTMLInputElement>;
 }) => {
   const [visible, setVisible] = useState(false);
   return (
@@ -29,7 +30,6 @@ const PasswordInput = ({ id, label, value, onChange, inputRef }: {
       <div className="relative">
         <Input
           id={id}
-          ref={inputRef}
           type={visible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -53,8 +53,8 @@ const PasswordInput = ({ id, label, value, onChange, inputRef }: {
 };
 
 /** A settings row: what the section is on the left, its controls on the right. */
-const Section = ({ id, title, description, children }: { id?: string; title: string; description: string; children: React.ReactNode }) => (
-  <section id={id} className="grid gap-4 px-5 py-6 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:gap-10">
+const Section = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
+  <section className="grid gap-4 px-5 py-6 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:gap-10">
     <div>
       <h2 className="text-sm font-semibold">{title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
@@ -70,7 +70,7 @@ const isPasswordStrong = (password: string) =>
   /[0-9]/.test(password) &&
   /[^A-Za-z0-9]/.test(password);
 
-export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPassword = 0 }) => {
+export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | null) => void }> = ({ onBackgroundChange }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
@@ -81,7 +81,9 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const currentPasswordRef = useRef<HTMLInputElement>(null);
+  const [background, setBackground] = useState<string | null>(null);
+  const [customHex, setCustomHex] = useState('');
+  const [savingBackground, setSavingBackground] = useState(false);
 
   const { toast } = useToast();
 
@@ -90,13 +92,6 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
     void loadDepartments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // "Change password" from the account menu bumps this counter, so it re-fires on repeat clicks.
-  useEffect(() => {
-    if (!focusPassword || loading) return;
-    document.getElementById("password")?.scrollIntoView({ block: "start" });
-    currentPasswordRef.current?.focus();
-  }, [focusPassword, loading]);
 
   const loadDepartments = async () => {
     try {
@@ -129,6 +124,7 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
         dept_id: (p.dept_id as string) || '',
         contact_no: (p.contact_no as string) || '',
       });
+      setBackground(customBackground(p.theme_color));
     } catch (error: unknown) {
       logger.error('Error loading profile:', error);
       toast({ title: "Error", description: "Failed to load profile", variant: "destructive" });
@@ -162,6 +158,34 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
       toast({ title: "Error", description: (error as Error).message || "Failed to update profile", variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Saves on pick, like a setting toggle. null = the default background.
+  const saveBackground = async (color: string | null) => {
+    if (color !== null && !isHexColor(color)) {
+      toast({ title: "Error", description: "Use a hex colour like #1e293b", variant: "destructive" });
+      return;
+    }
+    const previous = background;
+    setBackground(color);
+    onBackgroundChange?.(color);
+    setSavingBackground(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+      const { error } = await supabase
+        .from('profiles')
+        .update({ theme_color: color, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+      if (error) throw error;
+    } catch (error: unknown) {
+      logger.error('Error saving background:', error);
+      setBackground(previous);
+      onBackgroundChange?.(previous);
+      toast({ title: "Error", description: "Couldn't save the background", variant: "destructive" });
+    } finally {
+      setSavingBackground(false);
     }
   };
 
@@ -205,7 +229,7 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
   if (loading) {
     return (
       <div className="rounded-lg border bg-card" aria-busy="true">
-        {[3, 1, 3].map((fields, i) => (
+        {[3, 1, 2, 3].map((fields, i) => (
           <React.Fragment key={i}>
             {i > 0 && <Separator />}
             <div className="grid gap-4 px-5 py-6 md:grid-cols-[280px_1fr] md:gap-10">
@@ -269,9 +293,71 @@ export const AdminProfileTab: React.FC<{ focusPassword?: number }> = ({ focusPas
 
       <Separator />
 
-      <Section id="password" title="Password" description="You'll need your current password to set a new one.">
+      <Section title="Background" description="The colour behind your dashboard. Only you see it.">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Background colour">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={background === null}
+              disabled={savingBackground}
+              onClick={() => void saveBackground(null)}
+              className={cn(
+                "flex h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 text-sm",
+                background === null && "ring-2 ring-ring ring-offset-2 ring-offset-card"
+              )}
+            >
+              {background === null && <Check className="h-3.5 w-3.5" />}
+              Default
+            </button>
+            {BACKGROUND_PRESETS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                role="radio"
+                aria-checked={background === color}
+                aria-label={color}
+                title={color}
+                disabled={savingBackground}
+                onClick={() => void saveBackground(color)}
+                className={cn(
+                  "h-8 w-8 rounded-md border",
+                  background === color && "ring-2 ring-ring ring-offset-2 ring-offset-card"
+                )}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+          <form
+            className="flex items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveBackground(customHex.trim());
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="custom-bg">Custom colour</Label>
+              <Input
+                id="custom-bg"
+                value={customHex}
+                onChange={(e) => setCustomHex(e.target.value)}
+                placeholder={background ?? "#1e293b"}
+                maxLength={7}
+                className="w-32 font-mono"
+              />
+            </div>
+            <Button type="submit" variant="outline" size="sm" className="h-10" disabled={savingBackground || !isHexColor(customHex.trim())}>
+              Apply
+            </Button>
+          </form>
+        </div>
+      </Section>
+
+      <Separator />
+
+      <Section title="Password" description="You'll need your current password to set a new one.">
         <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
-          <PasswordInput id="currentPassword" label="Current password" value={currentPassword} onChange={setCurrentPassword} inputRef={currentPasswordRef} />
+          <PasswordInput id="currentPassword" label="Current password" value={currentPassword} onChange={setCurrentPassword} />
           <div className="flex flex-col gap-2">
             <PasswordInput id="newPassword" label="New password" value={newPassword} onChange={setNewPassword} />
             {newPassword && <PasswordStrengthChecker password={newPassword} />}
