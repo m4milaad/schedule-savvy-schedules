@@ -66,7 +66,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       if (error) throw error;
       setNotices((data || []) as Record<string, unknown>);
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       logger.error('Error loading notices:', error);
       toast({
         title: 'Error',
@@ -141,7 +141,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       resetForm();
       loadNotices();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save notice',
@@ -175,7 +175,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       toast({ title: 'Success', description: 'Notice deleted successfully' });
       loadNotices();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete notice',
@@ -194,7 +194,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       if (error) throw error;
       loadNotices();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: 'Failed to update notice status',

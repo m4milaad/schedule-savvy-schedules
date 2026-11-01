@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import logger from "@/lib/logger";
 import { SCRAPED_CUK_DATA, type ScrapedChunk } from "@/lib/chatbot/scraped_data";
 
 type SourceType = "web" | "pdf" | "doc";
@@ -261,7 +262,7 @@ export const askKnowledgeBase = async (
         };
       }
     } catch (error) {
-      console.warn("Backend API request failed or unreachable, falling back to grounded knowledge engine:", error);
+      logger.warn("Backend API request failed or unreachable, falling back to grounded knowledge engine:", error);
     } finally {
       window.clearTimeout(timeout);
     }

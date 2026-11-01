@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { TabLoader } from '@/components/ui/loading-screen';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,7 +87,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
 
       setAssignments(assignmentsWithCounts);
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       logger.error('Error loading assignments:', error);
       toast({
         title: 'Error',
@@ -178,7 +179,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       resetForm();
       loadAssignments();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to save assignment',
@@ -212,7 +213,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       toast({ title: 'Success', description: 'Assignment deleted successfully' });
       loadAssignments();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to delete assignment',
@@ -231,7 +232,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       if (error) throw error;
       loadAssignments();
     } catch (error: unknown) {
-      console.error(error);
+      logger.error(error);
       toast({
         title: 'Error',
         description: 'Failed to update assignment status',
@@ -243,11 +244,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
   const isOverdue = (dueDate: string) => new Date(dueDate) < new Date();
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <TabLoader message="Loading…" />;
   }
 
   return (

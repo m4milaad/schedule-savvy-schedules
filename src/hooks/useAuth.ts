@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,12 +24,14 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const currentUserId = useRef<string | null>(null);
 
   useEffect(() => {
     // Get initial session
     void supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      currentUserId.current = session?.user?.id ?? null;
       if (session?.user) {
         void loadUserProfile(session.user.id);
       } else {
@@ -41,8 +43,16 @@ export const useAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
+
+        const newUserId = session?.user?.id ?? null;
+        // Token refresh / tab refocus re-fires this for the SAME user. Only the
+        // token changed (updated above); don't churn user/profile or downstream
+        // effects keyed on them would refetch and flash the loading skeleton.
+        if (newUserId === currentUserId.current) return;
+        currentUserId.current = newUserId;
+
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           // Persist auth session for offline access
           void persistAuthSession({
