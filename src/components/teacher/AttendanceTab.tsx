@@ -359,6 +359,9 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       const validStatuses = ['present', 'absent', 'late', 'on_leave'];
 
+      // Only students enrolled in this course; any other ID would record (and notify) attendance for the wrong class.
+      const enrolledIds = new Set(attendance.map(a => a.student_id));
+
       for (const row of data) {
         const studentId = row['Student ID']?.toString().trim();
         const status = row['Status']?.toString().trim().toLowerCase();
@@ -367,6 +370,12 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
         if (!studentId) {
           result.failed++;
           result.errors.push('Row missing Student ID');
+          continue;
+        }
+
+        if (!enrolledIds.has(studentId)) {
+          result.failed++;
+          result.errors.push(`${row['Student Name'] ?? studentId}: not enrolled in this course`);
           continue;
         }
 
