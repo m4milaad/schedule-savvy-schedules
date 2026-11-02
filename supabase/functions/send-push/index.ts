@@ -71,14 +71,20 @@ Deno.serve(async (req) => {
   let sent = 0;
 
   for (const { token } of devices) {
-    // Data-only, so the app always builds the notification itself (also when it is closed).
+    // With a notification part, Android shows it itself while the app is closed or in the background; many phones
+    // never wake a swiped-away app for data-only messages. In the foreground PushService gets it and stays quiet
+    // (the dashboard shows it). The tag makes a repeat of the same row replace, not stack.
     const res = await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, {
       method: "POST",
       headers: { Authorization: `Bearer ${auth}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         message: {
           token,
-          android: { priority: "HIGH" },
+          notification: { title: String(record.title), body: String(record.message) },
+          android: {
+            priority: "HIGH",
+            notification: { channel_id: "notifications", icon: "ic_notification", tag: String(record.id) },
+          },
           data: { id: String(record.id), title: String(record.title), message: String(record.message), type: String(record.type ?? "info") },
         },
       }),
