@@ -20,6 +20,9 @@ export default {
 			}
 		},
 		extend: {
+			// min-h-screen / h-screen leave room for the safe-area padding on <html> (index.css), so pages never scroll by it.
+			minHeight: { screen: 'var(--app-height)' },
+			height: { screen: 'var(--app-height)' },
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

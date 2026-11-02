@@ -2,7 +2,7 @@
    Do NOT constrain layout here (pages/components should own their own containers). */
 
 #root {
-  min-height: 100vh;
+  min-height: var(--app-height);
 }
 
 /* Enhanced light mode styling */
