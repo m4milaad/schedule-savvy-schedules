@@ -22,6 +22,7 @@ function serviceWorkerInject(mode: string): Plugin {
       const buildHash =
         env.VITE_BUILD_HASH ||
         process.env.GITHUB_SHA?.slice(0, 12) ||
+        process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ||
         "local-build";
       content = content
         .replace(/__SUPABASE_URL__/g, env.VITE_SUPABASE_URL || "")

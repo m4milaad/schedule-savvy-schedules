@@ -180,33 +180,28 @@ export const useExamData = () => {
         // Get all course IDs
         const courseIds = Array.from(courseCodeToId.values());
 
-        // Fetch all enrollments for these courses
-        const { data: enrollmentsData } = await supabase
-          .from('student_enrollments')
-          .select('course_id, student_id')
-          .in('course_id', courseIds)
-          .eq('is_active', true);
-
-        // Get unique student IDs
-        const studentIds = [...new Set((enrollmentsData || []).map(e => e.student_id).filter((id): id is string => id != null))];
-
-        // Fetch student details
-        const { data: studentsData } = await supabase
-          .from('students')
-          .select('student_id, student_name, student_enrollment_no, abc_id')
-          .in('student_id', studentIds);
-
-        // Create student lookup map
-        const studentMap = new Map(
-          (studentsData || []).map(s => [s.student_id, s])
-        );
+        // Enrollments with their students, in pages: the API returns at most 1000 rows per request.
+        const PAGE = 1000;
+        const enrollmentsData = [];
+        for (let from = 0; ; from += PAGE) {
+          const { data: page, error: pageError } = await supabase
+            .from('student_enrollments')
+            .select('course_id, students(student_id, student_name, student_enrollment_no, abc_id)')
+            .in('course_id', courseIds)
+            .eq('is_active', true)
+            .order('id')
+            .range(from, from + PAGE - 1);
+          if (pageError) throw pageError;
+          enrollmentsData.push(...page);
+          if (page.length < PAGE) break;
+        }
 
         // Group enrollments by course_id with student details
         const enrollmentsByCourse = new Map<string, { student_id: string; student_name: string; student_enrollment_no: string; abc_id?: string }[]>();
-        (enrollmentsData || []).forEach(enrollment => {
+        enrollmentsData.forEach(enrollment => {
           const courseId = enrollment.course_id;
           if (!courseId) return;
-          const student = studentMap.get(enrollment.student_id ?? '');
+          const student = enrollment.students;
           if (!enrollmentsByCourse.has(courseId)) {
             enrollmentsByCourse.set(courseId, []);
           }
@@ -361,87 +356,25 @@ export const useExamData = () => {
         venueData = newVenue;
       }
 
-      // First, delete all existing datesheets for this session
-      const { error: deleteError } = await supabase
-        .from('datesheets')
-        .delete()
-        .eq('session_id', sessionData.session_id);
+      // One transaction that only touches exams that changed, so students are notified only about real changes.
+      const { data: skippedCourses, error: saveError } = await supabase.rpc('save_datesheet', {
+        p_session_id: sessionData.session_id,
+        p_venue_id: venueData.venue_id,
+        p_exams: schedule.map(({ course_code, exam_date }) => ({ course_code, exam_date })),
+      });
+      if (saveError) throw saveError;
 
-      if (deleteError) {
-        logger.error("Error deleting old datesheets:", deleteError);
-        throw deleteError;
-      }
-
-      // Prepare all inserts
-      const datasheetInserts = [];
-      const skippedCourses = [];
-      
-      for (const exam of schedule) {
-        const courseResult = await supabase
-          .from('courses')
-          .select('course_id, course_code')
-          .eq('course_code', exam.course_code)
-          .maybeSingle();
-        let courseData = courseResult.data;
-        const courseError = courseResult.error;
-
-        // If not found with exact match, try finding original code for normalized codes
-        if (!courseData && !courseError) {
-          // Check if this is a normalized code (BT-XXX) that might be BTCS-XXX in DB
-          const possibleOriginalCode = exam.course_code.replace('BT-', 'BTCS-');
-          const { data: altCourseData, error: altError } = await supabase
-            .from('courses')
-            .select('course_id, course_code')
-            .eq('course_code', possibleOriginalCode)
-            .maybeSingle();
-          
-          if (altCourseData && !altError) {
-            courseData = altCourseData;
-          }
-        }
-
-        if (courseError) {
-          logger.error(`Error finding course ${exam.course_code}:`, courseError);
-          skippedCourses.push(`${exam.course_code} (database error)`);
-          continue;
-        }
-
-        if (!courseData) {
-          logger.warn(`Course ${exam.course_code} not found in database`);
-          skippedCourses.push(`${exam.course_code} (not found in database)`);
-          continue;
-        }
-
-        datasheetInserts.push({
-          session_id: sessionData.session_id,
-          exam_date: exam.exam_date,
-          course_id: courseData.course_id,
-          venue_assigned: venueData.venue_id
-        });
-      }
-
-      // Insert all datesheets at once
-      if (datasheetInserts.length > 0) {
-        const { error: insertError } = await supabase
-          .from('datesheets')
-          .insert(datasheetInserts);
-
-        if (insertError) {
-          logger.error("Error inserting datesheets:", insertError);
-          throw insertError;
-        }
-      }
-
+      const scheduled = schedule.length - skippedCourses.length;
       if (skippedCourses.length > 0) {
         toast({
           title: "Partial Success",
-          description: `${datasheetInserts.length} exams scheduled. ${skippedCourses.length} courses skipped: ${skippedCourses.join(', ')}`,
+          description: `${scheduled} exams scheduled. ${skippedCourses.length} courses not found in database: ${skippedCourses.join(', ')}`,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Success",
-          description: `Exam schedule saved successfully! ${datasheetInserts.length} exams scheduled.`,
+          description: `Exam schedule saved successfully! ${scheduled} exams scheduled.`,
         });
       }
     } catch (error) {

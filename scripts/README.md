@@ -126,7 +126,7 @@ python scripts/keep_alive.py
 ### Initial Setup
 ```bash
 # 1. Install dependencies
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 # 2. Install Playwright (for scraping)
 python -m playwright install chromium

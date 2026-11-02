@@ -83,6 +83,7 @@ logger.info(
 )
 
 query_cache: dict[str, CachedResponse] = {}
+MAX_CACHED_ANSWERS = 500  # the free instance has 512 MB
 
 
 def _chat_cache_key(query: str, history: list[ChatTurn]) -> str:
@@ -243,7 +244,8 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         answer = f"[DEMO_MODE] Based on indexed context:\n{top}"
         mode = "demo"
     else:
-        answer = app.state.model_router.generate(prompt_payload.messages)
+        # Blocking HTTP with sleep-based retries: off the event loop, or one slow answer stalls every request.
+        answer = await asyncio.to_thread(app.state.model_router.generate, prompt_payload.messages)
 
     response = {
         "answer": answer,
@@ -254,6 +256,8 @@ async def chat(request: Request, payload: ChatRequest = Body(...)) -> dict[str, 
         "retrieval": retrieval.metadata,
     }
     if _cacheable_answer(answer):
+        if len(query_cache) >= MAX_CACHED_ANSWERS:
+            query_cache.pop(next(iter(query_cache)))  # oldest first: dicts keep insertion order
         query_cache[key] = CachedResponse(payload=response, created_at=now)
 
     logger.info(
@@ -297,7 +301,8 @@ async def chat_stream(request: Request, payload: ChatRequest = Body(...)) -> Str
         answer = f"[DEMO_MODE] Based on indexed context:\n{top}"
         mode = "demo"
     else:
-        answer = app.state.model_router.generate(prompt_payload.messages)
+        # Blocking HTTP with sleep-based retries: off the event loop, or one slow answer stalls every request.
+        answer = await asyncio.to_thread(app.state.model_router.generate, prompt_payload.messages)
 
     sources = _serialize_sources(retrieval.chunks)
 
