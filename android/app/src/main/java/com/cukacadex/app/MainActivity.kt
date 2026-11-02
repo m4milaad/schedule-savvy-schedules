@@ -129,7 +129,12 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        if (savedInstanceState == null) webView.loadUrl("https://$APP_HOST/") else webView.restoreState(savedInstanceState)
+        if (savedInstanceState == null) {
+            webView.loadUrl("https://$APP_HOST/")
+            Updater.check(this)
+        } else {
+            webView.restoreState(savedInstanceState)
+        }
     }
 
     override fun onStart() {
