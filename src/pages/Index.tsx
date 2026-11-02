@@ -595,7 +595,7 @@ export default function Index({ embedded = false }: IndexProps) {
         {/* Mobile Sidebar Sheet */}
         {isMobile && (
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+            <SheetContent side="left" className="p-0 w-72 [&>button]:hidden">
               <AdminSidebar
                 activeTab="generator"
                 setActiveTab={(tab) => { navigate(`/admin-dashboard?tab=${tab}`); setIsMobileMenuOpen(false); }}

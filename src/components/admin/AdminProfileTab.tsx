@@ -10,6 +10,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { customBackground, isHexColor } from '@/lib/adminBackground';
 import { PasswordStrengthChecker } from '@/components/PasswordStrengthChecker';
 import { BackgroundSwatches } from './BackgroundSwatches';
+import { cn } from '@/lib/utils';
 import logger from '@/lib/logger';
 
 interface Department {
@@ -52,8 +53,8 @@ const PasswordInput = ({ id, label, value, onChange }: {
   );
 };
 
-/** A settings row: what the section is on the left, its controls on the right. */
-const Section = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
+/** A settings row: what the section is on the left, its controls on the right. Shared by the student and teacher profiles. */
+export const Section = ({ title, description, children }: { title: string; description: string; children: React.ReactNode }) => (
   <section className="grid gap-4 px-5 py-6 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] md:gap-10">
     <div>
       <h2 className="text-sm font-semibold">{title}</h2>
@@ -63,12 +64,125 @@ const Section = ({ title, description, children }: { title: string; description:
   </section>
 );
 
+export const Field = ({ id, label, className, children }: { id: string; label: React.ReactNode; className?: string; children: React.ReactNode }) => (
+  <div className={cn("flex flex-col gap-2", className)}>
+    <Label htmlFor={id}>{label}</Label>
+    {children}
+  </div>
+);
+
+export const optional = <span className="font-normal text-muted-foreground">(optional)</span>;
+
 const isPasswordStrong = (password: string) =>
   password.length >= 8 &&
   /[A-Z]/.test(password) &&
   /[a-z]/.test(password) &&
   /[0-9]/.test(password) &&
   /[^A-Za-z0-9]/.test(password);
+
+/** Preset swatches plus a custom hex. `null` is the default background. */
+export const BackgroundPicker = ({ value, onChange, disabled }: {
+  value: string | null;
+  onChange: (color: string | null) => void;
+  disabled?: boolean;
+}) => {
+  const [customHex, setCustomHex] = useState('');
+  return (
+    <div className="flex flex-col gap-4">
+      <BackgroundSwatches value={value} onChange={onChange} disabled={disabled} />
+      <form
+        className="flex items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onChange(customHex.trim());
+        }}
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="custom-bg">Custom colour</Label>
+          <Input
+            id="custom-bg"
+            value={customHex}
+            onChange={(e) => setCustomHex(e.target.value)}
+            placeholder={value ?? "#1e293b"}
+            maxLength={7}
+            className="w-32 font-mono"
+          />
+        </div>
+        <Button type="submit" variant="outline" size="sm" className="h-10" disabled={disabled || !isHexColor(customHex.trim())}>
+          Apply
+        </Button>
+      </form>
+    </div>
+  );
+};
+
+/** Changes the signed-in user's password after checking the current one. */
+export const PasswordSection = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fail = (description: string) => toast({ title: "Error", description, variant: "destructive" });
+
+    if (!currentPassword) return fail("Please enter your current password");
+    if (!isPasswordStrong(newPassword)) return fail("New password does not meet the strength requirements");
+    if (newPassword !== confirmPassword) return fail("New passwords do not match");
+    if (currentPassword === newPassword) return fail("New password must be different from current password");
+
+    setPasswordLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) throw new Error('User not found');
+
+      // Verify the current password before changing it.
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+      if (signInError) return fail("Current password is incorrect");
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+
+      toast({ title: "Saved", description: "Password updated" });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: unknown) {
+      logger.error('Error updating password:', error);
+      fail((error as Error).message || "Failed to update password");
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  return (
+    <Section title="Password" description="You'll need your current password to set a new one.">
+      <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
+        <PasswordInput id="currentPassword" label="Current password" value={currentPassword} onChange={setCurrentPassword} />
+        <div className="flex flex-col gap-2">
+          <PasswordInput id="newPassword" label="New password" value={newPassword} onChange={setNewPassword} />
+          {newPassword && <PasswordStrengthChecker password={newPassword} />}
+        </div>
+        <div className="flex flex-col gap-2">
+          <PasswordInput id="confirmPassword" label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} />
+          {confirmPassword && newPassword !== confirmPassword && (
+            <p className="text-sm text-destructive">Passwords don't match</p>
+          )}
+        </div>
+        <Button
+          type="submit"
+          size="sm"
+          className="w-fit"
+          disabled={passwordLoading || !isPasswordStrong(newPassword) || newPassword !== confirmPassword}
+        >
+          {passwordLoading ? "Updating…" : "Update password"}
+        </Button>
+      </form>
+    </Section>
+  );
+};
 
 export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | null) => void }> = ({ onBackgroundChange }) => {
   const [loading, setLoading] = useState(true);
@@ -77,12 +191,7 @@ export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | n
   const [departments, setDepartments] = useState<Department[]>([]);
   const [formData, setFormData] = useState({ full_name: '', email: '', dept_id: '', contact_no: '' });
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordLoading, setPasswordLoading] = useState(false);
   const [background, setBackground] = useState<string | null>(null);
-  const [customHex, setCustomHex] = useState('');
   const [savingBackground, setSavingBackground] = useState(false);
 
   const { toast } = useToast();
@@ -189,39 +298,6 @@ export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | n
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const fail = (description: string) => toast({ title: "Error", description, variant: "destructive" });
-
-    if (!currentPassword) return fail("Please enter your current password");
-    if (!isPasswordStrong(newPassword)) return fail("New password does not meet the strength requirements");
-    if (newPassword !== confirmPassword) return fail("New passwords do not match");
-    if (currentPassword === newPassword) return fail("New password must be different from current password");
-
-    setPasswordLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) throw new Error('User not found');
-
-      // Verify the current password before changing it.
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
-      if (signInError) return fail("Current password is incorrect");
-
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-      if (updateError) throw updateError;
-
-      toast({ title: "Saved", description: "Password updated" });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (error: unknown) {
-      logger.error('Error updating password:', error);
-      fail((error as Error).message || "Failed to update password");
-    } finally {
-      setPasswordLoading(false);
-    }
-  };
-
   const deptName = formData.dept_id
     ? departments.find((d) => d.dept_id === formData.dept_id)?.dept_name ?? 'Not assigned'
     : null;
@@ -294,58 +370,12 @@ export const AdminProfileTab: React.FC<{ onBackgroundChange?: (color: string | n
       <Separator />
 
       <Section title="Background" description="The colour behind your dashboard. Only you see it.">
-        <div className="flex flex-col gap-4">
-          <BackgroundSwatches value={background} onChange={(c) => void saveBackground(c)} disabled={savingBackground} />
-          <form
-            className="flex items-end gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void saveBackground(customHex.trim());
-            }}
-          >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="custom-bg">Custom colour</Label>
-              <Input
-                id="custom-bg"
-                value={customHex}
-                onChange={(e) => setCustomHex(e.target.value)}
-                placeholder={background ?? "#1e293b"}
-                maxLength={7}
-                className="w-32 font-mono"
-              />
-            </div>
-            <Button type="submit" variant="outline" size="sm" className="h-10" disabled={savingBackground || !isHexColor(customHex.trim())}>
-              Apply
-            </Button>
-          </form>
-        </div>
+        <BackgroundPicker value={background} onChange={(c) => void saveBackground(c)} disabled={savingBackground} />
       </Section>
 
       <Separator />
 
-      <Section title="Password" description="You'll need your current password to set a new one.">
-        <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
-          <PasswordInput id="currentPassword" label="Current password" value={currentPassword} onChange={setCurrentPassword} />
-          <div className="flex flex-col gap-2">
-            <PasswordInput id="newPassword" label="New password" value={newPassword} onChange={setNewPassword} />
-            {newPassword && <PasswordStrengthChecker password={newPassword} />}
-          </div>
-          <div className="flex flex-col gap-2">
-            <PasswordInput id="confirmPassword" label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} />
-            {confirmPassword && newPassword !== confirmPassword && (
-              <p className="text-sm text-destructive">Passwords don't match</p>
-            )}
-          </div>
-          <Button
-            type="submit"
-            size="sm"
-            className="w-fit"
-            disabled={passwordLoading || !isPasswordStrong(newPassword) || newPassword !== confirmPassword}
-          >
-            {passwordLoading ? "Updating…" : "Update password"}
-          </Button>
-        </form>
-      </Section>
+      <PasswordSection />
     </div>
   );
 };
