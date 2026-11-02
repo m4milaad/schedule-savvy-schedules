@@ -44,10 +44,10 @@ export function toStored(scheme: AwardComponent[], scores: Scores): StoredCompon
   return scheme.map(c => ({ ...c, marks: scores[c.name] ?? null }));
 }
 
-/** Sum of the entered marks, or null while nothing is entered. */
+/** Sum of the marks, or null until every component is entered (a partial sum would read as the final result). */
 export function totalOf(scheme: AwardComponent[], scores: Scores): number | null {
-  const entered = scheme.map(c => scores[c.name]).filter((v): v is number => v != null);
-  return entered.length ? entered.reduce((a, b) => a + b, 0) : null;
+  const values = scheme.map(c => scores[c.name]);
+  return values.every((v): v is number => v != null) ? values.reduce((a: number, b) => a + (b ?? 0), 0) : null;
 }
 
 export function gradeOf(total: number | null): string | null {

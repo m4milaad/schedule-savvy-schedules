@@ -48,7 +48,8 @@ BEGIN
   SELECT string_agg(format('%s: expected %s, got %s', e.title, e.expected, e.actual), '; ') INTO v_wrong
   FROM (
     SELECT x.title, x.expected,
-           (SELECT count(*) FROM user_notifications n WHERE n.user_id = x.uid AND n.title = x.title AND n.created_at >= now()) AS actual
+           (SELECT count(*) FROM user_notifications n WHERE n.user_id = x.uid AND n.title = x.title AND n.created_at >= now()
+              AND (n.message LIKE '%2099%' OR n.message LIKE '%ZZ-TEST-2%')) AS actual  -- only this test's rows
     FROM (VALUES
       (v_tuser, 'New Leave Application', 1), (v_suser, 'Leave Approved', 1),
       (v_suser, 'New Assignment', 2), (v_tuser, 'Assignment Submitted', 1), (v_tuser, 'Assignment Resubmitted', 1),

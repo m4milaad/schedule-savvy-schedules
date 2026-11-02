@@ -201,30 +201,18 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     try {
       const semester = (course?.semester as number) || 1;
 
-      for (const mark of marks) {
-        const markData = {
-          student_id: mark.student_id,
-          course_id: selectedCourse,
-          teacher_id: teacherId,
-          semester,
-          component_marks: toStored(scheme, mark.scores) as unknown as Json,
-          total_marks: mark.total_marks,
-          grade: mark.grade,
-        };
-
-        if (mark.id) {
-          const { error } = await supabase
-            .from('student_marks')
-            .update(markData)
-            .eq('id', mark.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('student_marks')
-            .insert(markData);
-          if (error) throw error;
-        }
-      }
+      // One statement, so a failure can't leave some students on the old components and some on the new.
+      const { error } = await supabase.from('student_marks').upsert(marks.map(mark => ({
+        id: mark.id ?? crypto.randomUUID(),
+        student_id: mark.student_id,
+        course_id: selectedCourse,
+        teacher_id: teacherId,
+        semester,
+        component_marks: toStored(scheme, mark.scores) as unknown as Json,
+        total_marks: mark.total_marks,
+        grade: mark.grade,
+      })));
+      if (error) throw error;
 
       toast({ title: 'Success', description: 'Award roll saved successfully' });
       loadMarks();
@@ -586,7 +574,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                     <th className="linear-th">Student</th>
                     <th className="linear-th hidden md:table-cell">Roll No</th>
                     {scheme.map(c => (
-                      <th key={c.name} className="linear-th hidden lg:table-cell">{columnHeader(c)}</th>
+                      <th key={c.name} className="linear-th whitespace-nowrap">{columnHeader(c)}</th>
                     ))}
                     <th className="linear-th">Total</th>
                     <th className="linear-th">Grade</th>
@@ -607,7 +595,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                         {mark.enrollment_no}
                       </td>
                       {scheme.map(c => (
-                        <td key={c.name} className="linear-td hidden lg:table-cell">
+                        <td key={c.name} className="linear-td">
                           <Input
                             type="number"
                             min="0"

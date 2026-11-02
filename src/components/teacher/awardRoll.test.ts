@@ -14,10 +14,11 @@ describe('award roll', () => {
     expect(readRow(row)).toEqual({ scheme, scores: { 'Test-1': 30, 'Field Trip': null } });
   });
 
-  it('totals only entered marks, counting zero', () => {
+  it('totals only once every component is entered, counting zero', () => {
     const scheme = [{ name: 'A', max: 50 }, { name: 'B', max: 50 }];
     expect(totalOf(scheme, {})).toBeNull();
-    expect(totalOf(scheme, { A: 0 })).toBe(0);
+    expect(totalOf(scheme, { A: 40 })).toBeNull();
+    expect(totalOf(scheme, { A: 0, B: 0 })).toBe(0);
     expect(totalOf(scheme, { A: 40, B: 45, Gone: 99 })).toBe(85);
     expect(gradeOf(85)).toBe('A');
     expect(gradeOf(null)).toBeNull();
