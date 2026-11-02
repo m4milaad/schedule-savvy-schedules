@@ -13,26 +13,21 @@ import { FileText, Plus, Trash2, Edit, Clock, CheckCircle, Upload, Paperclip, X 
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
+import type { Tables, TablesInsert } from '@/integrations/supabase/types';
 
 
 interface AssignmentsTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
 }
 
-interface Assignment {
-  id: string;
-  title: string;
-  description: string;
-  course_id: string;
-  due_date: string;
-  max_marks: number;
-  is_active: boolean;
-  created_at: string;
+interface Assignment extends Tables<'assignments'> {
   course?: {
     course_code: string;
     course_name: string;
-  };
+  } | null;
   submissions_count?: number;
 }
 
@@ -146,7 +141,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
         fileUrl = await uploadFile(attachmentFile);
       }
 
-      const assignmentData: Record<string, unknown> = {
+      const assignmentData: TablesInsert<'assignments'> = {
         teacher_id: teacherId,
         title: title.trim(),
         description: description.trim(),
@@ -182,7 +177,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       logger.error(error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save assignment',
+        description: getErrorMessage(error) || 'Failed to save assignment',
         variant: 'destructive',
       });
     } finally {
@@ -216,7 +211,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ teacherId, cours
       logger.error(error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete assignment',
+        description: getErrorMessage(error) || 'Failed to delete assignment',
         variant: 'destructive',
       });
     }

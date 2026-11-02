@@ -24,6 +24,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import logger from '@/lib/logger';
+import type { TeacherCourse } from '@/types/database';
 import { Bell, BookOpen, Calendar, ClipboardCheck, FileText, FolderOpen, GraduationCap, Keyboard, User } from 'lucide-react';
 
 
@@ -86,7 +87,7 @@ const TeacherDashboard = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
-  const [teacherCourses, setTeacherCourses] = useState<Record<string, unknown>[]>([]);
+  const [teacherCourses, setTeacherCourses] = useState<TeacherCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);

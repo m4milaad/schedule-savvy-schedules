@@ -23,23 +23,22 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import logger from '@/lib/logger';
 import { downloadBlob } from '@/lib/download';
+import type { Json, Tables } from '@/integrations/supabase/types';
 
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  user_type: string;
-  action: string;
-  table_name: string;
-  description: string;
-  created_at: string;
-  old_data?: Record<string, Record<string, unknown>> | null;
-  new_data?: Record<string, Record<string, unknown>> | null;
-  profiles?: {
+type AuditLogRow = Tables<'audit_logs'>;
+type JsonObject = { [key: string]: Json | undefined };
+
+interface AuditLog extends AuditLogRow {
+  profiles: {
     full_name: string;
-    email: string;
-  };
+    email: string | null;
+  } | null;
 }
+
+// Audit triggers store whole rows, so old_data/new_data are JSON objects when present
+const asJsonObject = (data: Json | null): JsonObject | null =>
+  data && typeof data === 'object' && !Array.isArray(data) ? data : null;
 
 export const AuditLogsTab = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -139,7 +138,7 @@ export const AuditLogsTab = () => {
     }
   };
 
-  const attachProfiles = async (logsData: Record<string, unknown>[]): Promise<AuditLog[]> => {
+  const attachProfiles = async (logsData: AuditLogRow[]): Promise<AuditLog[]> => {
     const userIds = [...new Set(logsData.map(log => log.user_id || "" || ''))];
 
     const { data: profilesData } = await supabase
@@ -183,7 +182,7 @@ export const AuditLogsTab = () => {
       toast({ title: "Exporting...", description: `Fetching all ${totalCount} log entries...` });
 
       // Fetch ALL logs in batches of 1000
-      let allLogs: Record<string, unknown>[] = [];
+      let allLogs: AuditLogRow[] = [];
       let from = 0;
       const batchSize = 1000;
 
@@ -214,7 +213,7 @@ export const AuditLogsTab = () => {
           .select('user_id, full_name, email')
           .in('user_id', batch);
 
-        profilesData?.forEach(p => profileMap.set(p.user_id, { full_name: p.full_name, email: p.email || '' }));
+        profilesData?.forEach(p => p.user_id && profileMap.set(p.user_id, { full_name: p.full_name, email: p.email || '' }));
       }
 
       const headers = ['Timestamp', 'User Name', 'User Email', 'User Type', 'Action', 'Table', 'Description'];
@@ -293,7 +292,7 @@ export const AuditLogsTab = () => {
       .join(' ');
   };
 
-  const formatValue = (value: Record<string, unknown>): string => {
+  const formatValue = (value: Json | undefined): string => {
     if (value === null || value === undefined) return 'empty';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
     if (typeof value === 'object') return JSON.stringify(value);
@@ -301,7 +300,7 @@ export const AuditLogsTab = () => {
     return str.length > 50 ? str.substring(0, 47) + '...' : str;
   };
 
-  const getChangedFields = (oldData: Record<string, Record<string, unknown>> | null | undefined, newData: Record<string, Record<string, unknown>> | null | undefined): string[] => {
+  const getChangedFields = (oldData: JsonObject | null, newData: JsonObject | null): string[] => {
     const changes: string[] = [];
     const ignoredFields = ['updated_at', 'created_at', 'id', 'user_id', 'student_id', 'course_id', 'dept_id', 'venue_id', 'teacher_id', 'session_id', 'school_id'];
 
@@ -360,7 +359,7 @@ export const AuditLogsTab = () => {
     };
 
     const friendlyTable = tableFriendlyNames[log.table_name] || log.table_name;
-    const changes = getChangedFields(log.old_data, log.new_data);
+    const changes = getChangedFields(asJsonObject(log.old_data), asJsonObject(log.new_data));
 
     if (changes.length > 0) {
       return (

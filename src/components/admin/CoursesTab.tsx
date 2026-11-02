@@ -16,6 +16,7 @@ import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface CoursesTabProps {
@@ -186,7 +187,7 @@ export const CoursesTab = ({ courses, departments, onRefresh }: CoursesTabProps)
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('courses').insert(data);
+            const { error } = await supabase.from('courses').insert(data as TablesInsert<'courses'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {

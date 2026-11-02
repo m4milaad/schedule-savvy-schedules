@@ -46,20 +46,24 @@ async function extractTextItems(file: File): Promise<TextItem[][]> {
     const page = await pdf.getPage(pageNum);
     const textContent = await page.getTextContent();
     const items = textContent.items
-      .filter((item): item is TextItem & { str: string } => 'str' in item && item.str.trim().length > 0)
+      .filter((item): item is Extract<typeof item, { str: string }> => 'str' in item && item.str.trim().length > 0)
       .map(item => ({
         str: item.str.trim(),
         transform: item.transform as number[],
-        width: item.width as number,
-        height: item.height as number,
-        dir: item.dir as string,
-        fontName: item.fontName as string,
+        width: item.width,
+        height: item.height,
+        dir: item.dir,
+        fontName: item.fontName,
       }));
     allPageItems.push(items);
   }
 
   return allPageItems;
 }
+
+// pdf.js transform is always [a, b, c, d, x, y]
+const xOf = (item: TextItem): number => item.transform[4] ?? 0;
+const yOf = (item: TextItem): number => item.transform[5] ?? 0;
 
 /**
  * Group text items into rows based on their Y-coordinate
@@ -69,30 +73,30 @@ function groupIntoRows(items: TextItem[], tolerance = 3): TextItem[][] {
 
   // Sort by Y (descending, since PDF Y goes bottom-up) then by X
   const sorted = [...items].sort((a, b) => {
-    const yDiff = b.transform[5] - a.transform[5];
+    const yDiff = yOf(b) - yOf(a);
     if (Math.abs(yDiff) > tolerance) return yDiff;
-    return a.transform[4] - b.transform[4];
+    return xOf(a) - xOf(b);
   });
 
+  const [first, ...rest] = sorted as [TextItem, ...TextItem[]];
   const rows: TextItem[][] = [];
-  let currentRow: TextItem[] = [sorted[0]];
-  let currentY = sorted[0].transform[5];
+  let currentRow: TextItem[] = [first];
+  let currentY = yOf(first);
 
-  for (let i = 1; i < sorted.length; i++) {
-    const item = sorted[i];
-    if (Math.abs(item.transform[5] - currentY) <= tolerance) {
+  for (const item of rest) {
+    if (Math.abs(yOf(item) - currentY) <= tolerance) {
       currentRow.push(item);
     } else {
       // Sort current row by X position
-      currentRow.sort((a, b) => a.transform[4] - b.transform[4]);
+      currentRow.sort((a, b) => xOf(a) - xOf(b));
       rows.push(currentRow);
       currentRow = [item];
-      currentY = item.transform[5];
+      currentY = yOf(item);
     }
   }
   
   if (currentRow.length > 0) {
-    currentRow.sort((a, b) => a.transform[4] - b.transform[4]);
+    currentRow.sort((a, b) => xOf(a) - xOf(b));
     rows.push(currentRow);
   }
 
@@ -163,8 +167,7 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
       let ciaEseHeaderRowIdx = -1;
       const subjectCodes: { code: string; xPos: number }[] = [];
 
-      for (let i = 0; i < Math.min(textRows.length, 15); i++) {
-        const row = textRows[i];
+      for (const [i, row] of textRows.slice(0, 15).entries()) {
         const rowText = row.map(item => item.str).join(' ');
         
         // Look for the row containing subject codes
@@ -173,7 +176,7 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
           subjectHeaderRowIdx = i;
           subjectItems.forEach(item => {
             const code = item.str.replace(/\s+/g, ' ').trim();
-            subjectCodes.push({ code, xPos: item.transform[4] });
+            subjectCodes.push({ code, xPos: xOf(item) });
             subjectCodesSet.add(code);
           });
         }
@@ -204,32 +207,32 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
       const columnMappings: ColumnMapping[] = [];
 
       if (ciaEseHeaderRowIdx !== -1) {
-        const ciaEseRow = textRows[ciaEseHeaderRowIdx];
+        const ciaEseRow = textRows[ciaEseHeaderRowIdx] ?? [];
         const markHeaders = ciaEseRow.filter(item => 
           /CIA/i.test(item.str) || /ESE/i.test(item.str)
         );
 
         // Sort by X position
-        markHeaders.sort((a, b) => a.transform[4] - b.transform[4]);
+        markHeaders.sort((a, b) => xOf(a) - xOf(b));
 
         // Pair CIA/ESE headers with their subject codes
         // Assuming they alternate: CIA, ESE, CIA, ESE, ...
         let subjectIdx = 0;
-        for (let h = 0; h < markHeaders.length; h++) {
-          const header = markHeaders[h];
+        for (const [h, header] of markHeaders.entries()) {
           const type = /CIA/i.test(header.str) ? 'cia' : 'ese';
           
           if (type === 'cia') {
             subjectIdx = Math.floor(h / 2);
           }
 
-          if (subjectIdx < subjectCodes.length) {
+          const subject = subjectCodes[subjectIdx];
+          if (subject) {
             const nextHeader = markHeaders[h + 1];
             columnMappings.push({
-              subjectCode: subjectCodes[subjectIdx].code,
+              subjectCode: subject.code,
               type,
-              xMin: header.transform[4] - 5,
-              xMax: nextHeader ? nextHeader.transform[4] - 5 : header.transform[4] + 60,
+              xMin: xOf(header) - 5,
+              xMax: nextHeader ? xOf(nextHeader) - 5 : xOf(header) + 60,
             });
           }
 
@@ -246,8 +249,7 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
       // Now parse data rows (rows after the header rows)
       const dataStartIdx = Math.max(subjectHeaderRowIdx, ciaEseHeaderRowIdx) + 1;
 
-      for (let i = dataStartIdx; i < textRows.length; i++) {
-        const row = textRows[i];
+      for (const row of textRows.slice(dataStartIdx)) {
         if (row.length < 2) continue;
 
         // Find enrollment number in this row
@@ -264,7 +266,7 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
           for (const item of row) {
             if (item === enrollmentItem) continue;
             
-            const x = item.transform[4];
+            const x = xOf(item);
             const mapping = columnMappings.find(m => x >= m.xMin && x < m.xMax);
             
             if (mapping) {
@@ -301,14 +303,15 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
           // Fallback: try to parse marks by position relative to subject codes
           const markValues = row
             .filter(item => item !== enrollmentItem)
-            .map(item => ({ value: item.str, x: item.transform[4] }));
+            .map(item => ({ value: item.str, x: xOf(item) }));
 
           // Try to pair consecutive values as CIA/ESE for each subject
           for (let s = 0; s < subjectCodes.length && s * 2 + 1 < markValues.length; s++) {
             const ciaStr = markValues[s * 2];
             const eseStr = markValues[s * 2 + 1];
+            const subject = subjectCodes[s];
 
-            if (ciaStr && eseStr) {
+            if (ciaStr && eseStr && subject) {
               const cia = parseMarkValue(ciaStr.value);
               const ese = parseMarkValue(eseStr.value);
               const total = (cia !== null || ese !== null) 
@@ -317,7 +320,7 @@ export async function parseEseResultPdf(file: File): Promise<ParsedEseResult> {
 
               allRows.push({
                 enrollmentNo: enrollmentNo,
-                subjectCode: subjectCodes[s].code,
+                subjectCode: subject.code,
                 ciaMark: cia,
                 eseMark: ese,
                 totalMark: total,

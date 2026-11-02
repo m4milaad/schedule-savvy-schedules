@@ -15,6 +15,7 @@ import BulkUploadModal from "./BulkUploadModal";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface VenuesTabProps {
@@ -195,7 +196,7 @@ export const VenuesTab = ({ venues, onRefresh, userDeptId }: VenuesTabProps) => 
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('venues').insert(data);
+            const { error } = await supabase.from('venues').insert(data as TablesInsert<'venues'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {

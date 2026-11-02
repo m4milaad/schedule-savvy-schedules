@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface SessionsTabProps {
@@ -100,7 +101,7 @@ export const SessionsTab = ({ sessions, onRefresh }: SessionsTabProps) => {
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('sessions').insert(data);
+            const { error } = await supabase.from('sessions').insert(data as TablesInsert<'sessions'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {

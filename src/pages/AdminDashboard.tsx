@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, MotionConfig } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { School, Department, Course, Teacher, Venue, Session, Holiday, Student } from "@/types/examSchedule";
 import { SchoolsTab } from "@/components/admin/SchoolsTab";
@@ -30,6 +31,9 @@ import { cn } from "@/lib/utils";
 import logger from '@/lib/logger';
 
 
+// Partial: the profile tab may set theme_color before the profile has loaded
+type AdminProfile = Partial<Tables<'profiles'>>;
+
 const AdminDashboard: React.FC = () => {
     const [schools, setSchools] = useState<School[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
@@ -44,7 +48,7 @@ const AdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState<"admin" | "department_admin" | null>(null);
     const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
-    const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
+    const [profileData, setProfileData] = useState<AdminProfile | null>(null);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -127,7 +131,7 @@ const AdminDashboard: React.FC = () => {
         setPendingApprovals(count ?? 0);
     };
 
-    const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
+    const loadAllData = async (role?: "admin" | "department_admin" | null, profile?: AdminProfile | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
 
@@ -173,7 +177,7 @@ const AdminDashboard: React.FC = () => {
         if (error) throw error;
         setDepartments(data || []);
     };
-    const loadCourses = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
+    const loadCourses = async (role?: "admin" | "department_admin" | null, profile?: AdminProfile | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         let q = supabase.from("courses").select("*");
@@ -184,7 +188,7 @@ const AdminDashboard: React.FC = () => {
         if (error) throw error;
         setCourses((data as Course[]) || []);
     };
-    const loadTeachers = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
+    const loadTeachers = async (role?: "admin" | "department_admin" | null, profile?: AdminProfile | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         let q = supabase.from("teachers").select("*");
@@ -208,7 +212,7 @@ const AdminDashboard: React.FC = () => {
     const loadHolidays = async () => {
         const { data, error } = await supabase.from("holidays").select("*").order("holiday_date");
         if (error) throw error;
-        const transformed = (data || []).map((h: Record<string, unknown>) => ({
+        const transformed = (data || []).map((h) => ({
             id: h.holiday_id,
             holiday_date: h.holiday_date,
             holiday_name: h.holiday_name,
@@ -217,7 +221,7 @@ const AdminDashboard: React.FC = () => {
         }));
         setHolidays(transformed);
     };
-    const loadStudents = async (role?: "admin" | "department_admin" | null, profile?: Record<string, unknown> | null) => {
+    const loadStudents = async (role?: "admin" | "department_admin" | null, profile?: AdminProfile | null) => {
         const currentRole = role ?? userRole;
         const currentProfile = profile ?? profileData;
         try {
@@ -235,20 +239,21 @@ const AdminDashboard: React.FC = () => {
 
             const { data: profilesData } = await profilesQuery;
 
-            const existingStudentIds = new Set(studentsData?.map((s: Record<string, unknown>) => s.student_id) || []);
+            const existingStudentIds = new Set(studentsData?.map((s) => s.student_id) || []);
 
             const profileOnlyStudents = (profilesData || [])
-                .filter((p: Record<string, unknown>) => !existingStudentIds.has(p.id))
-                .map((p: Record<string, unknown>) => ({
+                .filter((p) => !existingStudentIds.has(p.id))
+                .map((p) => ({
                     student_id: p.id,
                     student_name: p.full_name || 'Unknown',
-                    student_enrollment_no: p.student_enrollment_no || `PENDING-${p.id}`,
+                    // profiles has no enrollment no, address or ABC ID columns
+                    student_enrollment_no: `PENDING-${p.id}`,
                     student_email: p.email,
-                    student_address: p.address,
+                    student_address: null,
                     dept_id: p.dept_id,
                     student_year: 1,
                     semester: p.semester || 1,
-                    abc_id: p.abc_id,
+                    abc_id: null,
                     contact_no: null as string | null,
                     created_at: p.created_at,
                     updated_at: p.updated_at
@@ -392,7 +397,7 @@ const AdminDashboard: React.FC = () => {
                                 setIsMobileMenuOpen(false);
                             }}
                             isInsideSheet
-                            userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
+                            userLabel={profileData?.full_name || profileData?.email || undefined}
                         />
                     </SheetContent>
                 </Sheet>
@@ -408,7 +413,7 @@ const AdminDashboard: React.FC = () => {
                     toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                     onLogout={handleLogout}
                     onNavigate={navigate}
-                    userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
+                    userLabel={profileData?.full_name || profileData?.email || undefined}
                 />
             )}
 
@@ -422,7 +427,7 @@ const AdminDashboard: React.FC = () => {
                 <AdminTopbar
                     title={getTabTitle()}
                     description={getTabDescription()}
-                    userLabel={(profileData?.full_name || profileData?.email || undefined) as string | undefined}
+                    userLabel={profileData?.full_name || profileData?.email || undefined}
                     userId={authUserId}
                     isMobile={isMobile}
                     onOpenSidebar={() => setIsMobileMenuOpen(true)}

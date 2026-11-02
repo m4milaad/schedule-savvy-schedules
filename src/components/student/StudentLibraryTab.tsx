@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Library, Search, BookOpen, Calendar, AlertCircle, RefreshCw, RotateCcw, Clock } from 'lucide-react';
 import { format, differenceInDays, addDays } from 'date-fns';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
 import { LibraryBookSchema } from '@/schemas/database';
 
 
@@ -17,33 +18,16 @@ interface StudentLibraryTabProps {
   studentId: string;
 }
 
-interface BookIssue {
-  id: string;
-  book_id: string;
-  issued_date: string;
-  due_date: string;
-  returned_date: string | null;
-  status: string;
-  late_fee: number;
-  renewed_count: number;
+interface BookIssue extends Tables<'book_issues'> {
   book?: {
     title: string;
     author: string;
-    isbn: string;
-    category: string;
-  };
+    isbn: string | null;
+    category: string | null;
+  } | null;
 }
 
-interface LibraryBook {
-  id: string;
-  title: string;
-  author: string;
-  isbn: string;
-  category: string;
-  available_copies: number;
-  total_copies: number;
-  location: string;
-}
+type LibraryBook = Tables<'library_books'>;
 
 export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId }) => {
   const [bookIssues, setBookIssues] = useState<BookIssue[]>([]);
@@ -79,7 +63,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
       return;
     }
 
-    const transformed = (data || []).map((issue: Record<string, unknown>) => ({
+    const transformed = (data || []).map((issue) => ({
       ...issue,
       book: issue.library_books
     }));
@@ -238,7 +222,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
                         <TableCell className="text-center">
                           <Badge
                             className={
-                              book.available_copies > 0
+                              (book.available_copies ?? 0) > 0
                                 ? 'bg-green-500'
                                 : 'bg-red-500'
                             }
@@ -308,7 +292,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
                                 {issue.book?.author} • ISBN:{' '}
                                 {issue.book?.isbn || 'N/A'}
                               </div>
-                              {issue.renewed_count > 0 && (
+                              {(issue.renewed_count ?? 0) > 0 && (
                                 <div className="mt-1">
                                   <Badge
                                     variant="outline"
@@ -318,7 +302,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
                                   </Badge>
                                 </div>
                               )}
-                              {overdue && issue.late_fee > 0 && (
+                              {overdue && (issue.late_fee ?? 0) > 0 && (
                                 <div className="mt-1 text-xs text-red-500">
                                   Late fee: ₹{issue.late_fee}
                                 </div>
@@ -369,7 +353,7 @@ export const StudentLibraryTab: React.FC<StudentLibraryTabProps> = ({ studentId 
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  disabled={issue.renewed_count >= 2}
+                                  disabled={(issue.renewed_count ?? 0) >= 2}
                                 >
                                   <RefreshCw className="mr-1 h-4 w-4" />
                                   Renew

@@ -12,6 +12,7 @@ import { Holiday } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface HolidaysTabProps {
@@ -130,7 +131,7 @@ export const HolidaysTab = ({ holidays, onRefresh }: HolidaysTabProps) => {
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('holidays').insert(data);
+            const { error } = await supabase.from('holidays').insert(data as TablesInsert<'holidays'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {

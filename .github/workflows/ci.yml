@@ -20,7 +20,8 @@ jobs:
 
       - run: npm ci
 
-      # shortcut: no `tsc --noEmit` step yet, src/ still has ~256 type errors; add it back once they are fixed.
+      - name: TypeScript type-check
+        run: npx tsc --noEmit --project tsconfig.app.json
 
       - name: ESLint
         run: npm run lint

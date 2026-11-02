@@ -9,25 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Check, X, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
+import { getErrorMessage } from '@/lib/utils';
 
 interface LeaveManagementTabProps {
   teacherId: string;
 }
 
-interface LeaveApplication {
-  id: string;
-  applicant_id: string;
-  applicant_type: string;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
-  status: string;
-  contact_info: string;
-  created_at: string;
+interface LeaveApplication extends Tables<'leave_applications'> {
   profiles?: {
     full_name: string;
-    email: string;
+    email: string | null;
   };
 }
 
@@ -65,7 +57,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
           .in('id', applicantIds);
 
         const profileMap = new Map((profilesData || []).map(p => [p.id, p]));
-        setApplications(apps.map(a => ({ ...a, profiles: profileMap.get(a.applicant_id) })) as Record<string, unknown>);
+        setApplications(apps.map(a => ({ ...a, profiles: profileMap.get(a.applicant_id) })));
       } else {
         setApplications([]);
       }
@@ -100,7 +92,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update leave status',
+        description: getErrorMessage(error) || 'Failed to update leave status',
         variant: 'destructive',
       });
     }
@@ -120,9 +112,9 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
   };
 
   const getStudentName = (app: LeaveApplication) =>
-    (app.profiles as Record<string, unknown>)?.full_name || 'Unknown Student';
+    app.profiles?.full_name || 'Unknown Student';
 
-  const statusDot = (status: string) => {
+  const statusDot = (status: string | null) => {
     const colors: Record<string, string> = {
       pending: 'bg-yellow-500',
       approved: 'bg-green-500',
@@ -131,7 +123,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
     };
     return (
       <div className="flex items-center gap-1.5">
-        <div className={`w-1.5 h-1.5 rounded-full ${colors[status] ?? 'bg-muted-foreground'}`} />
+        <div className={`w-1.5 h-1.5 rounded-full ${colors[status ?? ''] ?? 'bg-muted-foreground'}`} />
         <span className="text-sm capitalize">{status}</span>
       </div>
     );
@@ -323,7 +315,7 @@ export const LeaveManagementTab: React.FC<LeaveManagementTabProps> = ({ teacherI
                 </p>
               </div>
               <p className="text-xs text-muted-foreground">
-                Submitted {format(new Date(previewApp.created_at), 'MMM dd, yyyy · h:mm a')}
+                Submitted {format(new Date(previewApp.created_at ?? 0), 'MMM dd, yyyy · h:mm a')}
               </p>
             </div>
           )}

@@ -18,6 +18,7 @@ import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface Student {
@@ -112,15 +113,12 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
             // Build enrollments map by student_id
             const enrollmentsMap: Record<string, StudentEnrollment[]> = {};
 
-            (enrollmentsData || []).forEach((item: Record<string, unknown>) => {
-                const studentId = item.student_id;
-
-                if (!enrollmentsMap[studentId]) {
-                    enrollmentsMap[studentId] = [];
-                }
+            (enrollmentsData || []).forEach((item) => {
+                if (!item.student_id) return;
+                const studentEnrollments = (enrollmentsMap[item.student_id] ??= []);
 
                 if (item.courses) {
-                    enrollmentsMap[studentId].push({
+                    studentEnrollments.push({
                         course_code: item.courses.course_code,
                         course_name: item.courses.course_name
                     });
@@ -292,14 +290,14 @@ export const StudentsTab: React.FC<StudentsTabProps> = ({ students, departments,
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
             // Validate ABC IDs are numeric
-            const invalidAbcIds = data.filter(item => item.abc_id && !/^\d+$/.test(item.abc_id));
+            const invalidAbcIds = data.filter(item => item.abc_id && !/^\d+$/.test(String(item.abc_id)));
             if (invalidAbcIds.length > 0) {
                 throw new Error('ABC ID must contain only numbers');
             }
 
             const { error } = await supabase
                 .from('students')
-                .insert(data);
+                .insert(data as TablesInsert<'students'>[]); // template columns; the database rejects bad rows
 
             if (error) throw error;
             onRefresh();

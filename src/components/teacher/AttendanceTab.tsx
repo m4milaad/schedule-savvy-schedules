@@ -21,11 +21,13 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
 
 
 interface AttendanceTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
 }
 
 interface StudentAttendance {
@@ -96,13 +98,13 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       const studentAttendance: StudentAttendance[] = enrollments?.map(e => {
         const student = e.students as { student_name: string; student_enrollment_no: string } | null;
-        const existing = attendanceMap.get(e.student_id);
+        const existing = attendanceMap.get(e.student_id ?? '');
         
         return {
           student_id: e.student_id || '',
           student_name: student?.student_name || 'Unknown',
           enrollment_no: student?.student_enrollment_no || 'N/A',
-          status: ((existing?.status as Record<string, unknown>) || 'present'),
+          status: (existing?.status as StudentAttendance['status'] | undefined) || 'present',
           existing_id: existing?.id,
         };
       }) || [];
@@ -126,7 +128,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     if (entry) {
       entry.status = status;
     }
-    setAttendance(newAttendance as Record<string, unknown>);
+    setAttendance(newAttendance);
   };
 
   const saveAttendance = async () => {
@@ -164,7 +166,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save attendance',
+        description: getErrorMessage(error) || 'Failed to save attendance',
         variant: 'destructive',
       });
     } finally {
@@ -396,9 +398,9 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           }
 
           result.success++;
-        } catch (err: Record<string, unknown>) {
+        } catch (err: unknown) {
           result.failed++;
-          result.errors.push(`Student ${studentId}: ${err.message}`);
+          result.errors.push(`Student ${studentId}: ${getErrorMessage(err)}`);
         }
       }
 
@@ -415,7 +417,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
       logger.error('Error uploading file:', error);
       toast({
         title: 'Upload Failed',
-        description: error.message || 'Failed to process the file',
+        description: getErrorMessage(error) || 'Failed to process the file',
         variant: 'destructive',
       });
     } finally {

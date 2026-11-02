@@ -42,7 +42,7 @@ export const TeacherProfileEditDialog: React.FC<TeacherProfileEditDialogProps> =
     full_name: profile.full_name || '',
     email: profile.email || '',
     dept_id: profile.dept_id || '',
-    theme_color: customBackground((profile as Record<string, unknown>).theme_color),
+    theme_color: customBackground(profile.theme_color),
     // Teacher-specific fields (stored in teachers table)
     contact_no: '',
     address: '',

@@ -13,27 +13,18 @@ import { Bell, Plus, Trash2, Edit, Eye, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { TabLoader } from '@/components/ui/loading-screen';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
+import type { Tables } from '@/integrations/supabase/types';
 
 
 interface NoticesTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
   deptId?: string;
 }
 
-interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  priority: string;
-  target_audience: string;
-  target_course_id?: string | null;
-  expiry_date?: string | null;
-  views_count: number | null;
-  notifications_sent: number | null;
-  is_active: boolean | null;
-  created_at: string;
-}
+type Notice = Tables<'notices'>;
 
 export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, deptId }) => {
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -64,7 +55,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotices((data || []) as Record<string, unknown>);
+      setNotices(data || []);
     } catch (error: unknown) {
       logger.error(error);
       logger.error('Error loading notices:', error);
@@ -144,7 +135,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       logger.error(error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save notice',
+        description: getErrorMessage(error) || 'Failed to save notice',
         variant: 'destructive',
       });
     }
@@ -157,7 +148,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
     setPriority(notice.priority);
     setTargetAudience(notice.target_audience);
     setTargetCourseId(notice.target_course_id || '');
-    setTargetSemesters((notice as Record<string, unknown>).target_semester ? [(notice as Record<string, unknown>).target_semester] : []);
+    setTargetSemesters(notice.target_semester ? [notice.target_semester] : []);
     setExpiryDate(notice.expiry_date ? new Date(notice.expiry_date) : undefined);
     setShowForm(true);
   };
@@ -178,7 +169,7 @@ export const NoticesTab: React.FC<NoticesTabProps> = ({ teacherId, courses, dept
       logger.error(error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete notice',
+        description: getErrorMessage(error) || 'Failed to delete notice',
         variant: 'destructive',
       });
     }

@@ -11,25 +11,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Search, Download, Eye, Bookmark, BookmarkCheck, FileText, Video, Presentation, File } from 'lucide-react';
 import { format } from 'date-fns';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
 
 
 interface StudentResourcesTabProps {
   studentId: string;
 }
 
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  resource_type: string;
-  file_url: string;
-  file_type: string;
-  file_size: number;
-  created_at: string;
+interface Resource extends Tables<'resources'> {
   course?: {
     course_code: string;
     course_name: string;
-  };
+  } | null;
   isBookmarked?: boolean;
 }
 
@@ -58,10 +51,10 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
         .eq('student_id', studentId)
         .eq('is_active', true);
 
-      const courseList = (enrollments || []).map((e: Record<string, unknown>) => ({
-        course_id: e.course_id,
-        course_code: e.courses?.course_code
-      }));
+      // Skip enrollments whose course no longer exists
+      const courseList = (enrollments || []).flatMap((e) =>
+        e.course_id && e.courses ? [{ course_id: e.course_id, course_code: e.courses.course_code }] : []
+      );
       setCourses(courseList);
 
       const courseIds = courseList.map(c => c.course_id);
@@ -169,7 +162,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
     }
   };
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'N/A';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -341,7 +334,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
                             {formatFileSize(resource.file_size)}
                           </td>
                           <td className="linear-td hidden xl:table-cell text-sm text-muted-foreground">
-                            {format(new Date(resource.created_at), 'MMM dd, yyyy')}
+                            {format(new Date(resource.created_at ?? 0), 'MMM dd, yyyy')}
                           </td>
                           <td className="linear-td">
                             <div className="flex justify-end gap-1">
@@ -361,7 +354,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
-                                    onClick={() => window.open(resource.file_url, '_blank')}
+                                    onClick={() => window.open(resource.file_url ?? undefined, '_blank')}
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>
@@ -435,7 +428,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
                             {formatFileSize(resource.file_size)}
                           </td>
                           <td className="linear-td hidden xl:table-cell text-sm text-muted-foreground">
-                            {format(new Date(resource.created_at), 'MMM dd, yyyy')}
+                            {format(new Date(resource.created_at ?? 0), 'MMM dd, yyyy')}
                           </td>
                           <td className="linear-td">
                             <div className="flex justify-end gap-1">
@@ -455,7 +448,7 @@ export const StudentResourcesTab: React.FC<StudentResourcesTabProps> = ({ studen
                                   <Button 
                                     variant="ghost" 
                                     size="icon"
-                                    onClick={() => window.open(resource.file_url, '_blank')}
+                                    onClick={() => window.open(resource.file_url ?? undefined, '_blank')}
                                   >
                                     <Eye className="h-4 w-4" />
                                   </Button>

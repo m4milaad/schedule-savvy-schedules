@@ -130,7 +130,7 @@ export const StudentEseResultTab: React.FC<StudentEseResultTabProps> = ({ studen
   const overallTotal = results.reduce((sum, r) => sum + (r.total_marks || 0), 0);
 
   // Get the student's programme from results
-  const programme = results.length > 0 ? results[0].programme : profile?.dept_id || 'N/A';
+  const programme = results[0] ? results[0].programme : profile?.dept_id || 'N/A';
 
   if (loading) {
     return <TabLoader message="Loading ESE results..." />;
