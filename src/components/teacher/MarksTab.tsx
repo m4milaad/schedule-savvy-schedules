@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, Save, FileSpreadsheet, Edit, Lock, SlidersHorizontal, Plus } from 'lucide-react';
-import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
+import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelSheet } from '@/utils/excelUtils';
 import logger from '@/lib/logger';
 import { getErrorMessage } from '@/lib/utils';
 import type { TeacherCourse } from '@/types/database';
@@ -252,8 +252,9 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     if (!file) return;
 
     try {
-      const jsonData = await readExcelFile(file);
-      const missing = scheme.filter(c => !(columnHeader(c) in (jsonData[0] ?? {}))).map(columnHeader);
+      // Check the header row: a blank first-row cell leaves that key out of the row object.
+      const { headers, rows: jsonData } = await readExcelSheet(file);
+      const missing = scheme.map(columnHeader).filter(h => !headers.includes(h));
       if (missing.length) throw new Error(`Missing columns: ${missing.join(', ')}. Download the template again.`);
 
       const byEnrollment = new Map(jsonData.map((row: Record<string, unknown>) => [String(row['Enrollment No']), row]));
@@ -379,9 +380,9 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           {draft && !confirming && (
             <div className="space-y-3">
               <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
-                {draftNames.map(name => {
+                {draftNames.map((name, i) => {
                   const component = draft.find(c => c.name === name);
-                  const id = `component-${name.replace(/\W+/g, '-')}`;
+                  const id = `component-${i}`;
                   return (
                     <div key={name} className="flex items-center gap-3">
                       <Checkbox id={id} checked={!!component} onCheckedChange={(on) => toggleComponent(name, on === true)} />
