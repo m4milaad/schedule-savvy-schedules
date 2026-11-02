@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload, Save, FileSpreadsheet, Edit, Lock } from 'lucide-react';
+import { Download, Upload, Save, FileSpreadsheet, Edit, Lock, SlidersHorizontal, Plus } from 'lucide-react';
 import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 import logger from '@/lib/logger';
+import {
+  type AwardComponent, type Scores, AWARD_TOTAL, DEFAULT_SCHEME, PRESET_COMPONENTS,
+  columnHeader, gradeOf, readRow, toStored, totalOf,
+} from './awardRoll';
 
 
 interface MarksTabProps {
@@ -23,11 +29,7 @@ interface StudentMark {
   student_id: string;
   student_name: string;
   enrollment_no: string;
-  test_1_marks: number | null;
-  test_2_marks: number | null;
-  presentation_marks: number | null;
-  assignment_marks: number | null;
-  attendance_marks: number | null;
+  scores: Scores;
   total_marks: number | null;
   grade: string | null;
 }
@@ -35,11 +37,18 @@ interface StudentMark {
 export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [marks, setMarks] = useState<StudentMark[]>([]);
+  const [scheme, setScheme] = useState<AwardComponent[]>([]);
+  // Component picker: null = closed; confirming = showing the summary before it is applied.
+  const [draft, setDraft] = useState<AwardComponent[] | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [customName, setCustomName] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [courseModalOpen, setCourseModalOpen] = useState(false);
   const [tempSelectedCourse, setTempSelectedCourse] = useState('');
   const { toast } = useToast();
+
+  const course = courses.find(c => c.course_id === selectedCourse);
 
   useEffect(() => {
     if (selectedCourse) {
@@ -77,31 +86,32 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       if (marksError) throw marksError;
 
-      // Combine data
-      const marksMap = new Map(existingMarks?.map(m => [m.student_id, m]) || []);
-      
+      // The course's components are whatever its saved rows use; a course with none yet gets the picker.
+      const saved = existingMarks?.[0];
+
       const studentMarks: StudentMark[] = (enrollments || []).map(e => {
         const student = e.students as { student_name: string; student_enrollment_no: string } | null;
-        const existing = marksMap.get(e.student_id || '');
-        
+        const existing = existingMarks?.find(m => m.student_id === e.student_id);
+
         return {
           id: existing?.id,
           student_id: e.student_id || '',
           student_name: student?.student_name || 'Unknown',
           enrollment_no: student?.student_enrollment_no || 'N/A',
-          test_1_marks: existing?.test_1_marks ?? null,
-          test_2_marks: existing?.test_2_marks ?? null,
-          presentation_marks: existing?.presentation_marks ?? null,
-          assignment_marks: existing?.assignment_marks ?? null,
-          attendance_marks: existing?.attendance_marks ?? null,
+          scores: existing ? readRow(existing).scores : {},
           total_marks: existing?.total_marks ?? null,
           grade: existing?.grade ?? null,
         };
-      }) || [];
+      });
 
       setMarks(studentMarks);
-    } catch (_error: unknown) {
-      logger.error(error);
+      if (saved) {
+        setScheme(readRow(saved).scheme);
+      } else {
+        setScheme([]);
+        openPicker(DEFAULT_SCHEME);
+      }
+    } catch (error: unknown) {
       logger.error('Error loading marks:', error);
       toast({
         title: 'Error',
@@ -113,48 +123,81 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     }
   };
 
-  const calculateTotal = (mark: StudentMark): number => {
-    return (
-      (mark.test_1_marks || 0) +
-      (mark.test_2_marks || 0) +
-      (mark.presentation_marks || 0) +
-      (mark.assignment_marks || 0) +
-      (mark.attendance_marks || 0)
-    );
+  const withTotals = (mark: StudentMark, components: AwardComponent[]): StudentMark => {
+    const total = totalOf(components, mark.scores);
+    return { ...mark, total_marks: total, grade: gradeOf(total) };
   };
 
-  const calculateGrade = (total: number): string => {
-    if (total >= 90) return 'A+';
-    if (total >= 80) return 'A';
-    if (total >= 70) return 'B+';
-    if (total >= 60) return 'B';
-    if (total >= 50) return 'C';
-    if (total >= 40) return 'D';
-    return 'F';
+  const handleMarkChange = (index: number, component: string, value: string) => {
+    setMarks(marks.map((m, i) => i !== index ? m : withTotals(
+      { ...m, scores: { ...m.scores, [component]: value === '' ? null : parseFloat(value) } },
+      scheme,
+    )));
   };
 
-  const handleMarkChange = (index: number, field: keyof StudentMark, value: string) => {
-    const newMarks = [...marks];
-    const mark = newMarks[index];
-    if (!mark) return;
-    const numValue = value === '' ? null : parseFloat(value);
-    (mark as Record<string, unknown>)[field] = numValue;
-    
-    // Recalculate total and grade
-    const total = calculateTotal(mark);
-    mark.total_marks = total;
-    mark.grade = calculateGrade(total);
-    
-    setMarks(newMarks);
+  // ── Component picker ──
+  const openPicker = (start: AwardComponent[]) => {
+    setDraft(start.map(c => ({ ...c })));
+    setConfirming(false);
+    setCustomName('');
   };
+
+  const draftNames = draft ? [...PRESET_COMPONENTS, ...draft.map(c => c.name).filter(n => !PRESET_COMPONENTS.includes(n))] : [];
+  const draftTotal = (draft ?? []).reduce((sum, c) => sum + (c.max || 0), 0);
+  const draftValid = !!draft && draft.length > 0 && draft.every(c => c.max > 0) && draftTotal === AWARD_TOTAL;
+
+  const toggleComponent = (name: string, on: boolean) => {
+    if (!draft) return;
+    setDraft(on ? [...draft, { name, max: 0 }] : draft.filter(c => c.name !== name));
+  };
+
+  const setComponentMax = (name: string, value: string) => {
+    if (!draft) return;
+    setDraft(draft.map(c => c.name === name ? { ...c, max: value === '' ? 0 : Number(value) } : c));
+  };
+
+  const addCustomComponent = () => {
+    const name = customName.trim();
+    if (!draft || !name || draftNames.some(n => n.toLowerCase() === name.toLowerCase())) return;
+    setDraft([...draft, { name, max: 0 }]);
+    setCustomName('');
+  };
+
+  const applyScheme = () => {
+    if (!draft) return;
+    // Columns follow the picker's order, not the order they were ticked in.
+    const next = [...draft].sort((a, b) => draftNames.indexOf(a.name) - draftNames.indexOf(b.name));
+    setScheme(next);
+    setMarks(marks.map(m => withTotals(
+      { ...m, scores: Object.fromEntries(next.map(c => [c.name, m.scores[c.name] ?? null])) },
+      next,
+    )));
+    setDraft(null);
+    toast({ title: 'Components applied', description: 'Save the award roll to keep them' });
+  };
+
+  const removedWithMarks = draft
+    ? scheme.filter(c => !draft.some(d => d.name === c.name) && marks.some(m => m.scores[c.name] != null)).map(c => c.name)
+    : [];
 
   const saveMarks = async () => {
     if (!selectedCourse) return;
+    const over = marks.find(m => scheme.some(c => {
+      const v = m.scores[c.name];
+      return v != null && (Number.isNaN(v) || v < 0 || v > c.max);
+    }));
+    if (over) {
+      toast({
+        title: 'Marks out of range',
+        description: `${over.student_name}: each mark must be between 0 and the component's maximum`,
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
 
     try {
-      const course = courses.find(c => c.course_id === selectedCourse);
-      const semester = course?.semester || 1;
+      const semester = (course?.semester as number) || 1;
 
       for (const mark of marks) {
         const markData = {
@@ -162,11 +205,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           course_id: selectedCourse,
           teacher_id: teacherId,
           semester,
-          test_1_marks: mark.test_1_marks,
-          test_2_marks: mark.test_2_marks,
-          presentation_marks: mark.presentation_marks,
-          assignment_marks: mark.assignment_marks,
-          attendance_marks: mark.attendance_marks,
+          component_marks: toStored(scheme, mark.scores) as unknown as Json,
           total_marks: mark.total_marks,
           grade: mark.grade,
         };
@@ -185,13 +224,13 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         }
       }
 
-      toast({ title: 'Success', description: 'Marks saved successfully' });
+      toast({ title: 'Success', description: 'Award roll saved successfully' });
       loadMarks();
-    } catch (_error: unknown) {
-      logger.error(error);
+    } catch (error: unknown) {
+      logger.error('Error saving marks:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save marks',
+        description: (error as Error)?.message || 'Failed to save marks',
         variant: 'destructive',
       });
     } finally {
@@ -203,16 +242,12 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     const templateData = marks.map(m => ({
       'Enrollment No': m.enrollment_no,
       'Student Name': m.student_name,
-      'Test I (20)': m.test_1_marks || '',
-      'Test II (20)': m.test_2_marks || '',
-      'Presentation (20)': m.presentation_marks || '',
-      'Assignment (20)': m.assignment_marks || '',
-      'Attendance (20)': m.attendance_marks || '',
+      ...Object.fromEntries(scheme.map(c => [columnHeader(c), m.scores[c.name] ?? ''])),
     }));
 
     const workbook = createWorkbook();
-    addWorksheetFromJson(workbook, 'Marks', templateData);
-    await downloadWorkbook(workbook, `marks_template_${selectedCourse}.xlsx`);
+    addWorksheetFromJson(workbook, 'Award Roll', templateData);
+    await downloadWorkbook(workbook, `award_roll_template_${course?.course_code ?? selectedCourse}.xlsx`);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,32 +256,24 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
     try {
       const jsonData = await readExcelFile(file);
+      const missing = scheme.filter(c => !(columnHeader(c) in (jsonData[0] ?? {}))).map(columnHeader);
+      if (missing.length) throw new Error(`Missing columns: ${missing.join(', ')}. Download the template again.`);
 
-      const newMarks = [...marks];
-      jsonData.forEach((row: Record<string, unknown>) => {
-        const enrollmentNo = row['Enrollment No'];
-        const markIndex = newMarks.findIndex(m => m.enrollment_no === enrollmentNo);
-        
-        const mark = markIndex !== -1 ? newMarks[markIndex] : undefined;
-        if (mark) {
-          mark.test_1_marks = row['Test I (20)'] || null;
-          mark.test_2_marks = row['Test II (20)'] || null;
-          mark.presentation_marks = row['Presentation (20)'] || null;
-          mark.assignment_marks = row['Assignment (20)'] || null;
-          mark.attendance_marks = row['Attendance (20)'] || null;
-          
-          const total = calculateTotal(mark);
-          mark.total_marks = total;
-          mark.grade = calculateGrade(total);
-        }
-      });
-
-      setMarks(newMarks);
-      toast({ title: 'Success', description: 'Marks imported successfully' });
+      const byEnrollment = new Map(jsonData.map((row: Record<string, unknown>) => [String(row['Enrollment No']), row]));
+      setMarks(marks.map(m => {
+        const row = byEnrollment.get(m.enrollment_no);
+        if (!row) return m;
+        const scores = Object.fromEntries(scheme.map(c => {
+          const v = row[columnHeader(c)];
+          return [c.name, v == null || v === '' ? null : Number(v)];
+        }));
+        return withTotals({ ...m, scores }, scheme);
+      }));
+      toast({ title: 'Success', description: 'Marks imported. Review them, then save.' });
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to parse Excel file',
+        description: (error as Error)?.message || 'Failed to parse Excel file',
         variant: 'destructive',
       });
     }
@@ -257,18 +284,14 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     const exportData = marks.map(m => ({
       'Enrollment No': m.enrollment_no,
       'Student Name': m.student_name,
-      'Test I': m.test_1_marks,
-      'Test II': m.test_2_marks,
-      'Presentation': m.presentation_marks,
-      'Assignment': m.assignment_marks,
-      'Attendance': m.attendance_marks,
-      'Total': m.total_marks,
+      ...Object.fromEntries(scheme.map(c => [columnHeader(c), m.scores[c.name]])),
+      [`Total (${AWARD_TOTAL})`]: m.total_marks,
       'Grade': m.grade,
     }));
 
     const workbook = createWorkbook();
-    addWorksheetFromJson(workbook, 'Marks', exportData);
-    await downloadWorkbook(workbook, `marks_export_${selectedCourse}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    addWorksheetFromJson(workbook, 'Award Roll', exportData);
+    await downloadWorkbook(workbook, `award_roll_${course?.course_code ?? selectedCourse}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const handleCourseSelection = () => {
@@ -286,17 +309,17 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
   const getGradeBadge = (grade: string | null) => {
     if (!grade) return null;
-    
+
     const gradeColors: Record<string, string> = {
       'A+': 'bg-green-600',
-      'A': 'bg-blue-600', 
+      'A': 'bg-blue-600',
       'B+': 'bg-purple-600',
       'B': 'bg-yellow-600',
       'C': 'bg-orange-600',
       'D': 'bg-red-600',
       'F': 'bg-red-800'
     };
-    
+
     return <Badge className={gradeColors[grade] || 'bg-gray-600'}>{grade}</Badge>;
   };
 
@@ -324,8 +347,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                 </SelectTrigger>
                 <SelectContent>
                   {courses.map((course) => (
-                    <SelectItem key={course.course_id} value={course.course_id}>
-                      {course.course_code} - {course.course_name}
+                    <SelectItem key={course.course_id as string} value={course.course_id as string}>
+                      {course.course_code as string} - {course.course_name as string}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -343,14 +366,117 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Marks Management */}
+      {/* Component picker, then a confirmation of what was picked */}
+      <Dialog open={draft !== null} onOpenChange={(open) => !open && setDraft(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{confirming ? 'Confirm award roll components' : 'Award roll components'}</DialogTitle>
+            <DialogDescription>
+              {course?.course_code as string}
+              {course?.program_type ? ` · ${course.program_type as string}` : ''}
+              {confirming
+                ? ' · These columns will be used for the template, upload and marks entry.'
+                : ` · Tick what this course is assessed on and give each its marks. Weightage must total ${AWARD_TOTAL}.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {draft && !confirming && (
+            <div className="space-y-3">
+              <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+                {draftNames.map(name => {
+                  const component = draft.find(c => c.name === name);
+                  const id = `component-${name.replace(/\W+/g, '-')}`;
+                  return (
+                    <div key={name} className="flex items-center gap-3">
+                      <Checkbox id={id} checked={!!component} onCheckedChange={(on) => toggleComponent(name, on === true)} />
+                      <Label htmlFor={id} className="flex-1 cursor-pointer font-normal">{name}</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        aria-label={`${name} marks`}
+                        disabled={!component}
+                        value={component?.max || ''}
+                        onChange={(e) => setComponentMax(name, e.target.value)}
+                        className="h-8 w-20 text-center text-sm"
+                        placeholder="Marks"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addCustomComponent()}
+                  placeholder="Add another component, e.g. Lab Record"
+                  className="h-8 text-sm"
+                  aria-label="New component name"
+                />
+                <Button variant="outline" size="sm" onClick={addCustomComponent} disabled={!customName.trim()}>
+                  <Plus className="mr-1 h-4 w-4" /> Add
+                </Button>
+              </div>
+              <div className={draftTotal === AWARD_TOTAL ? 'text-sm text-muted-foreground' : 'text-sm text-destructive'}>
+                Total weightage: <span className="font-semibold">{draftTotal}</span> / {AWARD_TOTAL}
+              </div>
+            </div>
+          )}
+
+          {draft && confirming && (
+            <div className="space-y-3">
+              <table className="linear-table">
+                <thead>
+                  <tr>
+                    <th className="linear-th">Component</th>
+                    <th className="linear-th text-right">Marks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...draft].sort((a, b) => draftNames.indexOf(a.name) - draftNames.indexOf(b.name)).map(c => (
+                    <tr key={c.name} className="linear-tr">
+                      <td className="linear-td">{c.name}</td>
+                      <td className="linear-td text-right">{c.max}</td>
+                    </tr>
+                  ))}
+                  <tr className="linear-tr font-semibold">
+                    <td className="linear-td">Total</td>
+                    <td className="linear-td text-right">{draftTotal}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {removedWithMarks.length > 0 && (
+                <div className="text-sm text-destructive">
+                  Marks already entered for {removedWithMarks.join(', ')} will be removed when you save.
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            {confirming ? (
+              <>
+                <Button variant="outline" onClick={() => setConfirming(false)}>Back</Button>
+                <Button onClick={applyScheme}>Confirm</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setDraft(null)}>Cancel</Button>
+                <Button onClick={() => setConfirming(true)} disabled={!draftValid}>Review</Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Award Roll */}
       <Card className="linear-surface overflow-hidden">
         <CardHeader className="linear-toolbar flex flex-col gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="linear-kicker">Academics</div>
               <CardTitle className="text-base font-semibold">
-                Marks Management
+                Award Roll
               </CardTitle>
             </div>
             <div className="linear-pill">
@@ -360,8 +486,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setCourseModalOpen(true)} size="sm">
-              {selectedCourse ? 
-                `${courses.find(c => c.course_id === selectedCourse)?.course_code || 'Course'}` : 
+              {selectedCourse ?
+                `${(course?.course_code as string) || 'Course'}` :
                 'Select Course'
               }
             </Button>
@@ -370,14 +496,23 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => openPicker(scheme.length ? scheme : DEFAULT_SCHEME)}
+                  disabled={loading}
+                >
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Components
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={downloadTemplate}
-                  disabled={marks.length === 0}
+                  disabled={marks.length === 0 || scheme.length === 0}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Template
                 </Button>
                 <Label htmlFor="marks-upload" className="cursor-pointer">
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild disabled={scheme.length === 0}>
                     <span>
                       <Upload className="w-4 h-4 mr-2" />
                       Upload
@@ -389,13 +524,14 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={handleFileUpload}
+                  disabled={scheme.length === 0}
                   className="hidden"
                 />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={exportMarks}
-                  disabled={marks.length === 0}
+                  disabled={marks.length === 0 || scheme.length === 0}
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Export
@@ -407,7 +543,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         <CardContent className="p-0">
           {!selectedCourse ? (
             <div className="py-14 text-center">
-              <div className="text-sm font-medium">Select a course to start entering marks</div>
+              <div className="text-sm font-medium">Select a course to start the award roll</div>
               <div className="mt-1 text-sm text-muted-foreground">
                 Choose a course from your assigned subjects to begin assessment.
               </div>
@@ -423,6 +559,17 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                 Students will appear here when they enroll in this course.
               </div>
             </div>
+          ) : scheme.length === 0 ? (
+            <div className="py-14 text-center">
+              <div className="text-sm font-medium">Choose this course's assessment components</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Pick components like Test-1, Project or Field Trip and their marks.
+              </div>
+              <Button className="mt-4" size="sm" onClick={() => openPicker(DEFAULT_SCHEME)}>
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                Choose components
+              </Button>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="linear-table">
@@ -430,11 +577,9 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                   <tr>
                     <th className="linear-th">Student</th>
                     <th className="linear-th hidden md:table-cell">Roll No</th>
-                    <th className="linear-th hidden lg:table-cell">Test I</th>
-                    <th className="linear-th hidden lg:table-cell">Test II</th>
-                    <th className="linear-th hidden lg:table-cell">Present</th>
-                    <th className="linear-th hidden lg:table-cell">Assignment</th>
-                    <th className="linear-th hidden lg:table-cell">Attendance</th>
+                    {scheme.map(c => (
+                      <th key={c.name} className="linear-th hidden lg:table-cell">{columnHeader(c)}</th>
+                    ))}
                     <th className="linear-th">Total</th>
                     <th className="linear-th">Grade</th>
                     <th className="linear-th">Status</th>
@@ -453,61 +598,20 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                       <td className="linear-td hidden md:table-cell text-sm text-muted-foreground">
                         {mark.enrollment_no}
                       </td>
-                      <td className="linear-td hidden lg:table-cell">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={mark.test_1_marks ?? ''}
-                          onChange={(e) => handleMarkChange(index, 'test_1_marks', e.target.value)}
-                          className="w-16 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="linear-td hidden lg:table-cell">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={mark.test_2_marks ?? ''}
-                          onChange={(e) => handleMarkChange(index, 'test_2_marks', e.target.value)}
-                          className="w-16 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="linear-td hidden lg:table-cell">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={mark.presentation_marks ?? ''}
-                          onChange={(e) => handleMarkChange(index, 'presentation_marks', e.target.value)}
-                          className="w-16 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="linear-td hidden lg:table-cell">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={mark.assignment_marks ?? ''}
-                          onChange={(e) => handleMarkChange(index, 'assignment_marks', e.target.value)}
-                          className="w-16 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
-                      </td>
-                      <td className="linear-td hidden lg:table-cell">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="20"
-                          value={mark.attendance_marks ?? ''}
-                          onChange={(e) => handleMarkChange(index, 'attendance_marks', e.target.value)}
-                          className="w-16 h-8 text-center text-sm"
-                          placeholder="0"
-                        />
-                      </td>
+                      {scheme.map(c => (
+                        <td key={c.name} className="linear-td hidden lg:table-cell">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={c.max}
+                            aria-label={`${mark.student_name} ${c.name}`}
+                            value={mark.scores[c.name] ?? ''}
+                            onChange={(e) => handleMarkChange(index, c.name, e.target.value)}
+                            className="w-16 h-8 text-center text-sm"
+                            placeholder="0"
+                          />
+                        </td>
+                      ))}
                       <td className="linear-td text-sm font-semibold">
                         {mark.total_marks ?? '-'}
                       </td>
@@ -552,8 +656,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         </CardContent>
       </Card>
 
-      {/* Attendance Guide - Only show when course is selected and has data */}
-      {selectedCourse && marks.length > 0 && (
+      {/* Assessment Guide - Only show when course is selected and has data */}
+      {selectedCourse && marks.length > 0 && scheme.length > 0 && (
         <Card className="linear-surface overflow-hidden">
           <CardHeader className="linear-toolbar flex flex-col gap-3">
             <div>
@@ -563,28 +667,14 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground space-y-2">
-              <div>Each component is marked out of 20 points. Total: 100 marks</div>
+              <div>Total: {AWARD_TOTAL} marks</div>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-                <div className="text-center">
-                  <div className="font-semibold">Test I</div>
-                  <div className="text-xs">20 marks</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold">Test II</div>
-                  <div className="text-xs">20 marks</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold">Presentation</div>
-                  <div className="text-xs">20 marks</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold">Assignment</div>
-                  <div className="text-xs">20 marks</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-semibold">Attendance</div>
-                  <div className="text-xs">20 marks</div>
-                </div>
+                {scheme.map(c => (
+                  <div key={c.name} className="text-center">
+                    <div className="font-semibold">{c.name}</div>
+                    <div className="text-xs">{c.max} marks</div>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>

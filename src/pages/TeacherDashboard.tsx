@@ -41,7 +41,7 @@ const KEYBOARD_SHORTCUTS = [
     title: 'Navigation',
     shortcuts: [
       { keys: ['1'], description: 'Go to Notices' },
-      { keys: ['2'], description: 'Go to Marks' },
+      { keys: ['2'], description: 'Go to Award Roll' },
       { keys: ['3'], description: 'Go to Attendance' },
       { keys: ['4'], description: 'Go to Assignments' },
       { keys: ['5'], description: 'Go to Resources' },
@@ -67,7 +67,7 @@ const TEACHER_NAV: NavGroup[] = [
   {
     label: "Teaching",
     items: [
-      { id: "marks", label: "Marks", icon: BookOpen },
+      { id: "marks", label: "Award Roll", icon: BookOpen },
       { id: "attendance", label: "Attendance", icon: ClipboardCheck },
       { id: "assignments", label: "Assignments", icon: FileText },
       { id: "resources", label: "Resources", icon: FolderOpen },
@@ -181,6 +181,7 @@ const TeacherDashboard = () => {
               course_code,
               course_name,
               semester,
+              program_type,
               dept_id
             )
           `)
@@ -195,7 +196,7 @@ const TeacherDashboard = () => {
         if (profile.dept_id) {
           const { data: deptCourses } = await supabase
             .from('courses')
-            .select('course_id, course_code, course_name, semester, dept_id')
+            .select('course_id, course_code, course_name, semester, dept_id, program_type')
             .eq('dept_id', profile.dept_id);
           
           setTeacherCourses(deptCourses || []);
@@ -222,7 +223,7 @@ const TeacherDashboard = () => {
   const getTabTitle = () => {
     const titles: { [key: string]: string } = {
       notices: "Notices",
-      marks: "Marks Management",
+      marks: "Award Roll",
       attendance: "Attendance",
       assignments: "Assignments",
       resources: "Resources",
@@ -236,7 +237,7 @@ const TeacherDashboard = () => {
   const getTabDescription = () => {
     const descs: { [key: string]: string } = {
       notices: "Create and manage announcements for students",
-      marks: "Enter and manage student marks",
+      marks: "Choose assessment components and enter internal marks",
       attendance: "Track and record student attendance",
       assignments: "Create and grade student assignments",
       resources: "Upload and manage learning materials",

@@ -5,7 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BookOpen, TrendingUp } from 'lucide-react';
-import { TabLoader } from '@/components/ui/loading-screen';import logger from '@/lib/logger';
+import { TabLoader } from '@/components/ui/loading-screen';
+import logger from '@/lib/logger';
+import { readRow } from '@/components/teacher/awardRoll';
 
 
 interface StudentMarksTabProps {
@@ -16,11 +18,6 @@ interface Mark {
   id: string;
   course_id: string;
   semester: number;
-  test_1_marks: number | null;
-  test_2_marks: number | null;
-  assignment_marks: number | null;
-  presentation_marks: number | null;
-  attendance_marks: number | null;
   total_marks: number | null;
   grade: string | null;
   course?: {
@@ -119,11 +116,7 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
                   <TableRow>
                     <TableHead>Subject</TableHead>
                     <TableHead className="text-center">Sem</TableHead>
-                    <TableHead className="text-center">Test 1</TableHead>
-                    <TableHead className="text-center">Test 2</TableHead>
-                    <TableHead className="text-center">Assignment</TableHead>
-                    <TableHead className="text-center">Presentation</TableHead>
-                    <TableHead className="text-center">Attendance</TableHead>
+                    <TableHead>Components</TableHead>
                     <TableHead className="text-center">Total</TableHead>
                     <TableHead className="text-center">Grade</TableHead>
                   </TableRow>
@@ -140,11 +133,16 @@ export const StudentMarksTab: React.FC<StudentMarksTabProps> = ({ studentId }) =
                       <TableCell className="text-center">
                         <Badge variant="outline">{mark.semester}</Badge>
                       </TableCell>
-                      <TableCell className="text-center">{mark.test_1_marks ?? '-'}</TableCell>
-                      <TableCell className="text-center">{mark.test_2_marks ?? '-'}</TableCell>
-                      <TableCell className="text-center">{mark.assignment_marks ?? '-'}</TableCell>
-                      <TableCell className="text-center">{mark.presentation_marks ?? '-'}</TableCell>
-                      <TableCell className="text-center">{mark.attendance_marks ?? '-'}</TableCell>
+                      <TableCell>
+                        {/* Each course has its own components, so they're listed per row */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {(({ scheme, scores }) => scheme.map(c => (
+                            <Badge key={c.name} variant="outline" className="font-normal">
+                              {c.name}: {scores[c.name] ?? '-'}/{c.max}
+                            </Badge>
+                          )))(readRow(mark as unknown as Record<string, unknown>))}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-center font-semibold">
                         {mark.total_marks ?? '-'}
                       </TableCell>
