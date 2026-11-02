@@ -110,6 +110,13 @@ export async function downloadWorkbook(
  * Read Excel file and return JSON data
  */
 export async function readExcelFile(file: File): Promise<Record<string, unknown>[]> {
+  return (await readExcelSheet(file)).rows;
+}
+
+/**
+ * Read the first sheet: its header row, and one object per data row (blank cells are left out).
+ */
+export async function readExcelSheet(file: File): Promise<{ headers: string[]; rows: Record<string, unknown>[] }> {
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -143,7 +150,7 @@ export async function readExcelFile(file: File): Promise<Record<string, unknown>
     }
   });
 
-  return jsonData;
+  return { headers, rows: jsonData };
 }
 
 /**

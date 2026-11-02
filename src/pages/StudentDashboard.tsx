@@ -164,7 +164,7 @@ const StudentDashboard = () => {
   // Enable "/" keyboard shortcut to focus search
   useSearchShortcut(searchInputRef);
 
-  // Enable real-time notifications for seat assignments and datesheets
+  // Toast new notifications (exams, seats, leave, assignments, attendance)
   useRealtimeNotifications({ userId: user?.id });
 
   // Keyboard shortcuts

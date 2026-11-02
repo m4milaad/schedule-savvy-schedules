@@ -60,5 +60,5 @@ export interface ExtendedCourse {
 // Course shape TeacherDashboard passes to its tabs
 export type TeacherCourse = Pick<
   Tables<'courses'>,
-  'course_id' | 'course_code' | 'course_name' | 'semester' | 'dept_id'
+  'course_id' | 'course_code' | 'course_name' | 'semester' | 'dept_id' | 'program_type'
 >;

@@ -1179,6 +1179,7 @@ export type Database = {
           academic_year: number | null
           assignment_marks: number | null
           attendance_marks: number | null
+          component_marks: Json | null
           course_id: string
           created_at: string | null
           grade: string | null
@@ -1196,6 +1197,7 @@ export type Database = {
           academic_year?: number | null
           assignment_marks?: number | null
           attendance_marks?: number | null
+          component_marks?: Json | null
           course_id: string
           created_at?: string | null
           grade?: string | null
@@ -1213,6 +1215,7 @@ export type Database = {
           academic_year?: number | null
           assignment_marks?: number | null
           attendance_marks?: number | null
+          component_marks?: Json | null
           course_id?: string
           created_at?: string | null
           grade?: string | null
