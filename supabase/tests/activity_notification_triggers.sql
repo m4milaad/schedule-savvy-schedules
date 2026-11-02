@@ -1,4 +1,4 @@
--- Leave, assignment and attendance changes must notify the right person, once per real change.
+-- Leave, assignment, attendance and notice changes must notify the right person, once per real change.
 -- Run in the Supabase SQL editor (or psql); everything is rolled back. Needs one student with a
 -- login and one teacher whose teachers.teacher_email matches their profile.
 BEGIN;
@@ -45,6 +45,13 @@ BEGIN
   UPDATE attendance SET status = 'present', remarks = 'x' WHERE id = v_att;
   UPDATE attendance SET status = 'absent' WHERE id = v_att;
 
+  -- Notices: subject notice -> enrolled student; inactive notice -> nothing until activated
+  INSERT INTO notices (teacher_id, title, content, priority, target_audience, target_course_id)
+  VALUES (v_tprof, 'ZZ-TEST-2 notice', 'test', 'important', 'subject_students', v_course);
+  INSERT INTO notices (teacher_id, title, content, priority, target_audience, target_course_id, is_active)
+  VALUES (v_tprof, 'ZZ-TEST-2 later', 'test', 'normal', 'subject_students', v_course, false);
+  UPDATE notices SET is_active = true WHERE title = 'ZZ-TEST-2 later';
+
   SELECT string_agg(format('%s: expected %s, got %s', e.title, e.expected, e.actual), '; ') INTO v_wrong
   FROM (
     SELECT x.title, x.expected,
@@ -53,7 +60,8 @@ BEGIN
     FROM (VALUES
       (v_tuser, 'New Leave Application', 1), (v_suser, 'Leave Approved', 1),
       (v_suser, 'New Assignment', 2), (v_tuser, 'Assignment Submitted', 1), (v_tuser, 'Assignment Resubmitted', 1),
-      (v_suser, 'Attendance Marked', 1), (v_suser, 'Attendance Updated', 1)
+      (v_suser, 'Attendance Marked', 1), (v_suser, 'Attendance Updated', 1),
+      (v_suser, 'Important Notice', 1), (v_suser, 'New Notice', 1)
     ) AS x(uid, title, expected)
   ) e WHERE e.actual <> e.expected;
   IF v_wrong IS NOT NULL THEN RAISE EXCEPTION 'notification counts wrong: %', v_wrong; END IF;
