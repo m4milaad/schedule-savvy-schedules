@@ -12,7 +12,8 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 /**
- * Shows the data messages supabase/functions/send-push sends for each new user_notifications row.
+ * Gets the messages supabase/functions/send-push sends for each new user_notifications row. Those carry a
+ * notification part, so while the app is closed or in the background Android shows them without calling this.
  * Tokens are registered by the web app (src/lib/push.ts) on every sign-in, so a rotated token is
  * picked up on the next launch; nothing to do in onNewToken.
  */
