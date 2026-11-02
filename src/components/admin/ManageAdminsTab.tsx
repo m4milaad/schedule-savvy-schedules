@@ -38,7 +38,7 @@ interface AdminUser {
     created_at: string;
     user_id: string;
     is_approved?: boolean;
-    dept_id?: string;
+    dept_id?: string | null;
     dept_name?: string;
 }
 
@@ -51,7 +51,7 @@ export const ManageAdminsTab = () => {
     const [fullName, setFullName] = useState('');
     const [role, setRole] = useState<'admin' | 'department_admin' | 'teacher'>('department_admin');
     const [deptId, setDeptId] = useState('');
-    const [departments, setDepartments] = useState<Record<string, unknown>[]>([]);
+    const [departments, setDepartments] = useState<{ dept_id: string; dept_name: string }[]>([]);
     const [creating, setCreating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -128,7 +128,7 @@ export const ManageAdminsTab = () => {
                     created_at: new Date().toISOString(),
                     is_approved: profile?.is_approved ?? true,
                     dept_id: profile?.dept_id,
-                    dept_name: (profile as Record<string, unknown>)?.departments?.dept_name || 'N/A',
+                    dept_name: profile?.departments?.dept_name || 'N/A',
                 };
             });
 
@@ -181,7 +181,7 @@ export const ManageAdminsTab = () => {
                     created_at: new Date().toISOString(),
                     is_approved: profile?.is_approved ?? false,
                     dept_id: profile?.dept_id,
-                    dept_name: (profile as Record<string, unknown>)?.departments?.dept_name || 'N/A',
+                    dept_name: profile?.departments?.dept_name || 'N/A',
                 };
             });
 
@@ -436,7 +436,7 @@ export const ManageAdminsTab = () => {
                                 </div>
                                 <div>
                                     <Label htmlFor="role">Role *</Label>
-                                    <Select value={role} onValueChange={(value: Record<string, unknown>) => setRole(value)}>
+                                    <Select value={role} onValueChange={(value) => setRole(value as typeof role)}>
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>

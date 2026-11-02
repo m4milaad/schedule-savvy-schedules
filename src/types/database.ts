@@ -1,3 +1,5 @@
+import type { Tables } from '@/integrations/supabase/types';
+
 // Extended types for new tables not yet in auto-generated types
 export interface Profile {
   id: string;
@@ -54,3 +56,9 @@ export interface ExtendedCourse {
   created_at: string;
   updated_at: string;
 }
+
+// Course shape TeacherDashboard passes to its tabs
+export type TeacherCourse = Pick<
+  Tables<'courses'>,
+  'course_id' | 'course_code' | 'course_name' | 'semester' | 'dept_id'
+>;

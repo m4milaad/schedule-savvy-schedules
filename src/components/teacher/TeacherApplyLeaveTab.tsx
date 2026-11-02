@@ -13,23 +13,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Calendar, Plus, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
+import { getErrorMessage } from '@/lib/utils';
 
 
 interface TeacherApplyLeaveTabProps {
   teacherId: string;
 }
 
-interface LeaveApplication {
-  id: string;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
-  status: string;
-  contact_info: string;
-  review_remarks?: string;
-  created_at: string;
-}
+type LeaveApplication = Tables<'leave_applications'>;
 
 export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teacherId }) => {
   const [myApplications, setMyApplications] = useState<LeaveApplication[]>([]);
@@ -123,13 +115,13 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to submit leave application',
+        description: getErrorMessage(error) || 'Failed to submit leave application',
         variant: 'destructive',
       });
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status) {
       case 'approved':
         return <Badge className="bg-green-600">Approved</Badge>;
@@ -142,7 +134,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | null) => {
     switch (status) {
       case 'approved':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
@@ -292,7 +284,7 @@ export const TeacherApplyLeaveTab: React.FC<TeacherApplyLeaveTabProps> = ({ teac
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">
-                        Submitted: {format(new Date(application.created_at), 'MMM dd, yyyy HH:mm')}
+                        Submitted: {format(new Date(application.created_at ?? 0), 'MMM dd, yyyy HH:mm')}
                       </p>
                     </div>
                   </div>

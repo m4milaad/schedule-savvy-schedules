@@ -21,13 +21,13 @@ const LEVELS = [
   { word: 'Fair', bar: 'bg-amber-500' },
   { word: 'Good', bar: 'bg-yellow-400' },
   { word: 'Strong', bar: 'bg-emerald-500' },
-];
+] as const;
 
 /** Strength meter + checklist. Neutral until the user types; colours inherit the surrounding text. */
 export const PasswordStrengthChecker: React.FC<PasswordStrengthCheckerProps> = ({ password }) => {
   const results = RULES.map((r) => r.test(password));
   const met = results.filter(Boolean).length;
-  const level = LEVELS[Math.max(met - 1, 0)];
+  const level = LEVELS[Math.max(met - 1, 0)] ?? LEVELS[0];
   const typed = password.length > 0;
 
   return (

@@ -36,6 +36,12 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM courses c
                     WHERE c.course_code IN (e->>'course_code', replace(e->>'course_code', 'BT-', 'BTCS-')));
 
+  -- Without this, a schedule whose codes all miss would delete the whole datesheet.
+  -- An empty p_exams is still how a caller clears it.
+  IF v_course IS NULL AND jsonb_array_length(p_exams) > 0 THEN
+    RAISE EXCEPTION 'save_datesheet: none of the % exams match a course', jsonb_array_length(p_exams);
+  END IF;
+
   DELETE FROM datesheets d
   WHERE d.session_id = p_session_id AND d.course_id <> ALL (coalesce(v_course, '{}'));
 
@@ -119,5 +125,12 @@ REVOKE ALL ON FUNCTION public.log_enrollment_changes() FROM PUBLIC, anon, authen
 REVOKE ALL ON FUNCTION public.log_profile_changes() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.log_student_changes() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.log_table_changes() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.update_updated_at() FROM PUBLIC, anon, authenticated;
+-- update_updated_at() exists on the live project but no migration creates it, so a fresh database lacks it.
+DO $$
+BEGIN
+  IF to_regprocedure('public.update_updated_at()') IS NOT NULL THEN
+    REVOKE ALL ON FUNCTION public.update_updated_at() FROM PUBLIC, anon, authenticated;
+  END IF;
+END;
+$$;
 REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM PUBLIC, anon, authenticated;

@@ -66,7 +66,7 @@ const BulkUploadModal = ({ isOpen, onClose, type, onUpload }: BulkUploadModalPro
   const downloadTemplate = async () => {
     const template = getTemplate();
     const workbook = createWorkbook();
-    addWorksheetFromJson(workbook, type, template as Record<string, Record<string, unknown>>[]);
+    addWorksheetFromJson<Record<string, unknown>>(workbook, type, template);
     await downloadWorkbook(workbook, `${type}_template.xlsx`);
   };
 

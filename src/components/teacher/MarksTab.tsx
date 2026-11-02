@@ -11,11 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, Save, FileSpreadsheet, Edit, Lock } from 'lucide-react';
 import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
 
 
 interface MarksTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
 }
 
 interface StudentMark {
@@ -100,7 +102,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       }) || [];
 
       setMarks(studentMarks);
-    } catch (_error: unknown) {
+    } catch (error: unknown) {
       logger.error(error);
       logger.error('Error loading marks:', error);
       toast({
@@ -138,7 +140,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     const mark = newMarks[index];
     if (!mark) return;
     const numValue = value === '' ? null : parseFloat(value);
-    (mark as Record<string, unknown>)[field] = numValue;
+    Object.assign(mark, { [field]: numValue });
     
     // Recalculate total and grade
     const total = calculateTotal(mark);
@@ -187,11 +189,11 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
 
       toast({ title: 'Success', description: 'Marks saved successfully' });
       loadMarks();
-    } catch (_error: unknown) {
+    } catch (error: unknown) {
       logger.error(error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save marks',
+        description: getErrorMessage(error) || 'Failed to save marks',
         variant: 'destructive',
       });
     } finally {
@@ -203,16 +205,23 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     const templateData = marks.map(m => ({
       'Enrollment No': m.enrollment_no,
       'Student Name': m.student_name,
-      'Test I (20)': m.test_1_marks || '',
-      'Test II (20)': m.test_2_marks || '',
-      'Presentation (20)': m.presentation_marks || '',
-      'Assignment (20)': m.assignment_marks || '',
-      'Attendance (20)': m.attendance_marks || '',
+      'Test I (20)': m.test_1_marks ?? '',
+      'Test II (20)': m.test_2_marks ?? '',
+      'Presentation (20)': m.presentation_marks ?? '',
+      'Assignment (20)': m.assignment_marks ?? '',
+      'Attendance (20)': m.attendance_marks ?? '',
     }));
 
     const workbook = createWorkbook();
     addWorksheetFromJson(workbook, 'Marks', templateData);
     await downloadWorkbook(workbook, `marks_template_${selectedCourse}.xlsx`);
+  };
+
+  // Empty cell -> null; 0 stays 0.
+  const toMark = (value: unknown): number | null => {
+    if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
+    const num = Number(value);
+    return Number.isNaN(num) ? null : num;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,11 +238,11 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         
         const mark = markIndex !== -1 ? newMarks[markIndex] : undefined;
         if (mark) {
-          mark.test_1_marks = row['Test I (20)'] || null;
-          mark.test_2_marks = row['Test II (20)'] || null;
-          mark.presentation_marks = row['Presentation (20)'] || null;
-          mark.assignment_marks = row['Assignment (20)'] || null;
-          mark.attendance_marks = row['Attendance (20)'] || null;
+          mark.test_1_marks = toMark(row['Test I (20)']);
+          mark.test_2_marks = toMark(row['Test II (20)']);
+          mark.presentation_marks = toMark(row['Presentation (20)']);
+          mark.assignment_marks = toMark(row['Assignment (20)']);
+          mark.attendance_marks = toMark(row['Attendance (20)']);
           
           const total = calculateTotal(mark);
           mark.total_marks = total;

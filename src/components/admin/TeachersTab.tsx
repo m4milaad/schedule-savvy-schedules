@@ -17,6 +17,7 @@ import { useSearchShortcut } from "@/hooks/useSearchShortcut";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { BulkActionsBar } from "@/components/ui/bulk-actions-bar";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface TeachersTabProps {
@@ -132,7 +133,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
     const loadTeacherCourses = async () => {
         try {
             // Get all teacher-course assignments with course details
-            const { data, error } = await (supabase as Record<string, unknown>)
+            const { data, error } = await supabase
                 .from('teacher_courses')
                 .select(`
                     id,
@@ -152,15 +153,11 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             // Build map by teacher_id
             const coursesMap: Record<string, TeacherCourse[]> = {};
 
-            (data || []).forEach((item: Record<string, unknown>) => {
-                const teacherId = item.teacher_id;
-
-                if (!coursesMap[teacherId]) {
-                    coursesMap[teacherId] = [];
-                }
+            (data || []).forEach((item) => {
+                const teacherCourseList = (coursesMap[item.teacher_id] ??= []);
 
                 if (item.courses) {
-                    coursesMap[teacherId].push({
+                    teacherCourseList.push({
                         id: item.id,
                         course_id: item.course_id,
                         course_code: item.courses.course_code,
@@ -283,7 +280,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('teachers').insert(data);
+            const { error } = await supabase.from('teachers').insert(data as TablesInsert<'teachers'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {
@@ -315,7 +312,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
         }
 
         try {
-            const { error } = await (supabase as Record<string, unknown>)
+            const { error } = await supabase
                 .from('teacher_courses')
                 .insert({
                     teacher_id: selectedTeacher.teacher_id,
@@ -329,7 +326,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
             loadTeacherCourses();
         } catch (error: unknown) {
             logger.error('Error assigning course:', error);
-            if (error.code === '23505') {
+            if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {
                 toast.error('This course is already assigned to this teacher');
             } else {
                 toast.error('Failed to assign course');
@@ -339,7 +336,7 @@ export const TeachersTab = ({ teachers, departments, onRefresh }: TeachersTabPro
 
     const handleRemoveCourse = async (assignmentId: string, courseName: string) => {
         try {
-            const { error } = await (supabase as Record<string, unknown>)
+            const { error } = await supabase
                 .from('teacher_courses')
                 .delete()
                 .eq('id', assignmentId);

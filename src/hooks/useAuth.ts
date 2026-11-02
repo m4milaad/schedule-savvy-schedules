@@ -6,13 +6,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
 import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
 import { z } from 'zod';
-import { persistAuthSession, clearPersistedAuthSession } from '@/lib/offlineCache';
+import { persistAuthSession, clearPersistedAuthSession, setCachedData, getCachedData, removeCachedData } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/appUrl';
 import { registerPush, unregisterPush } from '@/lib/push';
 
 
 export type UserProfile = Profile;
+
+// Per user, so a shared phone never shows the previous user's profile.
+const profileCacheKey = (userId: string) => `profile_${userId}`;
 
 export const useAuth = () => {
   const navigate = useNavigate();
@@ -48,6 +51,7 @@ export const useAuth = () => {
         // token changed (updated above); don't churn user/profile or downstream
         // effects keyed on them would refetch and flash the loading skeleton.
         if (newUserId === currentUserId.current) return;
+        const previousUserId = currentUserId.current;
         currentUserId.current = newUserId;
 
         setUser(session?.user ?? null);
@@ -63,6 +67,7 @@ export const useAuth = () => {
           }, 0);
         } else {
           // Expired or signed out elsewhere, not only through signOut() below.
+          if (previousUserId) void removeCachedData(profileCacheKey(previousUserId));
           void unregisterPush();
           void clearPersistedAuthSession().catch(() => {});
           setProfile(null);
@@ -90,6 +95,12 @@ export const useAuth = () => {
       if (error) {
         logger.error('Error loading profile:', error);
         if (error.code !== 'PGRST116') { // Not found error
+          // Offline or Supabase unreachable: the last profile loaded for this user lets the dashboards finish loading.
+          const cached = await getCachedData<UserProfile>(profileCacheKey(userId));
+          if (cached) {
+            setProfile(cached.data);
+            return;
+          }
           toast({
             title: "Error",
             description: "Failed to load user profile",
@@ -98,9 +109,12 @@ export const useAuth = () => {
         }
       } else {
         setProfile(data as UserProfile);
+        void setCachedData(profileCacheKey(userId), data);
       }
     } catch (error) {
       logger.error('Profile loading error:', error);
+      const cached = await getCachedData<UserProfile>(profileCacheKey(userId));
+      if (cached) setProfile(cached.data);
     } finally {
       setLoading(false);
     }
@@ -238,6 +252,7 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
+      if (currentUserId.current) await removeCachedData(profileCacheKey(currentUserId.current));
       await unregisterPush().catch(() => {});
       cleanupAuthState();
 
@@ -298,6 +313,7 @@ export const useAuth = () => {
       if (error) throw error;
 
       setProfile(data as UserProfile);
+      void setCachedData(profileCacheKey(user.id), data);
       toast({
         title: "Success",
         description: "Profile updated successfully",

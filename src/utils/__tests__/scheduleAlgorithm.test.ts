@@ -169,8 +169,8 @@ describe("generateEnhancedSchedule", () => {
     );
 
     expect(result).toHaveLength(2);
-    const date1 = new Date(result[0]?.exam_date).getTime();
-    const date2 = new Date(result[1]?.exam_date).getTime();
+    const date1 = new Date(result[0]?.exam_date ?? '').getTime();
+    const date2 = new Date(result[1]?.exam_date ?? '').getTime();
     const dayDiff = Math.abs(date1 - date2) / (1000 * 60 * 60 * 24);
     expect(dayDiff).toBeGreaterThanOrEqual(3);
   });
@@ -213,8 +213,8 @@ describe("generateEnhancedSchedule", () => {
     expect(result).toHaveLength(3);
     // Each successive item should be on same or later date
     for (let i = 1; i < result.length; i++) {
-      const prevDate = new Date(result[i - 1]?.exam_date).getTime();
-      const currDate = new Date(result[i]?.exam_date).getTime();
+      const prevDate = new Date(result[i - 1]?.exam_date ?? '').getTime();
+      const currDate = new Date(result[i]?.exam_date ?? '').getTime();
       expect(currDate).toBeGreaterThanOrEqual(prevDate);
     }
   });

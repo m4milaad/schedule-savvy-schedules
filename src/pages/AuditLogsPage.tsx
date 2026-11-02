@@ -8,13 +8,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Footer } from "@/components/Footer";
 import { AuditLogsTab } from "@/components/admin/AuditLogsTab";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import logger from '@/lib/logger';
 
 
 export const AuditLogsPage: React.FC = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
+  const [profileData, setProfileData] = useState<Tables<"profiles"> | null>(null);
 
   useEffect(() => {
     loadProfileData();

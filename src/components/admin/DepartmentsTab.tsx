@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Department, School } from "@/types/examSchedule";
 import BulkUploadModal from "./BulkUploadModal";
 import logger from '@/lib/logger';
+import type { TablesInsert } from '@/integrations/supabase/types';
 
 
 interface DepartmentsTabProps {
@@ -106,7 +107,7 @@ export const DepartmentsTab = ({ departments, schools, onRefresh }: DepartmentsT
 
     const handleBulkUpload = async (data: Record<string, unknown>[]) => {
         try {
-            const { error } = await supabase.from('departments').insert(data);
+            const { error } = await supabase.from('departments').insert(data as TablesInsert<'departments'>[]); // template columns; the database rejects bad rows
             if (error) throw error;
             onRefresh();
         } catch (error) {

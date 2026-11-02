@@ -26,9 +26,9 @@ interface Notice {
   priority: string;
   target_audience: string;
   target_course_id?: string | null;
-  created_at: string;
+  created_at: string | null;
   expiry_date: string | null;
-  views_count?: number;
+  views_count?: number | null;
   teacher?: {
     full_name: string;
     user_type: string;
@@ -119,7 +119,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
       setReadNotices(readIds);
 
       // Fetch teacher course codes for display
-      const teacherIds = [...new Set(filteredNotices.map(n => (n as Record<string, unknown>).teacher_id).filter(Boolean))];
+      const teacherIds = [...new Set(filteredNotices.map(n => n.teacher_id).filter((id): id is string => !!id))];
       const teacherCourseMap = new Map<string, string>();
       if (teacherIds.length > 0) {
         const { data: tcData } = await supabase
@@ -127,7 +127,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
           .select('teacher_id, courses:course_id (course_code)')
           .in('teacher_id', teacherIds);
         // Use first course per teacher
-        (tcData || []).forEach((tc: Record<string, unknown>) => {
+        (tcData || []).forEach((tc) => {
           if (!teacherCourseMap.has(tc.teacher_id)) {
             teacherCourseMap.set(tc.teacher_id, tc.courses?.course_code || '');
           }
@@ -136,15 +136,15 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
 
       const noticesWithRead = filteredNotices.map(notice => ({
         ...notice,
-        teacher: (notice as Record<string, unknown>).profiles as Record<string, unknown>,
-        course: (notice as Record<string, unknown>).courses as Record<string, unknown>,
-        teacher_course_code: (notice as Record<string, unknown>).target_course_id
-          ? ((notice as Record<string, unknown>).courses as Record<string, unknown>)?.course_code
-          : teacherCourseMap.get((notice as Record<string, unknown>).teacher_id) || null,
+        teacher: notice.profiles,
+        course: notice.courses,
+        teacher_course_code: notice.target_course_id
+          ? notice.courses?.course_code
+          : teacherCourseMap.get(notice.teacher_id ?? '') || null,
         isRead: readIds.has(notice.id)
       }));
 
-      setNotices(noticesWithRead as Record<string, unknown>);
+      setNotices(noticesWithRead);
     } catch (error: unknown) {
       logger.error('Error loading notices:', error);
       toast({
@@ -326,7 +326,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                         </div>
                       </td>
                       <td className="linear-td hidden lg:table-cell text-sm text-muted-foreground">
-                        {format(new Date(notice.created_at), 'MMM dd, yyyy')}
+                        {format(new Date(notice.created_at ?? 0), 'MMM dd, yyyy')}
                       </td>
                       <td className="linear-td">
                         <div className="flex justify-end">
@@ -380,7 +380,7 @@ export const StudentNoticesTab: React.FC<StudentNoticesTabProps> = ({ studentId,
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {selectedNotice && format(new Date(selectedNotice.created_at), 'MMMM dd, yyyy • h:mm a')}
+                          {selectedNotice && format(new Date(selectedNotice.created_at ?? 0), 'MMMM dd, yyyy • h:mm a')}
                         </div>
                       </div>
                     </div>

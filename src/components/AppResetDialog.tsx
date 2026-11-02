@@ -69,7 +69,7 @@ export function AppResetDialog({
     let currentStep = 0;
     const progressInterval = setInterval(() => {
       if (currentStep < progressSteps.length) {
-        setProgressMessage(progressSteps[currentStep]);
+        setProgressMessage(progressSteps[currentStep] ?? '');
         setProgress(((currentStep + 1) / progressSteps.length) * 100);
         currentStep++;
       }

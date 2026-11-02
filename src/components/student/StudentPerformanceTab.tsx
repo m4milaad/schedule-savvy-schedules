@@ -68,31 +68,27 @@ export const StudentPerformanceTab: React.FC<StudentPerformanceTabProps> = ({ st
 
       // Calculate attendance by course
       const attendanceByCourse: Record<string, { present: number; total: number }> = {};
-      (attendance || []).forEach((a: Record<string, unknown>) => {
-        if (!attendanceByCourse[a.course_id]) attendanceByCourse[a.course_id] = { present: 0, total: 0 };
-        if (attendanceByCourse[a.course_id]) {
-          attendanceByCourse[a.course_id].total++;
-          if (a.status === 'present' || a.status === 'late') {
-            attendanceByCourse[a.course_id].present++;
-          }
+      (attendance || []).forEach((a) => {
+        const stats = (attendanceByCourse[a.course_id] ??= { present: 0, total: 0 });
+        stats.total++;
+        if (a.status === 'present' || a.status === 'late') {
+          stats.present++;
         }
       });
 
       // Calculate assignment completion by course
-      const submittedAssignmentIds = new Set((submissions || []).map((s: Record<string, unknown>) => s.assignment_id));
+      const submittedAssignmentIds = new Set((submissions || []).map((s) => s.assignment_id));
       const assignmentsByCourse: Record<string, { submitted: number; total: number }> = {};
-      (assignments || []).forEach((a: Record<string, unknown>) => {
-        if (!assignmentsByCourse[a.course_id]) assignmentsByCourse[a.course_id] = { submitted: 0, total: 0 };
-        if (assignmentsByCourse[a.course_id]) {
-          assignmentsByCourse[a.course_id].total++;
-          if (submittedAssignmentIds.has(a.id as string)) {
-            assignmentsByCourse[a.course_id].submitted++;
-          }
+      (assignments || []).forEach((a) => {
+        const stats = (assignmentsByCourse[a.course_id] ??= { submitted: 0, total: 0 });
+        stats.total++;
+        if (submittedAssignmentIds.has(a.id)) {
+          stats.submitted++;
         }
       });
 
       // Build performance data
-      const performanceData: PerformanceData[] = (marks || []).map((m: Record<string, unknown>) => {
+      const performanceData: PerformanceData[] = (marks || []).map((m) => {
         const attendanceStats = attendanceByCourse[m.course_id] || { present: 0, total: 1 };
         const attendancePercent = (attendanceStats.present / attendanceStats.total) * 100;
         

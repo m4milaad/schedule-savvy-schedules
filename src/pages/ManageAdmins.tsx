@@ -24,7 +24,7 @@ interface AdminUser {
   created_at: string;
   user_id: string;
   is_approved?: boolean;
-  dept_id?: string;
+  dept_id?: string | null;
   dept_name?: string;
 }
 
@@ -37,7 +37,7 @@ const ManageAdmins = () => {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'admin' | 'department_admin' | 'teacher'>('department_admin');
   const [deptId, setDeptId] = useState('');
-  const [departments, setDepartments] = useState<Record<string, unknown>[]>([]);
+  const [departments, setDepartments] = useState<{ dept_id: string; dept_name: string }[]>([]);
   const [creating, setCreating] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();

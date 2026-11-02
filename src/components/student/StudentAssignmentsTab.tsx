@@ -11,6 +11,8 @@ import { FileText, Upload, Clock, CheckCircle, AlertCircle, Download, X } from '
 import { format } from 'date-fns';
 import { TabLoader } from '@/components/ui/loading-screen';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
+import { getErrorMessage } from '@/lib/utils';
 import { AssignmentSchema } from '@/schemas/database';
 
 
@@ -18,26 +20,15 @@ interface StudentAssignmentsTabProps {
   studentId: string;
 }
 
-interface Assignment {
-  id: string;
-  title: string;
-  description: string;
-  course_id: string;
-  due_date: string;
-  max_marks: number;
-  is_active: boolean;
+interface Assignment extends Tables<'assignments'> {
   course?: {
     course_code: string;
     course_name: string;
-  };
-  submission?: {
-    id: string;
-    file_url: string;
-    status: string;
-    marks_obtained: number | null;
-    feedback: string | null;
-    submission_date: string;
-  };
+  } | null;
+  submission?: Pick<
+    Tables<'assignment_submissions'>,
+    'id' | 'file_url' | 'status' | 'marks_obtained' | 'feedback' | 'submission_date'
+  >;
 }
 
 export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ studentId }) => {
@@ -71,7 +62,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
         return;
       }
 
-      const courseIds = enrollments.map(e => e.course_id);
+      const courseIds = enrollments.map(e => e.course_id).filter((id): id is string => !!id);
       // Get active assignments for enrolled courses
       const { data: assignmentsData, error } = await supabase
         .from('assignments')
@@ -211,7 +202,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
       logger.error('Error submitting assignment:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to submit assignment',
+        description: getErrorMessage(error) || 'Failed to submit assignment',
         variant: 'destructive',
       });
     } finally {
@@ -318,7 +309,7 @@ export const StudentAssignmentsTab: React.FC<StudentAssignmentsTabProps> = ({ st
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => window.open(assignment.submission?.file_url, '_blank')}
+                          onClick={() => window.open(assignment.submission?.file_url ?? undefined, '_blank')}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
