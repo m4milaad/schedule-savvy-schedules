@@ -206,4 +206,7 @@ class ModelRouter:
         try:
             return future.result(timeout=wait_s)
         except concurrent.futures.TimeoutError:
+            # Drop it if it is still queued behind the single worker, so it cannot delay later requests.
+            # Work that has already started cannot be interrupted and finishes in the background.
+            future.cancel()
             return "The model is taking too long to respond. Please try a shorter question."

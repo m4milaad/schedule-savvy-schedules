@@ -36,6 +36,12 @@ BEGIN
   WHERE NOT EXISTS (SELECT 1 FROM courses c
                     WHERE c.course_code IN (e->>'course_code', replace(e->>'course_code', 'BT-', 'BTCS-')));
 
+  -- Without this, a schedule whose codes all miss would delete the whole datesheet.
+  -- An empty p_exams is still how a caller clears it.
+  IF v_course IS NULL AND jsonb_array_length(p_exams) > 0 THEN
+    RAISE EXCEPTION 'save_datesheet: none of the % exams match a course', jsonb_array_length(p_exams);
+  END IF;
+
   DELETE FROM datesheets d
   WHERE d.session_id = p_session_id AND d.course_id <> ALL (coalesce(v_course, '{}'));
 

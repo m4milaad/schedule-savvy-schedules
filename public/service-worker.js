@@ -5,7 +5,13 @@ const CACHE_VERSION = '__BUILD_HASH__';
 const STATIC_CACHE = `cuk-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cuk-images-${CACHE_VERSION}`;
 
-const SUPABASE_URL = '__SUPABASE_URL__';
+// Origin only: VITE_SUPABASE_URL may carry a trailing slash or path, which url.origin never has.
+let SUPABASE_ORIGIN = null;
+try {
+  SUPABASE_ORIGIN = new URL('__SUPABASE_URL__').origin;
+} catch {
+  // Placeholder not replaced (dev) or empty: no bypass.
+}
 
 // Static assets to precache on install
 const PRECACHE_ASSETS = [
@@ -65,7 +71,7 @@ self.addEventListener('fetch', (event) => {
 
   // Never cache Supabase: its answers depend on who is signed in (the cache key is only the URL),
   // and a cached answer would show stale data right after a save. Offline data lives in src/lib/offlineCache.ts.
-  if (url.origin === SUPABASE_URL) return;
+  if (url.origin === SUPABASE_ORIGIN) return;
 
   // Skip auth endpoints — never cache these
   if (url.pathname.includes('/auth/') || url.pathname.includes('/~oauth')) return;
