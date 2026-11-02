@@ -41,7 +41,7 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
-  const { signIn, signUp, user, profile } = useAuth();
+  const { signIn, signUp, user, profile, loading: sessionLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -175,6 +175,9 @@ const Auth = () => {
   };
 
   const submit = (e: React.FormEvent) => { void handleSubmit(e); };
+
+  // A saved session redirects above; until that is known, show a blank page rather than flash the login form.
+  if (sessionLoading || (user && profile)) return <div className="auth-slider" />;
 
   return (
     <div className={cn('auth-slider', isSignUp && 'is-signup')}>
