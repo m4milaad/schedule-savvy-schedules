@@ -125,5 +125,12 @@ REVOKE ALL ON FUNCTION public.log_enrollment_changes() FROM PUBLIC, anon, authen
 REVOKE ALL ON FUNCTION public.log_profile_changes() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.log_student_changes() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.log_table_changes() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.update_updated_at() FROM PUBLIC, anon, authenticated;
+-- update_updated_at() exists on the live project but no migration creates it, so a fresh database lacks it.
+DO $$
+BEGIN
+  IF to_regprocedure('public.update_updated_at()') IS NOT NULL THEN
+    REVOKE ALL ON FUNCTION public.update_updated_at() FROM PUBLIC, anon, authenticated;
+  END IF;
+END;
+$$;
 REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM PUBLIC, anon, authenticated;
