@@ -4,7 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Profile } from '@/types/database';
-import { signUpSchema, signInSchema, profileUpdateSchema } from '@/lib/validation';
+import { signUpSchema, signInSchema, profileUpdateSchema, type ProfileUpdateInput } from '@/lib/validation';
 import { z } from 'zod';
 import { persistAuthSession, clearPersistedAuthSession, setCachedData, getCachedData, removeCachedData } from '@/lib/offlineCache';
 import logger from '@/lib/logger';
@@ -288,7 +288,7 @@ export const useAuth = () => {
     });
   };
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: ProfileUpdateInput) => {
     if (!user || !profile) return { error: 'No user logged in' };
 
     try {

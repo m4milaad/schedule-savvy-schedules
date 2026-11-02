@@ -10,7 +10,7 @@ import { ResourcesTab } from '@/components/teacher/ResourcesTab';
 import { EseResultsTab } from '@/components/teacher/EseResultsTab';
 import { LeaveManagementTab } from '@/components/teacher/LeaveManagementTab';
 import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab';
-import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
+import { TeacherProfileTab } from '@/components/teacher/TeacherProfileTab';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
@@ -35,7 +35,8 @@ interface Department {
 }
 
 const TAB_VALUES = ['notices', 'marks', 'attendance', 'assignments', 'resources', 'ese-results', 'leave-management', 'apply-leave'] as const;
-type TabValue = typeof TAB_VALUES[number];
+// Profile is opened from the sidebar, topbar and E, not by number.
+type TabValue = typeof TAB_VALUES[number] | 'profile';
 
 const KEYBOARD_SHORTCUTS = [
   {
@@ -91,7 +92,6 @@ const TeacherDashboard = () => {
   const [teacherCourses, setTeacherCourses] = useState<TeacherCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
 
   // Toast leave applications and assignment submissions as they arrive
@@ -110,13 +110,13 @@ const TeacherDashboard = () => {
   }, []);
 
   const navigatePrevTab = useCallback(() => {
-    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const currentIndex = TAB_VALUES.indexOf(activeTab as typeof TAB_VALUES[number]);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_VALUES.length - 1;
     setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   const navigateNextTab = useCallback(() => {
-    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const currentIndex = TAB_VALUES.indexOf(activeTab as typeof TAB_VALUES[number]);
     const newIndex = currentIndex < TAB_VALUES.length - 1 ? currentIndex + 1 : 0;
     setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
@@ -132,11 +132,10 @@ const TeacherDashboard = () => {
     { shortcut: { key: '8' }, callback: () => navigateToTab(7) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
-    { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
+    { shortcut: { key: 'e' }, callback: () => setActiveTab('profile') },
     { shortcut: { key: '?' }, callback: () => setShowShortcutsHelp(prev => !prev) },
     { shortcut: { key: 'Escape' }, callback: () => {
       setShowShortcutsHelp(false);
-      setShowProfileDialog(false);
     }},
   ]);
 
@@ -232,7 +231,7 @@ const TeacherDashboard = () => {
       "leave-management": "Leave Management",
       "apply-leave": "Apply Leave",
     };
-    return titles[activeTab] || "Dashboard";
+    return activeTab === "profile" ? "Profile" : titles[activeTab] || "Dashboard";
   };
 
   const getTabDescription = () => {
@@ -246,7 +245,7 @@ const TeacherDashboard = () => {
       "leave-management": "Review and approve student leave requests",
       "apply-leave": "Submit your own leave applications",
     };
-    return descs[activeTab] || "";
+    return activeTab === "profile" ? "Your account details and password" : descs[activeTab] || "";
   };
 
   const renderContent = () => {
@@ -267,6 +266,8 @@ const TeacherDashboard = () => {
         return <LeaveManagementTab teacherId={profile?.id || ''} />;
       case "apply-leave":
         return <TeacherApplyLeaveTab teacherId={profile?.id || ''} />;
+      case "profile":
+        return profile && <TeacherProfileTab profile={profile} departments={departments} onUpdate={updateProfile} />;
       default:
         return null;
     }
@@ -286,7 +287,7 @@ const TeacherDashboard = () => {
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined}>
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <AdminSidebar
               {...sidebarProps}
@@ -298,7 +299,7 @@ const TeacherDashboard = () => {
               isCollapsed={false}
               toggleSidebar={() => setIsMobileMenuOpen(false)}
               onEditProfile={() => {
-                setShowProfileDialog(true);
+                setActiveTab('profile');
                 setIsMobileMenuOpen(false);
               }}
               isInsideSheet
@@ -315,7 +316,7 @@ const TeacherDashboard = () => {
           setActiveTab={(tab) => setActiveTab(tab as TabValue)}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onEditProfile={() => setShowProfileDialog(true)}
+          onEditProfile={() => setActiveTab('profile')}
         />
       )}
 
@@ -334,7 +335,7 @@ const TeacherDashboard = () => {
           isMobile={isMobile}
           onOpenSidebar={() => setIsMobileMenuOpen(true)}
           onLogout={handleSignOut}
-          onOpenProfile={() => setShowProfileDialog(true)}
+          onOpenProfile={() => setActiveTab('profile')}
           actions={!isMobile && (
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
               <Keyboard className="h-4 w-4" />
@@ -362,16 +363,6 @@ const TeacherDashboard = () => {
         shortcuts={KEYBOARD_SHORTCUTS}
       />
 
-      {/* Profile Edit Dialog */}
-      {profile && (
-        <TeacherProfileEditDialog
-          isOpen={showProfileDialog}
-          onClose={() => setShowProfileDialog(false)}
-          profile={profile}
-          departments={departments}
-          onUpdate={updateProfile}
-        />
-      )}
     </div>
   );
 };

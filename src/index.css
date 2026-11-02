@@ -97,6 +97,7 @@
 
   html {
     /* Safe area insets for notched devices */
+    --app-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
     padding-top: env(safe-area-inset-top);
@@ -108,7 +109,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    min-height: 100vh;
+    min-height: var(--app-height);
   }
 
   /* Subtle background pattern for light mode */
@@ -765,7 +766,7 @@ html.admin-theme [role="alertdialog"] {
 
 /* Auth page: double-slider sign in / sign up (pattern from BOSS0exe/Sign-in-and-Sign-up-page),
    mirrored so the brand panel sits left for sign in and sweeps right for sign up. */
-.auth-slider { position: relative; min-height: 100vh; width: 100%; overflow: hidden; background: #000; color: #fff; }
+.auth-slider { position: relative; min-height: var(--app-height); width: 100%; overflow: hidden; background: #000; color: #fff; }
 /* The safe-area padding on <html> (status bar strip in the Android app) shows the page background. */
 html:has(.auth-slider) { background: #000; }
 .auth-pane { position: absolute; top: 0; right: 0; width: 50%; height: 100%; transition: transform .6s ease-in-out, opacity .6s ease-in-out; }
@@ -780,7 +781,7 @@ html:has(.auth-slider) { background: #000; }
 /* Phones/tablets: no room for two halves, so show only the active form. */
 @media (max-width: 1023px) {
   .auth-brand { display: none; }
-  .auth-pane { position: relative; width: 100%; min-height: 100vh; transform: none !important; animation: none !important; opacity: 1; }
+  .auth-pane { position: relative; width: 100%; min-height: var(--app-height); transform: none !important; animation: none !important; opacity: 1; }
   .auth-slider:not(.is-signup) .auth-pane-signup,
   .auth-slider.is-signup .auth-pane-signin { display: none; }
 }

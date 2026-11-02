@@ -380,7 +380,7 @@ const AdminDashboard: React.FC = () => {
             {/* Mobile Sidebar Sheet */}
             {isMobile && (
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                    <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+                    <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined}>
                         <SheetTitle className="sr-only">Navigation</SheetTitle>
                         <AdminSidebar
                             activeTab={activeTab}

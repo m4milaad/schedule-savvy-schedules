@@ -22,7 +22,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { ExtendedCourse } from '@/types/database';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
-import { ProfileEditDialog } from '@/components/ProfileEditDialog';
+import { StudentProfileTab } from '@/components/student/StudentProfileTab';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { StudentMarksTab } from '@/components/student/StudentMarksTab';
@@ -51,7 +51,8 @@ import logger from '@/lib/logger';
 
 
 const TAB_VALUES = ['notices', 'courses', 'exams', 'marks', 'ese-result', 'performance', 'resources', 'assignments', 'library', 'leave'] as const;
-type TabValue = typeof TAB_VALUES[number];
+// Profile is opened from the sidebar, topbar and E, not by number.
+type TabValue = typeof TAB_VALUES[number] | 'profile';
 
 const KEYBOARD_SHORTCUTS = [
   {
@@ -147,7 +148,6 @@ const StudentDashboard = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [examSchedule, setExamSchedule] = useState<ExamSchedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(true);
   const [studentData, setStudentData] = useState<Pick<Tables<'students'>, 'student_enrollment_no' | 'abc_id' | 'student_address' | 'contact_no'> | null>(null);
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
@@ -175,13 +175,13 @@ const StudentDashboard = () => {
   }, []);
 
   const navigatePrevTab = useCallback(() => {
-    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const currentIndex = TAB_VALUES.indexOf(activeTab as typeof TAB_VALUES[number]);
     const newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_VALUES.length - 1;
     setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
 
   const navigateNextTab = useCallback(() => {
-    const currentIndex = TAB_VALUES.indexOf(activeTab);
+    const currentIndex = TAB_VALUES.indexOf(activeTab as typeof TAB_VALUES[number]);
     const newIndex = currentIndex < TAB_VALUES.length - 1 ? currentIndex + 1 : 0;
     setActiveTab(TAB_VALUES[newIndex] as TabValue);
   }, [activeTab]);
@@ -199,11 +199,10 @@ const StudentDashboard = () => {
     { shortcut: { key: '0' }, callback: () => navigateToTab(9) },
     { shortcut: { key: 'ArrowLeft' }, callback: navigatePrevTab },
     { shortcut: { key: 'ArrowRight' }, callback: navigateNextTab },
-    { shortcut: { key: 'e' }, callback: () => setShowProfileDialog(true) },
+    { shortcut: { key: 'e' }, callback: () => setActiveTab('profile') },
     { shortcut: { key: '?' }, callback: () => setShowShortcutsHelp(prev => !prev) },
     { shortcut: { key: 'Escape' }, callback: () => {
       setShowShortcutsHelp(false);
-      setShowProfileDialog(false);
     }},
   ]);
 
@@ -465,7 +464,7 @@ const StudentDashboard = () => {
       library: "Library",
       leave: "Leave Applications",
     };
-    return titles[activeTab] || "Dashboard";
+    return activeTab === "profile" ? "Profile" : titles[activeTab] || "Dashboard";
   };
 
   const getTabDescription = () => {
@@ -481,7 +480,7 @@ const StudentDashboard = () => {
       library: "Browse and manage library books",
       leave: "Apply for and track leave requests",
     };
-    return descs[activeTab] || "";
+    return activeTab === "profile" ? "Your account details and password" : descs[activeTab] || "";
   };
 
   const renderContent = () => {
@@ -610,6 +609,8 @@ const StudentDashboard = () => {
         return <StudentLibraryTab studentId={profile?.id || ''} />;
       case "leave":
         return <StudentLeaveTab studentId={profile?.id || ''} profileId={profile?.id || ''} />;
+      case "profile":
+        return profile && <StudentProfileTab profile={profile} departments={departments} onUpdate={updateProfile} />;
       default:
         return null;
     }
@@ -629,7 +630,7 @@ const StudentDashboard = () => {
       {/* Mobile Sidebar Sheet */}
       {isMobile && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined} style={{ paddingTop: "env(safe-area-inset-top)" }}>
+          <SheetContent side="left" className="p-0 w-72 [&>button]:hidden" aria-describedby={undefined}>
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <AdminSidebar
               {...sidebarProps}
@@ -641,7 +642,7 @@ const StudentDashboard = () => {
               isCollapsed={false}
               toggleSidebar={() => setIsMobileMenuOpen(false)}
               onEditProfile={() => {
-                setShowProfileDialog(true);
+                setActiveTab('profile');
                 setIsMobileMenuOpen(false);
               }}
               isInsideSheet
@@ -658,7 +659,7 @@ const StudentDashboard = () => {
           setActiveTab={(tab) => setActiveTab(tab as TabValue)}
           isCollapsed={isSidebarCollapsed}
           toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onEditProfile={() => setShowProfileDialog(true)}
+          onEditProfile={() => setActiveTab('profile')}
         />
       )}
 
@@ -677,7 +678,7 @@ const StudentDashboard = () => {
           isMobile={isMobile}
           onOpenSidebar={() => setIsMobileMenuOpen(true)}
           onLogout={handleSignOut}
-          onOpenProfile={() => setShowProfileDialog(true)}
+          onOpenProfile={() => setActiveTab('profile')}
           actions={!isMobile && (
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setShowShortcutsHelp(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
               <Keyboard className="h-4 w-4" />
@@ -692,7 +693,7 @@ const StudentDashboard = () => {
               <div className="mb-6">
                 <ProfileCompletionBanner
                   missingFields={getMissingFields()}
-                  onComplete={() => setShowProfileDialog(true)}
+                  onComplete={() => setActiveTab('profile')}
                   onDismiss={() => setShowCompletionBanner(false)}
                 />
               </div>
@@ -709,16 +710,6 @@ const StudentDashboard = () => {
         </main>
       </div>
 
-      {/* Profile Edit Dialog */}
-      {profile && (
-        <ProfileEditDialog
-          isOpen={showProfileDialog}
-          onClose={() => setShowProfileDialog(false)}
-          profile={profile}
-          departments={departments}
-          onUpdate={updateProfile}
-        />
-      )}
 
       {/* Keyboard Shortcuts Help */}
       <KeyboardShortcutsHelp
