@@ -3,7 +3,6 @@
 // In development the placeholders remain as-is, but the SW is only registered in production.
 const CACHE_VERSION = '__BUILD_HASH__';
 const STATIC_CACHE = `cuk-static-${CACHE_VERSION}`;
-const API_CACHE = `cuk-api-${CACHE_VERSION}`;
 const IMAGE_CACHE = `cuk-images-${CACHE_VERSION}`;
 
 const SUPABASE_URL = '__SUPABASE_URL__';
@@ -40,7 +39,6 @@ self.addEventListener('activate', (event) => {
             return (
               name.startsWith('cuk-') &&
               name !== STATIC_CACHE &&
-              name !== API_CACHE &&
               name !== IMAGE_CACHE
             );
           })
@@ -65,17 +63,12 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension, data URIs, etc
   if (!url.protocol.startsWith('http')) return;
 
+  // Never cache Supabase: its answers depend on who is signed in (the cache key is only the URL),
+  // and a cached answer would show stale data right after a save. Offline data lives in src/lib/offlineCache.ts.
+  if (url.origin === SUPABASE_URL) return;
+
   // Skip auth endpoints — never cache these
   if (url.pathname.includes('/auth/') || url.pathname.includes('/~oauth')) return;
-
-  // Skip realtime websocket connections
-  if (url.pathname.includes('/realtime/')) return;
-
-  // ── Supabase REST API: stale-while-revalidate ──
-  if (url.origin === SUPABASE_URL && url.pathname.startsWith('/rest/')) {
-    event.respondWith(staleWhileRevalidate(request, API_CACHE));
-    return;
-  }
 
   // ── Images: cache-first ──
   if (
@@ -151,25 +144,7 @@ async function staleWhileRevalidate(request, cacheName) {
 
   const fetchPromise = fetch(request)
     .then((response) => {
-      if (response.ok) {
-        // Store response with sync timestamp for API cache
-        if (cacheName === API_CACHE) {
-          const cloned = response.clone();
-          cloned.text().then((body) => {
-            const timestamped = new Response(body, {
-              status: cloned.status,
-              statusText: cloned.statusText,
-              headers: new Headers({
-                ...Object.fromEntries(cloned.headers.entries()),
-                'x-sw-cached-at': new Date().toISOString(),
-              }),
-            });
-            cache.put(request, timestamped);
-          });
-        } else {
-          cache.put(request, response.clone());
-        }
-      }
+      if (response.ok) cache.put(request, response.clone());
       return response;
     })
     .catch(() => {

@@ -1516,6 +1516,11 @@ export type Database = {
         Returns: undefined
       }
       unregister_device_token: { Args: { p_token: string }; Returns: undefined }
+      save_datesheet: {
+        Args: { p_exams: Json; p_session_id: string; p_venue_id: string }
+        Returns: string[]
+      }
+      save_seating: { Args: { p_exam_date: string; p_seats: Json }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

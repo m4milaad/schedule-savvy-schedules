@@ -32,6 +32,8 @@ export const useAuth = () => {
       if (session?.user) {
         void loadUserProfile(session.user.id);
       } else {
+        // The session ended while the app was closed: stop this phone getting that user's pushes.
+        void unregisterPush();
         setLoading(false);
       }
     });
@@ -60,6 +62,8 @@ export const useAuth = () => {
             void loadUserProfile(session.user.id);
           }, 0);
         } else {
+          // Expired or signed out elsewhere, not only through signOut() below.
+          void unregisterPush();
           void clearPersistedAuthSession().catch(() => {});
           setProfile(null);
           setLoading(false);
@@ -234,7 +238,6 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      // While the session still exists: the RPC needs it.
       await unregisterPush().catch(() => {});
       cleanupAuthState();
 

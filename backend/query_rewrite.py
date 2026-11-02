@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 _PRONOUN_RE = re.compile(r"\b(he|his|him|she|her|hers|their|them|they|it|its|that|this|fee|fees|eligibility|requirements|admission|syllabus)\b", re.IGNORECASE)
+_PERSONAL_RE = re.compile(r"\b(he|his|him|she|her|hers|their|them|they|it|its)\b", re.IGNORECASE)
 _NAME_RE = re.compile(
     r"\b(?:Prof\.?|Professor|Dr\.?|Mr\.?|Mrs\.?|Ms\.?)?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b"
 )
@@ -64,10 +65,12 @@ def rewrite_query(query: str, history: list[dict[str, str]], enabled: bool = Tru
     if not context_entity:
         return clean
         
-    # If the user query is very short or implicit (e.g. "what is the fee?", "how to apply?"), append the context
+    # "what is his email?" -> "what is X's email?"
+    if _PERSONAL_RE.search(clean):
+        return _possessive_rewrite(clean, context_entity)
+
+    # Short implicit questions ("what is the fee?") get the context appended.
     if len(clean.split()) <= 4 and context_entity.lower() not in clean.lower():
         return f"{clean} for {context_entity}"
-        
-    rewritten = _possessive_rewrite(clean, context_entity)
-    return rewritten
+    return clean
 

@@ -358,17 +358,7 @@ export async function saveSeatingArrangement(
   venues: VenueSeatingPlan[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // First, clear existing assignments for this date
-    const { error: deleteError } = await supabase
-      .from('seat_assignments')
-      .delete()
-      .eq('exam_date', examDate);
-
-    if (deleteError) throw deleteError;
-
-    // Prepare insert data
     const assignments: {
-      exam_date: string;
       venue_id: string;
       course_id: string;
       student_id: string;
@@ -382,7 +372,6 @@ export async function saveSeatingArrangement(
         row.forEach((seat, _colIndex) => {
           if (seat) {
             assignments.push({
-              exam_date: examDate,
               venue_id: venue.venue_id,
               course_id: seat.course_id,
               student_id: seat.student_id,
@@ -395,13 +384,9 @@ export async function saveSeatingArrangement(
       });
     });
 
-    if (assignments.length > 0) {
-      const { error: insertError } = await supabase
-        .from('seat_assignments')
-        .insert(assignments);
-
-      if (insertError) throw insertError;
-    }
+    // One transaction that only touches seats that changed, so students are notified only about real changes.
+    const { error } = await supabase.rpc('save_seating', { p_exam_date: examDate, p_seats: assignments });
+    if (error) throw error;
 
     return { success: true };
   } catch (error: unknown) {

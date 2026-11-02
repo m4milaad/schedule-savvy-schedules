@@ -16,10 +16,12 @@ interface SupabaseChain {
 }
 
 const mockSupabaseQuery = vi.fn<(chain: SupabaseChain) => QueryResult>();
+const mockRpc = vi.fn<(fn: string, args: unknown) => QueryResult>();
 
 vi.mock("@/integrations/supabase/client", () => {
   return {
     supabase: {
+      rpc: (fn: string, args: unknown) => Promise.resolve(mockRpc(fn, args)),
       from: (table: string) => {
         const chain = {
           table,
@@ -175,8 +177,8 @@ describe("seatingAlgorithm.ts", () => {
   });
 
   describe("saveSeatingArrangement", () => {
-    it("should return success on valid insert", async () => {
-      mockSupabaseQuery.mockReturnValue({ data: [], error: null });
+    it("should save the occupied seats in one call", async () => {
+      mockRpc.mockReturnValue({ data: null, error: null });
       const res = await saveSeatingArrangement("2024-01-01", [{
         venue_id: "v1",
         venue_name: "Hall",
@@ -187,18 +189,17 @@ describe("seatingAlgorithm.ts", () => {
         ]
       }]);
       expect(res.success).toBe(true);
+      expect(mockRpc).toHaveBeenCalledWith("save_seating", {
+        p_exam_date: "2024-01-01",
+        p_seats: [{ venue_id: "v1", course_id: "c1", student_id: "s1", row_number: 1, column_number: 1, seat_label: "R1C1" }],
+      });
     });
 
-    it("should return error if delete fails", async () => {
-      mockSupabaseQuery.mockImplementation((chain) => {
-        if (chain.table === "seat_assignments" && chain.delete) {
-          return { error: new Error("Delete failed") };
-        }
-        return { data: [], error: null };
-      });
+    it("should return error if the save fails", async () => {
+      mockRpc.mockReturnValue({ data: null, error: new Error("Save failed") });
       const res = await saveSeatingArrangement("2024-01-01", []);
       expect(res.success).toBe(false);
-      expect(res.error).toBe("Delete failed");
+      expect(res.error).toBe("Save failed");
     });
   });
 
