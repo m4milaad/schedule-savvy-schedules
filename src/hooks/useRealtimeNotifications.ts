@@ -9,7 +9,7 @@ interface UseRealtimeNotificationsProps {
 
 /**
  * Toasts each new notification while the dashboard is open.
- * The rows themselves are written by database triggers (seats, datesheet), which also push them to the Android app.
+ * The rows themselves are written by database triggers (seats, datesheet, leave, assignments, attendance), which also push them to the Android app.
  */
 export function useRealtimeNotifications({ userId, enabled = true }: UseRealtimeNotificationsProps): null {
   useEffect(() => {

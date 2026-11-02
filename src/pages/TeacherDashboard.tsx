@@ -13,6 +13,7 @@ import { TeacherApplyLeaveTab } from '@/components/teacher/TeacherApplyLeaveTab'
 import { TeacherProfileEditDialog } from '@/components/teacher/TeacherProfileEditDialog';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcut';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { AdminSidebar, type NavGroup } from '@/components/admin/layout/AdminSidebar';
 import { AdminTopbar } from '@/components/admin/layout/AdminTopbar';
 import { AdminShellSkeleton, useAdminTheme } from '@/components/admin/AdminPanel';
@@ -91,6 +92,9 @@ const TeacherDashboard = () => {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
+
+  // Toast leave applications and assignment submissions as they arrive
+  useRealtimeNotifications({ userId: user?.id });
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

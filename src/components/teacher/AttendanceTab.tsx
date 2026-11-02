@@ -32,7 +32,7 @@ interface StudentAttendance {
   student_id: string;
   student_name: string;
   enrollment_no: string;
-  status: 'present' | 'absent' | 'late' | 'on_leave';
+  status: 'present' | 'absent' | 'late' | 'on_leave' | null; // null = not marked yet
   existing_id?: string;
 }
 
@@ -102,7 +102,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           student_id: e.student_id || '',
           student_name: student?.student_name || 'Unknown',
           enrollment_no: student?.student_enrollment_no || 'N/A',
-          status: ((existing?.status as Record<string, unknown>) || 'present'),
+          status: (existing?.status as StudentAttendance['status']) ?? null,
           existing_id: existing?.id,
         };
       }) || [];
@@ -131,6 +131,14 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
   const saveAttendance = async () => {
     if (!selectedCourse || !selectedDate) return;
+    if (attendanceStats.unmarked > 0) {
+      toast({
+        title: 'Attendance incomplete',
+        description: `Mark all ${attendanceStats.unmarked} remaining student(s) before saving`,
+        variant: 'destructive',
+      });
+      return;
+    }
     setSaving(true);
 
     try {
@@ -142,7 +150,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           course_id: selectedCourse,
           teacher_id: teacherId,
           attendance_date: dateString,
-          status: att.status,
+          status: att.status as string, // non-null: unmarked students block the save above
         };
 
         if (att.existing_id) {
@@ -176,8 +184,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     setAttendance(attendance.map(a => ({ ...a, status })));
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: StudentAttendance['status']) => {
     switch (status) {
+      case null:
+        return <Badge variant="outline">Unmarked</Badge>;
       case 'present':
         return <Badge className="bg-green-600">Present</Badge>;
       case 'absent':
@@ -250,7 +260,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           student_id: e.student_id || '',
           enrollment_no: student?.student_enrollment_no || 'N/A',
           student_name: student?.student_name || 'Unknown',
-          status: 'present', // Default to present
+          status: '', // teacher must fill it in; blank rows are rejected on upload
           remarks: '',
         });
       });
@@ -349,7 +359,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
 
       for (const row of data) {
         const studentId = row['Student ID']?.toString().trim();
-        let status = row['Status']?.toString().trim().toLowerCase();
+        const status = row['Status']?.toString().trim().toLowerCase();
         const remarks = row['Remarks']?.toString().trim() || null;
 
         if (!studentId) {
@@ -358,9 +368,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
           continue;
         }
 
-        // Validate status
         if (!status || !validStatuses.includes(status)) {
-          status = 'present'; // Default to present if invalid
+          result.failed++;
+          result.errors.push(`${row['Student Name'] ?? studentId}: status is blank or invalid ("${status ?? ''}")`);
+          continue;
         }
 
         try {
@@ -431,6 +442,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
     absent: attendance.filter(a => a.status === 'absent').length,
     late: attendance.filter(a => a.status === 'late').length,
     on_leave: attendance.filter(a => a.status === 'on_leave').length,
+    unmarked: attendance.filter(a => a.status === null).length,
   };
 
   return (
@@ -604,6 +616,15 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
                 <span className="font-semibold text-gray-600">{attendanceStats.on_leave}</span>
                 <span className="text-muted-foreground">On Leave</span>
               </div>
+              {attendanceStats.unmarked > 0 && (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{attendanceStats.unmarked}</span>
+                    <span className="text-muted-foreground">Unmarked</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </CardHeader>
@@ -659,11 +680,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
                       <td className="linear-td">
                         <div className="flex justify-end gap-2">
                           <Select
-                            value={student.status}
-                            onValueChange={(value: StudentAttendance['status']) => handleStatusChange(index, value)}
+                            value={student.status ?? ''}
+                            onValueChange={(value) => handleStatusChange(index, value as StudentAttendance['status'])}
                           >
                             <SelectTrigger className="w-32 h-8 text-sm">
-                              <SelectValue />
+                              <SelectValue placeholder="Mark…" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="present">Present</SelectItem>
@@ -676,7 +697,9 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({ teacherId, courses
                             variant="outline"
                             size="sm"
                             onClick={saveAttendance}
-                            disabled={saving}
+                            disabled={saving || attendanceStats.unmarked > 0}
+                            title={attendanceStats.unmarked > 0 ? 'Mark every student before saving' : 'Save attendance'}
+                            aria-label="Save attendance"
                           >
                             <Save className="w-4 h-4" />
                           </Button>
