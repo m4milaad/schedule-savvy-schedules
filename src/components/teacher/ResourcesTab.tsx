@@ -12,34 +12,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Download, Eye, FileText, Video, Presentation, File, Upload, X, Check } from 'lucide-react';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
 import { ResourceSchema } from '@/schemas/database';
+import type { z } from 'zod';
 
 
 interface ResourcesTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
 }
 
-interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  course_id: string;
-  resource_type: string;
-  access_level: string;
-  file_url: string;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  download_count: number;
-  view_count: number;
-  is_active: boolean;
-  created_at: string;
-  course?: {
-    course_code: string;
-    course_name: string;
-  };
-}
+type Resource = z.infer<typeof ResourceSchema>;
 
 export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }) => {
   const [resources, setResources] = useState<Resource[]>([]);
@@ -168,7 +152,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
       logger.error('Upload error:', error);
       toast({
         title: 'Upload Error',
-        description: error.message || 'Failed to upload file',
+        description: getErrorMessage(error) || 'Failed to upload file',
         variant: 'destructive',
       });
       return null;
@@ -241,7 +225,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to save resource',
+        description: getErrorMessage(error) || 'Failed to save resource',
         variant: 'destructive',
       });
     }
@@ -253,7 +237,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     setDescription(resource.description || '');
     setCourseId(resource.course_id);
     setResourceType(resource.resource_type);
-    setAccessLevel(resource.access_level);
+    setAccessLevel(resource.access_level ?? 'enrolled_students');
     setFileUrl(resource.file_url || '');
     setFileName(resource.file_name || '');
     setFileSize(resource.file_size || 0);
@@ -275,7 +259,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to delete resource',
+        description: getErrorMessage(error) || 'Failed to delete resource',
         variant: 'destructive',
       });
     }
@@ -294,7 +278,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
     }
   };
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'N/A';
     const kb = bytes / 1024;
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
@@ -568,7 +552,7 @@ export const ResourcesTab: React.FC<ResourcesTabProps> = ({ teacherId, courses }
                           <span className="flex items-center gap-1">
                             <Download className="h-3 w-3" /> {resource.download_count}
                           </span>
-                          {resource.file_size > 0 && (
+                          {(resource.file_size ?? 0) > 0 && (
                             <span>{formatFileSize(resource.file_size)}</span>
                           )}
                         </div>

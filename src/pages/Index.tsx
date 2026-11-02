@@ -16,6 +16,7 @@ import { getExamTimeSlot } from "@/utils/scheduleUtils";
 import { ScheduleTable } from "@/components/exam-schedule/ScheduleTable";
 import { ScheduleSettings } from "@/components/exam-schedule/ScheduleSettings";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { CourseEnrollmentCard } from "@/components/exam-schedule/CourseEnrollmentCard";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/layout/AdminTopbar";
@@ -39,7 +40,7 @@ export default function Index({ embedded = false }: IndexProps) {
   const [courseEnrollmentCounts, setCourseEnrollmentCounts] = useState<Record<string, number>>({});
   const [studentCourseMap, setStudentCourseMap] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"selection" | "schedule">("selection");
-  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
+  const [profileData, setProfileData] = useState<Tables<"profiles"> | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -380,7 +381,7 @@ export default function Index({ embedded = false }: IndexProps) {
           "First Paper": exam.is_first_paper ? "Yes" : "No",
           Venue: exam.venue_name,
         }));
-      const columns = [
+      const columns: { key: keyof (typeof excelData)[number]; label: string; width: number }[] = [
         { key: "Date", label: "Date", width: 12 },
         { key: "Day", label: "Day", width: 10 },
         { key: "Time", label: "Time", width: 18 },
@@ -393,7 +394,7 @@ export default function Index({ embedded = false }: IndexProps) {
         { key: "Venue", label: "Venue", width: 15 },
       ];
       const workbook = createWorkbook();
-      addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns as unknown as { key: string; label: string; width?: number }[]);
+      addWorksheetFromJson(workbook, "Exam Schedule", excelData, columns);
       await downloadWorkbook(workbook, `exam-schedule-${new Date().toISOString().split("T")[0]}.xlsx`);
       toast({ title: "Success", description: "Excel file downloaded successfully!" });
     } catch (err) {
@@ -637,7 +638,7 @@ export default function Index({ embedded = false }: IndexProps) {
             title="Schedule Generator"
             description="Generate and manage exam schedules"
             userLabel={profileData?.full_name || profileData?.email || undefined}
-            userId={profileData?.user_id}
+            userId={profileData?.user_id ?? undefined}
             isMobile={isMobile}
             onOpenSidebar={() => setIsMobileMenuOpen(true)}
             onLogout={() => {
@@ -646,7 +647,6 @@ export default function Index({ embedded = false }: IndexProps) {
             onRefresh={() => {
               void loadLastSchedule();
             }}
-            onNavigate={navigate}
           />
 
           <main className="min-w-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 dark:scrollbar-thumb-gray-600">

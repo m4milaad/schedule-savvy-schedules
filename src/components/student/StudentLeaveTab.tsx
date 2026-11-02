@@ -17,8 +17,9 @@ import {
   AlertCircle, FileText, Calendar as CalendarIcon, Edit, Trash2 
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getErrorMessage } from '@/lib/utils';
 import logger from '@/lib/logger';
+import type { Tables } from '@/integrations/supabase/types';
 import { LeaveApplicationSchema } from '@/schemas/database';
 
 
@@ -27,18 +28,7 @@ interface StudentLeaveTabProps {
   profileId: string;
 }
 
-interface LeaveApplication {
-  id: string;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
-  contact_info: string;
-  status: string;
-  review_remarks: string | null;
-  created_at: string;
-  reviewed_at: string | null;
-}
+type LeaveApplication = Tables<'leave_applications'>;
 
 export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, profileId }) => {
   const [applications, setApplications] = useState<LeaveApplication[]>([]);
@@ -131,7 +121,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
       logger.error('Error submitting application:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to submit application',
+        description: getErrorMessage(error) || 'Failed to submit application',
         variant: 'destructive',
       });
     } finally {
@@ -164,7 +154,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status?.toLowerCase()) {
       case 'approved':
         return <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
@@ -442,7 +432,7 @@ export const StudentLeaveTab: React.FC<StudentLeaveTabProps> = ({ studentId, pro
                                   <p className="mt-1 text-[11px] text-muted-foreground">
                                     Applied:{' '}
                                     {format(
-                                      new Date(app.created_at),
+                                      new Date(app.created_at ?? 0),
                                       'MMM dd, yyyy',
                                     )}
                                   </p>

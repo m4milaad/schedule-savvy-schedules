@@ -94,7 +94,7 @@ export function CookieConsentBanner({ onChoice }: { onChoice?: (choice: ConsentC
 
           {/* Links */}
           <div className="mb-4 flex flex-wrap gap-1.5">
-            {[
+            {([
               { type: "link", to: "/privacy-policy", label: "Privacy Policy" },
               { type: "link", to: "/terms-and-conditions", label: "Terms" },
               {
@@ -107,7 +107,7 @@ export function CookieConsentBanner({ onChoice }: { onChoice?: (choice: ConsentC
                 href: `mailto:${supportEmail}?subject=${encodeURIComponent("Bug Report - CUK Acadex")}&body=${encodeURIComponent("Please describe the bug, steps to reproduce, and your device/browser.")}`,
                 label: "Bug Report",
               },
-            ].map((item) =>
+            ] as const).map((item) =>
               item.type === "link" ? (
                 <Link
                   key={item.label}

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { ExtendedCourse } from '@/types/database';
 import { ProfileCompletionBanner } from '@/components/ProfileCompletionBanner';
@@ -106,7 +107,7 @@ interface ExamSchedule {
   course_id: string;
   venue_name: string;
   session_name: string;
-  seat_label?: string;
+  seat_label?: string | null;
   row_number?: number;
   column_number?: number;
 }
@@ -148,7 +149,7 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showCompletionBanner, setShowCompletionBanner] = useState(true);
-  const [studentData, setStudentData] = useState<Record<string, unknown> | null>(null);
+  const [studentData, setStudentData] = useState<Pick<Tables<'students'>, 'student_enrollment_no' | 'abc_id' | 'student_address' | 'contact_no'> | null>(null);
   const [activeTab, setActiveTab] = useState<TabValue>('notices');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -312,7 +313,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const transformedEnrollments = (data || []).map((enrollment: Record<string, unknown>) => ({
+    const transformedEnrollments = (data || []).map((enrollment) => ({
       ...enrollment,
       course: {
         ...enrollment.courses,
@@ -349,7 +350,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const transformedCourses = (data || []).map((course: Record<string, unknown>) => ({
+    const transformedCourses = (data || []).map((course) => ({
       ...course,
       dept_name: course.departments?.dept_name
     }));
@@ -376,7 +377,7 @@ const StudentDashboard = () => {
       return;
     }
 
-    const courseIds = (studentCourses as Record<string, unknown>[]).map(sc => sc.course_id);
+    const courseIds = studentCourses.map(sc => sc.course_id).filter((id): id is string => !!id);
 
     const { data, error } = await supabase
       .from('datesheets')
@@ -408,8 +409,8 @@ const StudentDashboard = () => {
       .select('exam_date, course_id, seat_label, row_number, column_number')
       .eq('student_id', profile.id);
 
-    const seatMap = new Map<string, { seat_label: string; row_number: number; column_number: number }>();
-    (seatData || []).forEach((seat: Record<string, unknown>) => {
+    const seatMap = new Map<string, { seat_label: string | null; row_number: number; column_number: number }>();
+    (seatData || []).forEach((seat) => {
       const key = `${seat.exam_date}-${seat.course_id}`;
       seatMap.set(key, {
         seat_label: seat.seat_label,
@@ -418,8 +419,8 @@ const StudentDashboard = () => {
       });
     });
 
-    const transformedSchedule = (data || []).map((item: Record<string, unknown>) => {
-      const courses = item.courses as Record<string, unknown> | undefined;
+    const transformedSchedule = (data || []).map((item) => {
+      const courses = item.courses;
       const courseId = item.course_id || courses?.course_id;
       const seatKey = `${item.exam_date}-${courseId}`;
       const seatInfo = seatMap.get(seatKey);
@@ -427,10 +428,10 @@ const StudentDashboard = () => {
       return {
         exam_date: item.exam_date,
         course_id: courseId,
-        course_code: (courses?.course_code as string) || '',
-        course_name: (courses?.course_name as string) || '',
-        venue_name: (item.venues as Record<string, unknown>)?.venue_name as string || 'TBD',
-        session_name: (item.sessions as Record<string, unknown>)?.session_name as string || 'Current Session',
+        course_code: courses?.course_code || '',
+        course_name: courses?.course_name || '',
+        venue_name: item.venues?.venue_name || 'TBD',
+        session_name: item.sessions?.session_name || 'Current Session',
         seat_label: seatInfo?.seat_label,
         row_number: seatInfo?.row_number,
         column_number: seatInfo?.column_number

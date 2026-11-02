@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2 } from 'lucide-react';
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Squares from "@/components/Squares";
-import { supabase } from '@/integrations/supabase/client';import logger from '@/lib/logger';
+import { supabase } from '@/integrations/supabase/client';
+import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
 
 
 const EmailVerified = () => {
@@ -35,7 +37,7 @@ const EmailVerified = () => {
           const { error } = await supabase.auth.exchangeCodeForSession(url);
           if (error) {
             logger.error('Email verification session exchange failed:', error);
-            setErrorMessage(error.message || 'Verification completed, but we could not establish a session. Please sign in manually.');
+            setErrorMessage(getErrorMessage(error) || 'Verification completed, but we could not establish a session. Please sign in manually.');
           } else {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
@@ -44,7 +46,7 @@ const EmailVerified = () => {
         }
       } catch (error: unknown) {
         logger.error('Unexpected verification error:', error);
-        setErrorMessage(error.message || 'Something went wrong while verifying your email.');
+        setErrorMessage(getErrorMessage(error) || 'Something went wrong while verifying your email.');
       } finally {
         setIsProcessing(false);
       }

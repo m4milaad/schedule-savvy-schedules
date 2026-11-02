@@ -214,7 +214,7 @@ export const ScheduleSettings = ({
         <Button
           onClick={onGenerateSchedule}
           className="w-full backdrop-blur-sm"
-          disabled={loading || isInsufficientDays}
+          disabled={loading || !!isInsufficientDays}
         >
           Generate New Schedule
         </Button>

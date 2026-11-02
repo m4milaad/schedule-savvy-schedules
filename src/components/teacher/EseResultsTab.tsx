@@ -345,13 +345,14 @@ export const EseResultsTab: React.FC<EseResultsTabProps> = ({ teacherId }) => {
 
   const updateManualRow = (index: number, field: keyof EseResultRow, value: string) => {
     const updated = [...manualRows];
+    const current = updated[index];
+    if (!current) return;
     if (field === 'ciaMark' || field === 'eseMark') {
-      updated[index] = { ...updated[index], [field]: value === '' ? null : parseFloat(value) };
-      const cia = updated[index].ciaMark || 0;
-      const ese = updated[index].eseMark || 0;
-      updated[index].totalMark = cia + ese;
+      const row = { ...current, [field]: value === '' ? null : parseFloat(value) };
+      row.totalMark = (row.ciaMark || 0) + (row.eseMark || 0);
+      updated[index] = row;
     } else {
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...current, [field]: value };
     }
     setManualRows(updated);
   };

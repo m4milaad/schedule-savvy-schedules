@@ -200,7 +200,7 @@ export const MobileScheduleViewer = () => {
             .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
             .map((dateString, index) => {
               const date = new Date(dateString);
-              const examsOnDate = groupedSchedule[dateString];
+              const examsOnDate = groupedSchedule[dateString] ?? [];
               
               return (
                 <Card 

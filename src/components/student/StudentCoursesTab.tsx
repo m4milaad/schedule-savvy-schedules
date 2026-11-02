@@ -29,7 +29,9 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Search } from 'lucide-react';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
 import { CourseSchema } from '@/schemas/database';
+import type { Tables } from '@/integrations/supabase/types';
 
 
 interface StudentCoursesTabProps {
@@ -40,28 +42,14 @@ interface StudentCoursesTabProps {
 
 interface Enrollment {
   id: string;
-  course_id: string;
-  is_active: boolean;
-  course: {
-    course_id: string;
-    course_code: string;
-    course_name: string;
-    course_credits: number;
-    semester: number;
-    course_type: string;
-  };
+  course_id: string | null;
+  is_active: boolean | null;
+  course: Pick<Tables<'courses'>, 'course_id' | 'course_code' | 'course_name' | 'course_credits' | 'semester' | 'course_type'> | null;
   grade?: string;
   attendance?: number;
 }
 
-interface AvailableCourse {
-  course_id: string;
-  course_code: string;
-  course_name: string;
-  course_credits: number;
-  semester: number;
-  course_type: string;
-  dept_id: string;
+interface AvailableCourse extends Tables<'courses'> {
   dept_name?: string;
   teacher_name?: string;
 }
@@ -133,7 +121,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       return;
     }
 
-    const transformed = (data || []).map((e: Record<string, unknown>) => ({
+    const transformed = (data || []).map((e) => ({
       ...e,
       course: e.courses
     }));
@@ -157,7 +145,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
       return;
     }
 
-    const transformed = (data || []).map((c: Record<string, unknown>) => ({
+    const transformed = (data || []).map((c) => ({
       ...c,
       dept_name: c.departments?.dept_name || 'General'
     }));
@@ -181,18 +169,18 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     const gradesMap = new Map<string, { grade: string; attendance: number }>();
 
     // Process marks
-    (marks || []).forEach((m: Record<string, unknown>) => {
+    (marks || []).forEach((m) => {
       gradesMap.set(m.course_id, { grade: m.grade || 'N/A', attendance: 0 });
     });
 
     // Calculate attendance percentages
-    const attendanceByCourseFn = (data: Record<string, unknown>[]) => {
+    const attendanceByCourseFn = (data: { course_id: string; status: string }[]) => {
       const byCourse: Record<string, { present: number; total: number }> = {};
       data.forEach(a => {
-        if (!byCourse[a.course_id]) byCourse[a.course_id] = { present: 0, total: 0 };
-        byCourse[a.course_id].total++;
+        const stats = (byCourse[a.course_id] ??= { present: 0, total: 0 });
+        stats.total++;
         if (a.status === 'present' || a.status === 'late') {
-          byCourse[a.course_id].present++;
+          stats.present++;
         }
       });
       return byCourse;
@@ -247,7 +235,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to enroll',
+        description: getErrorMessage(error) || 'Failed to enroll',
         variant: 'destructive',
       });
     } finally {
@@ -284,7 +272,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to unenroll',
+        description: getErrorMessage(error) || 'Failed to unenroll',
         variant: 'destructive',
       });
     } finally {
@@ -355,7 +343,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to bulk enroll',
+        description: getErrorMessage(error) || 'Failed to bulk enroll',
         variant: 'destructive',
       });
     } finally {
@@ -394,7 +382,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to bulk unenroll',
+        description: getErrorMessage(error) || 'Failed to bulk unenroll',
         variant: 'destructive',
       });
     } finally {
@@ -448,9 +436,9 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
     (departmentFilter === 'all' || c.dept_id === departmentFilter)
   );
 
-  const totalCredits = enrollments.reduce((sum, e) => sum + (e.course.course_credits || 0), 0);
+  const totalCredits = enrollments.reduce((sum, e) => sum + (e.course?.course_credits || 0), 0);
   const avgAttendance = enrollments.length > 0
-    ? Math.round(enrollments.reduce((sum, e) => sum + (courseGrades.get(e.course_id)?.attendance || 0), 0) / enrollments.length)
+    ? Math.round(enrollments.reduce((sum, e) => sum + (courseGrades.get(e.course_id ?? '')?.attendance || 0), 0) / enrollments.length)
     : 0;
 
   if (loading) {
@@ -573,7 +561,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                     </thead>
                     <tbody>
                       {enrollments.map((enrollment) => {
-                        const gradeInfo = courseGrades.get(enrollment.course_id);
+                        const gradeInfo = courseGrades.get(enrollment.course_id ?? '');
                         return (
                           <tr 
                             key={enrollment.id} 
@@ -586,14 +574,14 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                               />
                             </td>
                             <td className="linear-td">
-                              <div className="font-medium">{enrollment.course.course_name}</div>
-                              <div className="text-xs text-muted-foreground">{enrollment.course.course_code}</div>
+                              <div className="font-medium">{enrollment.course?.course_name}</div>
+                              <div className="text-xs text-muted-foreground">{enrollment.course?.course_code}</div>
                             </td>
                             <td className="linear-td hidden md:table-cell">
-                              <span className="text-sm text-muted-foreground">{enrollment.course.course_type}</span>
+                              <span className="text-sm text-muted-foreground">{enrollment.course?.course_type}</span>
                             </td>
                             <td className="linear-td hidden lg:table-cell">
-                              <span className="text-sm">{enrollment.course.course_credits}</span>
+                              <span className="text-sm">{enrollment.course?.course_credits}</span>
                             </td>
                             <td className="linear-td hidden lg:table-cell">
                               {gradeInfo?.grade && gradeInfo.grade !== 'N/A'
@@ -609,7 +597,7 @@ export const StudentCoursesTab: React.FC<StudentCoursesTabProps> = ({
                                   size="sm"
                                   variant="ghost"
                                   className="h-8 text-muted-foreground hover:text-destructive"
-                                  onClick={() => confirmUnenroll(enrollment.id, enrollment.course.course_name)}
+                                  onClick={() => confirmUnenroll(enrollment.id, enrollment.course?.course_name ?? '')}
                                   disabled={unenrolling === enrollment.id}
                                 >
                                   {unenrolling === enrollment.id ? 'Unenrolling…' : 'Unenroll'}

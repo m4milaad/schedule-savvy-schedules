@@ -15,12 +15,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
 
-      # shortcut: no `tsc --noEmit` step yet, src/ still has ~256 type errors; add it back once they are fixed.
+      - name: TypeScript type-check
+        run: npx tsc --noEmit --project tsconfig.app.json
 
       - name: ESLint
         run: npm run lint

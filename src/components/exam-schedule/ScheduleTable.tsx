@@ -64,7 +64,7 @@ export const ScheduleTable = ({
             <TableBody>
               {sortedDates.map(dateString => {
                 const date = new Date(dateString);
-                const examsOnDate = scheduleByDate[dateString];
+                const examsOnDate = scheduleByDate[dateString] ?? [];
                 const examCount = examsOnDate.length;
 
                 return (

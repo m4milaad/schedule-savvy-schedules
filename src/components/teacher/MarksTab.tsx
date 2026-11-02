@@ -13,6 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Upload, Save, FileSpreadsheet, Edit, Lock, SlidersHorizontal, Plus } from 'lucide-react';
 import { createWorkbook, addWorksheetFromJson, downloadWorkbook, readExcelFile } from '@/utils/excelUtils';
 import logger from '@/lib/logger';
+import { getErrorMessage } from '@/lib/utils';
+import type { TeacherCourse } from '@/types/database';
 import {
   type AwardComponent, type Scores, AWARD_TOTAL, DEFAULT_SCHEME, PRESET_COMPONENTS,
   columnHeader, gradeOf, readRow, toStored, totalOf,
@@ -21,7 +23,7 @@ import {
 
 interface MarksTabProps {
   teacherId: string;
-  courses: Record<string, unknown>[];
+  courses: TeacherCourse[];
 }
 
 interface StudentMark {
@@ -230,7 +232,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
       logger.error('Error saving marks:', error);
       toast({
         title: 'Error',
-        description: (error as Error)?.message || 'Failed to save marks',
+        description: getErrorMessage(error) || 'Failed to save marks',
         variant: 'destructive',
       });
     } finally {
@@ -250,6 +252,13 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     await downloadWorkbook(workbook, `award_roll_template_${course?.course_code ?? selectedCourse}.xlsx`);
   };
 
+  // Empty cell -> null; 0 stays 0.
+  const toMark = (value: unknown): number | null => {
+    if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
+    const num = Number(value);
+    return Number.isNaN(num) ? null : num;
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -264,8 +273,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
         const row = byEnrollment.get(m.enrollment_no);
         if (!row) return m;
         const scores = Object.fromEntries(scheme.map(c => {
-          const v = row[columnHeader(c)];
-          return [c.name, v == null || v === '' ? null : Number(v)];
+          return [c.name, toMark(row[columnHeader(c)])];
         }));
         return withTotals({ ...m, scores }, scheme);
       }));
@@ -273,7 +281,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
     } catch (error) {
       toast({
         title: 'Error',
-        description: (error as Error)?.message || 'Failed to parse Excel file',
+        description: getErrorMessage(error) || 'Failed to parse Excel file',
         variant: 'destructive',
       });
     }
@@ -347,8 +355,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
                 </SelectTrigger>
                 <SelectContent>
                   {courses.map((course) => (
-                    <SelectItem key={course.course_id as string} value={course.course_id as string}>
-                      {course.course_code as string} - {course.course_name as string}
+                    <SelectItem key={course.course_id} value={course.course_id}>
+                      {course.course_code} - {course.course_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -372,8 +380,8 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           <DialogHeader>
             <DialogTitle>{confirming ? 'Confirm award roll components' : 'Award roll components'}</DialogTitle>
             <DialogDescription>
-              {course?.course_code as string}
-              {course?.program_type ? ` · ${course.program_type as string}` : ''}
+              {course?.course_code}
+              {course?.program_type ? ` · ${course.program_type}` : ''}
               {confirming
                 ? ' · These columns will be used for the template, upload and marks entry.'
                 : ` · Tick what this course is assessed on and give each its marks. Weightage must total ${AWARD_TOTAL}.`}
@@ -487,7 +495,7 @@ export const MarksTab: React.FC<MarksTabProps> = ({ teacherId, courses }) => {
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setCourseModalOpen(true)} size="sm">
               {selectedCourse ?
-                `${(course?.course_code as string) || 'Course'}` :
+                `${(course?.course_code) || 'Course'}` :
                 'Select Course'
               }
             </Button>

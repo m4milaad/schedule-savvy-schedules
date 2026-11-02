@@ -410,6 +410,81 @@ export type Database = {
           },
         ]
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ese_results: {
+        Row: {
+          batch_id: string | null
+          cia_marks: number | null
+          created_at: string | null
+          enrollment_no: string
+          ese_marks: number | null
+          id: string
+          programme: string
+          semester: number
+          student_name: string | null
+          subject_code: string
+          subject_name: string | null
+          total_marks: number | null
+          updated_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          cia_marks?: number | null
+          created_at?: string | null
+          enrollment_no: string
+          ese_marks?: number | null
+          id?: string
+          programme: string
+          semester: number
+          student_name?: string | null
+          subject_code: string
+          subject_name?: string | null
+          total_marks?: number | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          cia_marks?: number | null
+          created_at?: string | null
+          enrollment_no?: string
+          ese_marks?: number | null
+          id?: string
+          programme?: string
+          semester?: number
+          student_name?: string | null
+          subject_code?: string
+          subject_name?: string | null
+          total_marks?: number | null
+          updated_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       exam_teachers: {
         Row: {
           created_at: string | null
@@ -751,10 +826,13 @@ export type Database = {
           content_hash: string
           created_at: string
           date_scraped: string
-          embedding: string
+          embedding: string | null
+          has_table: boolean | null
           id: string
+          normalized_title: string | null
           page_title: string
           source_url: string
+          table_row_count: number | null
         }
         Insert: {
           chunk_index: number
@@ -762,10 +840,13 @@ export type Database = {
           content_hash: string
           created_at?: string
           date_scraped?: string
-          embedding: string
+          embedding?: string | null
+          has_table?: boolean | null
           id: string
+          normalized_title?: string | null
           page_title: string
           source_url: string
+          table_row_count?: number | null
         }
         Update: {
           chunk_index?: number
@@ -773,10 +854,13 @@ export type Database = {
           content_hash?: string
           created_at?: string
           date_scraped?: string
-          embedding?: string
+          embedding?: string | null
+          has_table?: boolean | null
           id?: string
+          normalized_title?: string | null
           page_title?: string
           source_url?: string
+          table_row_count?: number | null
         }
         Relationships: []
       }
@@ -1493,6 +1577,8 @@ export type Database = {
     }
     Functions: {
       create_realistic_student_enrollments: { Args: never; Returns: Json }
+      current_student_enrollment_no: { Args: never; Returns: string }
+      fmt_exam_date: { Args: { d: string }; Returns: string }
       get_exam_schedule_data: {
         Args: never
         Returns: {
@@ -1514,16 +1600,6 @@ export type Database = {
       }
       get_user_department: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
-      register_device_token: {
-        Args: { p_platform?: string; p_token: string }
-        Returns: undefined
-      }
-      unregister_device_token: { Args: { p_token: string }; Returns: undefined }
-      save_datesheet: {
-        Args: { p_exams: Json; p_session_id: string; p_venue_id: string }
-        Returns: string[]
-      }
-      save_seating: { Args: { p_exam_date: string; p_seats: Json }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1551,12 +1627,25 @@ export type Database = {
           chunk_index: number
           content: string
           date_scraped: string
+          has_table: boolean
           id: string
+          normalized_title: string
           page_title: string
           similarity: number
           source_url: string
+          table_row_count: number
         }[]
       }
+      register_device_token: {
+        Args: { p_platform?: string; p_token: string }
+        Returns: undefined
+      }
+      unregister_device_token: { Args: { p_token: string }; Returns: undefined }
+      save_datesheet: {
+        Args: { p_exams: Json; p_session_id: string; p_venue_id: string }
+        Returns: string[]
+      }
+      save_seating: { Args: { p_exam_date: string; p_seats: Json }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "department_admin" | "student" | "teacher"
@@ -1575,12 +1664,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1604,11 +1693,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1629,11 +1718,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1654,11 +1743,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1673,11 +1762,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
