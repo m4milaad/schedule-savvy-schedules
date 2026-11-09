@@ -94,7 +94,7 @@ export const StudentEseResultTab: React.FC<StudentEseResultTabProps> = ({ studen
       const { data, error } = await query;
 
       if (error) throw error;
-      setResults((data || []) as EseResult[]);
+      setResults((data || []));
     } catch (error) {
       logger.error('Error loading ESE results:', error);
       toast({
