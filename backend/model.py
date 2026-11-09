@@ -50,7 +50,7 @@ class ModelRouter:
         from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
         tokenizer = AutoTokenizer.from_pretrained(model_name)
-        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float32)
+        model = AutoModelForCausalLM.from_pretrained(model_name, dtype=torch.float32)
         return pipeline("text-generation", model=model, tokenizer=tokenizer)
 
     def load(self) -> None:

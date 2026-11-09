@@ -63,7 +63,7 @@ jobs:
 
       # The tests need only the API layer; the full requirements pull in torch (several GB).
       - name: Install dependencies
-        run: pip install fastapi==0.116.1 httpx==0.28.1 numpy==2.3.2 python-dotenv==1.0.1 slowapi==0.1.9 pytest pytest-asyncio pytest-cov
+        run: pip install fastapi==0.116.1 httpx==0.28.1 numpy==2.3.2 python-dotenv==1.2.4 slowapi==0.1.9 pytest pytest-asyncio pytest-cov
 
       # From the repo root, so `import backend` works.
       - name: Pytest
