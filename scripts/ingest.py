@@ -50,7 +50,7 @@ def _token_chunk(token_ids: list[int], chunk_size: int, overlap: int) -> list[li
     for start in range(0, len(token_ids), step):
         end = start + chunk_size
         piece = token_ids[start:end]
-        if len(piece) < 40:
+        if len(piece) < 40 and start > 0:  # drop a short tail, but keep a short page whole (e.g. a contact card)
             continue
         chunks.append(piece)
         if end >= len(token_ids):
@@ -170,7 +170,7 @@ def _load_api_crawl() -> list[tuple[str, dict[str, str], str]]:
         # "updated" is the site's own last-edit date: a better freshness signal than when we crawled it.
         date = rec.get("updated") or datetime.now(timezone.utc).date().isoformat()
         title = rec["title"]
-        if rec["text"].strip():
+        if rec["group"] == "keep" and rec["text"].strip():  # a follow page's text is just its title; its PDFs carry the content
             body = rec["text"] if rec["text"].startswith(title) else f"{title}\n\n{rec['text']}"
             items.append((body, {"source_url": rec["url"], "page_title": title, "date_scraped": date}, f"page {title!r}"))
         for url in rec["documents"]:

@@ -7,14 +7,14 @@ from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+import faiss
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 META_PATH = DATA_DIR / "metadata.json"
+INDEX_PATH = DATA_DIR / "faiss_index.bin"
 ENV_PATH = ROOT / "backend" / ".env"
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # must match backend/config.py embedding_model (384-dim)
 BATCH_SIZE = 100
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
@@ -41,7 +41,7 @@ def main() -> None:
     """
     Sync local metadata embeddings to the Supabase `rag_documents` table.
     
-    Loads metadata.json, generates normalized sentence-transformer embeddings for each chunk, deduplicates rows by `content_hash`, and upserts the data to Supabase in configurable batches with retry logic for server (500) and network errors while printing progress.
+    Loads metadata.json and the vectors ingest.py already computed (faiss_index.bin, same order), deduplicates rows by `content_hash`, and upserts the data to Supabase in configurable batches with retry logic for server (500) and network errors while printing progress.
     
     Raises:
         FileNotFoundError: If the metadata.json file does not exist at META_PATH.
@@ -51,16 +51,12 @@ def main() -> None:
         raise FileNotFoundError(f"metadata.json not found at {META_PATH}. Run scripts/ingest.py first.")
 
     url, key = load_env()
-    model = SentenceTransformer(MODEL_NAME)
-
     docs = json.loads(META_PATH.read_text(encoding="utf-8"))
-    texts = [d["text"] for d in docs]
-    vectors = model.encode(
-        texts,
-        convert_to_numpy=True,
-        normalize_embeddings=True,
-        show_progress_bar=True,
-    ).tolist()
+    # ingest.py embeds with backend/config.py's embedding_model and stores the vectors in this index, in metadata order.
+    index = faiss.read_index(str(INDEX_PATH))
+    if index.ntotal != len(docs):
+        raise RuntimeError(f"{INDEX_PATH.name} has {index.ntotal} vectors but metadata.json has {len(docs)} rows; re-run scripts/ingest.py")
+    vectors = index.reconstruct_n(0, index.ntotal).tolist()
 
     # Build payload and deduplicate by content_hash so we never violate the unique constraint.
     payload: list[dict] = []
@@ -88,6 +84,8 @@ def main() -> None:
             row["normalized_title"] = str(doc.get("normalized_title", ""))
         payload.append(row)
 
+    if not payload:
+        raise RuntimeError("metadata.json has no chunks; refusing to sync (it would delete every row)")
     rest_url = f"{url.rstrip('/')}/rest/v1/rag_documents"
     headers = {
         "apikey": key,
@@ -97,6 +95,21 @@ def main() -> None:
     }
 
     with httpx.Client(timeout=60) as client:
+        # Upserts never delete, so rows from an older ingest would linger. Remove ids that are not in this
+        # ingest first: unchanged chunks keep their id and stay live, and no old row can clash on content_hash.
+        existing: set[str] = set()
+        while True:
+            res = client.get(rest_url, params={"select": "id", "order": "id", "offset": len(existing), "limit": 1000}, headers=headers)
+            res.raise_for_status()
+            page = [r["id"] for r in res.json()]
+            existing.update(page)
+            if len(page) < 1000:
+                break
+        stale = sorted(existing - {r["id"] for r in payload})
+        for batch in batched(stale, 200):  # ids are sha256 hex, safe inside in.(...)
+            client.delete(rest_url, params={"id": f"in.({','.join(batch)})"}, headers=headers).raise_for_status()
+        print(f"  Removed {len(stale)} stale rows; {len(existing) - len(stale)} unchanged rows kept")
+
         total_batches = (len(payload) + BATCH_SIZE - 1) // BATCH_SIZE
         successful_batches = 0
         

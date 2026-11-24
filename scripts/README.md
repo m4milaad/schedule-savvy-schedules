@@ -83,7 +83,7 @@ python scripts/ingest.py
 
 **What it does:**
 - Reads `metadata.json`
-- Re-embeds chunks for Supabase
+- Reuses the vectors ingest.py saved in faiss_index.bin (no second embedding pass)
 - Uploads to `rag_documents` table
 - Deduplicates by `content_hash`
 - Batch uploads (100 rows at a time)
