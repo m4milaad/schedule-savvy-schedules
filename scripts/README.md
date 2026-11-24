@@ -9,10 +9,11 @@ This directory contains the essential scripts for the CUK RAG system data pipeli
 Run these scripts in order to update the knowledge base:
 
 ```bash
-# 1. Scrape CUK website
-python scripts/scrape_cuk.py
+# 1. Crawl the CUK site through its JSON API, then download the PDFs that keep/follow pages link
+#    (writes data/api_crawl/; --docs is resumable)
+python scripts/api_crawl.py --docs
 
-# 2. Process and chunk data
+# 2. Process and chunk data (uses data/api_crawl/ when present; otherwise the legacy data/*.txt from scrape_cuk.py)
 python scripts/ingest.py
 
 # 3. Upload to Supabase

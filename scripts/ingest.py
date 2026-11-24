@@ -7,6 +7,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
 
 import faiss
 import numpy as np
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
 INDEX_PATH = DATA_DIR / "faiss_index.bin"
 META_PATH = DATA_DIR / "metadata.json"
+API_PAGES = DATA_DIR / "api_crawl" / "pages.jsonl"
+API_DOCS = DATA_DIR / "api_crawl" / "docs"
 
 CHUNK_SIZE = 400
 OVERLAP = 80
@@ -153,13 +156,43 @@ def _load_pdf(path: Path) -> tuple[str, dict[str, str]] | None:
         return None
 
 
-def main() -> None:
-    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
-    embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+def _load_api_crawl() -> list[tuple[str, dict[str, str], str]]:
+    """Keep/follow pages from scripts/api_crawl.py, plus the PDFs `api_crawl.py --docs` downloaded for them."""
+    from api_crawl import doc_filename  # same folder; python puts scripts/ on sys.path
 
-    records: list[dict[str, Any]] = []
-    texts_for_embedding: list[str] = []
+    items: list[tuple[str, dict[str, str], str]] = []
+    seen_docs: set[str] = set()
+    missing = 0
+    for line in API_PAGES.open(encoding="utf-8"):
+        rec = json.loads(line)
+        if rec["group"] not in ("keep", "follow"):
+            continue
+        # "updated" is the site's own last-edit date: a better freshness signal than when we crawled it.
+        date = rec.get("updated") or datetime.now(timezone.utc).date().isoformat()
+        title = rec["title"]
+        if rec["text"].strip():
+            body = rec["text"] if rec["text"].startswith(title) else f"{title}\n\n{rec['text']}"
+            items.append((body, {"source_url": rec["url"], "page_title": title, "date_scraped": date}, f"page {title!r}"))
+        for url in rec["documents"]:
+            if url in seen_docs or not url.lower().endswith(".pdf"):
+                continue
+            seen_docs.add(url)
+            path = API_DOCS / doc_filename(url)
+            if not path.exists():
+                missing += 1
+                continue
+            loaded = _load_pdf(path)
+            if loaded is None:  # scanned PDF with no text layer
+                continue
+            name = re.sub(r"^\d{10,}-", "", unquote(url.rsplit("/", 1)[-1].rsplit(".", 1)[0]))  # drop upload-timestamp prefix
+            doc_title = f"{title} - {name}"
+            items.append((f"{doc_title}\n\n{loaded[0]}", {"source_url": url, "page_title": doc_title, "date_scraped": date}, f"PDF {name!r}"))
+    if missing:
+        logger.warning("%d linked PDFs not downloaded; run: python scripts/api_crawl.py --reclassify --docs", missing)
+    return items
 
+
+def _ingest_legacy(add_chunks) -> None:
     raw_txt = sorted(DATA_DIR.glob("*.txt"))
     pdf_files = sorted(DATA_DIR.glob("*.pdf"))
     txt_files = [p for p in raw_txt if p.name != BOOTSTRAP_KB]
@@ -186,36 +219,24 @@ def main() -> None:
             logger.info("No /data txt/pdf found. Bootstrapped from knowledge-base.json")
 
     for txt_path in txt_files:
-        text, common_meta = _load_txt(txt_path)
-        token_ids = tokenizer.encode(text, add_special_tokens=False)
-        chunks = _token_chunk(token_ids, CHUNK_SIZE, OVERLAP)
-        for idx, chunk_ids in enumerate(chunks):
-            chunk_text = tokenizer.decode(chunk_ids, skip_special_tokens=True).strip()
-            if not chunk_text:
-                continue
-            records.append(
-                {
-                    "id": hashlib.sha256(f"{common_meta['source_url']}::{idx}::{chunk_text}".encode("utf-8")).hexdigest(),
-                    "text": chunk_text,
-                    "source_url": common_meta["source_url"],
-                    "page_title": common_meta["page_title"],
-                    "date_scraped": common_meta["date_scraped"],
-                    "chunk_index": idx,
-                    "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
-                    "has_table": bool(TABLE_LINE_RE.search(chunk_text)),
-                    "table_row_count": sum(1 for line in chunk_text.splitlines() if TABLE_LINE_RE.search(line)),
-                    "contact_field_count": len(EMAIL_RE.findall(chunk_text)) + len(PHONE_RE.findall(chunk_text)),
-                    "normalized_title": TITLE_CLEAN_RE.sub(" ", common_meta["page_title"]).strip().lower(),
-                }
-            )
-            texts_for_embedding.append(chunk_text)
-        logger.info("Chunked TXT %s into %d chunks", txt_path.name, len(chunks))
+        text, meta = _load_txt(txt_path)
+        add_chunks(text, meta, f"TXT {txt_path.name}")
 
     for pdf_path in pdf_files:
         loaded = _load_pdf(pdf_path)
-        if loaded is None:
-            continue
-        text, common_meta = loaded
+        if loaded is not None:
+            add_chunks(loaded[0], loaded[1], f"PDF {pdf_path.name}")
+
+
+def main() -> None:
+    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+    embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+    records: list[dict[str, Any]] = []
+    texts_for_embedding: list[str] = []
+
+    def add_chunks(text: str, meta: dict[str, str], label: str) -> None:
+        text = text.encode("utf-8", "ignore").decode("utf-8")  # PDF extraction can emit lone surrogates; the tokenizer rejects them
         token_ids = tokenizer.encode(text, add_special_tokens=False)
         chunks = _token_chunk(token_ids, CHUNK_SIZE, OVERLAP)
         for idx, chunk_ids in enumerate(chunks):
@@ -224,24 +245,32 @@ def main() -> None:
                 continue
             records.append(
                 {
-                    "id": hashlib.sha256(f"{common_meta['source_url']}::{idx}::{chunk_text}".encode("utf-8")).hexdigest(),
+                    "id": hashlib.sha256(f"{meta['source_url']}::{idx}::{chunk_text}".encode("utf-8")).hexdigest(),
                     "text": chunk_text,
-                    "source_url": common_meta["source_url"],
-                    "page_title": common_meta["page_title"],
-                    "date_scraped": common_meta["date_scraped"],
+                    "source_url": meta["source_url"],
+                    "page_title": meta["page_title"],
+                    "date_scraped": meta["date_scraped"],
                     "chunk_index": idx,
                     "content_hash": hashlib.sha256(chunk_text.encode("utf-8")).hexdigest(),
                     "has_table": bool(TABLE_LINE_RE.search(chunk_text)),
                     "table_row_count": sum(1 for line in chunk_text.splitlines() if TABLE_LINE_RE.search(line)),
                     "contact_field_count": len(EMAIL_RE.findall(chunk_text)) + len(PHONE_RE.findall(chunk_text)),
-                    "normalized_title": TITLE_CLEAN_RE.sub(" ", common_meta["page_title"]).strip().lower(),
+                    "normalized_title": TITLE_CLEAN_RE.sub(" ", meta["page_title"]).strip().lower(),
                 }
             )
             texts_for_embedding.append(chunk_text)
-        logger.info("Chunked PDF %s into %d chunks", pdf_path.name, len(chunks))
+        logger.info("Chunked %s into %d chunks", label, len(chunks))
+
+    if API_PAGES.exists():
+        # The API crawl covers the same site as the old scrape, so mixing them would only add stale duplicates.
+        logger.info("Using %s; skipping legacy data/*.txt and data/*.pdf", API_PAGES.relative_to(ROOT))
+        for text, meta, label in _load_api_crawl():
+            add_chunks(text, meta, label)
+    else:
+        _ingest_legacy(add_chunks)
 
     if not texts_for_embedding:
-        raise RuntimeError("No chunks found. Ensure /data has .txt or .pdf files.")
+        raise RuntimeError("No chunks found. Run scripts/api_crawl.py, or put .txt/.pdf files in /data.")
 
     vectors = embedder.encode(
         texts_for_embedding,
